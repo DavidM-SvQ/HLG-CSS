@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "GlobalFile": {
+      "title": "Global File",
+      "description": "Stores the content of a CSV file globally",
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "description": "JSON stringified array of objects"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "User ID who updated the file"
+        }
+      },
+      "required": ["data", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/global_files/{fileId}": {
+      "schema": "GlobalFile",
+      "description": "Collection of global configuration files"
+    }
+  }
+}

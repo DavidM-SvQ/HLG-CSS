@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == "davidmv1985@gmail.com";
+    }
+
+    function isValidGlobalFile(data) {
+      return data.keys().hasAll(['data', 'updatedAt', 'updatedBy']) &&
+             data.data is string && data.data.size() < 1048576 && // Max 1MB per file
+             data.updatedAt is string &&
+             data.updatedBy == request.auth.uid;
+    }
+
+    match /global_files/{fileId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidGlobalFile(request.resource.data);
+    }
+  }
+}
