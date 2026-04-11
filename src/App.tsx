@@ -3,9 +3,9 @@ import Papa from 'papaparse';
 import { 
   UploadCloud, CheckCircle2, AlertCircle, Trophy, Medal, 
   Users, FileSpreadsheet, ChevronDown, ChevronUp, LogIn, LogOut, Globe, Clock, Info, Activity, Flag,
-  List, LayoutGrid, ArrowUpRight
+  List, LayoutGrid, ArrowUpRight, Crown, BarChart3
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LabelList } from 'recharts';
 import { cn } from './lib/utils';
 import { 
   auth, db, googleProvider, signInWithPopup, onAuthStateChanged, 
@@ -935,157 +935,238 @@ const getVal = (row: any, key: string) => {
 
             {/* Tab Content */}
             {publicTab === 'season' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-2">Resumen de Temporada</h2>
-                    <p className="text-sm text-neutral-500 mb-6">
-                      Estadísticas y progreso de todos los jugadores en tiempo real.
-                    </p>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                            <Trophy className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm font-medium">Carreras Procesadas</span>
-                        </div>
-                        <span className="font-bold">{uniqueRaces.length}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                            <Users className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm font-medium">Jugadores Activos</span>
-                        </div>
-                        <span className="font-bold">{leaderboard?.length || 0}</span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="space-y-8">
+                {(() => {
+                  const filteredLeaderboard = leaderboard?.filter(p => p.nombreEquipo !== 'No draft') || [];
+                  const top3 = filteredLeaderboard.slice(0, 3);
                   
-                  {leaderboard && leaderboard.length > 0 && (
-                    <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-                      <h2 className="text-lg font-semibold mb-4">Top 5 Jugadores</h2>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={leaderboard.slice(0, 5)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <XAxis type="number" hide />
-                            <YAxis dataKey="jugador" type="category" axisLine={false} tickLine={false} fontSize={12} width={80} />
-                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                            <Bar dataKey="puntos" radius={[0, 4, 4, 0]}>
-                              {leaderboard.slice(0, 5).map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={index === 0 ? '#eab308' : index === 1 ? '#94a3b8' : index === 2 ? '#ea580c' : '#3b82f6'} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  // Handle ties for Leader
+                  const maxPoints = filteredLeaderboard.length > 0 ? filteredLeaderboard[0].puntos : 0;
+                  const leaders = filteredLeaderboard.filter(p => p.puntos === maxPoints);
+                  const leaderNames = leaders.map(l => l.nombreEquipo).join(' / ');
+                  
+                  // Calculate wins per team (excluding No draft)
+                  const teamWinsCount: Record<string, number> = {};
+                  Object.values(raceWinners).forEach(teamName => {
+                    const name = teamName as string;
+                    if (name !== 'No draft') {
+                      teamWinsCount[name] = (teamWinsCount[name] || 0) + 1;
+                    }
+                  });
+                  
+                  const maxWins = Math.max(...Object.values(teamWinsCount), 0);
+                  const topWinnerTeams = Object.keys(teamWinsCount).filter(name => teamWinsCount[name] === maxWins);
+                  const winnerNames = topWinnerTeams.join(' / ');
 
-                <div className="lg:col-span-8">
-                  <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden min-h-[600px]">
-                    <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50">
-                      <h2 className="text-lg font-semibold text-neutral-900">Clasificación General</h2>
-                    </div>
-
-                    <div className="p-6">
-                      {!leaderboard ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
-                          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-                            <Activity className="w-8 h-8 text-blue-500" />
+                  return (
+                    <>
+                      {/* KPIs */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                            <Trophy className="w-6 h-6" />
                           </div>
                           <div>
-                            <h3 className="text-neutral-900 font-medium">Esperando datos</h3>
-                            <p className="text-neutral-500 text-sm max-w-sm mt-1">
-                              Los resultados se mostrarán aquí cuando estén disponibles.
-                            </p>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Carreras Terminadas</p>
+                            <p className="text-2xl font-bold text-neutral-900">{uniqueRaces.length}</p>
                           </div>
                         </div>
-                      ) : leaderboard.length === 0 ? (
-                        <div className="text-center py-20 text-neutral-500">
-                          No se encontraron puntos.
+
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
+                            <Crown className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Líder Actual</p>
+                            <p className="text-xl font-bold text-neutral-900">{leaderNames || '-'}</p>
+                            <p className="text-xs text-neutral-500">{maxPoints || 0} puntos</p>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {leaderboard.map((player, index) => (
-                            <div 
-                              key={player.jugador} 
-                              className="border border-neutral-200 rounded-xl overflow-hidden transition-all hover:border-blue-200 bg-white"
-                            >
-                              <div 
-                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-neutral-50"
-                                onClick={() => setExpandedPlayer(expandedPlayer === player.jugador ? null : player.jugador)}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                                    index === 0 ? "bg-yellow-100 text-yellow-700" :
-                                    index === 1 ? "bg-neutral-200 text-neutral-700" :
-                                    index === 2 ? "bg-orange-100 text-orange-800" :
-                                    "bg-blue-50 text-blue-700"
-                                  )}>
-                                    {index + 1}
-                                  </div>
-                                  <h3 className="font-semibold text-lg text-neutral-900">{player.jugador}</h3>
+
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                            <Medal className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Más Victorias</p>
+                            <p className="text-xl font-bold text-neutral-900">{winnerNames || '-'}</p>
+                            <p className="text-xs text-neutral-500">{maxWins} victorias</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Virtual Podium */}
+                      {top3.length > 0 && (
+                        <div className="flex flex-col items-center justify-end pt-12 pb-8 bg-white border border-neutral-200 rounded-2xl shadow-sm">
+                          <h3 className="text-lg font-bold mb-8 text-neutral-800 uppercase tracking-widest">Podio Virtual</h3>
+                          <div className="flex items-end gap-2 md:gap-8">
+                            {/* 2nd Place */}
+                            {top3[1] && (
+                              <div className="flex flex-col items-center">
+                                <div className="mb-2 text-center">
+                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">{top3[1].nombreEquipo}</p>
+                                  <p className="text-xs text-neutral-500">{top3[1].puntos} pts</p>
                                 </div>
-                                <div className="flex items-center gap-6">
-                                  <div className="text-right">
-                                    <div className="font-bold text-xl text-neutral-900">{player.puntos}</div>
-                                    <div className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Puntos</div>
-                                  </div>
-                                  {expandedPlayer === player.jugador ? (
-                                    <ChevronUp className="w-5 h-5 text-neutral-400" />
-                                  ) : (
-                                    <ChevronDown className="w-5 h-5 text-neutral-400" />
-                                  )}
+                                <div className="w-24 md:w-32 h-32 bg-slate-300 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                                  <span className="text-4xl font-black text-slate-400">2</span>
                                 </div>
                               </div>
+                            )}
 
-                              {/* Expanded Details */}
-                              {expandedPlayer === player.jugador && (
-                                <div className="border-t border-neutral-100 bg-neutral-50 p-4">
-                                  <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                                    Desglose de Puntos
-                                  </h4>
-                                  {player.detalles.length > 0 ? (
-                                    <div className="space-y-2">
-                                      {player.detalles.map((detalle, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-sm bg-white p-3 rounded-lg border border-neutral-100 shadow-sm">
-                                          <div className="flex-1">
-                                            <span className="font-medium text-neutral-900">{detalle.ciclista}</span>
-                                            <span className="text-neutral-400 mx-2">•</span>
-                                            <span className="text-neutral-600">{detalle.carrera}</span>
-                                          </div>
-                                          <div className="flex items-center gap-4 text-right">
-                                            <div className="text-neutral-500 text-xs">
-                                              {detalle.tipoResultado} (Pos: {detalle.posicion})
-                                            </div>
-                                            <div className="font-semibold text-blue-600 w-12">
-                                              +{detalle.puntosObtenidos}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="text-sm text-neutral-500 italic">
-                                      No hay puntos registrados aún.
-                                    </div>
-                                  )}
+                            {/* 1st Place */}
+                            {top3[0] && (
+                              <div className="flex flex-col items-center">
+                                <Crown className="w-8 h-8 text-yellow-500 mb-2 animate-bounce" />
+                                <div className="mb-2 text-center">
+                                  <p className="text-base font-black text-neutral-900 truncate w-28 md:w-40">{top3[0].nombreEquipo}</p>
+                                  <p className="text-sm font-bold text-yellow-600">{top3[0].puntos} pts</p>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                <div className="w-28 md:w-40 h-48 bg-yellow-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden border-x-4 border-t-4 border-yellow-300">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
+                                  <span className="text-6xl font-black text-yellow-600">1</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 3rd Place */}
+                            {top3[2] && (
+                              <div className="flex flex-col items-center">
+                                <div className="mb-2 text-center">
+                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">{top3[2].nombreEquipo}</p>
+                                  <p className="text-xs text-neutral-500">{top3[2].puntos} pts</p>
+                                </div>
+                                <div className="w-24 md:w-32 h-24 bg-orange-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                                  <span className="text-4xl font-black text-orange-600">3</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-                </div>
+
+                      {/* General Classification Chart */}
+                      <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold mb-6 text-neutral-800 flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-blue-600" />
+                          Clasificación General
+                        </h3>
+                        <div className="h-[500px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart 
+                              data={filteredLeaderboard.map((p, idx) => {
+                                const draftOrder = p.orden ? parseInt(p.orden) : 0;
+                                const currentPos = idx + 1;
+                                const diff = draftOrder - currentPos;
+                                return {
+                                  ...p,
+                                  displayName: `${p.nombreEquipo} [#${p.orden}]`,
+                                  victorias: teamWinsCount[p.nombreEquipo] || 0,
+                                  diff,
+                                  pos: currentPos
+                                };
+                              })}
+                              margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="displayName" 
+                                angle={-45} 
+                                textAnchor="end" 
+                                interval={0} 
+                                height={100}
+                                tick={(props) => {
+                                  const { x, y, payload } = props;
+                                  const item = filteredLeaderboard.find((p, idx) => {
+                                    const draftOrder = p.orden ? parseInt(p.orden) : 0;
+                                    const currentPos = idx + 1;
+                                    const displayName = `${p.nombreEquipo} [#${p.orden}]`;
+                                    return displayName === payload.value;
+                                  });
+                                  
+                                  let color = '#64748b'; // default
+                                  if (item) {
+                                    const idx = filteredLeaderboard.indexOf(item);
+                                    const draftOrder = item.orden ? parseInt(item.orden) : 0;
+                                    const currentPos = idx + 1;
+                                    const diff = draftOrder - currentPos;
+                                    if (diff > 0) color = '#16a34a'; // green-600
+                                    else if (diff < 0) color = '#dc2626'; // red-600
+                                    else color = '#ca8a04'; // yellow-600
+                                  }
+
+                                  return (
+                                    <g transform={`translate(${x},${y})`}>
+                                      <text
+                                        x={0}
+                                        y={0}
+                                        dy={16}
+                                        textAnchor="end"
+                                        fill={color}
+                                        transform="rotate(-45)"
+                                        style={{ fontSize: '11px', fontWeight: 600 }}
+                                      >
+                                        {payload.value}
+                                      </text>
+                                    </g>
+                                  );
+                                }}
+                              />
+                              <YAxis tick={{fontSize: 12}} />
+                              <Tooltip 
+                                cursor={{fill: '#f8fafc'}}
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    return (
+                                      <div className="bg-white p-4 border border-neutral-200 rounded-xl shadow-xl">
+                                        <p className="font-bold text-neutral-900 mb-2">{data.nombreEquipo}</p>
+                                        <div className="space-y-1 text-sm">
+                                          <div className="flex justify-between gap-8">
+                                            <span className="text-neutral-500">Puntos:</span>
+                                            <span className="font-bold text-blue-600">{data.puntos}</span>
+                                          </div>
+                                          <div className="flex justify-between gap-8">
+                                            <span className="text-neutral-500">Victorias:</span>
+                                            <span className="font-bold text-yellow-600">{data.victorias}</span>
+                                          </div>
+                                          <div className="flex justify-between gap-8">
+                                            <span className="text-neutral-500">Dif con orden:</span>
+                                            <span className={cn(
+                                              "font-bold",
+                                              data.diff > 0 ? "text-green-600" : data.diff < 0 ? "text-red-600" : "text-yellow-600"
+                                            )}>
+                                              {data.diff > 0 ? `+${data.diff}` : data.diff}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <Bar dataKey="puntos" radius={[4, 4, 0, 0]}>
+                                {filteredLeaderboard.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#fb923c' : '#3b82f6'} 
+                                  />
+                                ))}
+                                <LabelList 
+                                  dataKey="puntos" 
+                                  position="top" 
+                                  style={{ fontSize: '10px', fontWeight: 'bold', fill: '#64748b' }} 
+                                />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -1122,6 +1203,8 @@ const getVal = (row: any, key: string) => {
                   }).filter(Boolean) as { jugador: string, nombreEquipo: string, orden: string, totalPoints: number, uniqueCyclists: number, details: any[] }[] || [];
 
                   raceTeams.sort((a, b) => b.totalPoints - a.totalPoints);
+
+                  const maxUniqueCyclists = Math.max(...raceTeams.map(t => t.uniqueCyclists), 0);
 
                   const allRaceResults = files.resultados.data?.filter(r => getVal(r, 'Carrera') === selectedRace) || [];
                   
@@ -1255,9 +1338,9 @@ const getVal = (row: any, key: string) => {
                       const c = raceCyclistsMap.get(d.ciclista)!;
                       c.puntos += d.puntosObtenidos;
                       
-                      const isVictory = d.posicion === '1' && (
-                        /Etapa/i.test(d.tipoResultado) || /Clasificación General/i.test(d.tipoResultado) || /CG/i.test(d.tipoResultado)
-                      );
+                      const isVictory = (d.posicion === '1' || d.posicion === '01') && 
+                                       d.tipoResultado !== 'Montaña final' && 
+                                       d.tipoResultado !== 'Regularidad final';
                       if (isVictory) {
                         c.victorias += 1;
                       }
@@ -1296,7 +1379,16 @@ const getVal = (row: any, key: string) => {
                                     {team.nombreEquipo} <span className="text-neutral-400 font-normal">[{team.orden}]</span>
                                   </td>
                                   <td className="px-4 py-3 text-center text-neutral-600">
-                                    <span className="bg-neutral-100 px-2 py-1 rounded-md text-xs">{team.uniqueCyclists}</span>
+                                    {team.nombreEquipo === 'No draft' ? '-' : (
+                                      <span className={cn(
+                                        "px-2 py-1 rounded-md text-xs font-bold",
+                                        team.uniqueCyclists === 0 ? "bg-red-100 text-red-600" : 
+                                        team.uniqueCyclists === maxUniqueCyclists && maxUniqueCyclists > 0 ? "bg-yellow-100 text-yellow-700" : 
+                                        "bg-neutral-100 text-neutral-600"
+                                      )}>
+                                        {team.uniqueCyclists}
+                                      </span>
+                                    )}
                                   </td>
                                   <td className="px-4 py-3 text-right font-bold text-blue-600 text-base">{team.totalPoints}</td>
                                 </tr>
