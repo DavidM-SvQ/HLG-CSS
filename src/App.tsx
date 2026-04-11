@@ -3,17 +3,26 @@ import Papa from 'papaparse';
 import { 
   UploadCloud, CheckCircle2, AlertCircle, Trophy, Medal, 
   Users, FileSpreadsheet, ChevronDown, ChevronUp, LogIn, LogOut, Globe, Clock, Info, Activity, Flag,
-  List, LayoutGrid, ArrowUpRight, Crown, BarChart3
+  List, LayoutGrid, ArrowUpRight, Crown, BarChart3, TrendingUp
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LabelList } from 'recharts';
-import { cn } from './lib/utils';
 import { 
-  auth, db, googleProvider, signInWithPopup, onAuthStateChanged, 
-  doc, setDoc, getDoc, onSnapshot, User 
-} from './firebase';
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LabelList,
+  LineChart, Line, Legend
+} from 'recharts';
+import { cn } from './lib/utils';
+import { supabase } from './supabase';
 
 // --- Types ---
 type ParsedData = Record<string, any>[];
+
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
 
 interface FileState {
   file: File | null;
@@ -30,6 +39,7 @@ interface AppState {
   equipos: FileState;
   puntos: FileState;
   resultados: FileState;
+  startlist: FileState;
 }
 
 interface PlayerScore {
@@ -45,27 +55,38 @@ interface PlayerScore {
     etapa?: string;
     posicion: string | number;
     puntosObtenidos: number;
+    fecha?: string;
   }[];
 }
 
 // --- Constants ---
+const LINE_COLORS = [
+  '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', 
+  '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#6366f1'
+];
+
 const FILE_TYPES = [
   { id: 'carreras', name: 'Carreras HLG 2026', icon: Trophy, expectedCols: ['Carrera', 'Categoría', 'Fecha'], global: true },
-  { id: 'ciclistas', name: 'Ciclistas 2026', icon: Users, expectedCols: ['Ciclista', 'Pais', 'Equipo'], global: true },
+  { id: 'ciclistas', name: 'Ciclistas 2026', icon: Users, expectedCols: ['Ciclista', 'País', 'Equipo'], global: true },
   { id: 'elecciones', name: 'Elecciones 2026', icon: Users, expectedCols: ['Ciclista', 'Nombre_TG', 'Nombre_Equipo', 'Edad', 'Ronda', 'País'], global: true },
   { id: 'equipos', name: 'Equipos 2026', icon: Users, expectedCols: ['EQUIPO COMPLETO', 'EQUIPO BREVE'], global: true },
   { id: 'puntos', name: 'Puntos HLG 2026', icon: FileSpreadsheet, expectedCols: ['Categoría', 'Tipo', 'Posición', 'Puntos'], global: true },
   { id: 'resultados', name: 'Resultados FirstCycling', icon: Medal, expectedCols: ['Carrera', 'Ciclista', 'Tipo', 'Pos', 'Etapa'], global: true },
+  { id: 'startlist', name: 'Startlist 2026', icon: List, expectedCols: ['BIB', 'CORREDOR', 'RANKING', 'PNT', 'EQUIPO', 'MOSTRAR MÁS'], global: true },
 ] as const;
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [view, setView] = useState<'public' | 'admin'>('public');
   const [publicTab, setPublicTab] = useState<'season' | 'race' | 'startlist' | 'team' | 'draft' | 'info'>('season');
   const [selectedRace, setSelectedRace] = useState<string>('');
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
+  const [evolutionMode, setEvolutionMode] = useState<'acumulado' | 'mensual'>('acumulado');
+  const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useState<string[]>([]);
+  const [seasonSubTab, setSeasonSubTab] = useState<'puntos' | 'victorias' | 'ciclistas'>('puntos');
   
   // Info tab states
   const [infoSubTab, setInfoSubTab] = useState<'menu' | 'puntuaciones' | 'carreras'>('menu');
@@ -79,16 +100,46 @@ export default function App() {
     equipos: { file: null, data: null, error: null, loading: true },
     puntos: { file: null, data: null, error: null, loading: true },
     resultados: { file: null, data: null, error: null, loading: true },
+    startlist: { file: null, data: null, error: null, loading: true },
   });
 
   const isAdmin = user?.email === 'davidmv1985@gmail.com';
+  const isSupabaseConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
   // Auth listener
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'SUPABASE_SESSION' && event.data?.session) {
+        const { access_token, refresh_token } = event.data.session;
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user as any ?? null);
       setIsAuthReady(true);
+      if (session && window.opener) {
+        window.opener.postMessage({ type: 'SUPABASE_SESSION', session }, '*');
+        window.close();
+      }
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user as any ?? null);
+      setIsAuthReady(true);
+      if (session && window.opener) {
+        window.opener.postMessage({ type: 'SUPABASE_SESSION', session }, '*');
+        window.close();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('message', handleMessage);
+    };
   }, []);
 
   // Automatically switch to admin view if user is admin
@@ -109,6 +160,26 @@ export default function App() {
 
   const allFilesUploaded = (Object.values(files) as FileState[]).every(f => f.data !== null);
 
+  const fetchGlobalFile = async (id: string) => {
+    const { data, error } = await supabase
+      .from('global_files')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!error && data) {
+      setFiles(prev => ({
+        ...prev,
+        [id]: { file: null, data: data.data, error: null, loading: false, updatedAt: data.updated_at }
+      }));
+    } else {
+      setFiles(prev => ({
+        ...prev,
+        [id]: { ...prev[id as keyof AppState], loading: false }
+      }));
+    }
+  };
+
   // Automatically calculate points when all files are ready
   useEffect(() => {
     if (allFilesUploaded) {
@@ -116,82 +187,101 @@ export default function App() {
     }
   }, [files, allFilesUploaded]);
 
-  // Firestore sync for global files
+  // Supabase sync for global files
   useEffect(() => {
-    if (!isAuthReady) {
+    if (!isAuthReady || !isSupabaseConfigured) {
+      if (!isSupabaseConfigured) {
+        // Set loading to false if not configured to avoid permanent "Sincronizando"
+        setFiles(prev => {
+          const next = { ...prev };
+          Object.keys(next).forEach(key => {
+            (next[key as keyof AppState] as any).loading = false;
+          });
+          return next;
+        });
+      }
       return;
     }
 
-    const unsubscribes = FILE_TYPES.filter(ft => ft.global).map(ft => {
-      return onSnapshot(doc(db, 'global_files', ft.id), async (snapshot) => {
-        if (snapshot.exists()) {
-          try {
-            const docData = snapshot.data();
-            let parsedData;
-            
-            if (docData.isChunked) {
-              let fullString = '';
-              for (let i = 0; i < docData.numChunks; i++) {
-                const chunkSnap = await getDoc(doc(db, 'global_files', `${ft.id}_chunk_${i}`));
-                if (chunkSnap.exists()) {
-                  fullString += chunkSnap.data().data;
-                }
-              }
-              parsedData = JSON.parse(fullString);
-            } else {
-              parsedData = JSON.parse(docData.data);
-            }
-
-            setFiles(prev => ({
-              ...prev,
-              [ft.id]: { file: null, data: parsedData, error: null, loading: false, updatedAt: docData.updatedAt }
-            }));
-          } catch (e) {
-            console.error(`Error parsing global file ${ft.id}`, e);
-            setFiles(prev => ({
-              ...prev,
-              [ft.id]: { ...prev[ft.id as keyof AppState], loading: false, error: "Error al sincronizar datos globales" }
-            }));
-          }
-        } else {
-          setFiles(prev => ({
-            ...prev,
-            [ft.id]: { ...prev[ft.id as keyof AppState], loading: false, data: null }
-          }));
-        }
-      }, (error) => {
-        console.error(`Firestore error for ${ft.id}`, error);
-        setFiles(prev => ({
-          ...prev,
-          [ft.id]: { ...prev[ft.id as keyof AppState], loading: false, error: `Error de lectura (onSnapshot): ${error.message}` }
-        }));
-      });
+    // Initial fetch
+    FILE_TYPES.filter(ft => ft.global).forEach(ft => {
+      fetchGlobalFile(ft.id);
     });
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    // Real-time subscription
+    const channel = supabase
+      .channel('global_files_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'global_files' 
+      }, (payload) => {
+        const id = (payload.new as any)?.id || (payload.old as any)?.id;
+        if (id) fetchGlobalFile(id);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isAuthReady]);
 
   const handleLogin = async () => {
+    setIsLoggingIn(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        const popup = window.open(data.url, 'oauth_popup', 'width=600,height=700');
+        if (!popup) {
+          alert("Por favor, permite las ventanas emergentes (popups) para iniciar sesión.");
+          setIsLoggingIn(false);
+          return;
+        }
+        
+        const checkPopup = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkPopup);
+            setIsLoggingIn(false);
+          }
+        }, 1000);
+      } else {
+        throw new Error("No redirect URL returned from Supabase");
+      }
     } catch (error) {
       console.error("Login failed", error);
+      alert("Error al iniciar sesión. Revisa la consola (F12) para ver el error técnico.");
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => auth.signOut();
+  const handleLogout = () => supabase.auth.signOut();
 
   const handleFileUpload = (id: keyof AppState, file: File) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      delimiter: ";",
       complete: async (results) => {
         const ftConfig = FILE_TYPES.find(f => f.id === id);
         const expectedCols = ftConfig?.expectedCols || [];
         const actualCols = results.meta.fields || [];
+        
+        const normalize = (s: string) => s.toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, '')
+          .trim();
+
         const missingCols = (expectedCols as string[]).filter(expected => 
-          !actualCols.some(actual => (actual as string).toLowerCase() === (expected as string).toLowerCase())
+          !actualCols.some(actual => normalize(actual as string) === normalize(expected as string))
         );
 
         if (missingCols.length > 0) {
@@ -213,37 +303,24 @@ export default function App() {
 
             try {
               setFiles(prev => ({ ...prev, [id]: { ...prev[id], loading: true } }));
-              const jsonString = JSON.stringify(parsedData);
-              const CHUNK_SIZE = 900000; // 900KB
               
-              if (jsonString.length > CHUNK_SIZE) {
-                const numChunks = Math.ceil(jsonString.length / CHUNK_SIZE);
-                for (let i = 0; i < numChunks; i++) {
-                  const chunkData = jsonString.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                  await setDoc(doc(db, 'global_files', `${id}_chunk_${i}`), {
-                    data: chunkData
-                  });
-                }
-                await setDoc(doc(db, 'global_files', id), {
-                  isChunked: true,
-                  numChunks,
-                  updatedAt: new Date().toISOString(),
-                  updatedBy: user.uid
+              const { error } = await supabase
+                .from('global_files')
+                .upsert({ 
+                  id, 
+                  data: parsedData,
+                  updated_at: new Date().toISOString()
                 });
-              } else {
-                await setDoc(doc(db, 'global_files', id), {
-                  isChunked: false,
-                  data: jsonString,
-                  updatedAt: new Date().toISOString(),
-                  updatedBy: user.uid
-                });
-              }
-              // State will be updated by onSnapshot
+
+              if (error) throw error;
+              
+              // State will be updated by real-time subscription or manual fetch
+              fetchGlobalFile(id);
             } catch (e: any) {
-              console.error("Error saving to Firestore", e);
+              console.error("Error saving to Supabase", e);
               setFiles(prev => ({
                 ...prev,
-                [id]: { file, data: null, error: `Error al guardar (setDoc): ${e.message}` }
+                [id]: { file, data: null, error: `Error al guardar: ${e.message}` }
               }));
             }
           } else {
@@ -367,11 +444,16 @@ export default function App() {
     setCyclistMetadata(cyclistMetadata);
 
     const raceTypeByName: Record<string, string> = {};
+    const raceDateByName: Record<string, string> = {};
     carreras.data!.forEach(row => {
       const carrera = getVal(row, 'Carrera')?.trim();
       const categoria = getVal(row, 'Categoría')?.trim();
+      const fecha = getVal(row, 'Fecha')?.trim();
       if (carrera && categoria) {
         raceTypeByName[carrera] = categoria;
+      }
+      if (carrera && fecha) {
+        raceDateByName[carrera] = fecha;
       }
     });
 
@@ -427,7 +509,8 @@ export default function App() {
         tipoResultado,
         etapa,
         posicion,
-        puntosObtenidos
+        puntosObtenidos,
+        fecha: raceDateByName[carrera]
       });
     });
 
@@ -498,10 +581,14 @@ const getFlagEmoji = (countryName: string) => {
 
 const getVal = (row: any, key: string) => {
   if (!row) return '';
-  const normalizedKey = key.toLowerCase().replace(/_/g, '').replace(/\s/g, '');
-  const actualKey = Object.keys(row).find(k => 
-    k.toLowerCase().replace(/_/g, '').replace(/\s/g, '') === normalizedKey
-  );
+  const normalize = (s: string) => s.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+    
+  const normalizedKey = normalize(key);
+  const actualKey = Object.keys(row).find(k => normalize(k) === normalizedKey);
   return actualKey ? row[actualKey] : '';
 };
 
@@ -632,12 +719,16 @@ const getVal = (row: any, key: string) => {
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-semibold text-neutral-900 leading-none">{user.displayName}</p>
+                  <p className="text-xs font-semibold text-neutral-900 leading-none">
+                    {user.user_metadata?.full_name || user.email}
+                  </p>
                   <p className="text-[10px] text-neutral-500 mt-0.5">
                     {isAdmin ? 'Administrador' : 'Jugador'}
                   </p>
                 </div>
-                <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border border-neutral-200" referrerPolicy="no-referrer" />
+                {user.user_metadata?.avatar_url && (
+                  <img src={user.user_metadata.avatar_url} alt="" className="w-8 h-8 rounded-full border border-neutral-200" referrerPolicy="no-referrer" />
+                )}
                 <button 
                   onClick={handleLogout}
                   className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors"
@@ -649,10 +740,23 @@ const getVal = (row: any, key: string) => {
             ) : (
               <button 
                 onClick={handleLogin}
-                className="flex items-center gap-2 bg-white border border-neutral-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-all shadow-sm"
+                disabled={isLoggingIn}
+                className={cn(
+                  "flex items-center gap-2 bg-white border border-neutral-200 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm",
+                  isLoggingIn ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"
+                )}
               >
-                <LogIn className="w-4 h-4 text-blue-600" />
-                Iniciar Sesión
+                {isLoggingIn ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-neutral-300 border-t-blue-600 rounded-full animate-spin" />
+                    <span>Conectando...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 text-blue-600" />
+                    Iniciar Sesión
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -660,6 +764,63 @@ const getVal = (row: any, key: string) => {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {!isSupabaseConfigured && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
+            <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-amber-900 font-bold">Configuración de Supabase pendiente</h3>
+              <p className="text-amber-700 text-sm mt-1">
+                Para que la sincronización de datos funcione, debes configurar las variables de entorno 
+                <code className="mx-1 px-1 bg-amber-100 rounded">VITE_SUPABASE_URL</code> y 
+                <code className="mx-1 px-1 bg-amber-100 rounded">VITE_SUPABASE_ANON_KEY</code> en los ajustes del proyecto.
+              </p>
+              <div className="mt-4 p-4 bg-white/50 rounded-xl border border-amber-100">
+                <p className="text-xs font-bold text-amber-800 mb-2 uppercase tracking-wider">Configuración necesaria en Supabase:</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-amber-900 mb-1">1. Base de Datos (SQL Editor):</p>
+                    <pre className="text-[10px] font-mono text-amber-900 overflow-x-auto whitespace-pre-wrap bg-white/50 p-2 rounded border border-amber-100">
+{`create table global_files (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamp with time zone default now()
+);
+
+alter publication supabase_realtime add table global_files;
+alter table global_files enable row level security;
+
+create policy "Public read access" on global_files for select using (true);
+create policy "Admin write access" on global_files for all using (auth.jwt() ->> 'email' = 'davidmv1985@gmail.com');`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-amber-900 mb-1">2. Autenticación (Providers):</p>
+                    <ul className="text-[10px] text-amber-800 list-disc pl-4 space-y-2">
+                      <li>Ve a <b>Authentication {'>'} Providers</b> y activa <b>Google</b>.</li>
+                      <li><b>SOLUCIÓN DEFINITIVA AL ERROR 403:</b>
+                        <div className="mt-2 p-3 bg-red-100/50 border border-red-200 rounded-lg">
+                          <p className="font-bold text-red-900 mb-1">Sigue estos pasos en Google Cloud Console:</p>
+                          <ol className="list-decimal pl-4 space-y-1 text-red-800">
+                            <li>Ve a <b>"Pantalla de consentimiento de OAuth"</b>.</li>
+                            <li>Busca el botón <b>"PUBLICAR APLICACIÓN"</b> (Publish App) y púlsalo. Esto quita las restricciones de "Usuarios de prueba".</li>
+                            <li>Si prefieres no publicar, asegúrate de que tu email <code>davidmv1985@gmail.com</code> aparezca en la lista de <b>"Usuarios de prueba"</b> y que hayas aceptado la invitación si Google envió un correo.</li>
+                            <li>En la pestaña <b>"Credenciales"</b>, verifica que el "ID de cliente de OAuth 2.0" tenga la <b>URI de redireccionamiento</b> de Supabase (la que termina en <code>/auth/v1/callback</code>).</li>
+                          </ol>
+                        </div>
+                      </li>
+                      <li>En Supabase, ve a <b>Authentication {'>'} URL Configuration</b> y añade esta URL a <b>"Redirect URLs"</b>:
+                        <code className="ml-1 px-1 bg-amber-100 rounded break-all">{window.location.origin + window.location.pathname}</code>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {view === 'admin' ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Sidebar: File Uploads (Only for Admin) */}
@@ -717,6 +878,15 @@ const getVal = (row: any, key: string) => {
                                state.data ? (ft.global ? "Sincronizado en la nube" : state.file?.name) : 
                                "Esperando archivo..."}
                             </p>
+                            {state.updatedAt && (
+                              <p className="text-[10px] text-neutral-400 mt-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(state.updatedAt).toLocaleString('es-ES', { 
+                                  day: '2-digit', month: '2-digit', year: 'numeric', 
+                                  hour: '2-digit', minute: '2-digit' 
+                                })}
+                              </p>
+                            )}
                           </div>
                         </div>
                         
@@ -1046,124 +1216,487 @@ const getVal = (row: any, key: string) => {
                         </div>
                       )}
 
-                      {/* General Classification Chart */}
-                      <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-                        <h3 className="text-lg font-bold mb-6 text-neutral-800 flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5 text-blue-600" />
-                          Clasificación General
-                        </h3>
-                        <div className="h-[500px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                              data={filteredLeaderboard.map((p, idx) => {
-                                const draftOrder = p.orden ? parseInt(p.orden) : 0;
-                                const currentPos = idx + 1;
-                                const diff = draftOrder - currentPos;
-                                return {
-                                  ...p,
-                                  displayName: `${p.nombreEquipo} [#${p.orden}]`,
-                                  victorias: teamWinsCount[p.nombreEquipo] || 0,
-                                  diff,
-                                  pos: currentPos
-                                };
-                              })}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                      {/* Season Sub-Tabs */}
+                      <div className="flex justify-center mb-8">
+                        <div className="flex bg-neutral-100 p-1.5 rounded-xl shadow-inner">
+                          {[
+                            { id: 'puntos', label: 'Puntos', icon: BarChart3 },
+                            { id: 'victorias', label: 'Victorias', icon: Trophy },
+                            { id: 'ciclistas', label: 'Ciclistas', icon: Users },
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              onClick={() => setSeasonSubTab(tab.id as any)}
+                              className={cn(
+                                "flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200",
+                                seasonSubTab === tab.id 
+                                  ? "bg-white text-blue-600 shadow-md transform scale-105" 
+                                  : "text-neutral-500 hover:text-neutral-700 hover:bg-white/50"
+                              )}
                             >
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                              <XAxis 
-                                dataKey="displayName" 
-                                angle={-45} 
-                                textAnchor="end" 
-                                interval={0} 
-                                height={100}
-                                tick={(props) => {
-                                  const { x, y, payload } = props;
-                                  const item = filteredLeaderboard.find((p, idx) => {
-                                    const draftOrder = p.orden ? parseInt(p.orden) : 0;
-                                    const currentPos = idx + 1;
-                                    const displayName = `${p.nombreEquipo} [#${p.orden}]`;
-                                    return displayName === payload.value;
-                                  });
-                                  
-                                  let color = '#64748b'; // default
-                                  if (item) {
-                                    const idx = filteredLeaderboard.indexOf(item);
-                                    const draftOrder = item.orden ? parseInt(item.orden) : 0;
-                                    const currentPos = idx + 1;
-                                    const diff = draftOrder - currentPos;
-                                    if (diff > 0) color = '#16a34a'; // green-600
-                                    else if (diff < 0) color = '#dc2626'; // red-600
-                                    else color = '#ca8a04'; // yellow-600
-                                  }
-
-                                  return (
-                                    <g transform={`translate(${x},${y})`}>
-                                      <text
-                                        x={0}
-                                        y={0}
-                                        dy={16}
-                                        textAnchor="end"
-                                        fill={color}
-                                        transform="rotate(-45)"
-                                        style={{ fontSize: '11px', fontWeight: 600 }}
-                                      >
-                                        {payload.value}
-                                      </text>
-                                    </g>
-                                  );
-                                }}
-                              />
-                              <YAxis tick={{fontSize: 12}} />
-                              <Tooltip 
-                                cursor={{fill: '#f8fafc'}}
-                                content={({ active, payload }) => {
-                                  if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    return (
-                                      <div className="bg-white p-4 border border-neutral-200 rounded-xl shadow-xl">
-                                        <p className="font-bold text-neutral-900 mb-2">{data.nombreEquipo}</p>
-                                        <div className="space-y-1 text-sm">
-                                          <div className="flex justify-between gap-8">
-                                            <span className="text-neutral-500">Puntos:</span>
-                                            <span className="font-bold text-blue-600">{data.puntos}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-8">
-                                            <span className="text-neutral-500">Victorias:</span>
-                                            <span className="font-bold text-yellow-600">{data.victorias}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-8">
-                                            <span className="text-neutral-500">Dif con orden:</span>
-                                            <span className={cn(
-                                              "font-bold",
-                                              data.diff > 0 ? "text-green-600" : data.diff < 0 ? "text-red-600" : "text-yellow-600"
-                                            )}>
-                                              {data.diff > 0 ? `+${data.diff}` : data.diff}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                              />
-                              <Bar dataKey="puntos" radius={[4, 4, 0, 0]}>
-                                {filteredLeaderboard.map((entry, index) => (
-                                  <Cell 
-                                    key={`cell-${index}`} 
-                                    fill={index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#fb923c' : '#3b82f6'} 
-                                  />
-                                ))}
-                                <LabelList 
-                                  dataKey="puntos" 
-                                  position="top" 
-                                  style={{ fontSize: '10px', fontWeight: 'bold', fill: '#64748b' }} 
-                                />
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
+                              <tab.icon className="w-4 h-4" />
+                              {tab.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
+
+                      {seasonSubTab === 'puntos' && (
+                        <>
+                          {/* General Classification Chart */}
+                          <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold mb-6 text-neutral-800 flex items-center gap-2">
+                              <BarChart3 className="w-5 h-5 text-blue-600" />
+                              Clasificación General
+                            </h3>
+                            <div className="h-[500px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart 
+                                  data={filteredLeaderboard.map((p, idx) => {
+                                    const draftOrder = p.orden ? parseInt(p.orden) : 0;
+                                    const currentPos = idx + 1;
+                                    const diff = draftOrder - currentPos;
+                                    return {
+                                      ...p,
+                                      displayName: `${p.nombreEquipo} [#${p.orden}]`,
+                                      victorias: teamWinsCount[p.nombreEquipo] || 0,
+                                      diff,
+                                      pos: currentPos
+                                    };
+                                  })}
+                                  margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                  <XAxis 
+                                    dataKey="displayName" 
+                                    angle={-45} 
+                                    textAnchor="end" 
+                                    interval={0} 
+                                    height={100}
+                                    tick={(props) => {
+                                      const { x, y, payload } = props;
+                                      const item = filteredLeaderboard.find((p, idx) => {
+                                        const draftOrder = p.orden ? parseInt(p.orden) : 0;
+                                        const currentPos = idx + 1;
+                                        const displayName = `${p.nombreEquipo} [#${p.orden}]`;
+                                        return displayName === payload.value;
+                                      });
+                                      
+                                      let color = '#64748b'; // default
+                                      if (item) {
+                                        const idx = filteredLeaderboard.indexOf(item);
+                                        const draftOrder = item.orden ? parseInt(item.orden) : 0;
+                                        const currentPos = idx + 1;
+                                        const diff = draftOrder - currentPos;
+                                        if (diff > 0) color = '#16a34a'; // green-600
+                                        else if (diff < 0) color = '#dc2626'; // red-600
+                                        else color = '#ca8a04'; // yellow-600
+                                      }
+
+                                      return (
+                                        <g transform={`translate(${x},${y})`}>
+                                          <text
+                                            x={0}
+                                            y={0}
+                                            dy={16}
+                                            textAnchor="end"
+                                            fill={color}
+                                            transform="rotate(-45)"
+                                            style={{ fontSize: '11px', fontWeight: 600 }}
+                                          >
+                                            {payload.value}
+                                          </text>
+                                        </g>
+                                      );
+                                    }}
+                                  />
+                                  <YAxis tick={{fontSize: 12}} />
+                                  <Tooltip 
+                                    cursor={{fill: '#f8fafc'}}
+                                    content={({ active, payload }) => {
+                                      if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        return (
+                                          <div className="bg-white p-4 border border-neutral-200 rounded-xl shadow-xl">
+                                            <p className="font-bold text-neutral-900 mb-2">{data.nombreEquipo}</p>
+                                            <div className="space-y-1 text-sm">
+                                              <div className="flex justify-between gap-8">
+                                                <span className="text-neutral-500">Puntos:</span>
+                                                <span className="font-bold text-blue-600">{data.puntos}</span>
+                                              </div>
+                                              <div className="flex justify-between gap-8">
+                                                <span className="text-neutral-500">Victorias:</span>
+                                                <span className="font-bold text-yellow-600">{data.victorias}</span>
+                                              </div>
+                                              <div className="flex justify-between gap-8">
+                                                <span className="text-neutral-500">Dif con orden:</span>
+                                                <span className={cn(
+                                                  "font-bold",
+                                                  data.diff > 0 ? "text-green-600" : data.diff < 0 ? "text-red-600" : "text-yellow-600"
+                                                )}>
+                                                  {data.diff > 0 ? `+${data.diff}` : data.diff}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    }}
+                                  />
+                                  <Bar dataKey="puntos" radius={[4, 4, 0, 0]}>
+                                    {filteredLeaderboard.map((entry, index) => (
+                                      <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#fb923c' : '#3b82f6'} 
+                                      />
+                                    ))}
+                                    <LabelList 
+                                      dataKey="puntos" 
+                                      position="top" 
+                                      style={{ fontSize: '10px', fontWeight: 'bold', fill: '#64748b' }} 
+                                    />
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+
+                          {/* Monthly Evolution Chart */}
+                          {(() => {
+                            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                            const currentMonthIdx = new Date().getMonth(); // 0-indexed
+                            
+                            const teamColors: Record<string, string> = {};
+                            filteredLeaderboard.forEach((team, idx) => {
+                              const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                              if (idx === 0) teamColors[teamKey] = '#fbbf24'; // Gold
+                              else if (idx === 1) teamColors[teamKey] = '#94a3b8'; // Silver
+                              else if (idx === 2) teamColors[teamKey] = '#fb923c'; // Bronze
+                              else teamColors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
+                            });
+
+                            const monthlyEvolutionData = (() => {
+                              const dataByMonth: any[] = months.map(m => ({ month: m }));
+                              
+                              filteredLeaderboard.forEach(team => {
+                                const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                                
+                                // Skip if not selected (if any are selected)
+                                if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) {
+                                  return;
+                                }
+
+                                let accumulated = 0;
+                                
+                                months.forEach((m, mIdx) => {
+                                  const monthPoints = team.detalles.reduce((sum, d) => {
+                                    if (!d.fecha) return sum;
+                                    const parts = d.fecha.split('/');
+                                    if (parts.length < 2) return sum;
+                                    const monthIndex = parseInt(parts[1]) - 1;
+                                    if (monthIndex === mIdx) return sum + d.puntosObtenidos;
+                                    return sum;
+                                  }, 0);
+                                  
+                                  if (evolutionMode === 'acumulado') {
+                                    accumulated += monthPoints;
+                                    dataByMonth[mIdx][teamKey] = accumulated;
+                                  } else {
+                                    dataByMonth[mIdx][teamKey] = monthPoints;
+                                  }
+                                });
+                              });
+                              
+                              // Filter out months with no data AND future months
+                              return dataByMonth.filter((m, idx) => {
+                                const hasData = Object.keys(m).some(key => key !== 'month' && m[key] > 0);
+                                return hasData && idx <= currentMonthIdx;
+                              });
+                            })();
+
+                            return (
+                              <div className="mt-12">
+                                <div className="flex items-center justify-between border-b pb-3 mb-6">
+                                  <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                                    Evolución Mensual
+                                  </h3>
+                                  <div className="flex bg-neutral-100 p-1 rounded-lg">
+                                    <button 
+                                      onClick={() => setEvolutionMode('acumulado')}
+                                      className={cn(
+                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                        evolutionMode === 'acumulado' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                      )}
+                                    >
+                                      Acumulado
+                                    </button>
+                                    <button 
+                                      onClick={() => setEvolutionMode('mensual')}
+                                      className={cn(
+                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                        evolutionMode === 'mensual' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                      )}
+                                    >
+                                      Mensual
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                                  {/* Team Selector */}
+                                  <div className="mb-6 pb-6 border-b border-neutral-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <p className="text-sm font-bold text-neutral-700">Filtrar Equipos:</p>
+                                      <div className="flex gap-2">
+                                        <button 
+                                          onClick={() => setSelectedEvolutionTeams([])}
+                                          className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                        >
+                                          Mostrar Todos
+                                        </button>
+                                        <button 
+                                          onClick={() => setSelectedEvolutionTeams(filteredLeaderboard.map(t => `${t.nombreEquipo} <${t.orden}>`))}
+                                          className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
+                                        >
+                                          Seleccionar Todos
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {filteredLeaderboard.map((team, idx) => {
+                                        const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                                        const isSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(teamKey);
+                                        const color = teamColors[teamKey];
+                                        
+                                        return (
+                                          <button
+                                            key={teamKey}
+                                            onClick={() => {
+                                              if (selectedEvolutionTeams.length === 0) {
+                                                // If none were explicitly selected (all shown), select only this one
+                                                setSelectedEvolutionTeams([teamKey]);
+                                              } else {
+                                                if (selectedEvolutionTeams.includes(teamKey)) {
+                                                  const next = selectedEvolutionTeams.filter(t => t !== teamKey);
+                                                  setSelectedEvolutionTeams(next);
+                                                } else {
+                                                  setSelectedEvolutionTeams([...selectedEvolutionTeams, teamKey]);
+                                                }
+                                              }
+                                            }}
+                                            className={cn(
+                                              "px-3 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-2",
+                                              isSelected 
+                                                ? "bg-white shadow-sm" 
+                                                : "bg-neutral-50 text-neutral-400 border-neutral-100 grayscale opacity-50"
+                                            )}
+                                            style={{ 
+                                              borderColor: isSelected ? color : 'transparent',
+                                              color: isSelected ? color : undefined
+                                            }}
+                                          >
+                                            <div 
+                                              className="w-2 h-2 rounded-full" 
+                                              style={{ backgroundColor: color }}
+                                            />
+                                            {team.nombreEquipo}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  <div className="h-[600px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <LineChart data={monthlyEvolutionData} margin={{ top: 40, right: 30, left: 20, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                        <XAxis dataKey="month" tick={{fontSize: 12}} />
+                                        <YAxis tick={{fontSize: 12}} />
+                                        <Tooltip 
+                                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                          itemSorter={(item) => -(item.value as number)}
+                                        />
+                                        <Legend 
+                                          verticalAlign="top" 
+                                          align="center"
+                                          height={80} 
+                                          iconType="circle"
+                                          wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '12px' }}
+                                        />
+                                        {Object.keys(teamColors).map(teamKey => {
+                                          // Only render line if selected
+                                          if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) {
+                                            return null;
+                                          }
+                                          return (
+                                            <Line 
+                                              key={teamKey}
+                                              type="monotone" 
+                                              dataKey={teamKey} 
+                                              stroke={teamColors[teamKey]} 
+                                              strokeWidth={3}
+                                              dot={{ r: 4, strokeWidth: 2 }}
+                                              activeDot={{ r: 6, strokeWidth: 0 }}
+                                              connectNulls
+                                            />
+                                          );
+                                        })}
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+
+                      {seasonSubTab === 'victorias' && (
+                        <div className="space-y-8">
+                          <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold mb-6 text-neutral-800 flex items-center gap-2">
+                              <Trophy className="w-5 h-5 text-yellow-500" />
+                              Ranking de Victorias por Equipo
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {Object.entries(teamWinsCount)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([teamName, wins], idx) => (
+                                  <div key={teamName} className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold",
+                                        idx === 0 ? "bg-yellow-100 text-yellow-700" : "bg-neutral-200 text-neutral-600"
+                                      )}>
+                                        {idx + 1}
+                                      </div>
+                                      <span className="font-semibold text-neutral-900">{teamName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-lg font-bold text-neutral-900">{wins}</span>
+                                      <Trophy className="w-3.5 h-3.5 text-yellow-500" />
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+
+                          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+                              <h3 className="font-bold text-neutral-800">Historial de Ganadores por Carrera</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-neutral-500 uppercase bg-neutral-50">
+                                  <tr>
+                                    <th className="px-6 py-3 font-semibold">Carrera</th>
+                                    <th className="px-6 py-3 font-semibold text-right">Equipo Ganador</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100">
+                                  {uniqueRaces.map(race => (
+                                    <tr key={race} className="hover:bg-neutral-50 transition-colors">
+                                      <td className="px-6 py-4 font-medium text-neutral-900">{race}</td>
+                                      <td className="px-6 py-4 text-right">
+                                        {raceWinners[race] ? (
+                                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 font-bold text-xs border border-yellow-100">
+                                            <Trophy className="w-3 h-3" />
+                                            {raceWinners[race]}
+                                          </span>
+                                        ) : (
+                                          <span className="text-neutral-400 italic">Sin resultados</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {seasonSubTab === 'ciclistas' && (
+                        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+                          <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold text-neutral-800">Top Ciclistas por Puntuación</h3>
+                              <p className="text-xs text-neutral-500 mt-0.5">Ranking individual de todos los corredores con puntos.</p>
+                            </div>
+                            <Users className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                              <thead className="text-xs text-neutral-500 uppercase bg-neutral-50">
+                                <tr>
+                                  <th className="px-6 py-3 font-semibold">Pos</th>
+                                  <th className="px-6 py-3 font-semibold">Ciclista</th>
+                                  <th className="px-6 py-3 font-semibold">Equipo Fantasy</th>
+                                  <th className="px-6 py-3 font-semibold">País</th>
+                                  <th className="px-6 py-3 font-semibold text-right">Puntos</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-neutral-100">
+                                {(() => {
+                                  const cyclistPoints: Record<string, { 
+                                    puntos: number, 
+                                    jugador: string, 
+                                    nombreEquipo: string,
+                                    pais: string
+                                  }> = {};
+
+                                  leaderboard?.forEach(player => {
+                                    player.detalles.forEach(d => {
+                                      if (!cyclistPoints[d.ciclista]) {
+                                        cyclistPoints[d.ciclista] = { 
+                                          puntos: 0, 
+                                          jugador: player.jugador, 
+                                          nombreEquipo: player.nombreEquipo,
+                                          pais: cyclistMetadata[d.ciclista]?.pais || ''
+                                        };
+                                      }
+                                      cyclistPoints[d.ciclista].puntos += d.puntosObtenidos;
+                                    });
+                                  });
+
+                                  return Object.entries(cyclistPoints)
+                                    .sort((a, b) => b[1].puntos - a[1].puntos)
+                                    .slice(0, 50)
+                                    .map(([name, data], idx) => (
+                                      <tr key={name} className="hover:bg-neutral-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                          <span className={cn(
+                                            "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold",
+                                            idx === 0 ? "bg-yellow-100 text-yellow-700" :
+                                            idx === 1 ? "bg-neutral-200 text-neutral-600" :
+                                            idx === 2 ? "bg-orange-100 text-orange-700" :
+                                            "bg-neutral-100 text-neutral-500"
+                                          )}>
+                                            {idx + 1}
+                                          </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-bold text-neutral-900">{name}</td>
+                                        <td className="px-6 py-4 text-neutral-600">
+                                          {data.nombreEquipo === 'No draft' ? (
+                                            <span className="text-neutral-400 italic text-xs">No elegido</span>
+                                          ) : (
+                                            <span className="font-medium">{data.nombreEquipo}</span>
+                                          )}
+                                        </td>
+                                        <td className="px-6 py-4 text-lg">{data.pais}</td>
+                                        <td className="px-6 py-4 text-right font-black text-blue-600">
+                                          {data.puntos}
+                                        </td>
+                                      </tr>
+                                    ));
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </>
                   );
                 })()}
@@ -1754,6 +2287,116 @@ const getVal = (row: any, key: string) => {
                 })() : (
                   <div className="text-center py-12 text-neutral-500">
                     Selecciona un equipo para ver sus estadísticas y plantilla.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {publicTab === 'startlist' && (
+              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6 border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-neutral-900">Startlist Carrera</h2>
+                    <p className="text-sm text-neutral-500 mt-1">Lista de corredores inscritos para la próxima competición.</p>
+                  </div>
+                  <List className="w-6 h-6 text-blue-600" />
+                </div>
+
+                {!files.startlist.data ? (
+                  <div className="text-center py-20 text-neutral-500 italic">
+                    No hay startlist cargada actualmente.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider font-bold">
+                        <tr>
+                          <th className="px-4 py-3 w-16 text-center">BIB</th>
+                          <th className="px-4 py-3">Corredor</th>
+                          <th className="px-4 py-3 text-center">Ranking</th>
+                          <th className="px-4 py-3 text-center">PNT</th>
+                          <th className="px-4 py-3">Equipo</th>
+                          <th className="px-4 py-3">Información</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {files.startlist.data.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                            <td className="px-4 py-3 text-center font-mono text-neutral-400">{getVal(row, 'BIB')}</td>
+                            <td className="px-4 py-3 font-bold text-neutral-900">{getVal(row, 'CORREDOR')}</td>
+                            <td className="px-4 py-3 text-center text-neutral-600">{getVal(row, 'RANKING')}</td>
+                            <td className="px-4 py-3 text-center font-semibold text-blue-600">{getVal(row, 'PNT')}</td>
+                            <td className="px-4 py-3 text-neutral-600 text-xs">{getVal(row, 'EQUIPO')}</td>
+                            <td className="px-4 py-3 text-neutral-500 text-xs italic">{getVal(row, 'MOSTRAR MÁS')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {publicTab === 'draft' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-neutral-900">Resumen del Draft 2026</h2>
+                    <p className="text-sm text-neutral-500 mt-1">Distribución de ciclistas por equipo tras las elecciones.</p>
+                  </div>
+                  <LayoutGrid className="w-6 h-6 text-blue-600" />
+                </div>
+
+                {!files.elecciones.data ? (
+                  <div className="text-center py-20 text-neutral-500 italic">
+                    No hay datos del draft cargados.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {(() => {
+                      const teams: Record<string, any[]> = {};
+                      files.elecciones.data.forEach(row => {
+                        const teamName = getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG');
+                        if (teamName) {
+                          if (!teams[teamName]) teams[teamName] = [];
+                          teams[teamName].push(row);
+                        }
+                      });
+
+                      return Object.entries(teams)
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([teamName, cyclists]) => (
+                          <div key={teamName} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm hover:border-blue-200 transition-all">
+                            <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100 flex justify-between items-center">
+                              <h3 className="font-bold text-neutral-900 truncate">{teamName}</h3>
+                              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                {cyclists.length} CICLISTAS
+                              </span>
+                            </div>
+                            <div className="p-4 space-y-2">
+                              {cyclists
+                                .sort((a, b) => {
+                                  const rA = parseInt(getVal(a, 'Ronda')) || 0;
+                                  const rB = parseInt(getVal(b, 'Ronda')) || 0;
+                                  return rA - rB;
+                                })
+                                .map((c, idx) => (
+                                  <div key={idx} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-neutral-50 border border-transparent hover:border-neutral-100 transition-all">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-bold text-neutral-400 w-4">
+                                        {getVal(c, 'Ronda') || '-'}
+                                      </span>
+                                      <span className="font-medium text-neutral-800">{getVal(c, 'Ciclista')}</span>
+                                    </div>
+                                    <span className="text-lg" title={getVal(c, 'País')}>
+                                      {getFlagEmoji(getVal(c, 'País'))}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        ));
+                    })()}
                   </div>
                 )}
               </div>
