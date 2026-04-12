@@ -87,6 +87,13 @@ export default function App() {
   const [evolutionMode, setEvolutionMode] = useState<'acumulado' | 'mensual'>('acumulado');
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useState<string[]>([]);
   const [seasonSubTab, setSeasonSubTab] = useState<'puntos' | 'victorias' | 'ciclistas'>('puntos');
+  const [winsChartType, setWinsChartType] = useState<'acumulado' | 'mensual'>('acumulado');
+  const [historyMonthFilter, setHistoryMonthFilter] = useState<string>('all');
+  const [historyTeamFilter, setHistoryTeamFilter] = useState<string>('all');
+  const [topCyclistsLimit, setTopCyclistsLimit] = useState<number>(25);
+  const [cyclistsMonthFilter, setCyclistsMonthFilter] = useState<string>('all');
+  const [cyclistsSortColumn, setCyclistsSortColumn] = useState<string>('puntos');
+  const [cyclistsSortDirection, setCyclistsSortDirection] = useState<'asc' | 'desc'>('desc');
   
   // Info tab states
   const [infoSubTab, setInfoSubTab] = useState<'menu' | 'puntuaciones' | 'carreras'>('menu');
@@ -622,14 +629,23 @@ const getVal = (row: any, key: string) => {
   }, [files.resultados.data, files.carreras.data]);
 
   const raceWinners = React.useMemo(() => {
-    if (!leaderboard || !files.carreras.data) return {};
+    if (!leaderboard || !files.carreras.data || !files.resultados.data) return {};
     const winners: Record<string, string> = {};
     const races = files.carreras.data.map(r => getVal(r, 'Carrera')).filter(Boolean) as string[];
     
     races.forEach(race => {
+      // Check if race has a final classification
+      const hasFinalClassification = files.resultados.data?.some(r => 
+        getVal(r, 'Carrera') === race && 
+        getVal(r, 'Tipo')?.match(/Clasificación final/i)
+      );
+      
+      if (!hasFinalClassification) return;
+
       let maxPoints = 0;
       let winnerTeam = '';
       leaderboard.forEach(player => {
+        if (player.nombreEquipo === 'No draft' || player.nombreEquipo === 'No draft [99]') return;
         const pts = player.detalles.filter(d => d.carrera === race).reduce((sum, d) => sum + d.puntosObtenidos, 0);
         if (pts > maxPoints) {
           maxPoints = pts;
@@ -639,7 +655,7 @@ const getVal = (row: any, key: string) => {
       if (winnerTeam) winners[race] = winnerTeam;
     });
     return winners;
-  }, [leaderboard, files.carreras.data]);
+  }, [leaderboard, files.carreras.data, files.resultados.data]);
 
   const formattedTeams = React.useMemo(() => {
     if (!files.elecciones.data) return [];
@@ -1117,10 +1133,15 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                   
                   // Calculate wins per team (excluding No draft)
                   const teamWinsCount: Record<string, number> = {};
+                  filteredLeaderboard.forEach(p => {
+                    if (p.nombreEquipo !== 'No draft' && p.nombreEquipo !== 'No draft [99]') {
+                      teamWinsCount[p.nombreEquipo] = 0;
+                    }
+                  });
                   Object.values(raceWinners).forEach(teamName => {
                     const name = teamName as string;
-                    if (name !== 'No draft') {
-                      teamWinsCount[name] = (teamWinsCount[name] || 0) + 1;
+                    if (teamWinsCount[name] !== undefined) {
+                      teamWinsCount[name]++;
                     }
                   });
                   
@@ -1560,32 +1581,288 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               <Trophy className="w-5 h-5 text-yellow-500" />
                               Ranking de Victorias por Equipo
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {Object.entries(teamWinsCount)
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([teamName, wins], idx) => (
-                                  <div key={teamName} className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100">
-                                    <div className="flex items-center gap-3">
-                                      <div className={cn(
-                                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold",
-                                        idx === 0 ? "bg-yellow-100 text-yellow-700" : "bg-neutral-200 text-neutral-600"
-                                      )}>
-                                        {idx + 1}
-                                      </div>
-                                      <span className="font-semibold text-neutral-900">{teamName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-lg font-bold text-neutral-900">{wins}</span>
-                                      <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-                                    </div>
-                                  </div>
-                                ))}
+                            <div className="h-[500px] w-full mt-4">
+                              {(() => {
+                                const chartData = Object.entries(teamWinsCount)
+                                  .map(([name, wins]) => {
+                                    const teamInfo = filteredLeaderboard.find(p => p.nombreEquipo === name);
+                                    const displayName = teamInfo ? `${name} <${teamInfo.orden}>` : name;
+                                    return { name: displayName, wins };
+                                  })
+                                  .sort((a, b) => b.wins - a.wins);
+                                const maxChartWins = chartData.length > 0 ? chartData[0].wins : 0;
+                                
+                                return (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                      data={chartData}
+                                      layout="vertical"
+                                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f5f5f5" />
+                                      <XAxis type="number" allowDecimals={false} />
+                                      <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} interval={0} />
+                                      <Tooltip 
+                                        cursor={{fill: '#f5f5f5'}}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                      />
+                                      <Bar dataKey="wins" radius={[0, 4, 4, 0]} barSize={24}>
+                                        {chartData.map((entry, index) => (
+                                          <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={entry.wins > 0 && entry.wins === maxChartWins ? '#fbbf24' : '#3b82f6'} 
+                                          />
+                                        ))}
+                                        <LabelList dataKey="wins" position="right" fill="#737373" fontSize={12} />
+                                      </Bar>
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                );
+                              })()}
                             </div>
                           </div>
 
-                          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
+                          {/* Monthly Evolution Chart for Wins */}
+                          {(() => {
+                            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                            const currentMonthIdx = new Date().getMonth(); // 0-indexed
+                            
+                            const teamColors: Record<string, string> = {};
+                            filteredLeaderboard.forEach((team, idx) => {
+                              const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                              if (idx === 0) teamColors[teamKey] = '#fbbf24'; // Gold
+                              else if (idx === 1) teamColors[teamKey] = '#94a3b8'; // Silver
+                              else if (idx === 2) teamColors[teamKey] = '#fb923c'; // Bronze
+                              else teamColors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
+                            });
+
+                            const monthlyWinsEvolutionData = (() => {
+                              const dataByMonth: any[] = months.map(m => ({ month: m }));
+                              
+                              // First, map races to months
+                              const raceMonths: Record<string, number> = {};
+                              files.carreras.data?.forEach(r => {
+                                const carreraName = getVal(r, 'Carrera')?.trim();
+                                const fechaFin = getVal(r, 'Fecha');
+                                if (carreraName && fechaFin) {
+                                  const parts = fechaFin.split(/[-/]/);
+                                  if (parts.length >= 2) {
+                                    const monthIndex = parseInt(parts[1]) - 1;
+                                    raceMonths[carreraName] = monthIndex;
+                                  }
+                                }
+                              });
+                              
+                              filteredLeaderboard.forEach(team => {
+                                const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                                
+                                // Skip if not selected (if any are selected)
+                                if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) {
+                                  return;
+                                }
+
+                                let accumulated = 0;
+                                
+                                months.forEach((m, mIdx) => {
+                                  // Count wins for this team in this month
+                                  let monthWins = 0;
+                                  Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
+                                    if (winnerTeam === team.nombreEquipo && raceMonths[raceName] === mIdx) {
+                                      monthWins++;
+                                    }
+                                  });
+                                  
+                                  if (winsChartType === 'acumulado') {
+                                    accumulated += monthWins;
+                                    dataByMonth[mIdx][teamKey] = accumulated;
+                                  } else {
+                                    dataByMonth[mIdx][teamKey] = monthWins;
+                                  }
+                                });
+                              });
+                              
+                              // Filter out months with no data AND future months
+                              return dataByMonth.filter((m, idx) => {
+                                const hasData = Object.keys(m).some(key => key !== 'month' && m[key] > 0);
+                                return hasData && idx <= currentMonthIdx;
+                              });
+                            })();
+
+                            return (
+                              <div className="mt-12">
+                                <div className="flex items-center justify-between border-b pb-3 mb-6">
+                                  <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                                    Evolución Mensual de Victorias
+                                  </h3>
+                                  <div className="flex bg-neutral-100 p-1 rounded-lg">
+                                    <button 
+                                      onClick={() => setWinsChartType('acumulado')}
+                                      className={cn(
+                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                        winsChartType === 'acumulado' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                      )}
+                                    >
+                                      Acumulado
+                                    </button>
+                                    <button 
+                                      onClick={() => setWinsChartType('mensual')}
+                                      className={cn(
+                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                        winsChartType === 'mensual' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                      )}
+                                    >
+                                      Mensual
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+                                  {/* Team Selector */}
+                                  <div className="mb-6 pb-6 border-b border-neutral-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <p className="text-sm font-bold text-neutral-700">Filtrar Equipos:</p>
+                                      <div className="flex gap-2">
+                                        <button 
+                                          onClick={() => setSelectedEvolutionTeams([])}
+                                          className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                        >
+                                          Mostrar Todos
+                                        </button>
+                                        <button 
+                                          onClick={() => setSelectedEvolutionTeams(filteredLeaderboard.map(t => `${t.nombreEquipo} <${t.orden}>`))}
+                                          className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
+                                        >
+                                          Seleccionar Todos
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {filteredLeaderboard.map((team, idx) => {
+                                        const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                                        const isSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(teamKey);
+                                        const color = teamColors[teamKey];
+                                        
+                                        return (
+                                          <button
+                                            key={teamKey}
+                                            onClick={() => {
+                                              if (selectedEvolutionTeams.includes(teamKey)) {
+                                                setSelectedEvolutionTeams(selectedEvolutionTeams.filter(t => t !== teamKey));
+                                              } else {
+                                                setSelectedEvolutionTeams([...selectedEvolutionTeams, teamKey]);
+                                              }
+                                            }}
+                                            className={cn(
+                                              "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                                              isSelected 
+                                                ? "bg-white shadow-sm" 
+                                                : "bg-neutral-50 text-neutral-400 border-transparent hover:bg-neutral-100"
+                                            )}
+                                            style={{ 
+                                              borderColor: isSelected ? color : 'transparent',
+                                              color: isSelected ? color : undefined
+                                            }}
+                                          >
+                                            {team.nombreEquipo}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  <div className="h-[400px] w-full">
+                                    {monthlyWinsEvolutionData.length > 0 ? (
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={monthlyWinsEvolutionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+                                          <XAxis 
+                                            dataKey="month" 
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                            dy={10}
+                                          />
+                                          <YAxis 
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 12, fill: '#94a3b8' }}
+                                            allowDecimals={false}
+                                          />
+                                          <Tooltip 
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                            labelStyle={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}
+                                          />
+                                          <Legend 
+                                            wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+                                            iconType="circle"
+                                          />
+                                          {filteredLeaderboard.map((team) => {
+                                            const teamKey = `${team.nombreEquipo} <${team.orden}>`;
+                                            if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return null;
+                                            
+                                            return (
+                                              <Line 
+                                                key={teamKey}
+                                                type="monotone" 
+                                                dataKey={teamKey} 
+                                                stroke={teamColors[teamKey]} 
+                                                strokeWidth={3}
+                                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                                activeDot={{ r: 6, strokeWidth: 0 }}
+                                              />
+                                            );
+                                          })}
+                                        </LineChart>
+                                      </ResponsiveContainer>
+                                    ) : (
+                                      <div className="h-full flex items-center justify-center text-neutral-400 text-sm">
+                                        No hay datos de victorias para mostrar en los meses transcurridos.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12">
+                            <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                               <h3 className="font-bold text-neutral-800">Historial de Ganadores por Carrera</h3>
+                              <div className="flex gap-2">
+                                <select 
+                                  value={historyTeamFilter}
+                                  onChange={(e) => setHistoryTeamFilter(e.target.value)}
+                                  className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                  <option value="all">Todos los equipos</option>
+                                  {[...filteredLeaderboard]
+                                    .sort((a, b) => a.nombreEquipo.localeCompare(b.nombreEquipo))
+                                    .map(t => (
+                                    <option key={t.nombreEquipo} value={t.nombreEquipo}>{t.nombreEquipo}</option>
+                                  ))}
+                                </select>
+                                <select 
+                                  value={historyMonthFilter}
+                                  onChange={(e) => setHistoryMonthFilter(e.target.value)}
+                                  className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                  <option value="all">Todos los meses</option>
+                                  <option value="0">Enero</option>
+                                  <option value="1">Febrero</option>
+                                  <option value="2">Marzo</option>
+                                  <option value="3">Abril</option>
+                                  <option value="4">Mayo</option>
+                                  <option value="5">Junio</option>
+                                  <option value="6">Julio</option>
+                                  <option value="7">Agosto</option>
+                                  <option value="8">Septiembre</option>
+                                  <option value="9">Octubre</option>
+                                  <option value="10">Noviembre</option>
+                                  <option value="11">Diciembre</option>
+                                </select>
+                              </div>
                             </div>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm text-left">
@@ -1593,24 +1870,76 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <tr>
                                     <th className="px-6 py-3 font-semibold">Carrera</th>
                                     <th className="px-6 py-3 font-semibold text-right">Equipo Ganador</th>
+                                    <th className="px-6 py-3 font-semibold text-right">Puntos</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-100">
-                                  {uniqueRaces.map(race => (
-                                    <tr key={race} className="hover:bg-neutral-50 transition-colors">
-                                      <td className="px-6 py-4 font-medium text-neutral-900">{race}</td>
-                                      <td className="px-6 py-4 text-right">
-                                        {raceWinners[race] ? (
-                                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 font-bold text-xs border border-yellow-100">
-                                            <Trophy className="w-3 h-3" />
-                                            {raceWinners[race]}
-                                          </span>
-                                        ) : (
-                                          <span className="text-neutral-400 italic">Sin resultados</span>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {(() => {
+                                    // First, map races to months
+                                    const raceMonths: Record<string, number> = {};
+                                    files.carreras.data?.forEach(r => {
+                                      const carreraName = getVal(r, 'Carrera')?.trim();
+                                      const fechaFin = getVal(r, 'Fecha');
+                                      if (carreraName && fechaFin) {
+                                        const parts = fechaFin.split(/[-/]/);
+                                        if (parts.length >= 2) {
+                                          const monthIndex = parseInt(parts[1]) - 1;
+                                          raceMonths[carreraName] = monthIndex;
+                                        }
+                                      }
+                                    });
+
+                                    const filteredRaces = uniqueRaces.filter(race => {
+                                      const monthMatch = historyMonthFilter === 'all' || raceMonths[race] === parseInt(historyMonthFilter);
+                                      const teamMatch = historyTeamFilter === 'all' || raceWinners[race] === historyTeamFilter;
+                                      return monthMatch && teamMatch;
+                                    });
+
+                                    if (filteredRaces.length === 0) {
+                                      return (
+                                        <tr>
+                                          <td colSpan={3} className="px-6 py-8 text-center text-neutral-500">
+                                            No hay carreras que coincidan con los filtros.
+                                          </td>
+                                        </tr>
+                                      );
+                                    }
+
+                                    return filteredRaces.map(race => {
+                                      const winnerTeamName = raceWinners[race];
+                                      let winnerDisplayName = winnerTeamName;
+                                      let winnerPoints = 0;
+                                      
+                                      if (winnerTeamName) {
+                                        const teamInfo = filteredLeaderboard.find(p => p.nombreEquipo === winnerTeamName);
+                                        if (teamInfo) {
+                                          winnerDisplayName = `${winnerTeamName} <${teamInfo.orden}>`;
+                                          winnerPoints = teamInfo.detalles
+                                            .filter(d => d.carrera === race)
+                                            .reduce((sum, d) => sum + d.puntosObtenidos, 0);
+                                        }
+                                      }
+
+                                      return (
+                                        <tr key={race} className="hover:bg-neutral-50 transition-colors">
+                                          <td className="px-6 py-4 font-medium text-neutral-900">{race}</td>
+                                          <td className="px-6 py-4 text-right">
+                                            {winnerTeamName ? (
+                                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 font-bold text-xs border border-yellow-100">
+                                                <Trophy className="w-3 h-3" />
+                                                {winnerDisplayName}
+                                              </span>
+                                            ) : (
+                                              <span className="text-neutral-400 italic">Sin resultados</span>
+                                            )}
+                                          </td>
+                                          <td className="px-6 py-4 text-right font-semibold text-neutral-700">
+                                            {winnerTeamName ? winnerPoints : '-'}
+                                          </td>
+                                        </tr>
+                                      );
+                                    });
+                                  })()}
                                 </tbody>
                               </table>
                             </div>
@@ -1620,77 +1949,294 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                       {seasonSubTab === 'ciclistas' && (
                         <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-                          <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
+                          <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                               <h3 className="font-bold text-neutral-800">Top Ciclistas por Puntuación</h3>
                               <p className="text-xs text-neutral-500 mt-0.5">Ranking individual de todos los corredores con puntos.</p>
                             </div>
-                            <Users className="w-5 h-5 text-blue-600" />
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <select 
+                                value={cyclistsMonthFilter}
+                                onChange={(e) => setCyclistsMonthFilter(e.target.value)}
+                                className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                              >
+                                <option value="all">Todos los meses</option>
+                                <option value="0">Enero</option>
+                                <option value="1">Febrero</option>
+                                <option value="2">Marzo</option>
+                                <option value="3">Abril</option>
+                                <option value="4">Mayo</option>
+                                <option value="5">Junio</option>
+                                <option value="6">Julio</option>
+                                <option value="7">Agosto</option>
+                                <option value="8">Septiembre</option>
+                                <option value="9">Octubre</option>
+                                <option value="10">Noviembre</option>
+                                <option value="11">Diciembre</option>
+                              </select>
+                              <div className="flex bg-neutral-100 p-1 rounded-lg">
+                                <button 
+                                  onClick={() => setTopCyclistsLimit(25)}
+                                  className={cn(
+                                    "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                    topCyclistsLimit === 25 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                  )}
+                                >
+                                  Top 25
+                                </button>
+                                <button 
+                                  onClick={() => setTopCyclistsLimit(50)}
+                                  className={cn(
+                                    "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                    topCyclistsLimit === 50 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                  )}
+                                >
+                                  Top 50
+                                </button>
+                                <button 
+                                  onClick={() => setTopCyclistsLimit(100)}
+                                  className={cn(
+                                    "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                                    topCyclistsLimit === 100 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                                  )}
+                                >
+                                  Top 100
+                                </button>
+                              </div>
+                            </div>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                               <thead className="text-xs text-neutral-500 uppercase bg-neutral-50">
                                 <tr>
-                                  <th className="px-6 py-3 font-semibold">Pos</th>
-                                  <th className="px-6 py-3 font-semibold">Ciclista</th>
-                                  <th className="px-6 py-3 font-semibold">Equipo Fantasy</th>
-                                  <th className="px-6 py-3 font-semibold">País</th>
-                                  <th className="px-6 py-3 font-semibold text-right">Puntos</th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'pos') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('pos'); setCyclistsSortDirection('asc'); } }}>
+                                    <div className="flex items-center gap-1">Pos {cyclistsSortColumn === 'pos' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'nombre') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('nombre'); setCyclistsSortDirection('asc'); } }}>
+                                    <div className="flex items-center gap-1">Ciclista {cyclistsSortColumn === 'nombre' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'equipo') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('equipo'); setCyclistsSortDirection('asc'); } }}>
+                                    <div className="flex items-center gap-1">Equipo {cyclistsSortColumn === 'equipo' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'pais') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('pais'); setCyclistsSortDirection('asc'); } }}>
+                                    <div className="flex items-center gap-1">País {cyclistsSortColumn === 'pais' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'victorias') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('victorias'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-center gap-1">Victorias {cyclistsSortColumn === 'victorias' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'carreras') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('carreras'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-center gap-1">Carreras {cyclistsSortColumn === 'carreras' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" title="Días de competición" onClick={() => { if (cyclistsSortColumn === 'dias') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('dias'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-center gap-1">Días {cyclistsSortColumn === 'dias' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" title="Puntos por carrera" onClick={() => { if (cyclistsSortColumn === 'ppc') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('ppc'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-center gap-1">P/C {cyclistsSortColumn === 'ppc' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" title="Puntos por día de competición" onClick={() => { if (cyclistsSortColumn === 'ppd') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('ppd'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-center gap-1">P/D {cyclistsSortColumn === 'ppd' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
+                                  <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (cyclistsSortColumn === 'puntos') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('puntos'); setCyclistsSortDirection('desc'); } }}>
+                                    <div className="flex items-center justify-end gap-1">Puntos {cyclistsSortColumn === 'puntos' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-neutral-100">
                                 {(() => {
-                                  const cyclistPoints: Record<string, { 
+                                  const cyclistStats: Record<string, { 
                                     puntos: number, 
                                     jugador: string, 
                                     nombreEquipo: string,
-                                    pais: string
+                                    orden: string,
+                                    ronda: string,
+                                    pais: string,
+                                    victorias: number,
+                                    carreras: Set<string>,
+                                    dias: number
                                   }> = {};
+
+                                  // First, map races to months
+                                  const raceMonths: Record<string, number> = {};
+                                  files.carreras.data?.forEach(r => {
+                                    const carreraName = getVal(r, 'Carrera')?.trim();
+                                    const fechaFin = getVal(r, 'Fecha');
+                                    if (carreraName && fechaFin) {
+                                      const parts = fechaFin.split(/[-/]/);
+                                      if (parts.length >= 2) {
+                                        const monthIndex = parseInt(parts[1]) - 1;
+                                        raceMonths[carreraName] = monthIndex;
+                                      }
+                                    }
+                                  });
 
                                   leaderboard?.forEach(player => {
                                     player.detalles.forEach(d => {
-                                      if (!cyclistPoints[d.ciclista]) {
-                                        cyclistPoints[d.ciclista] = { 
+                                      // Apply month filter
+                                      if (cyclistsMonthFilter !== 'all' && raceMonths[d.carrera] !== parseInt(cyclistsMonthFilter)) {
+                                        return;
+                                      }
+
+                                      if (!cyclistStats[d.ciclista]) {
+                                        cyclistStats[d.ciclista] = { 
                                           puntos: 0, 
                                           jugador: player.jugador, 
                                           nombreEquipo: player.nombreEquipo,
-                                          pais: cyclistMetadata[d.ciclista]?.pais || ''
+                                          orden: player.orden,
+                                          ronda: d.ronda,
+                                          pais: cyclistMetadata[d.ciclista]?.pais || '',
+                                          victorias: 0,
+                                          carreras: new Set(),
+                                          dias: 0
                                         };
                                       }
-                                      cyclistPoints[d.ciclista].puntos += d.puntosObtenidos;
+                                      
+                                      const stats = cyclistStats[d.ciclista];
+                                      stats.puntos += d.puntosObtenidos;
+                                      stats.carreras.add(d.carrera);
+                                      
+                                      // Check if this result is a win (1st place)
+                                      const isPos01 = d.posicion === '01' || d.posicion === '1';
+                                      const isValidType = [
+                                        'Etapa', 
+                                        'Etapa (Crono equipos)', 
+                                        'Clasificación final', 
+                                        'Clasificación final (Crono equipos)',
+                                        'Clásica'
+                                      ].includes(d.tipoResultado);
+                                      
+                                      if (isPos01 && isValidType) {
+                                        stats.victorias += 1;
+                                      }
+                                      
+                                      // Get race days from carreras data
+                                      const raceData = files.carreras.data?.find(r => getVal(r, 'Carrera')?.trim() === d.carrera);
+                                      if (raceData) {
+                                        const diasStr = getVal(raceData, 'Días');
+                                        if (diasStr) {
+                                          stats.dias += parseInt(diasStr) || 1;
+                                        } else {
+                                          stats.dias += 1; // Default to 1 day if not specified
+                                        }
+                                      } else {
+                                        stats.dias += 1;
+                                      }
                                     });
                                   });
 
-                                  return Object.entries(cyclistPoints)
+                                  const allStats = Object.entries(cyclistStats)
                                     .sort((a, b) => b[1].puntos - a[1].puntos)
-                                    .slice(0, 50)
-                                    .map(([name, data], idx) => (
+                                    .map(([name, data], index) => {
+                                      const numCarreras = data.carreras.size;
+                                      const ppc = numCarreras > 0 ? parseFloat((data.puntos / numCarreras).toFixed(1)) : 0;
+                                      const ppd = data.dias > 0 ? parseFloat((data.puntos / data.dias).toFixed(1)) : 0;
+                                      return { name, data, numCarreras, ppc, ppd, originalPos: index + 1 };
+                                    });
+
+                                  // Sort the array
+                                  allStats.sort((a, b) => {
+                                    let valA: any, valB: any;
+                                    switch (cyclistsSortColumn) {
+                                      case 'pos': valA = a.originalPos; valB = b.originalPos; break;
+                                      case 'nombre': valA = a.name; valB = b.name; break;
+                                      case 'equipo': valA = a.data.nombreEquipo; valB = b.data.nombreEquipo; break;
+                                      case 'pais': valA = a.data.pais; valB = b.data.pais; break;
+                                      case 'victorias': valA = a.data.victorias; valB = b.data.victorias; break;
+                                      case 'carreras': valA = a.numCarreras; valB = b.numCarreras; break;
+                                      case 'dias': valA = a.data.dias; valB = b.data.dias; break;
+                                      case 'ppc': valA = a.ppc; valB = b.ppc; break;
+                                      case 'ppd': valA = a.ppd; valB = b.ppd; break;
+                                      case 'puntos': default: valA = a.data.puntos; valB = b.data.puntos; break;
+                                    }
+                                    
+                                    if (typeof valA === 'string' && typeof valB === 'string') {
+                                      return cyclistsSortDirection === 'asc' 
+                                        ? valA.localeCompare(valB) 
+                                        : valB.localeCompare(valA);
+                                    }
+                                    
+                                    if (valA < valB) return cyclistsSortDirection === 'asc' ? -1 : 1;
+                                    if (valA > valB) return cyclistsSortDirection === 'asc' ? 1 : -1;
+                                    return 0;
+                                  });
+
+                                  const sortedStats = allStats.slice(0, topCyclistsLimit);
+
+                                  let maxVictorias = 0;
+                                  let maxCarreras = 0, minCarreras = Infinity;
+                                  let maxDias = 0, minDias = Infinity;
+                                  let maxPpc = 0, minPpc = Infinity;
+                                  let maxPpd = 0, minPpd = Infinity;
+                                  let maxPuntos = 0, minPuntos = Infinity;
+
+                                  if (sortedStats.length > 0) {
+                                    maxPuntos = sortedStats[0].data.puntos;
+                                    minPuntos = sortedStats[sortedStats.length - 1].data.puntos;
+                                    
+                                    sortedStats.forEach(s => {
+                                      if (s.data.victorias > maxVictorias) maxVictorias = s.data.victorias;
+                                      if (s.numCarreras > maxCarreras) maxCarreras = s.numCarreras;
+                                      if (s.numCarreras < minCarreras) minCarreras = s.numCarreras;
+                                      if (s.data.dias > maxDias) maxDias = s.data.dias;
+                                      if (s.data.dias < minDias) minDias = s.data.dias;
+                                      if (s.ppc > maxPpc) maxPpc = s.ppc;
+                                      if (s.ppc < minPpc) minPpc = s.ppc;
+                                      if (s.ppd > maxPpd) maxPpd = s.ppd;
+                                      if (s.ppd < minPpd) minPpd = s.ppd;
+                                    });
+                                  }
+
+                                  const getColorClass = (val: number, max: number, min: number, isZeroRed: boolean = false) => {
+                                    if (isZeroRed && val === 0) return "text-red-600 font-bold";
+                                    if (val === max && max > 0) return "text-green-600 font-bold";
+                                    if (val === min && min < max && !isZeroRed) return "text-yellow-600 font-bold";
+                                    return "text-neutral-700";
+                                  };
+
+                                  const getPuntosColor = (puntos: number) => {
+                                    if (maxPuntos === minPuntos) return 'hsl(120, 70%, 40%)';
+                                    const ratio = (puntos - minPuntos) / (maxPuntos - minPuntos);
+                                    const hue = 45 + ratio * 75; // 45 (yellow/orange) to 120 (green)
+                                    return `hsl(${hue}, 80%, 40%)`;
+                                  };
+
+                                  return sortedStats.map((s, idx) => {
+                                    const { name, data, numCarreras, ppc, ppd, originalPos } = s;
+
+                                    return (
                                       <tr key={name} className="hover:bg-neutral-50 transition-colors">
                                         <td className="px-6 py-4">
                                           <span className={cn(
                                             "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold",
-                                            idx === 0 ? "bg-yellow-100 text-yellow-700" :
-                                            idx === 1 ? "bg-neutral-200 text-neutral-600" :
-                                            idx === 2 ? "bg-orange-100 text-orange-700" :
+                                            originalPos === 1 ? "bg-yellow-100 text-yellow-700" :
+                                            originalPos === 2 ? "bg-neutral-200 text-neutral-600" :
+                                            originalPos === 3 ? "bg-orange-100 text-orange-700" :
                                             "bg-neutral-100 text-neutral-500"
                                           )}>
-                                            {idx + 1}
+                                            {originalPos}
                                           </span>
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-neutral-900">{name}</td>
-                                        <td className="px-6 py-4 text-neutral-600">
+                                        <td className="px-6 py-4 font-bold text-neutral-900 whitespace-nowrap">
+                                          {name} <span className="text-neutral-400 font-normal text-xs">&lt;{data.ronda || '-'}&gt;</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-neutral-600 whitespace-nowrap">
                                           {data.nombreEquipo === 'No draft' ? (
                                             <span className="text-neutral-400 italic text-xs">No elegido</span>
                                           ) : (
-                                            <span className="font-medium">{data.nombreEquipo}</span>
+                                            <span className="font-medium">{data.nombreEquipo} <span className="text-neutral-400 font-normal text-xs">[#{data.orden}]</span></span>
                                           )}
                                         </td>
                                         <td className="px-6 py-4 text-lg">{data.pais}</td>
-                                        <td className="px-6 py-4 text-right font-black text-blue-600">
+                                        <td className={cn("px-6 py-4 text-center", getColorClass(data.victorias, maxVictorias, 0, true))}>{data.victorias}</td>
+                                        <td className={cn("px-6 py-4 text-center", getColorClass(numCarreras, maxCarreras, minCarreras))}>{numCarreras}</td>
+                                        <td className={cn("px-6 py-4 text-center", getColorClass(data.dias, maxDias, minDias))}>{data.dias}</td>
+                                        <td className={cn("px-6 py-4 text-center", getColorClass(ppc, maxPpc, minPpc))}>{ppc.toFixed(1)}</td>
+                                        <td className={cn("px-6 py-4 text-center", getColorClass(ppd, maxPpd, minPpd))}>{ppd.toFixed(1)}</td>
+                                        <td className="px-6 py-4 text-right font-black" style={{ color: getPuntosColor(data.puntos) }}>
                                           {data.puntos}
                                         </td>
                                       </tr>
-                                    ));
+                                    );
+                                  });
                                 })()}
                               </tbody>
                             </table>
@@ -1903,7 +2449,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100">
-                              {raceTeams.map((team, idx) => (
+                              {raceTeams.filter(t => t.nombreEquipo !== 'No draft' && t.nombreEquipo !== 'No draft [99]').map((team, idx) => (
                                 <tr key={team.jugador} className="hover:bg-neutral-50 transition-colors">
                                   <td className="px-4 py-3 text-center font-medium text-lg">
                                     {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : <span className="text-sm text-neutral-400">{idx + 1}</span>}
@@ -2053,7 +2599,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               c.concepts.push(d);
                             });
                             
-                            const sortedCyclists = Array.from(cyclistMap.entries()).sort((a, b) => b[1].total - a[1].total);
+                            const sortedCyclists = Array.from(cyclistMap.entries())
+                              .filter(([_, data]) => team.jugador !== 'No draft' || data.total > 0)
+                              .sort((a, b) => b[1].total - a[1].total);
 
                             return (
                               <div key={team.jugador} className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">
@@ -2074,7 +2622,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           {data.total > 0 ? `+${data.total}` : '0'}
                                         </span>
                                       </div>
-                                      {data.concepts.filter(c => c.puntosObtenidos > 0).map((c, cIdx) => (
+                                      {data.concepts.filter(c => c.puntosObtenidos > 0 || data.total === 0).map((c, cIdx) => (
                                         <div key={cIdx} className="flex justify-between items-center text-xs text-neutral-500 pl-2 border-l-2 border-neutral-100 mt-1">
                                           <span>{c.tipoResultado} - Pos: {c.posicion}</span>
                                           <span>+{c.puntosObtenidos}</span>
@@ -2247,8 +2795,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <th className="px-3 py-3 text-center font-semibold">Vict.</th>
                                 <th className="px-3 py-3 text-center font-semibold">Carr.</th>
                                 <th className="px-3 py-3 text-center font-semibold">Días</th>
-                                <th className="px-3 py-3 text-right font-semibold">P/C</th>
-                                <th className="px-3 py-3 text-right font-semibold">P/D</th>
+                                <th className="px-3 py-3 text-right font-semibold" title="Puntos por carrera disputada">P/C</th>
+                                <th className="px-3 py-3 text-right font-semibold" title="Puntos por día de competición">P/D</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100">
@@ -2536,9 +3084,19 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               const races = files.carreras.data?.map(r => r.Carrera) || [];
                               races.forEach(race => {
                                 if (!race) return;
+                                
+                                // Check if race has a final classification
+                                const hasFinalClassification = files.resultados.data?.some(r => 
+                                  getVal(r, 'Carrera') === race && 
+                                  getVal(r, 'Tipo')?.match(/Clasificación final/i)
+                                );
+                                
+                                if (!hasFinalClassification) return;
+
                                 let maxPoints = 0;
                                 let winner = '';
                                 leaderboard.forEach(player => {
+                                  if (player.nombreEquipo === 'No draft' || player.nombreEquipo === 'No draft [99]') return;
                                   const pts = player.detalles.filter(d => d.carrera === race).reduce((sum, d) => sum + d.puntosObtenidos, 0);
                                   if (pts > maxPoints) {
                                     maxPoints = pts;
