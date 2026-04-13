@@ -1390,10 +1390,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <BarChart3 className="w-5 h-5 text-blue-600" />
                                 Clasificación General
                               </h3>
-                              <div className="flex items-center gap-2">
+                              <div className="copy-button-ignore flex items-center gap-2">
                                 <button
                                   onClick={() => setIsChartExpanded(true)}
-                                  className="copy-button-ignore flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                                   title="Ampliar gráfico"
                                 >
                                   <Maximize2 className="w-4 h-4" />
@@ -1402,10 +1402,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   onClick={handleCopyChart}
                                   disabled={isCopying}
                                   className={cn(
-                                    "copy-button-ignore flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
                                     isCopying 
                                       ? "bg-green-50 text-green-600 border border-green-200" 
-                                      : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                      : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
                                   )}
                                   title={isCopying ? "Copiado" : "Copiar gráfico como imagen"}
                                 >
@@ -1417,7 +1417,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </button>
                                 <button
                                   onClick={handleDownloadChart}
-                                  className="copy-button-ignore flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                                   title="Descargar gráfico como imagen"
                                 >
                                   <UploadCloud className="w-4 h-4 rotate-180" />
