@@ -124,8 +124,42 @@ export default function App() {
   const [noDraftUndebutedCyclistsSortDirection, setNoDraftUndebutedCyclistsSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const chartRef = useRef<HTMLDivElement>(null);
+  const topTeamsTableRef = useRef<HTMLDivElement>(null);
+  const evolutionChartRef = useRef<HTMLDivElement>(null);
+  const winsRankingRef = useRef<HTMLDivElement>(null);
+  const winsEvolutionRef = useRef<HTMLDivElement>(null);
+  const winsHistoryRef = useRef<HTMLDivElement>(null);
+  const raceClassificationTableRef = useRef<HTMLDivElement>(null);
+  const cyclistsTableRef = useRef<HTMLDivElement>(null);
+  const stageTableRef = useRef<HTMLDivElement>(null);
+  const pointsTableRef = useRef<HTMLDivElement>(null);
+  const racesTableRef = useRef<HTMLDivElement>(null);
+  
   const [isCopying, setIsCopying] = useState(false);
+  const [isTopTeamsTableCopying, setIsTopTeamsTableCopying] = useState(false);
+  const [isEvolutionChartCopying, setIsEvolutionChartCopying] = useState(false);
+  const [isWinsRankingCopying, setIsWinsRankingCopying] = useState(false);
+  const [isWinsEvolutionCopying, setIsWinsEvolutionCopying] = useState(false);
+  const [isWinsHistoryCopying, setIsWinsHistoryCopying] = useState(false);
+  const [isRaceClassificationCopying, setIsRaceClassificationCopying] = useState(false);
+  const [isCyclistsCopying, setIsCyclistsCopying] = useState(false);
+  const [isStageCopying, setIsStageCopying] = useState(false);
+  const [isPointsTextCopying, setIsPointsTextCopying] = useState(false);
+  const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
+  const [isRacesTextCopying, setIsRacesTextCopying] = useState(false);
+  const [isRacesImageCopying, setIsRacesImageCopying] = useState(false);
+  
   const [isChartExpanded, setIsChartExpanded] = useState(false);
+  const [isTopTeamsTableExpanded, setIsTopTeamsTableExpanded] = useState(false);
+  const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = useState(false);
+  const [isWinsRankingExpanded, setIsWinsRankingExpanded] = useState(false);
+  const [isWinsEvolutionExpanded, setIsWinsEvolutionExpanded] = useState(false);
+  const [isWinsHistoryExpanded, setIsWinsHistoryExpanded] = useState(false);
+  const [isRaceClassificationExpanded, setIsRaceClassificationExpanded] = useState(false);
+  const [isCyclistsExpanded, setIsCyclistsExpanded] = useState(false);
+  const [isStageExpanded, setIsStageExpanded] = useState(false);
+  const [isPointsExpanded, setIsPointsExpanded] = useState(false);
+  const [isRacesExpanded, setIsRacesExpanded] = useState(false);
 
   const [teamCyclistsSortColumn, setTeamCyclistsSortColumn] = useState<string>('puntos');
   const [teamCyclistsSortDirection, setTeamCyclistsSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -135,6 +169,8 @@ export default function App() {
   const [pointsCategoryFilter, setPointsCategoryFilter] = useState<string>('');
   const [pointsRaceSearch, setPointsRaceSearch] = useState<string>('');
   const [racesFilter, setRacesFilter] = useState<'all' | 'finished' | 'upcoming'>('all');
+  const [racesCategoryFilter, setRacesCategoryFilter] = useState<string>('');
+  const [racesMonthFilter, setRacesMonthFilter] = useState<string>('');
   const [files, setFiles] = useState<AppState>({
     carreras: { file: null, data: null, error: null, loading: true },
     ciclistas: { file: null, data: null, error: null, loading: true },
@@ -445,6 +481,506 @@ export default function App() {
     } catch (err) {
       console.error('Error downloading chart:', err);
     }
+  };
+
+  const handleCopyTopTeamsTable = async () => {
+    if (!topTeamsTableRef.current || isTopTeamsTableCopying) return;
+    
+    setIsTopTeamsTableCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(topTeamsTableRef.current!, {
+              scale: 2,
+              filter: (node) => {
+                if (node instanceof Element) {
+                  return !node.classList.contains('copy-button-ignore');
+                }
+                return true;
+              }
+            });
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            return blob;
+          })() as Promise<Blob>
+        });
+
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsTopTeamsTableCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsTopTeamsTableCopying(false);
+      handleDownloadTopTeamsTable();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadTopTeamsTable = async () => {
+    if (!topTeamsTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(topTeamsTableRef.current, {
+        scale: 2,
+        filter: (node) => {
+          if (node instanceof Element) {
+            return !node.classList.contains('copy-button-ignore');
+          }
+          return true;
+        }
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'top-equipos-puntuacion.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyEvolutionChart = async () => {
+    if (!evolutionChartRef.current || isEvolutionChartCopying) return;
+    
+    setIsEvolutionChartCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
+              scale: 2,
+              filter: (node) => {
+                if (node instanceof Element) {
+                  return !node.classList.contains('copy-button-ignore');
+                }
+                return true;
+              }
+            });
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            return blob;
+          })() as Promise<Blob>
+        });
+
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsEvolutionChartCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying chart:', err);
+      setIsEvolutionChartCopying(false);
+      handleDownloadEvolutionChart();
+      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadEvolutionChart = async () => {
+    if (!evolutionChartRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(evolutionChartRef.current, {
+        scale: 2,
+        filter: (node) => {
+          if (node instanceof Element) {
+            return !node.classList.contains('copy-button-ignore');
+          }
+          return true;
+        }
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'evolucion-mensual.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading chart:', err);
+    }
+  };
+
+  const handleCopyWinsRanking = async () => {
+    if (!winsRankingRef.current || isWinsRankingCopying) return;
+    setIsWinsRankingCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(winsRankingRef.current!, {
+              scale: 2,
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsWinsRankingCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying chart:', err);
+      setIsWinsRankingCopying(false);
+      handleDownloadWinsRanking();
+      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadWinsRanking = async () => {
+    if (!winsRankingRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(winsRankingRef.current, {
+        scale: 2,
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'ranking-victorias.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading chart:', err);
+    }
+  };
+
+  const handleCopyWinsEvolution = async () => {
+    if (!winsEvolutionRef.current || isWinsEvolutionCopying) return;
+    setIsWinsEvolutionCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
+              scale: 2,
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsWinsEvolutionCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying chart:', err);
+      setIsWinsEvolutionCopying(false);
+      handleDownloadWinsEvolution();
+      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadWinsEvolution = async () => {
+    if (!winsEvolutionRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(winsEvolutionRef.current, {
+        scale: 2,
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'evolucion-victorias.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading chart:', err);
+    }
+  };
+
+  const handleCopyWinsHistory = async () => {
+    if (!winsHistoryRef.current || isWinsHistoryCopying) return;
+    setIsWinsHistoryCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(winsHistoryRef.current!, {
+              scale: 2,
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsWinsHistoryCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsWinsHistoryCopying(false);
+      handleDownloadWinsHistory();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadWinsHistory = async () => {
+    if (!winsHistoryRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(winsHistoryRef.current, {
+        scale: 2,
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'historial-ganadores.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyRaceClassification = async () => {
+    if (!raceClassificationTableRef.current || isRaceClassificationCopying) return;
+    setIsRaceClassificationCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(raceClassificationTableRef.current!, {
+              scale: 2,
+              style: { overflow: 'hidden' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsRaceClassificationCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsRaceClassificationCopying(false);
+      handleDownloadRaceClassification();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadRaceClassification = async () => {
+    if (!raceClassificationTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(raceClassificationTableRef.current, {
+        scale: 2,
+        style: { overflow: 'hidden' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'clasificacion-carrera.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyCyclists = async () => {
+    if (!cyclistsTableRef.current || isCyclistsCopying) return;
+    setIsCyclistsCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, {
+              scale: 2,
+              style: { overflow: 'hidden' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsCyclistsCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsCyclistsCopying(false);
+      handleDownloadCyclists();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadCyclists = async () => {
+    if (!cyclistsTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(cyclistsTableRef.current, {
+        scale: 2,
+        style: { overflow: 'hidden' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'clasificacion-ciclistas.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyStage = async () => {
+    if (!stageTableRef.current || isStageCopying) return;
+    setIsStageCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(stageTableRef.current!, {
+              scale: 2,
+              style: { overflow: 'hidden' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsStageCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsStageCopying(false);
+      handleDownloadStage();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadStage = async () => {
+    if (!stageTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(stageTableRef.current, {
+        scale: 2,
+        style: { overflow: 'hidden' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'clasificacion-etapas.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyPointsImage = async () => {
+    if (!pointsTableRef.current || isPointsImageCopying) return;
+    setIsPointsImageCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(pointsTableRef.current!, {
+              scale: 2,
+              style: { overflow: 'hidden' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsPointsImageCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsPointsImageCopying(false);
+      handleDownloadPointsImage();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadPointsImage = async () => {
+    if (!pointsTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(pointsTableRef.current, {
+        scale: 2,
+        style: { overflow: 'hidden' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'detalle-puntos.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyRaces = async () => {
+    const table = document.querySelector('table');
+    if (!table || isRacesTextCopying) return;
+    setIsRacesTextCopying(true);
+    const rows = Array.from(table.rows);
+    const text = rows.map(row => 
+      Array.from(row.cells).map(cell => cell.innerText.trim()).join('\t')
+    ).join('\n');
+    navigator.clipboard.writeText(text);
+    setTimeout(() => setIsRacesTextCopying(false), 2000);
+  };
+
+  const handleCopyRacesImage = async () => {
+    if (!racesTableRef.current || isRacesImageCopying) return;
+    setIsRacesImageCopying(true);
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(racesTableRef.current!, {
+              scale: 2,
+              style: { overflow: 'hidden' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsRacesImageCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying table:', err);
+      setIsRacesImageCopying(false);
+      handleDownloadRacesImage();
+      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadRacesImage = async () => {
+    if (!racesTableRef.current) return;
+    try {
+      const dataUrl = await domToDataUrl(racesTableRef.current, {
+        scale: 2,
+        style: { overflow: 'hidden' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'detalle-carreras.png';
+      link.click();
+    } catch (err) {
+      console.error('Error downloading table:', err);
+    }
+  };
+
+  const handleCopyPoints = async () => {
+    const table = document.querySelector('table');
+    if (!table || isPointsTextCopying) return;
+    setIsPointsTextCopying(true);
+    const rows = Array.from(table.rows);
+    const text = rows.map(row => 
+      Array.from(row.cells).map(cell => cell.innerText.trim()).join('\t')
+    ).join('\n');
+    navigator.clipboard.writeText(text);
+    setTimeout(() => setIsPointsTextCopying(false), 2000);
   };
 
   const calculatePoints = () => {
@@ -1716,12 +2252,47 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             })();
 
                             return (
-                              <div className="mt-12">
+                              <div ref={evolutionChartRef} className="mt-12 group relative">
                                 <div className="flex items-center justify-between border-b pb-3 mb-6">
-                                  <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-blue-600" />
-                                    Evolución Mensual
-                                  </h3>
+                                  <div className="flex items-center gap-4">
+                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                                      Evolución Mensual
+                                    </h3>
+                                    <div className="copy-button-ignore flex items-center gap-2">
+                                      <button
+                                        onClick={() => setIsEvolutionChartExpanded(true)}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Ampliar gráfico"
+                                      >
+                                        <Maximize2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={handleCopyEvolutionChart}
+                                        disabled={isEvolutionChartCopying}
+                                        className={cn(
+                                          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
+                                          isEvolutionChartCopying 
+                                            ? "bg-green-50 text-green-600 border border-green-200" 
+                                            : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
+                                        )}
+                                        title={isEvolutionChartCopying ? "Copiado" : "Copiar gráfico como imagen"}
+                                      >
+                                        {isEvolutionChartCopying ? (
+                                          <CheckCircle2 className="w-4 h-4" />
+                                        ) : (
+                                          <Copy className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={handleDownloadEvolutionChart}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Descargar gráfico como imagen"
+                                      >
+                                        <UploadCloud className="w-4 h-4 rotate-180" />
+                                      </button>
+                                    </div>
+                                  </div>
                                   <div className="flex bg-neutral-100 p-1 rounded-lg">
                                     <button 
                                       onClick={() => setEvolutionMode('acumulado')}
@@ -1851,6 +2422,112 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             );
                           })()}
 
+                          {/* Expanded Evolution Chart Modal */}
+                          {isEvolutionChartExpanded && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                              <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                                  <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+                                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                                    Evolución Mensual ({evolutionMode === 'acumulado' ? 'Acumulado' : 'Mensual'})
+                                  </h3>
+                                  <button 
+                                    onClick={() => setIsEvolutionChartExpanded(false)}
+                                    className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
+                                  >
+                                    <X className="w-6 h-6" />
+                                  </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-8">
+                                  <div className="h-[700px] w-full">
+                                    {(() => {
+                                      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                      const currentMonthIdx = new Date().getMonth();
+                                      
+                                      const teamColors: Record<string, string> = {};
+                                      filteredLeaderboard.forEach((team, idx) => {
+                                        const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                        if (idx === 0) teamColors[teamKey] = '#fbbf24';
+                                        else if (idx === 1) teamColors[teamKey] = '#94a3b8';
+                                        else if (idx === 2) teamColors[teamKey] = '#fb923c';
+                                        else teamColors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
+                                      });
+
+                                      const modalEvolutionData = (() => {
+                                        const dataByMonth: any[] = months.map(m => ({ month: m }));
+                                        
+                                        filteredLeaderboard.forEach(team => {
+                                          const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                          if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return;
+
+                                          let accumulated = 0;
+                                          months.forEach((m, mIdx) => {
+                                            const monthPoints = team.detalles.reduce((sum, d) => {
+                                              if (!d.fecha) return sum;
+                                              const parts = d.fecha.split('/');
+                                              if (parts.length < 2) return sum;
+                                              const monthIndex = parseInt(parts[1]) - 1;
+                                              if (monthIndex === mIdx) return sum + d.puntosObtenidos;
+                                              return sum;
+                                            }, 0);
+                                            
+                                            if (evolutionMode === 'acumulado') {
+                                              accumulated += monthPoints;
+                                              dataByMonth[mIdx][teamKey] = accumulated;
+                                            } else {
+                                              dataByMonth[mIdx][teamKey] = monthPoints;
+                                            }
+                                          });
+                                        });
+                                        
+                                        return dataByMonth.filter((m, idx) => {
+                                          const hasData = Object.keys(m).some(key => key !== 'month' && m[key] > 0);
+                                          return hasData && idx <= currentMonthIdx;
+                                        });
+                                      })();
+
+                                      return (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={modalEvolutionData} margin={{ top: 20, right: 40, left: 20, bottom: 60 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                            <XAxis dataKey="month" tick={{fontSize: 14}} />
+                                            <YAxis tick={{fontSize: 14}} />
+                                            <Tooltip 
+                                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '14px' }}
+                                              itemSorter={(item) => -(item.value as number)}
+                                            />
+                                            <Legend 
+                                              verticalAlign="bottom" 
+                                              align="center"
+                                              height={100} 
+                                              iconType="circle"
+                                              wrapperStyle={{ paddingTop: '40px', paddingBottom: '0px', fontSize: '14px' }}
+                                            />
+                                            {Object.keys(teamColors).map(teamKey => {
+                                              if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return null;
+                                              return (
+                                                <Line 
+                                                  key={teamKey}
+                                                  type="monotone" 
+                                                  dataKey={teamKey} 
+                                                  stroke={teamColors[teamKey]} 
+                                                  strokeWidth={4}
+                                                  dot={{ r: 5, strokeWidth: 2 }}
+                                                  activeDot={{ r: 8, strokeWidth: 0 }}
+                                                  connectNulls
+                                                />
+                                              );
+                                            })}
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Top Teams Table */}
                           {(() => {
                             // Map races to months
@@ -1978,14 +2655,49 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             };
 
                             return (
-                              <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12">
+                              <div ref={topTeamsTableRef} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12 group relative">
                                 <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
-                                      <LayoutGrid className="w-5 h-5 text-blue-600" />
-                                      Top Equipos por Puntuación
-                                    </h3>
-                                    <p className="text-xs text-neutral-500 mt-0.5">Ranking de los equipos fantasy por puntuación total.</p>
+                                  <div className="flex items-center justify-between w-full">
+                                    <div>
+                                      <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+                                        <LayoutGrid className="w-5 h-5 text-blue-600" />
+                                        Top Equipos por Puntuación
+                                      </h3>
+                                      <p className="text-xs text-neutral-500 mt-0.5">Ranking de los equipos fantasy por puntuación total.</p>
+                                    </div>
+                                    <div className="copy-button-ignore flex items-center gap-2">
+                                      <button
+                                        onClick={() => setIsTopTeamsTableExpanded(true)}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Ampliar tabla"
+                                      >
+                                        <Maximize2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={handleCopyTopTeamsTable}
+                                        disabled={isTopTeamsTableCopying}
+                                        className={cn(
+                                          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
+                                          isTopTeamsTableCopying 
+                                            ? "bg-green-50 text-green-600 border border-green-200" 
+                                            : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
+                                        )}
+                                        title={isTopTeamsTableCopying ? "Copiado" : "Copiar tabla como imagen"}
+                                      >
+                                        {isTopTeamsTableCopying ? (
+                                          <CheckCircle2 className="w-4 h-4" />
+                                        ) : (
+                                          <Copy className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={handleDownloadTopTeamsTable}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Descargar tabla como imagen"
+                                      >
+                                        <UploadCloud className="w-4 h-4 rotate-180" />
+                                      </button>
+                                    </div>
                                   </div>
                                   <div className="flex flex-col sm:flex-row gap-3">
                                     <select 
@@ -2071,16 +2783,222 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </div>
                             );
                           })()}
+
+                          {/* Expanded Top Teams Table Modal */}
+                          {isTopTeamsTableExpanded && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                              <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                                  <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+                                    <LayoutGrid className="w-6 h-6 text-blue-600" />
+                                    Top Equipos por Puntuación
+                                  </h3>
+                                  <button 
+                                    onClick={() => setIsTopTeamsTableExpanded(false)}
+                                    className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
+                                  >
+                                    <X className="w-6 h-6" />
+                                  </button>
+                                </div>
+                                <div className="flex-1 overflow-auto p-8">
+                                  {(() => {
+                                    // Re-calculate stats for the modal
+                                    const raceMonths: Record<string, number> = {};
+                                    files.carreras.data?.forEach(r => {
+                                      const carreraName = getVal(r, 'Carrera')?.trim();
+                                      const fechaFin = getVal(r, 'Fecha');
+                                      if (carreraName && fechaFin) {
+                                        const parts = fechaFin.split(/[-/]/);
+                                        if (parts.length >= 2) {
+                                          const monthIndex = parseInt(parts[1]) - 1;
+                                          raceMonths[carreraName] = monthIndex;
+                                        }
+                                      }
+                                    });
+
+                                    const modalTeamStats = filteredLeaderboard.map((team, idx) => {
+                                      const filteredDetalles = team.detalles.filter(d => {
+                                        if (teamsMonthFilter !== 'all' && raceMonths[d.carrera] !== parseInt(teamsMonthFilter)) {
+                                          return false;
+                                        }
+                                        return true;
+                                      });
+
+                                      const puntos = filteredDetalles.reduce((sum, d) => sum + d.puntosObtenidos, 0);
+                                      const uniqueRaces = new Set(filteredDetalles.map(d => d.carrera));
+                                      const numCarreras = uniqueRaces.size;
+                                      
+                                      let totalDays = 0;
+                                      uniqueRaces.forEach(raceName => {
+                                        const raceData = files.carreras.data?.find(r => getVal(r, 'Carrera')?.trim() === raceName);
+                                        if (raceData) {
+                                          const diasStr = getVal(raceData, 'Días');
+                                          totalDays += parseInt(diasStr) || 1;
+                                        } else {
+                                          totalDays += 1;
+                                        }
+                                      });
+
+                                      let wins = 0;
+                                      Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
+                                        if (winnerTeam === team.nombreEquipo) {
+                                          if (teamsMonthFilter === 'all' || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
+                                            wins++;
+                                          }
+                                        }
+                                      });
+
+                                      const ppc = numCarreras > 0 ? parseFloat((puntos / numCarreras).toFixed(1)) : 0;
+                                      const ppd = totalDays > 0 ? parseFloat((puntos / totalDays).toFixed(1)) : 0;
+
+                                      return { 
+                                        ...team, 
+                                        puntos, 
+                                        numCarreras, 
+                                        totalDays, 
+                                        wins, 
+                                        ppc, 
+                                        ppd,
+                                        diff: (parseInt(team.orden) || 0) - (idx + 1),
+                                        originalPos: idx + 1 
+                                      };
+                                    });
+
+                                    modalTeamStats.sort((a, b) => {
+                                      let valA: any, valB: any;
+                                      switch (teamsSortColumn) {
+                                        case 'pos': valA = a.originalPos; valB = b.originalPos; break;
+                                        case 'equipo': valA = a.nombreEquipo; valB = b.nombreEquipo; break;
+                                        case 'dif': valA = a.diff; valB = b.diff; break;
+                                        case 'victorias': valA = a.wins; valB = b.wins; break;
+                                        case 'puntos': default: valA = a.puntos; valB = b.puntos; break;
+                                      }
+                                      
+                                      if (typeof valA === 'string' && typeof valB === 'string') {
+                                        return teamsSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                                      }
+                                      
+                                      if (valA < valB) return teamsSortDirection === 'asc' ? -1 : 1;
+                                      if (valA > valB) return teamsSortDirection === 'asc' ? 1 : -1;
+                                      return 0;
+                                    });
+
+                                    let maxWins = 0, minWins = Infinity;
+                                    let maxPuntos = 0, minPuntos = Infinity;
+                                    if (modalTeamStats.length > 0) {
+                                      maxPuntos = Math.max(...modalTeamStats.map(s => s.puntos));
+                                      minPuntos = Math.min(...modalTeamStats.map(s => s.puntos));
+                                      maxWins = Math.max(...modalTeamStats.map(s => s.wins));
+                                      minWins = Math.min(...modalTeamStats.map(s => s.wins));
+                                    }
+
+                                    const getPuntosColor = (val: number) => {
+                                      if (maxPuntos === minPuntos) return "text-neutral-900";
+                                      const ratio = (val - minPuntos) / (maxPuntos - minPuntos);
+                                      if (ratio > 0.8) return "text-green-600 font-black";
+                                      if (ratio > 0.6) return "text-green-500 font-bold";
+                                      if (ratio > 0.4) return "text-yellow-600 font-bold";
+                                      if (ratio > 0.2) return "text-yellow-500 font-medium";
+                                      return "text-neutral-700";
+                                    };
+
+                                    return (
+                                      <table className="w-full text-base text-left">
+                                        <thead className="text-sm text-neutral-500 uppercase bg-neutral-50">
+                                          <tr>
+                                            <th className="px-6 py-4 font-semibold">Pos</th>
+                                            <th className="px-6 py-4 font-semibold">Equipo</th>
+                                            <th className="px-6 py-4 font-semibold text-center">Dif</th>
+                                            <th className="px-6 py-4 font-semibold text-center">Victorias</th>
+                                            <th className="px-6 py-4 font-semibold text-right">Puntos</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-100">
+                                          {modalTeamStats.map((team) => {
+                                            const posColor = team.originalPos === 1 ? "text-yellow-500" : 
+                                                             team.originalPos === 2 ? "text-neutral-400" : 
+                                                             team.originalPos === 3 ? "text-amber-600" : 
+                                                             "text-neutral-400";
+                                            
+                                            const winsColor = team.wins === 0 ? "text-red-600 font-bold" :
+                                                              team.wins === maxWins && maxWins > 0 ? "text-green-600 font-bold" :
+                                                              team.wins === minWins && minWins < maxWins ? "text-yellow-600 font-bold" :
+                                                              "text-neutral-700";
+
+                                            return (
+                                              <tr key={team.jugador} className="hover:bg-neutral-50 transition-colors">
+                                                <td className={cn("px-6 py-5 font-bold text-lg", posColor)}>{team.originalPos}</td>
+                                                <td className="px-6 py-5 font-bold text-neutral-900 text-lg">
+                                                  {team.nombreEquipo} <span className="text-neutral-400 font-normal text-xs">[#{team.orden}]</span>
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                  <span className={cn(
+                                                    "px-2 py-1 rounded-md text-sm font-bold",
+                                                    team.diff > 0 ? "bg-green-50 text-green-600" : team.diff < 0 ? "bg-red-50 text-red-600" : "bg-yellow-50 text-yellow-600"
+                                                  )}>
+                                                    {team.diff > 0 ? `+${team.diff}` : team.diff}
+                                                  </span>
+                                                </td>
+                                                <td className={cn("px-6 py-5 text-center text-lg", winsColor)}>
+                                                  {team.wins}
+                                                </td>
+                                                <td className={cn("px-6 py-5 text-right text-xl", getPuntosColor(team.puntos))}>{team.puntos}</td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
 
                       {seasonSubTab === 'victorias' && (
                         <div className="space-y-8">
-                          <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold mb-6 text-neutral-800 flex items-center gap-2">
-                              <Trophy className="w-5 h-5 text-yellow-500" />
-                              Ranking de Victorias por Equipo
-                            </h3>
+                          <div ref={winsRankingRef} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm group relative">
+                            <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+                                <Trophy className="w-5 h-5 text-yellow-500" />
+                                Ranking de Victorias por Equipo
+                              </h3>
+                              <div className="copy-button-ignore flex items-center gap-2">
+                                <button
+                                  onClick={() => setIsWinsRankingExpanded(true)}
+                                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                  title="Ampliar gráfico"
+                                >
+                                  <Maximize2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={handleCopyWinsRanking}
+                                  disabled={isWinsRankingCopying}
+                                  className={cn(
+                                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
+                                    isWinsRankingCopying 
+                                      ? "bg-green-50 text-green-600 border border-green-200" 
+                                      : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
+                                  )}
+                                  title={isWinsRankingCopying ? "Copiado" : "Copiar gráfico como imagen"}
+                                >
+                                  {isWinsRankingCopying ? (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={handleDownloadWinsRanking}
+                                  className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                  title="Descargar gráfico como imagen"
+                                >
+                                  <UploadCloud className="w-4 h-4 rotate-180" />
+                                </button>
+                              </div>
+                            </div>
                             <div className="h-[500px] w-full mt-4">
                               {(() => {
                                 const chartData = Object.entries(teamWinsCount)
@@ -2121,6 +3039,70 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               })()}
                             </div>
                           </div>
+
+                          {/* Expanded Wins Ranking Modal */}
+                          {isWinsRankingExpanded && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                              <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                                  <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+                                    <Trophy className="w-6 h-6 text-yellow-500" />
+                                    Ranking de Victorias por Equipo
+                                  </h3>
+                                  <button 
+                                    onClick={() => setIsWinsRankingExpanded(false)}
+                                    className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
+                                  >
+                                    <X className="w-6 h-6" />
+                                  </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-8">
+                                  <div className="h-[700px] w-full">
+                                    {(() => {
+                                      const chartData = Object.entries(teamWinsCount)
+                                        .map(([name, wins]) => {
+                                          const teamInfo = filteredLeaderboard.find(p => p.nombreEquipo === name);
+                                          const displayName = teamInfo ? `${name} [#${teamInfo.orden}]` : name;
+                                          return { name: displayName, wins };
+                                        })
+                                        .sort((a, b) => b.wins - a.wins);
+                                      
+                                      return (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <BarChart
+                                            data={chartData}
+                                            layout="vertical"
+                                            margin={{ top: 20, right: 60, left: 40, bottom: 20 }}
+                                          >
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
+                                            <XAxis type="number" hide />
+                                            <YAxis 
+                                              dataKey="name" 
+                                              type="category" 
+                                              width={200} 
+                                              tick={{ fontSize: 14, fontWeight: 600, fill: '#404040' }}
+                                            />
+                                            <Tooltip 
+                                              cursor={{ fill: '#f8fafc' }}
+                                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                            />
+                                            <Bar 
+                                              dataKey="wins" 
+                                              fill="#3b82f6" 
+                                              radius={[0, 8, 8, 0]} 
+                                              barSize={40}
+                                            >
+                                              <LabelList dataKey="wins" position="right" style={{ fill: '#1d4ed8', fontWeight: 800, fontSize: 16 }} />
+                                            </Bar>
+                                          </BarChart>
+                                        </ResponsiveContainer>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Monthly Evolution Chart for Wins */}
                           {(() => {
@@ -2189,12 +3171,47 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             })();
 
                             return (
-                              <div className="mt-12">
+                              <div ref={winsEvolutionRef} className="mt-12 group relative">
                                 <div className="flex items-center justify-between border-b pb-3 mb-6">
-                                  <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-blue-600" />
-                                    Evolución Mensual de Victorias
-                                  </h3>
+                                  <div className="flex items-center gap-4">
+                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                                      Evolución Mensual de Victorias
+                                    </h3>
+                                    <div className="copy-button-ignore flex items-center gap-2">
+                                      <button
+                                        onClick={() => setIsWinsEvolutionExpanded(true)}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Ampliar gráfico"
+                                      >
+                                        <Maximize2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={handleCopyWinsEvolution}
+                                        disabled={isWinsEvolutionCopying}
+                                        className={cn(
+                                          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
+                                          isWinsEvolutionCopying 
+                                            ? "bg-green-50 text-green-600 border border-green-200" 
+                                            : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
+                                        )}
+                                        title={isWinsEvolutionCopying ? "Copiado" : "Copiar gráfico como imagen"}
+                                      >
+                                        {isWinsEvolutionCopying ? (
+                                          <CheckCircle2 className="w-4 h-4" />
+                                        ) : (
+                                          <Copy className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={handleDownloadWinsEvolution}
+                                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                        title="Descargar gráfico como imagen"
+                                      >
+                                        <UploadCloud className="w-4 h-4 rotate-180" />
+                                      </button>
+                                    </div>
+                                  </div>
                                   <div className="flex bg-neutral-100 p-1 rounded-lg">
                                     <button 
                                       onClick={() => setWinsChartType('acumulado')}
@@ -2329,12 +3346,161 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             );
                           })()}
 
-                          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12">
+                          {/* Expanded Wins Evolution Modal */}
+                          {isWinsEvolutionExpanded && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                              <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                                  <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+                                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                                    Evolución Mensual de Victorias ({winsChartType === 'acumulado' ? 'Acumulado' : 'Mensual'})
+                                  </h3>
+                                  <button 
+                                    onClick={() => setIsWinsEvolutionExpanded(false)}
+                                    className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
+                                  >
+                                    <X className="w-6 h-6" />
+                                  </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-8">
+                                  <div className="h-[700px] w-full">
+                                    {(() => {
+                                      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                      const currentMonthIdx = new Date().getMonth();
+                                      
+                                      const teamColors: Record<string, string> = {};
+                                      filteredLeaderboard.forEach((team, idx) => {
+                                        const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                        if (idx === 0) teamColors[teamKey] = '#fbbf24';
+                                        else if (idx === 1) teamColors[teamKey] = '#94a3b8';
+                                        else if (idx === 2) teamColors[teamKey] = '#fb923c';
+                                        else teamColors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
+                                      });
+
+                                      const modalWinsEvolutionData = (() => {
+                                        const dataByMonth: any[] = months.map(m => ({ month: m }));
+                                        
+                                        filteredLeaderboard.forEach(team => {
+                                          const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                          if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return;
+
+                                          let accumulated = 0;
+                                          months.forEach((m, mIdx) => {
+                                            let monthWins = 0;
+                                            Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
+                                              if (winnerTeam === team.nombreEquipo) {
+                                                const raceData = files.carreras.data?.find(r => getVal(r, 'Carrera')?.trim() === raceName);
+                                                if (raceData) {
+                                                  const fechaFin = getVal(raceData, 'Fecha');
+                                                  if (fechaFin) {
+                                                    const parts = fechaFin.split(/[-/]/);
+                                                    if (parts.length >= 2) {
+                                                      const raceMonthIndex = parseInt(parts[1]) - 1;
+                                                      if (raceMonthIndex === mIdx) monthWins++;
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            });
+                                            
+                                            if (winsChartType === 'acumulado') {
+                                              accumulated += monthWins;
+                                              dataByMonth[mIdx][teamKey] = accumulated;
+                                            } else {
+                                              dataByMonth[mIdx][teamKey] = monthWins;
+                                            }
+                                          });
+                                        });
+                                        
+                                        return dataByMonth.filter((m, idx) => {
+                                          const hasData = Object.keys(m).some(key => key !== 'month' && m[key] > 0);
+                                          return hasData && idx <= currentMonthIdx;
+                                        });
+                                      })();
+
+                                      return (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={modalWinsEvolutionData} margin={{ top: 20, right: 40, left: 20, bottom: 60 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                            <XAxis dataKey="month" tick={{fontSize: 14}} />
+                                            <YAxis tick={{fontSize: 14}} />
+                                            <Tooltip 
+                                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '14px' }}
+                                              itemSorter={(item) => -(item.value as number)}
+                                            />
+                                            <Legend 
+                                              verticalAlign="bottom" 
+                                              align="center"
+                                              height={100} 
+                                              iconType="circle"
+                                              wrapperStyle={{ paddingTop: '40px', paddingBottom: '0px', fontSize: '14px' }}
+                                            />
+                                            {Object.keys(teamColors).map(teamKey => {
+                                              if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return null;
+                                              return (
+                                                <Line 
+                                                  key={teamKey}
+                                                  type="monotone" 
+                                                  dataKey={teamKey} 
+                                                  stroke={teamColors[teamKey]} 
+                                                  strokeWidth={4}
+                                                  dot={{ r: 5, strokeWidth: 2 }}
+                                                  activeDot={{ r: 8, strokeWidth: 0 }}
+                                                  connectNulls
+                                                />
+                                              );
+                                            })}
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div ref={winsHistoryRef} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12 group relative">
                             <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
-                                <History className="w-5 h-5 text-purple-600" />
-                                Historial de Ganadores por Carrera
-                              </h3>
+                              <div className="flex items-center gap-4">
+                                <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+                                  <History className="w-5 h-5 text-purple-600" />
+                                  Historial de Ganadores por Carrera
+                                </h3>
+                                <div className="copy-button-ignore flex items-center gap-2">
+                                  <button
+                                    onClick={() => setIsWinsHistoryExpanded(true)}
+                                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                    title="Ampliar tabla"
+                                  >
+                                    <Maximize2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={handleCopyWinsHistory}
+                                    disabled={isWinsHistoryCopying}
+                                    className={cn(
+                                      "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
+                                      isWinsHistoryCopying 
+                                        ? "bg-green-50 text-green-600 border border-green-200" 
+                                        : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
+                                    )}
+                                    title={isWinsHistoryCopying ? "Copiado" : "Copiar tabla como imagen"}
+                                  >
+                                    {isWinsHistoryCopying ? (
+                                      <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={handleDownloadWinsHistory}
+                                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
+                                    title="Descargar tabla como imagen"
+                                  >
+                                    <UploadCloud className="w-4 h-4 rotate-180" />
+                                  </button>
+                                </div>
+                              </div>
                               <div className="flex gap-2">
                                 <select 
                                   value={historyTeamFilter}
@@ -2511,6 +3677,88 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </table>
                             </div>
                           </div>
+
+                          {/* Expanded Wins History Modal */}
+                          {isWinsHistoryExpanded && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                              <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                                  <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
+                                    <History className="w-6 h-6 text-purple-600" />
+                                    Historial de Ganadores por Carrera
+                                  </h3>
+                                  <button 
+                                    onClick={() => setIsWinsHistoryExpanded(false)}
+                                    className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
+                                  >
+                                    <X className="w-6 h-6" />
+                                  </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-8">
+                                  <table className="w-full text-base text-left">
+                                    <thead className="text-sm text-neutral-500 uppercase bg-neutral-50">
+                                      <tr>
+                                        <th className="px-6 py-4 font-bold">Fecha</th>
+                                        <th className="px-6 py-4 font-bold">Carrera</th>
+                                        <th className="px-6 py-4 font-bold text-right">Equipo Ganador</th>
+                                        <th className="px-6 py-4 font-bold text-right">Puntos</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100">
+                                      {(() => {
+                                        const historyData = [];
+                                        Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
+                                          const raceData = files.carreras.data?.find(r => getVal(r, 'Carrera')?.trim() === raceName);
+                                          if (raceData) {
+                                            const fechaFin = getVal(raceData, 'Fecha');
+                                            const teamInfo = filteredLeaderboard.find(p => p.nombreEquipo === winnerTeam);
+                                            const winnerDisplayName = teamInfo ? `${winnerTeam} [#${teamInfo.orden}]` : winnerTeam;
+                                            const winnerPoints = teamInfo ? teamInfo.detalles
+                                              .filter(d => d.carrera === raceName)
+                                              .reduce((sum, d) => sum + d.puntosObtenidos, 0) : 0;
+
+                                            historyData.push({
+                                              fecha: fechaFin || '',
+                                              carrera: raceName,
+                                              equipo: winnerDisplayName,
+                                              puntos: winnerPoints
+                                            });
+                                          }
+                                        });
+
+                                        return historyData
+                                          .sort((a, b) => {
+                                            const parseDate = (d: string) => {
+                                              if (!d) return 0;
+                                              const parts = d.split(/[-/]/);
+                                              if (parts.length === 3) {
+                                                if (parts[0].length === 4) return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).getTime();
+                                                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+                                              }
+                                              return 0;
+                                            };
+                                            return parseDate(b.fecha) - parseDate(a.fecha);
+                                          })
+                                          .map((row, idx) => (
+                                            <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                                              <td className="px-6 py-4 text-neutral-600">{row.fecha}</td>
+                                              <td className="px-6 py-4 font-bold text-neutral-900">{row.carrera}</td>
+                                              <td className="px-6 py-4 text-right">
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                  <Trophy className="w-3 h-3" />
+                                                  {row.equipo}
+                                                </span>
+                                              </td>
+                                              <td className="px-6 py-4 text-right font-mono font-bold text-blue-600">{row.puntos}</td>
+                                            </tr>
+                                          ));
+                                      })()}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -3764,11 +5012,29 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                     <div className="space-y-10">
                       {/* Clean Leaderboard */}
                       <div>
-                        <h3 className="font-semibold text-xl text-neutral-900 border-b pb-3 mb-4 flex items-center gap-2">
-                          <Trophy className="w-5 h-5 text-blue-600" />
-                          Clasificación de la Carrera
-                        </h3>
-                        <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b pb-3 mb-4">
+                          <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-blue-600" />
+                            Clasificación de la Carrera
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsRaceClassificationExpanded(!isRaceClassificationExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyRaceClassification} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleDownloadRaceClassification} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div ref={raceClassificationTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isRaceClassificationExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                          {isRaceClassificationExpanded && (
+                            <button onClick={() => setIsRaceClassificationExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
                           <table className="w-full text-sm text-left">
                             <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-xs">
                               <tr>
@@ -3817,11 +5083,29 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                       {/* Cyclists Table */}
                       <div className="mt-12">
-                        <h3 className="font-semibold text-xl text-neutral-900 border-b pb-3 mb-4 flex items-center gap-2">
-                          <Users className="w-5 h-5 text-blue-600" />
-                          Clasificación de Ciclistas
-                        </h3>
-                        <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b pb-3 mb-4">
+                          <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-blue-600" />
+                            Clasificación de Ciclistas
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsCyclistsExpanded(!isCyclistsExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyCyclists} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleDownloadCyclists} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div ref={cyclistsTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isCyclistsExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                          {isCyclistsExpanded && (
+                            <button onClick={() => setIsCyclistsExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
                           <table className="w-full text-sm text-left">
                             <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-xs">
                               <tr>
@@ -3865,12 +5149,30 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       {/* Stage Breakdown (if multiple types or stage race) */}
                       {(finalColumns.length > 1 || finalColumns.some(c => /^\d+/.test(c.formatted))) && (
                         <div className="mt-12">
-                          <h3 className="font-semibold text-xl text-neutral-900 border-b pb-3 mb-6 flex items-center gap-2">
+                        <div className="flex items-center justify-between border-b pb-3 mb-6">
+                          <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
                             <Flag className="w-5 h-5 text-blue-600" />
                             Clasificación por Etapas / Conceptos
                           </h3>
-                          <div className="bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm">
-                            <table className="w-full text-sm text-left whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsStageExpanded(!isStageExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyStage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleDownloadStage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div ref={stageTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm", isStageExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                          {isStageExpanded && (
+                            <button onClick={() => setIsStageExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
+                          <table className="w-full text-sm text-left whitespace-nowrap">
                               <thead className="bg-blue-600 text-white uppercase text-xs">
                                 <tr>
                                   <th className="px-4 py-3 font-semibold">Equipo</th>
@@ -4479,7 +5781,36 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         </button>
                         <h3 className="font-semibold text-lg text-neutral-900">Detalle de puntos</h3>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setIsPointsExpanded(!isPointsExpanded)} 
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Ampliar"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={handleCopyPoints}
+                          className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors copy-button-ignore"
+                          title="Copiar texto"
+                        >
+                          {isPointsTextCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                          Copiar (Texto)
+                        </button>
+                        <button 
+                          onClick={handleCopyPointsImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Copiar imagen"
+                        >
+                          {isPointsImageCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        <button 
+                          onClick={handleDownloadPointsImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Descargar"
+                        >
+                          <UploadCloud className="w-4 h-4" />
+                        </button>
                         <input 
                           type="text" 
                           placeholder="Buscar carrera..." 
@@ -4499,40 +5830,47 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         </select>
                       </div>
                     </div>
-                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0">
-                          <tr>
-                            <th className="px-6 py-3">Categoría</th>
-                            <th className="px-6 py-3">Tipo</th>
-                            <th className="px-6 py-3">Posición</th>
-                            <th className="px-6 py-3 text-right">Puntos</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(() => {
-                            let filteredPoints = files.puntos.data || [];
-                            
-                            if (pointsRaceSearch.trim()) {
-                              const searchLower = pointsRaceSearch.toLowerCase();
-                              const matchedRaces = files.carreras.data?.filter(r => getVal(r, 'Carrera')?.toLowerCase().includes(searchLower)) || [];
-                              const matchedCategories = new Set(matchedRaces.map(r => getVal(r, 'Categoría')));
-                              filteredPoints = filteredPoints.filter(p => matchedCategories.has(getVal(p, 'Categoría')));
-                            } else if (pointsCategoryFilter) {
-                              filteredPoints = filteredPoints.filter(p => getVal(p, 'Categoría') === pointsCategoryFilter);
-                            }
+                    <div className={cn("overflow-x-auto max-h-[600px] overflow-y-auto", isPointsExpanded ? "fixed inset-4 z-50 bg-white p-4 shadow-2xl rounded-xl" : "")}>
+                      {isPointsExpanded && (
+                        <button onClick={() => setIsPointsExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+                      <div ref={pointsTableRef} className="bg-white">
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0">
+                            <tr>
+                              <th className="px-6 py-3">Categoría</th>
+                              <th className="px-6 py-3">Tipo</th>
+                              <th className="px-6 py-3">Posición</th>
+                              <th className="px-6 py-3 text-right">Puntos</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              let filteredPoints = files.puntos.data || [];
+                              
+                              if (pointsRaceSearch.trim()) {
+                                const searchLower = pointsRaceSearch.toLowerCase();
+                                const matchedRaces = files.carreras.data?.filter(r => getVal(r, 'Carrera')?.toLowerCase().includes(searchLower)) || [];
+                                const matchedCategories = new Set(matchedRaces.map(r => getVal(r, 'Categoría')));
+                                filteredPoints = filteredPoints.filter(p => matchedCategories.has(getVal(p, 'Categoría')));
+                              } else if (pointsCategoryFilter) {
+                                filteredPoints = filteredPoints.filter(p => getVal(p, 'Categoría') === pointsCategoryFilter);
+                              }
 
-                            return filteredPoints.map((r, idx) => (
-                              <tr key={idx} className="border-b border-neutral-50 hover:bg-neutral-50">
-                                <td className="px-6 py-3 font-medium text-neutral-900">{getVal(r, 'Categoría')}</td>
-                                <td className="px-6 py-3 text-neutral-600">{getVal(r, 'Tipo')}</td>
-                                <td className="px-6 py-3 text-neutral-600">{getVal(r, 'Posición')}</td>
-                                <td className="px-6 py-3 text-right font-bold text-blue-600">{getVal(r, 'Puntos')}</td>
-                              </tr>
-                            ));
-                          })()}
-                        </tbody>
-                      </table>
+                              return filteredPoints.map((r, idx) => (
+                                <tr key={idx} className="border-b border-neutral-50 hover:bg-neutral-50">
+                                  <td className="px-6 py-3 font-medium text-neutral-900">{getVal(r, 'Categoría')}</td>
+                                  <td className="px-6 py-3 text-neutral-600">{getVal(r, 'Tipo')}</td>
+                                  <td className="px-6 py-3 text-neutral-600">{getVal(r, 'Posición')}</td>
+                                  <td className="px-6 py-3 text-right font-bold text-blue-600">{getVal(r, 'Puntos')}</td>
+                                </tr>
+                              ));
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -4555,8 +5893,64 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         <option value="finished">Ya disputadas</option>
                         <option value="upcoming">Por disputar</option>
                       </select>
+                      <select 
+                        value={racesCategoryFilter}
+                        onChange={(e) => setRacesCategoryFilter(e.target.value)}
+                        className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      >
+                        <option value="">Todas las categorías</option>
+                        {[...new Set(files.carreras.data?.map(r => getVal(r, 'Categoría')))].filter(Boolean).map(c => (
+                          <option key={c as string} value={c as string}>{c as string}</option>
+                        ))}
+                      </select>
+                      <select 
+                        value={racesMonthFilter}
+                        onChange={(e) => setRacesMonthFilter(e.target.value)}
+                        className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      >
+                        <option value="">Todos los meses</option>
+                        {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
+                          <option key={m} value={(i + 1).toString().padStart(2, '0')}>{m}</option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setIsRacesExpanded(!isRacesExpanded)} 
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Ampliar"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={handleCopyRaces}
+                          className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors copy-button-ignore"
+                          title="Copiar texto"
+                        >
+                          {isRacesTextCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                          Copiar (Texto)
+                        </button>
+                        <button 
+                          onClick={handleCopyRacesImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Copiar imagen"
+                        >
+                          {isRacesImageCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        <button 
+                          onClick={handleDownloadRacesImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                          title="Descargar"
+                        >
+                          <UploadCloud className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <div ref={racesTableRef} className={cn("overflow-x-auto max-h-[600px] overflow-y-auto", isRacesExpanded ? "fixed inset-4 z-50 bg-white p-4 shadow-2xl rounded-xl" : "")}>
+                      {isRacesExpanded && (
+                        <button onClick={() => setIsRacesExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
                       <table className="w-full text-sm text-left">
                         <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0">
                           <tr>
@@ -4602,6 +5996,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             return files.carreras.data?.filter(r => {
                               const carreraName = getVal(r, 'Carrera')?.trim();
                               const fechaFin = getVal(r, 'Fecha');
+                              const categoria = getVal(r, 'Categoría');
                               if (!carreraName || !fechaFin) return false;
                               const parts = fechaFin.split(/[-/]/);
                               if (parts.length !== 3) return true;
@@ -4617,6 +6012,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               
                               if (racesFilter === 'finished' && !isFinished) return false;
                               if (racesFilter === 'upcoming' && isFinished) return false;
+                              if (racesCategoryFilter && categoria !== racesCategoryFilter) return false;
+                              if (racesMonthFilter && (date.getMonth() + 1).toString().padStart(2, '0') !== racesMonthFilter) return false;
                               return true;
                             }).map((r, idx) => {
                               const fechaFin = getVal(r, 'Fecha');
