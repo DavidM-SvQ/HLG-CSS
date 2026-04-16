@@ -4,7 +4,7 @@ import { domToBlob, domToDataUrl } from 'modern-screenshot';
 import { 
   UploadCloud, CheckCircle2, AlertCircle, Trophy, Medal, 
   Users, FileSpreadsheet, ChevronDown, ChevronUp, LogIn, LogOut, Globe, Clock, Info, Activity, Flag,
-  List, LayoutGrid, ArrowUpRight, Crown, BarChart3, TrendingUp, History, User, UserMinus, Copy, Maximize2, X
+  List, LayoutGrid, ArrowUpRight, Crown, BarChart3, TrendingUp, History, User, UserMinus, Copy, Maximize2, X, Search, Save, Trash2
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LabelList,
@@ -73,7 +73,7 @@ const FILE_TYPES = [
   { id: 'equipos', name: 'Equipos 2026', icon: Users, expectedCols: ['EQUIPO COMPLETO', 'EQUIPO BREVE'], global: true },
   { id: 'puntos', name: 'Puntos HLG 2026', icon: FileSpreadsheet, expectedCols: ['Categoría', 'Tipo', 'Posición', 'Puntos'], global: true },
   { id: 'resultados', name: 'Resultados FirstCycling', icon: Medal, expectedCols: ['Carrera', 'Ciclista', 'Tipo', 'Pos', 'Etapa'], global: true },
-  { id: 'startlist', name: 'Startlist 2026', icon: List, expectedCols: ['BIB', 'CORREDOR', 'RANKING', 'PNT', 'EQUIPO', 'MOSTRAR MÁS'], global: true },
+  { id: 'startlist', name: 'Startlist 2026', icon: List, expectedCols: ['BIB', 'CORREDOR', 'RANKING', 'PNT', 'EQUIPO', 'MOSTRAR MÁS'], global: true, hiddenInAdmin: true },
 ] as const;
 
 export default function App() {
@@ -81,8 +81,18 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [view, setView] = useState<'public' | 'admin'>('public');
+  const [adminTab, setAdminTab] = useState<'datos' | 'gestion-startlists' | 'reporte-carrera' | 'reporte-mes' | 'reporte-temporada'>('datos');
   const [publicTab, setPublicTab] = useState<'season' | 'race' | 'startlist' | 'team' | 'draft' | 'info'>('season');
+  const [draftSubTab, setDraftSubTab] = useState<'elecciones' | 'datos'>('elecciones');
+  const [draftSearchTerm, setDraftSearchTerm] = useState('');
+  const [draftRoundFilter, setDraftRoundFilter] = useState<string>('all');
+  const [draftTeamFilter, setDraftTeamFilter] = useState<string>('all');
+  const [draftSortColumn, setDraftSortColumn] = useState<string>('Elección');
+  const [draftSortDirection, setDraftSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [draftDatosSortColumn, setDraftDatosSortColumn] = useState<string>('Orden');
+  const [draftDatosSortDirection, setDraftDatosSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedRace, setSelectedRace] = useState<string>('');
+  const [publicStartlistRace, setPublicStartlistRace] = useState<string>('');
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   const [evolutionMode, setEvolutionMode] = useState<'acumulado' | 'mensual'>('acumulado');
@@ -123,6 +133,11 @@ export default function App() {
   const [noDraftUndebutedCyclistsSortColumn, setNoDraftUndebutedCyclistsSortColumn] = useState<string>('ciclista');
   const [noDraftUndebutedCyclistsSortDirection, setNoDraftUndebutedCyclistsSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  const [startlistSortColumn, setStartlistSortColumn] = useState<string>('jugador');
+  const [startlistSortDirection, setStartlistSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [startlistPlayerFilter, setStartlistPlayerFilter] = useState<string>('all');
+  const startlistTableRef = useRef<HTMLDivElement>(null);
+
   const chartRef = useRef<HTMLDivElement>(null);
   const topTeamsTableRef = useRef<HTMLDivElement>(null);
   const evolutionChartRef = useRef<HTMLDivElement>(null);
@@ -134,6 +149,11 @@ export default function App() {
   const stageTableRef = useRef<HTMLDivElement>(null);
   const pointsTableRef = useRef<HTMLDivElement>(null);
   const racesTableRef = useRef<HTMLDivElement>(null);
+  const teamGlobalRef = useRef<HTMLDivElement>(null);
+  const raceBreakdownTableRef = useRef<HTMLDivElement>(null);
+  const detailedBreakdownRef = useRef<HTMLDivElement>(null);
+  const draftTableRef = useRef<HTMLDivElement>(null);
+  const draftDatosTableRef = useRef<HTMLDivElement>(null);
   
   const [isCopying, setIsCopying] = useState(false);
   const [isTopTeamsTableCopying, setIsTopTeamsTableCopying] = useState(false);
@@ -148,6 +168,11 @@ export default function App() {
   const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
   const [isRacesTextCopying, setIsRacesTextCopying] = useState(false);
   const [isRacesImageCopying, setIsRacesImageCopying] = useState(false);
+  const [isTeamGlobalCopying, setIsTeamGlobalCopying] = useState(false);
+  const [isRaceBreakdownCopying, setIsRaceBreakdownCopying] = useState(false);
+  const [isDetailedBreakdownCopying, setIsDetailedBreakdownCopying] = useState(false);
+  const [isDraftTableCopying, setIsDraftTableCopying] = useState(false);
+  const [isDraftDatosTableCopying, setIsDraftDatosTableCopying] = useState(false);
   
   const [isChartExpanded, setIsChartExpanded] = useState(false);
   const [isTopTeamsTableExpanded, setIsTopTeamsTableExpanded] = useState(false);
@@ -158,6 +183,9 @@ export default function App() {
   const [isRaceClassificationExpanded, setIsRaceClassificationExpanded] = useState(false);
   const [isCyclistsExpanded, setIsCyclistsExpanded] = useState(false);
   const [isStageExpanded, setIsStageExpanded] = useState(false);
+  const [isDetailedBreakdownExpanded, setIsDetailedBreakdownExpanded] = useState(false);
+  const [isDraftTableExpanded, setIsDraftTableExpanded] = useState(false);
+  const [isDraftDatosTableExpanded, setIsDraftDatosTableExpanded] = useState(false);
   const [isPointsExpanded, setIsPointsExpanded] = useState(false);
   const [isRacesExpanded, setIsRacesExpanded] = useState(false);
 
@@ -227,6 +255,11 @@ export default function App() {
   }, [isAdmin]);
 
   const [leaderboard, setLeaderboard] = useState<PlayerScore[] | null>(null);
+  const [startlistText, setStartlistText] = useState("");
+  const [startlistRace, setStartlistRace] = useState("");
+  const [parsedStartlist, setParsedStartlist] = useState<{carrera: string, resultados: {jugador: string, ciclistas: string[]}[]} | null>(null);
+  const [isSavingStartlist, setIsSavingStartlist] = useState(false);
+  
   const [cyclistMetadata, setCyclistMetadata] = useState<Record<string, { 
     edad: string, 
     pais: string, 
@@ -971,6 +1004,316 @@ export default function App() {
     }
   };
 
+  const handleCopyTeamGlobalImage = async () => {
+    if (!teamGlobalRef.current || isTeamGlobalCopying) return;
+    setIsTeamGlobalCopying(true);
+    
+    const tableContainer = teamGlobalRef.current.querySelector('.table-container-for-capture');
+    if (tableContainer) {
+      tableContainer.classList.remove('overflow-x-auto');
+      tableContainer.classList.add('overflow-visible');
+    }
+
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
+              scale: 2,
+              width: teamGlobalRef.current!.scrollWidth,
+              style: { overflow: 'visible' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsTeamGlobalCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying team image:', err);
+      setIsTeamGlobalCopying(false);
+      handleDownloadTeamGlobalImage();
+      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+    } finally {
+      if (tableContainer) {
+        tableContainer.classList.add('overflow-x-auto');
+        tableContainer.classList.remove('overflow-visible');
+      }
+    }
+  };
+
+  const handleDownloadTeamGlobalImage = async () => {
+    if (!teamGlobalRef.current) return;
+    
+    const tableContainer = teamGlobalRef.current.querySelector('.table-container-for-capture');
+    if (tableContainer) {
+      tableContainer.classList.remove('overflow-x-auto');
+      tableContainer.classList.add('overflow-visible');
+    }
+
+    try {
+      const dataUrl = await domToDataUrl(teamGlobalRef.current, {
+        scale: 2,
+        width: teamGlobalRef.current.scrollWidth,
+        style: { overflow: 'visible' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `equipo-${selectedTeam.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.click();
+    } catch (err) {
+      console.error('Error downloading team image:', err);
+    } finally {
+      if (tableContainer) {
+        tableContainer.classList.add('overflow-x-auto');
+        tableContainer.classList.remove('overflow-visible');
+      }
+    }
+  };
+
+  const handleCopyRaceBreakdownImage = async () => {
+    if (!raceBreakdownTableRef.current || isRaceBreakdownCopying) return;
+    setIsRaceBreakdownCopying(true);
+    
+    const tableContainer = raceBreakdownTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 2,
+              width: tableContainer.scrollWidth,
+              style: { overflow: 'visible' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsRaceBreakdownCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying race breakdown image:', err);
+      setIsRaceBreakdownCopying(false);
+      handleDownloadRaceBreakdownImage();
+      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleDownloadRaceBreakdownImage = async () => {
+    if (!raceBreakdownTableRef.current) return;
+    
+    const tableContainer = raceBreakdownTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 2,
+        width: tableContainer.scrollWidth,
+        style: { overflow: 'visible' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `clasificacion-etapas-${selectedRace.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.click();
+    } catch (err) {
+      console.error('Error downloading race breakdown image:', err);
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleCopyDetailedBreakdownImage = async () => {
+    if (!detailedBreakdownRef.current || isDetailedBreakdownCopying) return;
+    setIsDetailedBreakdownCopying(true);
+    
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(detailedBreakdownRef.current!, {
+              scale: 2,
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsDetailedBreakdownCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying detailed breakdown image:', err);
+      setIsDetailedBreakdownCopying(false);
+      handleDownloadDetailedBreakdownImage();
+      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+    }
+  };
+
+  const handleDownloadDetailedBreakdownImage = async () => {
+    if (!detailedBreakdownRef.current) return;
+    
+    try {
+      const dataUrl = await domToDataUrl(detailedBreakdownRef.current, {
+        scale: 2,
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `desglose-equipos-${selectedRace.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.click();
+    } catch (err) {
+      console.error('Error downloading detailed breakdown image:', err);
+    }
+  };
+
+  const handleCopyDraftTableImage = async () => {
+    if (!draftTableRef.current || isDraftTableCopying) return;
+    setIsDraftTableCopying(true);
+    
+    const tableContainer = draftTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 2,
+              width: tableContainer.scrollWidth,
+              style: { overflow: 'visible' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsDraftTableCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying draft table image:', err);
+      setIsDraftTableCopying(false);
+      handleDownloadDraftTableImage();
+      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleDownloadDraftTableImage = async () => {
+    if (!draftTableRef.current) return;
+    
+    const tableContainer = draftTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 2,
+        width: tableContainer.scrollWidth,
+        style: { overflow: 'visible' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `draft-elecciones.png`;
+      link.click();
+    } catch (err) {
+      console.error('Error downloading draft table image:', err);
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleCopyDraftDatosTableImage = async () => {
+    if (!draftDatosTableRef.current || isDraftDatosTableCopying) return;
+    setIsDraftDatosTableCopying(true);
+    
+    const tableContainer = draftDatosTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      if (typeof ClipboardItem !== 'undefined') {
+        const clipboardItem = new ClipboardItem({
+          'image/png': (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 2,
+              width: tableContainer.scrollWidth,
+              style: { overflow: 'visible' },
+              filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsDraftDatosTableCopying(false), 2000);
+      } else {
+        throw new Error('ClipboardItem not supported');
+      }
+    } catch (err) {
+      console.error('Error copying draft datos table image:', err);
+      setIsDraftDatosTableCopying(false);
+      handleDownloadDraftDatosTableImage();
+      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleDownloadDraftDatosTableImage = async () => {
+    if (!draftDatosTableRef.current) return;
+    
+    const tableContainer = draftDatosTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.classList.remove('overflow-x-auto');
+    tableContainer.classList.add('overflow-visible');
+
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 2,
+        width: tableContainer.scrollWidth,
+        style: { overflow: 'visible' },
+        filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `draft-puntos-rondas.png`;
+      link.click();
+    } catch (err) {
+      console.error('Error downloading draft datos table image:', err);
+    } finally {
+      tableContainer.className = originalClass;
+    }
+  };
+
   const handleCopyPoints = async () => {
     const table = document.querySelector('table');
     if (!table || isPointsTextCopying) return;
@@ -1336,6 +1679,110 @@ const getVal = (row: any, key: string) => {
       .sort((a, b) => a.value.localeCompare(b.value));
   }, [files.elecciones.data]);
 
+  const handleParseStartlist = () => {
+    if (!startlistText) return;
+
+    const textLines = startlistText.split('\n').map(line => line.trim());
+    const textLinesLower = textLines.map(line => line.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    const foundByPlayer: Record<string, any[]> = {};
+
+    Object.keys(playerByCyclist).forEach(cyclist => {
+      // cyclist is the exact name from the csv, e.g. "POGAČAR Tadej"
+      const cyclistLower = cyclist.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      
+      const lineIndex = textLinesLower.findIndex(line => line.includes(cyclistLower));
+      if (lineIndex !== -1) {
+        const originalLine = textLines[lineIndex];
+        const lineParts = originalLine.split(/[\s\t]+/);
+        let dorsal = '';
+        if (lineParts.length > 0 && /^[A-Za-z0-9]+$/.test(lineParts[0])) {
+           dorsal = lineParts[0];
+        }
+
+        const player = playerByCyclist[cyclist];
+        if (!foundByPlayer[player]) foundByPlayer[player] = [];
+        foundByPlayer[player].push({ nombre: cyclist, dorsal });
+      }
+    });
+
+    const results = Object.entries(foundByPlayer)
+      .map(([jugador, ciclistas]) => ({
+        jugador,
+        ciclistas // Now array of objects: { nombre, dorsal }
+      }))
+      .sort((a, b) => b.ciclistas.length - a.ciclistas.length);
+
+    setParsedStartlist({
+      carrera: startlistRace || 'Carrera sin nombre',
+      resultados: results
+    });
+  };
+
+  const handleSaveStartlist = async () => {
+    if (!parsedStartlist || !user) return;
+    setIsSavingStartlist(true);
+
+    try {
+      // files.startlist.data is actually expected to be the json array now
+      const currentData = Array.isArray(files.startlist.data) ? files.startlist.data : [];
+      
+      // Upsert: replace if same name, otherwise push
+      const existingIdx = currentData.findIndex(d => d.carrera === parsedStartlist.carrera);
+      const newData = [...currentData];
+      
+      if (existingIdx !== -1) {
+        newData[existingIdx] = parsedStartlist;
+      } else {
+        newData.push(parsedStartlist);
+      }
+
+      const { error } = await supabase
+        .from('global_files')
+        .upsert({ 
+          id: 'startlist', 
+          data: newData,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      
+      // Update local state implicitly through real-time sync or manual refresh
+      fetchGlobalFile('startlist');
+      
+      // Reset form
+      setStartlistText("");
+      setStartlistRace("");
+      setParsedStartlist(null);
+      alert("Startlist guardada correctamente.");
+    } catch (err: any) {
+      console.error("Error saving startlist:", err);
+      alert(`Error al guardar: ${err.message}`);
+    } finally {
+      setIsSavingStartlist(false);
+    }
+  };
+
+  const handleDeleteStartlist = async (carreraName: string) => {
+    try {
+      const currentData = Array.isArray(files.startlist.data) ? files.startlist.data : [];
+      const newData = currentData.filter((d: any) => d.carrera !== carreraName);
+      
+      const { error } = await supabase
+        .from('global_files')
+        .upsert({ 
+          id: 'startlist', 
+          data: newData,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      fetchGlobalFile('startlist');
+      
+    } catch (err: any) {
+      console.error("Error al eliminar startlist:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200">
       <header className="bg-white border-b border-neutral-200 px-6 py-4 sticky top-0 z-10">
@@ -1493,220 +1940,472 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
         )}
 
         {view === 'admin' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Sidebar: File Uploads (Only for Admin) */}
-            <div className="lg:col-span-4 space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Gestión de Datos</h2>
-                <p className="text-sm text-neutral-500 mb-4">
-                  Sube y sincroniza los archivos maestros del juego.
-                </p>
-              </div>
-
-              {!user && (
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
-                  <div className="flex gap-3">
-                    <Globe className="w-5 h-5 text-blue-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-900">Modo Local</p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Inicia sesión para cargar y sincronizar los archivos globales automáticamente.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {FILE_TYPES.map((ft) => {
-                  const state = files[ft.id as keyof AppState];
-                  const Icon = ft.icon;
-                  
-                  return (
-                    <div 
-                      key={ft.id} 
-                      className={cn(
-                        "relative overflow-hidden border rounded-xl p-4 transition-all",
-                        state.data ? "bg-green-50 border-green-200" : "bg-white border-neutral-200 hover:border-blue-300",
-                        state.loading && "animate-pulse opacity-70"
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "p-2 rounded-lg",
-                            state.data ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-600"
-                          )}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="font-medium text-sm text-neutral-900">{ft.name}</h3>
-                              {ft.global && <Globe className="w-3 h-3 text-neutral-400" title="Archivo Global" />}
-                            </div>
-                            <p className="text-xs text-neutral-500 mt-0.5">
-                              {state.loading ? "Sincronizando..." : 
-                               state.data ? (ft.global ? "Sincronizado en la nube" : state.file?.name) : 
-                               "Esperando archivo..."}
-                            </p>
-                            {state.updatedAt && (
-                              <p className="text-[10px] text-neutral-400 mt-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {new Date(state.updatedAt).toLocaleString('es-ES', { 
-                                  day: '2-digit', month: '2-digit', year: 'numeric', 
-                                  hour: '2-digit', minute: '2-digit' 
-                                })}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 shrink-0">
-                          {state.data ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                          ) : state.error ? (
-                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {state.error && (
-                        <div className="mt-3 text-xs text-red-600 bg-red-50 p-2 rounded-md border border-red-100">
-                          {state.error}
-                        </div>
-                      )}
-
-                      <input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(ft.id as keyof AppState, file);
-                        }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title={`Subir ${ft.name}`}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-
+          <div className="space-y-6">
+            {/* Admin Tabs Navigation */}
+            <div className="flex items-center gap-2 border-b border-neutral-200 pb-4 overflow-x-auto">
               <button
-                onClick={calculatePoints}
-                disabled={!allFilesUploaded}
+                onClick={() => setAdminTab('datos')}
                 className={cn(
-                  "w-full py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
-                  allFilesUploaded 
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow" 
-                    : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+                  adminTab === 'datos' ? "bg-purple-50 text-purple-700" : "text-neutral-600 hover:bg-neutral-100"
                 )}
               >
-                <Trophy className="w-5 h-5" />
-                Recalcular Puntuaciones
+                <FileSpreadsheet className="w-4 h-4" />
+                Datos
+              </button>
+              <button
+                onClick={() => setAdminTab('gestion-startlists')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+                  adminTab === 'gestion-startlists' ? "bg-purple-50 text-purple-700" : "text-neutral-600 hover:bg-neutral-100"
+                )}
+              >
+                <List className="w-4 h-4" />
+                Gestor de startlist
+              </button>
+              <button
+                onClick={() => setAdminTab('reporte-carrera')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+                  adminTab === 'reporte-carrera' ? "bg-purple-50 text-purple-700" : "text-neutral-600 hover:bg-neutral-100"
+                )}
+              >
+                <Flag className="w-4 h-4" />
+                Reporte carrera
+              </button>
+              <button
+                onClick={() => setAdminTab('reporte-mes')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+                  adminTab === 'reporte-mes' ? "bg-purple-50 text-purple-700" : "text-neutral-600 hover:bg-neutral-100"
+                )}
+              >
+                <Clock className="w-4 h-4" />
+                Reporte mes
+              </button>
+              <button
+                onClick={() => setAdminTab('reporte-temporada')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+                  adminTab === 'reporte-temporada' ? "bg-purple-50 text-purple-700" : "text-neutral-600 hover:bg-neutral-100"
+                )}
+              >
+                <Trophy className="w-4 h-4" />
+                Reporte temporada
               </button>
             </div>
 
-            {/* Main Content: Leaderboard */}
-            <div className="lg:col-span-8">
-              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden min-h-[600px]">
-                <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50">
-                  <h2 className="text-lg font-semibold text-neutral-900">Clasificación General</h2>
-                  <p className="text-sm text-neutral-500">Resultados actualizados según los archivos cargados.</p>
-                </div>
+            {adminTab === 'datos' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Sidebar: File Uploads (Only for Admin) */}
+                <div className="lg:col-span-4 space-y-6">
+                  <div>
+                    <h2 className="text-lg font-semibold mb-1">Gestión de Datos</h2>
+                    <p className="text-sm text-neutral-500 mb-4">
+                      Sube y sincroniza los archivos maestros del juego.
+                    </p>
+                  </div>
 
-                <div className="p-6">
-                  {!leaderboard ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
-                      <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-                        <UploadCloud className="w-8 h-8 text-blue-500" />
-                      </div>
-                      <div>
-                        <h3 className="text-neutral-900 font-medium">Esperando datos</h3>
-                        <p className="text-neutral-500 text-sm max-w-sm mt-1">
-                          Sincroniza los archivos globales (o súbelos) y carga los resultados actuales para ver la clasificación.
-                        </p>
+                  {!user && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                      <div className="flex gap-3">
+                        <Globe className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Modo Local</p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            Inicia sesión para cargar y sincronizar los archivos globales automáticamente.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  ) : leaderboard.length === 0 ? (
-                    <div className="text-center py-20 text-neutral-500">
-                      No se encontraron puntos. Verifica que los nombres de ciclistas y carreras coincidan entre los archivos.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {leaderboard.map((player, index) => (
+                  )}
+
+                  <div className="space-y-3">
+                    {FILE_TYPES.filter(ft => !(ft as any).hiddenInAdmin).map((ft) => {
+                      const state = files[ft.id as keyof AppState];
+                      const Icon = ft.icon;
+                      
+                      return (
                         <div 
-                          key={player.jugador} 
-                          className="border border-neutral-200 rounded-xl overflow-hidden transition-all hover:border-blue-200 bg-white"
+                          key={ft.id} 
+                          className={cn(
+                            "relative overflow-hidden border rounded-xl p-4 transition-all",
+                            state.data ? "bg-green-50 border-green-200" : "bg-white border-neutral-200 hover:border-blue-300",
+                            state.loading && "animate-pulse opacity-70"
+                          )}
                         >
-                          <div 
-                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-neutral-50"
-                            onClick={() => setExpandedPlayer(expandedPlayer === player.jugador ? null : player.jugador)}
-                          >
-                            <div className="flex items-center gap-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
                               <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                                index === 0 ? "bg-yellow-100 text-yellow-700" :
-                                index === 1 ? "bg-neutral-200 text-neutral-700" :
-                                index === 2 ? "bg-orange-100 text-orange-800" :
-                                "bg-blue-50 text-blue-700"
+                                "p-2 rounded-lg",
+                                state.data ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-600"
                               )}>
-                                {index + 1}
+                                <Icon className="w-5 h-5" />
                               </div>
-                              <h3 className="font-semibold text-lg text-neutral-900">{player.jugador}</h3>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <h3 className="font-medium text-sm text-neutral-900">{ft.name}</h3>
+                                  {ft.global && <Globe className="w-3 h-3 text-neutral-400" title="Archivo Global" />}
+                                </div>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                  {state.loading ? "Sincronizando..." : 
+                                   state.data ? (ft.global ? "Sincronizado en la nube" : state.file?.name) : 
+                                   "Esperando archivo..."}
+                                </p>
+                                {state.updatedAt && (
+                                  <p className="text-[10px] text-neutral-400 mt-1 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(state.updatedAt).toLocaleString('es-ES', { 
+                                      day: '2-digit', month: '2-digit', year: 'numeric', 
+                                      hour: '2-digit', minute: '2-digit' 
+                                    })}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-6">
-                              <div className="text-right">
-                                <div className="font-bold text-xl text-neutral-900">{player.puntos}</div>
-                                <div className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Puntos</div>
-                              </div>
-                              {expandedPlayer === player.jugador ? (
-                                <ChevronUp className="w-5 h-5 text-neutral-400" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5 text-neutral-400" />
-                              )}
+                            
+                            <div className="flex items-center gap-2 shrink-0">
+                              {state.data ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                              ) : state.error ? (
+                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                              ) : null}
                             </div>
                           </div>
 
-                          {/* Expanded Details */}
-                          {expandedPlayer === player.jugador && (
-                            <div className="border-t border-neutral-100 bg-neutral-50 p-4">
-                              <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                                Desglose de Puntos
-                              </h4>
-                              {player.detalles.length > 0 ? (
-                                <div className="space-y-2">
-                                  {player.detalles.map((detalle, idx) => (
-                                    <div key={idx} className="flex items-center justify-between text-sm bg-white p-3 rounded-lg border border-neutral-100 shadow-sm">
-                                      <div className="flex-1">
-                                        <span className="font-medium text-neutral-900">{detalle.ciclista}</span>
-                                        <span className="text-neutral-400 mx-2">•</span>
-                                        <span className="text-neutral-600">{detalle.carrera}</span>
-                                      </div>
-                                      <div className="flex items-center gap-4 text-right">
-                                        <div className="text-neutral-500 text-xs">
-                                          {detalle.tipoResultado} (Pos: {detalle.posicion})
-                                        </div>
-                                        <div className="font-semibold text-blue-600 w-12">
-                                          +{detalle.puntosObtenidos}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="text-sm text-neutral-500 italic">
-                                  No hay puntos registrados aún.
-                                </div>
-                              )}
+                          {state.error && (
+                            <div className="mt-3 text-xs text-red-600 bg-red-50 p-2 rounded-md border border-red-100">
+                              {state.error}
                             </div>
                           )}
+
+                          <input
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(ft.id as keyof AppState, file);
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            title={`Subir ${ft.name}`}
+                          />
                         </div>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={calculatePoints}
+                    disabled={!allFilesUploaded}
+                    className={cn(
+                      "w-full py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
+                      allFilesUploaded 
+                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow" 
+                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                    )}
+                  >
+                    <Trophy className="w-5 h-5" />
+                    Recalcular Puntuaciones
+                  </button>
+                </div>
+
+                {/* Main Content: Leaderboard */}
+                <div className="lg:col-span-8">
+                  <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden min-h-[600px]">
+                    <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50">
+                      <h2 className="text-lg font-semibold text-neutral-900">Clasificación General</h2>
+                      <p className="text-sm text-neutral-500">Resultados actualizados según los archivos cargados.</p>
+                    </div>
+
+                    <div className="p-6">
+                      {!leaderboard ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
+                          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+                            <UploadCloud className="w-8 h-8 text-blue-500" />
+                          </div>
+                          <div>
+                            <h3 className="text-neutral-900 font-medium">Esperando datos</h3>
+                            <p className="text-neutral-500 text-sm max-w-sm mt-1">
+                              Sincroniza los archivos globales (o súbelos) y carga los resultados actuales para ver la clasificación.
+                            </p>
+                          </div>
+                        </div>
+                      ) : leaderboard.length === 0 ? (
+                        <div className="text-center py-20 text-neutral-500">
+                          No se encontraron puntos. Verifica que los nombres de ciclistas y carreras coincidan entre los archivos.
+                        </div>
+                      ) : (
+                        <div className="w-full" style={{ height: Math.max(500, leaderboard.length * 40 + 60) }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={leaderboard.map((p) => {
+                                const cyclistPointsMap: Record<string, { points: number, ronda: string }> = {};
+                                p.detalles.forEach(d => {
+                                  if (!cyclistPointsMap[d.ciclista]) {
+                                    cyclistPointsMap[d.ciclista] = { points: 0, ronda: d.ronda || '99' };
+                                  }
+                                  cyclistPointsMap[d.ciclista].points += d.puntosObtenidos;
+                                });
+                                const cyclists = Object.entries(cyclistPointsMap)
+                                  .map(([name, data]) => ({ name, ...data }))
+                                  .sort((a, b) => a.ronda.localeCompare(b.ronda));
+
+                                return {
+                                  ...p,
+                                  displayName: `${p.nombreEquipo} [#${p.orden}]`,
+                                  cyclists
+                                };
+                              })}
+                              layout="vertical"
+                              margin={{ top: 20, right: 60, left: 10, bottom: 20 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                              <XAxis type="number" hide />
+                              <YAxis 
+                                dataKey="displayName" 
+                                type="category" 
+                                width={160} 
+                                tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <Tooltip
+                                cursor={{ fill: '#f8fafc' }}
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    return (
+                                      <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-xl min-w-[240px] z-50">
+                                        <div className="flex items-center justify-between mb-3 border-b border-neutral-100 pb-2">
+                                          <span className="font-bold text-neutral-900">{data.displayName}</span>
+                                          <span className="text-blue-600 font-extrabold">{data.puntos} <span className="text-[10px] uppercase font-medium">pts</span></span>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          {data.cyclists.length > 0 ? (
+                                            data.cyclists.map((c: any, idx: number) => (
+                                              <div key={idx} className="flex items-center justify-between text-[11px] gap-3">
+                                                <span className="text-neutral-500 font-medium truncate">
+                                                  <span className="text-neutral-400 mr-1.5 font-mono text-[9px]">#{c.ronda}</span>
+                                                  {c.name}
+                                                </span>
+                                                <span className="font-bold text-neutral-700 shrink-0">{c.points} <span className="text-[10px] font-normal text-neutral-400">pts</span></span>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <div className="text-[11px] text-neutral-400 italic">Sin puntos registrados</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <Bar 
+                                dataKey="puntos" 
+                                fill="#3b82f6" 
+                                radius={[0, 6, 6, 0]} 
+                                barSize={26}
+                              >
+                                <LabelList 
+                                  dataKey="puntos" 
+                                  position="right" 
+                                  style={{ fontSize: '11px', fontWeight: '800', fill: '#334155' }} 
+                                />
+                                {leaderboard.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={index === 0 ? '#3b82f6' : index === 1 ? '#60a5fa' : index === 2 ? '#93c5fd' : '#cbd5e1'} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {adminTab === 'gestion-startlists' && (
+              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+                <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-lg font-semibold text-neutral-900">Gestor de Startlists (Múltiples Carreras)</h2>
+                    <p className="text-sm text-neutral-500">Pega el texto de los participantes desde FirstCycling para detectar ciclistas de la liga y generar la tabla.</p>
+                  </div>
+                  {parsedStartlist && parsedStartlist.resultados.length > 0 && (
+                    <button
+                      onClick={handleSaveStartlist}
+                      disabled={isSavingStartlist || !startlistRace.trim()}
+                      className={cn(
+                        "px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all shadow-sm",
+                        isSavingStartlist || !startlistRace.trim()
+                          ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      )}
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSavingStartlist ? "Guardando..." : "Guardar Startlist"}
+                    </button>
+                  )}
+                </div>
+
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                  {/* Left Side: Input */}
+                  <div className="space-y-4 flex flex-col h-full">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Nombre de la Carrera</label>
+                      <select
+                        value={startlistRace}
+                        onChange={(e) => setStartlistRace(e.target.value)}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                      >
+                        <option value="">-- Selecciona una carrera --</option>
+                        {(() => {
+                          const racesWithResults = new Set(
+                            (files.resultados.data || []).map((r: any) => getVal(r, 'Carrera')?.trim() || '')
+                          );
+
+                          return files.carreras.data?.map((row: any, idx: number) => {
+                            const carreraName = getVal(row, 'Carrera');
+                            if (!carreraName || racesWithResults.has(carreraName.trim())) return null;
+                            return <option key={idx} value={carreraName}>{carreraName}</option>;
+                          });
+                        })()}
+                      </select>
+                    </div>
+                    <div className="flex-1 flex flex-col min-h-[300px]">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Texto de Startlist (Copia y Pega)</label>
+                      <textarea
+                        value={startlistText}
+                        onChange={(e) => setStartlistText(e.target.value)}
+                        placeholder="Pega el listado directamente desde FirstCycling..."
+                        className="w-full flex-1 p-4 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-xs text-neutral-600 bg-neutral-50/50"
+                      />
+                    </div>
+                    <button
+                      onClick={handleParseStartlist}
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-sm"
+                    >
+                      <Search className="w-5 h-5" />
+                      Procesar Texto y Detectar
+                    </button>
+                  </div>
+
+                  {/* Right Side: Results */}
+                  <div className="bg-neutral-50 rounded-xl border border-neutral-200 p-4 h-[600px] overflow-y-auto">
+                    {!parsedStartlist ? (
+                      <div className="h-full flex flex-col items-center justify-center text-neutral-400 space-y-3">
+                        <Users className="w-10 h-10" />
+                        <p className="text-sm">Procesa un texto para previsualizar los resultados</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-neutral-200 shadow-sm sticky top-0 z-10">
+                          <h3 className="font-bold text-neutral-900 text-lg">{parsedStartlist.carrera}</h3>
+                          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                            {parsedStartlist.resultados.reduce((acc, curr) => acc + curr.ciclistas.length, 0)} encontrados
+                          </span>
+                        </div>
+
+                        {parsedStartlist.resultados.map((res, idx) => (
+                          <div key={idx} className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm">
+                            <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-2">
+                              <span className="font-bold text-neutral-800">{res.jugador}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
+                                {res.ciclistas.length} ciclistas
+                              </span>
+                            </div>
+                            <ul className="space-y-1.5">
+                              {res.ciclistas.map((c, i) => {
+                                const nombre = typeof c === 'string' ? c : c.nombre;
+                                const dorsal = typeof c === 'string' ? '' : c.dorsal;
+                                return (
+                                  <li key={i} className="text-sm text-neutral-600 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                                    <span className="truncate">{dorsal ? <span className="text-neutral-400 mr-2">#{dorsal}</span> : null}{nombre}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                        
+                        {parsedStartlist.resultados.length === 0 && (
+                          <div className="text-center py-10 text-neutral-500 italic text-sm">
+                            No se encontró ningún ciclista de la liga en este texto.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Saved Startlists Manager */}
+                <div className="border-t border-neutral-100 bg-neutral-50/50 p-6 rounded-b-2xl">
+                  <h3 className="text-md font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <List className="w-5 h-5 text-neutral-500" />
+                    Startlists guardadas en el sistema
+                  </h3>
+                  {Array.isArray(files.startlist.data) && files.startlist.data.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {files.startlist.data.map((sl: any, idx: number) => {
+                        if (!sl || !sl.carrera) return null;
+                        return (
+                          <div key={idx} className="bg-white border border-neutral-200 rounded-lg p-3 flex justify-between items-center shadow-sm">
+                            <div className="truncate pr-2">
+                              <h4 className="font-semibold text-sm text-neutral-900 truncate">{sl.carrera}</h4>
+                              <span className="text-[10px] text-neutral-500">{sl.resultados?.reduce((acc: number, curr: any) => acc + (curr.ciclistas?.length || 0), 0)} participantes ligueros</span>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteStartlist(sl.carrera)}
+                              className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+                              title="Eliminar Startlist"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-neutral-500 italic bg-white border border-neutral-200 rounded-lg p-4 text-center">
+                      No hay ninguna carrera guardada actualmente.
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {adminTab === 'reporte-carrera' && (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
+                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
+                  <Flag className="w-8 h-8 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900">Reporte de Carrera</h2>
+                <p className="text-neutral-500 max-w-sm mt-2">Próximamente podrás generar reportes detallados por competición aquí.</p>
+              </div>
+            )}
+
+            {adminTab === 'reporte-mes' && (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
+                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900">Reporte Mensual</h2>
+                <p className="text-neutral-500 max-w-sm mt-2">Próximamente podrás generar resúmenes mensuales del juego aquí.</p>
+              </div>
+            )}
+
+            {adminTab === 'reporte-temporada' && (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
+                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
+                  <Trophy className="w-8 h-8 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900">Reporte de Temporada</h2>
+                <p className="text-neutral-500 max-w-sm mt-2">Próximamente podrás generar el informe final de la temporada aquí.</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
@@ -5029,47 +5728,46 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             </button>
                           </div>
                         </div>
-                        <div ref={raceClassificationTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isRaceClassificationExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                        <div id="race-classification-table" ref={raceClassificationTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isRaceClassificationExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
                           {isRaceClassificationExpanded && (
                             <button onClick={() => setIsRaceClassificationExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
                               <X className="w-6 h-6" />
                             </button>
                           )}
-                          <table className="w-full text-sm text-left">
-                            <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-xs">
+                          <table className="w-full text-sm text-left border-collapse">
+                            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-[10px] font-bold tracking-wider">
                               <tr>
-                                <th className="px-4 py-3 w-16 text-center">Pos</th>
-                                <th className="px-4 py-3">Equipo</th>
-                                <th className="px-4 py-3 text-center">Ciclistas</th>
-                                <th className="px-4 py-3 text-right">Puntos</th>
+                                <th className="px-3 py-2 w-12 text-center">#</th>
+                                <th className="px-3 py-2">Equipo</th>
+                                <th className="px-3 py-2 text-center">Cic.</th>
+                                <th className="px-3 py-2 text-right">Pts</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100">
                               {rankedTeams.filter(t => t.nombreEquipo !== 'No draft' && t.nombreEquipo !== 'No draft [99]').map((team) => (
-                                <tr key={team.jugador} className="hover:bg-neutral-50 transition-colors">
-                                  <td className="px-4 py-3 text-center font-medium text-lg">
-                                    {team.pos === 1 ? '🥇' : team.pos === 2 ? '🥈' : team.pos === 3 ? '🥉' : team.pos ? <span className="text-sm text-neutral-400">{team.pos}</span> : '-'}
+                                <tr key={team.jugador} className="hover:bg-blue-50/30 transition-colors group">
+                                  <td className="px-3 py-2 text-center font-mono text-xs text-neutral-400">
+                                    {team.pos === 1 ? '🥇' : team.pos === 2 ? '🥈' : team.pos === 3 ? '🥉' : team.pos || '-'}
                                   </td>
-                                  <td className="px-4 py-3 font-semibold text-neutral-900">
-                                    {team.nombreEquipo} [#{team.orden}]
+                                  <td className="px-3 py-2">
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-neutral-900 leading-tight">{team.nombreEquipo} [#{team.orden}]</span>
+                                    </div>
                                   </td>
-                                  <td className="px-4 py-3 text-center text-neutral-600">
-                                    {team.nombreEquipo === 'No draft' ? '-' : (
-                                      <span className={cn(
-                                        "px-2 py-1 rounded-md text-xs font-bold",
-                                        team.uniqueCyclists === 0 ? "bg-red-100 text-red-600" : 
-                                        team.uniqueCyclists === maxUniqueCyclists ? "bg-green-500 text-white" : 
-                                        team.uniqueCyclists === minUniqueCyclists ? "bg-orange-100 text-orange-700" :
-                                        "bg-neutral-100 text-neutral-600"
-                                      )}>
-                                        {team.uniqueCyclists}
-                                      </span>
-                                    )}
+                                  <td className="px-3 py-2 text-center">
+                                    <span className={cn(
+                                      "inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold",
+                                      team.uniqueCyclists === 0 ? "bg-red-50 text-red-500" : 
+                                      team.uniqueCyclists === maxUniqueCyclists ? "bg-green-100 text-green-700" : 
+                                      "bg-neutral-100 text-neutral-600"
+                                    )}>
+                                      {team.uniqueCyclists}
+                                    </span>
                                   </td>
                                   <td 
-                                    className="px-4 py-3 text-right font-bold text-blue-600 text-base"
+                                    className="px-3 py-2 text-right font-mono font-bold text-blue-600"
                                     style={{ 
-                                      backgroundColor: team.totalPoints > 0 ? `rgba(34, 197, 94, ${0.05 + ((team.totalPoints - minRacePoints) / (maxRacePoints - minRacePoints || 1)) * 0.2})` : 'transparent'
+                                      backgroundColor: team.totalPoints > 0 ? `rgba(34, 197, 94, ${0.03 + ((team.totalPoints - minRacePoints) / (maxRacePoints - minRacePoints || 1)) * 0.15})` : 'transparent'
                                     }}
                                   >
                                     {team.totalPoints}
@@ -5100,41 +5798,45 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             </button>
                           </div>
                         </div>
-                        <div ref={cyclistsTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isCyclistsExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                        <div id="cyclists-classification-table" ref={cyclistsTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isCyclistsExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
                           {isCyclistsExpanded && (
                             <button onClick={() => setIsCyclistsExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
                               <X className="w-6 h-6" />
                             </button>
                           )}
-                          <table className="w-full text-sm text-left">
-                            <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-xs">
+                          <table className="w-full text-sm text-left border-collapse">
+                            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-[10px] font-bold tracking-wider">
                               <tr>
-                                <th className="px-4 py-3">Ciclista</th>
-                                <th className="px-4 py-3">Jugador</th>
-                                <th className="px-4 py-3 text-center">Victorias</th>
-                                <th className="px-4 py-3 text-right">Puntos</th>
+                                <th className="px-3 py-2">Ciclista</th>
+                                <th className="px-3 py-2">Jugador</th>
+                                <th className="px-3 py-2 text-center">Vict.</th>
+                                <th className="px-3 py-2 text-right">Pts</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100">
                               {raceCyclists.map((c, idx) => (
-                                <tr key={c.ciclista} className="hover:bg-neutral-50 transition-colors">
-                                  <td className="px-4 py-3 font-medium text-neutral-900">
-                                    {c.ciclista} <span className="text-neutral-400 font-normal">&lt;{c.ronda}&gt;</span>
+                                <tr key={c.ciclista} className="hover:bg-blue-50/30 transition-colors">
+                                  <td className="px-3 py-2">
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-neutral-900 leading-tight">{c.ciclista} &lt;{c.ronda}&gt;</span>
+                                    </div>
                                   </td>
-                                  <td className="px-4 py-3 text-neutral-600">
-                                    {c.jugador} [#{c.orden}]
+                                  <td className="px-3 py-2">
+                                    <div className="flex flex-col">
+                                      <span className="text-neutral-700 font-medium leading-tight">{c.jugador} [#{c.orden}]</span>
+                                    </div>
                                   </td>
-                                  <td className="px-4 py-3 text-center">
+                                  <td className="px-3 py-2 text-center">
                                     {c.victorias > 0 ? (
-                                      <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">
+                                      <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 w-5 h-5 rounded text-[10px] font-bold">
                                         {c.victorias}
                                       </span>
-                                    ) : '-'}
+                                    ) : <span className="text-neutral-300">-</span>}
                                   </td>
                                   <td 
-                                    className="px-4 py-3 text-right font-bold text-blue-600"
+                                    className="px-3 py-2 text-right font-mono font-bold text-blue-600"
                                     style={{ 
-                                      backgroundColor: c.puntos > 0 ? `rgba(34, 197, 94, ${0.05 + ((c.puntos - minCyclistRacePoints) / (maxCyclistRacePoints - minCyclistRacePoints || 1)) * 0.2})` : 'transparent'
+                                      backgroundColor: c.puntos > 0 ? `rgba(34, 197, 94, ${0.03 + ((c.puntos - minCyclistRacePoints) / (maxCyclistRacePoints - minCyclistRacePoints || 1)) * 0.15})` : 'transparent'
                                     }}
                                   >
                                     {c.puntos}
@@ -5158,42 +5860,41 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             <button onClick={() => setIsStageExpanded(!isStageExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
                               <Maximize2 className="w-4 h-4" />
                             </button>
-                            <button onClick={handleCopyStage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
-                              <Copy className="w-4 h-4" />
+                            <button onClick={handleCopyRaceBreakdownImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                              {isRaceBreakdownCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                             </button>
-                            <button onClick={handleDownloadStage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
+                            <button onClick={handleDownloadRaceBreakdownImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore">
                               <UploadCloud className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                        <div ref={stageTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm", isStageExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                        <div id="race-breakdown-table" ref={raceBreakdownTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm", isStageExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
                           {isStageExpanded && (
                             <button onClick={() => setIsStageExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
                               <X className="w-6 h-6" />
                             </button>
                           )}
-                          <table className="w-full text-sm text-left whitespace-nowrap">
-                              <thead className="bg-blue-600 text-white uppercase text-xs">
+                          <table className="w-full text-xs text-left whitespace-nowrap border-collapse">
+                              <thead className="bg-neutral-800 text-white uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10">
                                 <tr>
-                                  <th className="px-4 py-3 font-semibold">Equipo</th>
+                                  <th className="px-3 py-2 font-semibold sticky left-0 bg-neutral-800 z-20 border-r border-neutral-700">Equipo</th>
                                   {finalColumns.map(col => (
-                                    <th key={col.formatted} className="px-4 py-3 text-center font-semibold">{col.formatted}</th>
+                                    <th key={col.formatted} className="px-2 py-2 text-center font-semibold border-r border-neutral-700">{col.formatted}</th>
                                   ))}
-                                  <th className="px-4 py-3 text-right font-semibold">TOTAL</th>
+                                  <th className="px-3 py-2 text-right font-semibold sticky right-0 bg-neutral-800 z-20 border-l border-neutral-700">TOTAL</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-neutral-100">
                                 {teamStagePoints.map((team, idx) => {
-                                  // Find max total to color the total column
                                   const maxTotal = Math.max(...teamStagePoints.map(t => t.total));
                                   const minTotal = Math.min(...teamStagePoints.map(t => t.total));
                                   const totalRange = maxTotal - minTotal || 1;
                                   const intensity = Math.max(0.1, (team.total - minTotal) / totalRange);
                                   
                                   return (
-                                    <tr key={team.jugador} className="hover:bg-neutral-50 transition-colors">
-                                      <td className="px-4 py-3 font-medium text-neutral-900">
-                                        {team.nombreEquipo} [#{team.orden}]
+                                    <tr key={team.jugador} className="hover:bg-blue-50/30 transition-colors group">
+                                      <td className="px-3 py-2 font-bold text-neutral-900 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10">
+                                        <span>{team.nombreEquipo} [#{team.orden}]</span>
                                       </td>
                                       {finalColumns.map(col => {
                                         const pts = team.pointsByCol[col.formatted] || 0;
@@ -5202,18 +5903,18 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           <td 
                                             key={col.formatted} 
                                             className={cn(
-                                              "px-4 py-3 text-center",
-                                              isMax ? "bg-yellow-200 font-bold text-yellow-900" : pts > 0 ? "text-neutral-700" : "text-neutral-300"
+                                              "px-2 py-2 text-center font-mono border-r border-neutral-50",
+                                              isMax ? "bg-yellow-100 font-bold text-yellow-800" : pts > 0 ? "text-neutral-700" : "text-neutral-200"
                                             )}
                                           >
-                                            {pts > 0 ? pts : ''}
+                                            {pts > 0 ? pts : '-'}
                                           </td>
                                         );
                                       })}
                                       <td 
-                                        className="px-4 py-3 text-right font-bold"
+                                        className="px-3 py-2 text-right font-mono font-bold sticky right-0 z-10 border-l border-neutral-100"
                                         style={{ 
-                                          backgroundColor: `rgba(34, 197, 94, ${intensity * 0.5})`,
+                                          backgroundColor: team.total > 0 ? `rgba(34, 197, 94, ${0.1 + intensity * 0.3})` : 'white',
                                           color: intensity > 0.5 ? '#14532d' : '#166534'
                                         }}
                                       >
@@ -5230,11 +5931,29 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                       {/* Detailed Breakdown */}
                       <div className="mt-12">
-                        <h3 className="font-semibold text-xl text-neutral-900 border-b pb-3 mb-4 flex items-center gap-2">
-                          <Users className="w-5 h-5 text-blue-600" />
-                          Desglose por Equipo
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between border-b pb-3 mb-6">
+                          <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-blue-600" />
+                            Desglose por Equipo
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsDetailedBreakdownExpanded(!isDetailedBreakdownExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Ampliar">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyDetailedBreakdownImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Copiar como imagen">
+                              {isDetailedBreakdownCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                            <button onClick={handleDownloadDetailedBreakdownImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Descargar imagen">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div id="detailed-team-breakdown" ref={detailedBreakdownRef} className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-2 -mx-2 rounded-xl", isDetailedBreakdownExpanded ? "fixed inset-4 z-50 overflow-auto p-6 shadow-2xl m-0" : "")}>
+                          {isDetailedBreakdownExpanded && (
+                            <button onClick={() => setIsDetailedBreakdownExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
                           {raceTeams.map(team => {
                             const cyclistMap = new Map<string, { ronda: string, total: number, concepts: any[] }>();
                             team.details.forEach(d => {
@@ -5250,31 +5969,35 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               .filter(([_, data]) => team.jugador !== 'No draft' || data.total > 0)
                               .sort((a, b) => b[1].total - a[1].total);
 
+                            if (sortedCyclists.length === 0) return null;
+
                             return (
-                              <div key={team.jugador} className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">
-                                <div className="flex justify-between items-center mb-3 border-b border-neutral-200 pb-2">
-                                  <span className="font-bold text-neutral-900">
-                                    {team.jugador} [#{team.orden}]
+                              <div key={team.jugador} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 flex flex-col h-full">
+                                <div className="flex justify-between items-center mb-2 border-b border-neutral-200 pb-1.5">
+                                  <span className="font-bold text-neutral-900 text-sm leading-tight">
+                                    {team.nombreEquipo} [#{team.orden}]
                                   </span>
-                                  <span className="font-bold text-blue-600">{team.totalPoints} pts</span>
+                                  <span className="font-mono font-bold text-blue-600 text-sm">{team.totalPoints} pts</span>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5 flex-1">
                                   {sortedCyclists.map(([ciclista, data], idx) => (
-                                    <div key={idx} className="flex flex-col text-sm text-neutral-600 bg-white p-2.5 rounded-lg border border-neutral-100 shadow-sm">
+                                    <div key={idx} className="bg-white p-2 rounded border border-neutral-100 shadow-sm">
                                       <div className="flex justify-between items-center mb-1">
-                                        <span className="font-medium text-neutral-800">
-                                          {ciclista} <span className="text-neutral-400 font-normal">&lt;{data.ronda}&gt;</span>
+                                        <span className="font-bold text-neutral-800 text-[11px] truncate mr-2">
+                                          {ciclista} &lt;{data.ronda}&gt;
                                         </span>
-                                        <span className={cn("font-semibold px-2 py-0.5 rounded-md text-xs", data.total > 0 ? "text-green-700 bg-green-100" : "text-neutral-500 bg-neutral-100")}>
+                                        <span className={cn("font-mono font-bold px-1.5 py-0.5 rounded text-[10px]", data.total > 0 ? "text-green-700 bg-green-50" : "text-neutral-400 bg-neutral-50")}>
                                           {data.total > 0 ? `+${data.total}` : '0'}
                                         </span>
                                       </div>
-                                      {data.concepts.filter(c => c.puntosObtenidos > 0 || data.total === 0).map((c, cIdx) => (
-                                        <div key={cIdx} className="flex justify-between items-center text-xs text-neutral-500 pl-2 border-l-2 border-neutral-100 mt-1">
-                                          <span>{c.tipoResultado} - Pos: {c.posicion}</span>
-                                          <span>+{c.puntosObtenidos}</span>
-                                        </div>
-                                      ))}
+                                      <div className="space-y-0.5">
+                                        {data.concepts.filter(c => c.puntosObtenidos > 0).map((c, cIdx) => (
+                                          <div key={cIdx} className="flex justify-between items-center text-[9px] text-neutral-500 pl-1.5 border-l border-neutral-200">
+                                            <span className="truncate">{c.tipoResultado} (P{c.posicion})</span>
+                                            <span className="font-mono">+{c.puntosObtenidos}</span>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -5416,9 +6139,35 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                   };
 
                   return (
-                    <div className="space-y-8">
-                      {/* KPIs */}
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex justify-end mb-4">
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={handleCopyTeamGlobalImage}
+                            className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                            title="Copiar imagen"
+                          >
+                            {isTeamGlobalCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                            Copiar Imagen
+                          </button>
+                          <button 
+                            onClick={handleDownloadTeamGlobalImage}
+                            className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                            title="Descargar"
+                          >
+                            <UploadCloud className="w-4 h-4" />
+                            Descargar
+                          </button>
+                        </div>
+                      </div>
+                      <div ref={teamGlobalRef} className="space-y-8 bg-white p-6 -mx-6 -mt-6 sm:mx-0 sm:mt-0 sm:p-6 sm:bg-white sm:border sm:border-neutral-200 sm:shadow-sm rounded-2xl">
+                        {/* Title for image */}
+                        <div className="text-center mb-2">
+                          <h2 className="text-2xl font-bold text-neutral-900">{selectedTeam}</h2>
+                          <p className="text-sm text-neutral-500">Resumen de la temporada</p>
+                        </div>
+                        {/* KPIs */}
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm">
                           <div className="flex flex-col items-center text-center">
                             <Trophy className="w-5 h-5 text-blue-600 mb-2" />
@@ -5518,10 +6267,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               })
                               .sort((a, b) => b.totalRacePoints - a.totalRacePoints)
                               .map(({ race, points }) => (
-                                <div key={race} className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-sm">
-                                  <Trophy className="w-3 h-3 text-yellow-500" />
-                                  <span className="text-xs font-medium text-neutral-800">{race}</span>
-                                  <span className="text-xs font-bold text-blue-600">{points} pts</span>
+                                <div key={race} className="bg-white border border-neutral-200 rounded-lg px-3 py-2 flex items-center gap-2.5 shadow-sm">
+                                  <Trophy className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                                  <span className="text-xs font-medium text-neutral-800 whitespace-nowrap">{race}</span>
+                                  <span className="text-xs font-bold text-blue-600 flex-shrink-0 whitespace-nowrap">{points} pts</span>
                                 </div>
                               ))}
                           </div>
@@ -5534,7 +6283,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           <Users className="w-5 h-5 text-blue-600" />
                           Plantilla del Equipo
                         </h3>
-                        <div className="bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm">
+                        <div className="table-container-for-capture bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                           <table className="w-full text-sm text-left whitespace-nowrap">
                             <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider">
                               <tr>
@@ -5625,8 +6374,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         </div>
                       </div>
                     </div>
-                  );
-                })() : (
+                  </div>
+                );
+              })() : (
                   <div className="text-center py-12 text-neutral-500">
                     Selecciona un equipo para ver sus estadísticas y plantilla.
                   </div>
@@ -5635,45 +6385,209 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
             )}
 
             {publicTab === 'startlist' && (
-              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6 border-b pb-4">
+              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 min-h-[600px]">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b pb-4 gap-4">
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">Startlist Carrera</h2>
-                    <p className="text-sm text-neutral-500 mt-1">Lista de corredores inscritos para la próxima competición.</p>
+                    <h2 className="text-xl font-bold text-neutral-900">Startlists por Carrera</h2>
+                    <p className="text-sm text-neutral-500 mt-1">Consulta los ciclistas de la liga participantes en cada carrera.</p>
                   </div>
-                  <List className="w-6 h-6 text-blue-600" />
+                  <div className="flex items-center gap-2">
+                    <List className="w-5 h-5 text-blue-600 hidden md:block" />
+                    {Array.isArray(files.startlist.data) && files.startlist.data.length > 0 && (
+                      <select 
+                        value={publicStartlistRace}
+                        onChange={(e) => setPublicStartlistRace(e.target.value)}
+                        className="pl-3 pr-8 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                      >
+                        <option value="">-- Selecciona carrera --</option>
+                        {files.startlist.data.filter(sl => sl && sl.carrera).map((sl: any, idx: number) => (
+                          <option key={idx} value={sl.carrera}>{sl.carrera}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
 
-                {!files.startlist.data ? (
+                {(!Array.isArray(files.startlist.data) || files.startlist.data.length === 0) ? (
                   <div className="text-center py-20 text-neutral-500 italic">
-                    No hay startlist cargada actualmente.
+                    No hay startlists cargadas actualmente.
+                  </div>
+                ) : !publicStartlistRace ? (
+                  <div className="text-center py-20 text-neutral-500 flex flex-col items-center gap-4">
+                    <List className="w-12 h-12 text-blue-200" />
+                    <p>Selecciona una carrera en el menú superior para ver los participantes.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider font-bold">
-                        <tr>
-                          <th className="px-4 py-3 w-16 text-center">BIB</th>
-                          <th className="px-4 py-3">Corredor</th>
-                          <th className="px-4 py-3 text-center">Ranking</th>
-                          <th className="px-4 py-3 text-center">PNT</th>
-                          <th className="px-4 py-3">Equipo</th>
-                          <th className="px-4 py-3">Información</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {files.startlist.data.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-neutral-50 transition-colors">
-                            <td className="px-4 py-3 text-center font-mono text-neutral-400">{getVal(row, 'BIB')}</td>
-                            <td className="px-4 py-3 font-bold text-neutral-900">{getVal(row, 'CORREDOR')}</td>
-                            <td className="px-4 py-3 text-center text-neutral-600">{getVal(row, 'RANKING')}</td>
-                            <td className="px-4 py-3 text-center font-semibold text-blue-600">{getVal(row, 'PNT')}</td>
-                            <td className="px-4 py-3 text-neutral-600 text-xs">{getVal(row, 'EQUIPO')}</td>
-                            <td className="px-4 py-3 text-neutral-500 text-xs italic">{getVal(row, 'MOSTRAR MÁS')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-6">
+                    {(() => {
+                      const selectedData = files.startlist.data.find(d => d.carrera === publicStartlistRace);
+                      if (!selectedData) return null;
+
+                      let rows: any[] = [];
+                      selectedData.resultados.forEach((res: any) => {
+                        res.ciclistas.forEach((c: any) => {
+                          const nombre = typeof c === 'string' ? c : c.nombre;
+                          const dorsal = typeof c === 'string' ? '' : c.dorsal;
+                          
+                          const jugador = res.jugador;
+                          const order = playerOrderMap[jugador] || '99';
+                          const jugadorOrdered = `${jugador} [#${order}]`;
+                          const ronda = cyclistRoundMap[nombre] || '';
+                          const meta = cyclistMetadata[nombre] || {};
+
+                          rows.push({
+                            jugador: jugadorOrdered,
+                            jugadorName: jugador,
+                            dorsal: dorsal || '',
+                            ciclista: nombre,
+                            ronda: ronda,
+                            pais: meta.pais || '',
+                            equipo: meta.equipo || ''
+                          });
+                        });
+                      });
+
+                      const uniquePlayersInStartlist = [...new Set(rows.map(r => r.jugadorName))].sort((a, b) => a.localeCompare(b));
+
+                      let filteredRows = startlistPlayerFilter === 'all' 
+                        ? rows 
+                        : rows.filter(r => r.jugadorName === startlistPlayerFilter);
+
+                      filteredRows.sort((a, b) => {
+                        let aVal: any = '';
+                        let bVal: any = '';
+
+                        if (startlistSortColumn === 'jugador') {
+                           aVal = a.jugador; bVal = b.jugador;
+                        } else if (startlistSortColumn === 'dorsal') {
+                           aVal = parseInt(a.dorsal) || 9999; bVal = parseInt(b.dorsal) || 9999;
+                        } else if (startlistSortColumn === 'ciclista') {
+                           aVal = a.ciclista; bVal = b.ciclista;
+                        } else if (startlistSortColumn === 'ronda') {
+                           aVal = parseInt(a.ronda) || 99; bVal = parseInt(b.ronda) || 99;
+                        } else if (startlistSortColumn === 'pais') {
+                           aVal = a.pais; bVal = b.pais;
+                        } else if (startlistSortColumn === 'equipo') {
+                           aVal = a.equipo; bVal = b.equipo;
+                        }
+
+                        if (aVal < bVal) return startlistSortDirection === 'asc' ? -1 : 1;
+                        if (aVal > bVal) return startlistSortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                      });
+
+                      const handleSort = (col: string) => {
+                        if (startlistSortColumn === col) {
+                          setStartlistSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setStartlistSortColumn(col);
+                          setStartlistSortDirection('asc');
+                        }
+                      };
+
+                      return (
+                        <div className="flex flex-col space-y-4">
+                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
+                             <div className="flex items-center gap-3">
+                               <label className="text-sm font-medium text-neutral-700 whitespace-nowrap">Filtrar por Jugador:</label>
+                               <select
+                                 value={startlistPlayerFilter}
+                                 onChange={(e) => setStartlistPlayerFilter(e.target.value)}
+                                 className="pl-3 pr-8 py-1.5 bg-white border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                               >
+                                 <option value="all">Todos ({uniquePlayersInStartlist.length})</option>
+                                 {uniquePlayersInStartlist.map((p, idx) => (
+                                   <option key={idx} value={p}>{p}</option>
+                                 ))}
+                               </select>
+                             </div>
+                             
+                             <div className="flex items-center gap-2">
+                               <button onClick={async () => {
+                                 if (!startlistTableRef.current) return;
+                                 try {
+                                   if (typeof ClipboardItem !== 'undefined') {
+                                     const clipboardItem = new ClipboardItem({
+                                       'image/png': (async () => {
+                                         const dataUrl = await domToDataUrl(startlistTableRef.current!, { scale: 2 });
+                                         return await (await fetch(dataUrl)).blob();
+                                       })()
+                                     });
+                                     await navigator.clipboard.write([clipboardItem]);
+                                     alert('Tabla copiada al portapapeles');
+                                   } else {
+                                     alert('Copiar imagen no está soportado en este navegador.');
+                                   }
+                                 } catch (err) {
+                                   console.error(err);
+                                 }
+                               }} className="p-2 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200" title="Copiar como imagen">
+                                <Copy className="w-4 h-4" />
+                               </button>
+                               <button onClick={async () => {
+                                 if (!startlistTableRef.current) return;
+                                 try {
+                                   const dataUrl = await domToDataUrl(startlistTableRef.current, { scale: 2 });
+                                   const link = document.createElement('a');
+                                   link.href = dataUrl;
+                                   link.download = `Startlist_${publicStartlistRace}.png`;
+                                   link.click();
+                                 } catch (err) {
+                                   console.error(err);
+                                 }
+                               }} className="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200">
+                                Descargar Imagen
+                               </button>
+                             </div>
+                           </div>
+                           
+                           <div className="overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-white" ref={startlistTableRef}>
+                             <div className="overflow-x-auto">
+                               <table className="w-full text-sm text-left">
+                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-200">
+                                   <tr>
+                                     <th className="px-3 py-3 font-semibold cursor-pointer select-none group whitespace-nowrap" onClick={() => handleSort('jugador')}>
+                                       <div className="flex items-center gap-1">Jugador [#Orden] <ArrowUpRight className={cn("w-3 h-3 transition-transform", startlistSortColumn === 'jugador' ? (startlistSortDirection === 'asc' ? "rotate-45" : "rotate-135") : "opacity-0")} /></div>
+                                     </th>
+                                     <th className="px-3 py-3 font-semibold cursor-pointer select-none group whitespace-nowrap" onClick={() => handleSort('dorsal')}>
+                                       <div className="flex items-center gap-1">Dorsal <ArrowUpRight className={cn("w-3 h-3 transition-transform", startlistSortColumn === 'dorsal' ? (startlistSortDirection === 'asc' ? "rotate-45" : "rotate-135") : "opacity-0")} /></div>
+                                     </th>
+                                     <th className="px-3 py-3 font-semibold cursor-pointer select-none group whitespace-nowrap" onClick={() => handleSort('ciclista')}>
+                                       <div className="flex items-center gap-1">Ciclista &lt;Ronda&gt; <ArrowUpRight className={cn("w-3 h-3 transition-transform", startlistSortColumn === 'ciclista' ? (startlistSortDirection === 'asc' ? "rotate-45" : "rotate-135") : "opacity-0")} /></div>
+                                     </th>
+                                     <th className="px-3 py-3 font-semibold cursor-pointer select-none group whitespace-nowrap" onClick={() => handleSort('pais')}>
+                                       <div className="flex items-center gap-1">País <ArrowUpRight className={cn("w-3 h-3 transition-transform", startlistSortColumn === 'pais' ? (startlistSortDirection === 'asc' ? "rotate-45" : "rotate-135") : "opacity-0")} /></div>
+                                     </th>
+                                     <th className="px-3 py-3 font-semibold cursor-pointer select-none group whitespace-nowrap" onClick={() => handleSort('equipo')}>
+                                       <div className="flex items-center gap-1">Equipo <ArrowUpRight className={cn("w-3 h-3 transition-transform", startlistSortColumn === 'equipo' ? (startlistSortDirection === 'asc' ? "rotate-45" : "rotate-135") : "opacity-0")} /></div>
+                                     </th>
+                                     <th className="px-3 py-3 font-semibold whitespace-nowrap">Debut</th>
+                                     <th className="px-3 py-3 font-semibold whitespace-nowrap">Días</th>
+                                     <th className="px-3 py-3 font-semibold whitespace-nowrap">Puntos</th>
+                                   </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-neutral-100">
+                                   {filteredRows.map((r, i) => (
+                                     <tr key={i} className="hover:bg-blue-50/50 transition-colors">
+                                       <td className="px-3 py-2 font-medium">{r.jugador}</td>
+                                       <td className="px-3 py-2 text-neutral-500 font-mono text-xs">{r.dorsal}</td>
+                                       <td className="px-3 py-2">
+                                         {r.ciclista} <span className="text-neutral-400 text-xs ml-1">&lt;{r.ronda}&gt;</span>
+                                       </td>
+                                       <td className="px-3 py-2 text-center text-lg leading-none" title={r.pais}>{r.pais}</td>
+                                       <td className="px-3 py-2 text-neutral-600 text-xs">{r.equipo}</td>
+                                       <td className="px-3 py-2"></td>
+                                       <td className="px-3 py-2"></td>
+                                       <td className="px-3 py-2"></td>
+                                     </tr>
+                                   ))}
+                                 </tbody>
+                               </table>
+                             </div>
+                           </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -5681,64 +6595,449 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
             {publicTab === 'draft' && (
               <div className="space-y-8">
-                <div className="flex items-center justify-between border-b pb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">Resumen del Draft 2026</h2>
-                    <p className="text-sm text-neutral-500 mt-1">Distribución de ciclistas por equipo tras las elecciones.</p>
+                    <h2 className="text-xl font-bold text-neutral-900">Draft 2026</h2>
+                    <p className="text-sm text-neutral-500 mt-1">Información y resultados del draft.</p>
                   </div>
-                  <LayoutGrid className="w-6 h-6 text-blue-600" />
+                  <div className="flex bg-neutral-100 p-1 rounded-lg self-start">
+                    <button
+                      onClick={() => setDraftSubTab('elecciones')}
+                      className={cn(
+                        "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                        draftSubTab === 'elecciones' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-600 hover:text-neutral-900"
+                      )}
+                    >
+                      Elecciones
+                    </button>
+                    <button
+                      onClick={() => setDraftSubTab('datos')}
+                      className={cn(
+                        "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                        draftSubTab === 'datos' ? "bg-white text-blue-600 shadow-sm" : "text-neutral-600 hover:text-neutral-900"
+                      )}
+                    >
+                      Datos
+                    </button>
+                  </div>
                 </div>
 
-                {!files.elecciones.data ? (
-                  <div className="text-center py-20 text-neutral-500 italic">
-                    No hay datos del draft cargados.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(() => {
-                      const teams: Record<string, any[]> = {};
-                      files.elecciones.data.forEach(row => {
-                        const teamName = getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG');
-                        if (teamName) {
-                          if (!teams[teamName]) teams[teamName] = [];
-                          teams[teamName].push(row);
-                        }
-                      });
-
-                      return Object.entries(teams)
-                        .sort((a, b) => a[0].localeCompare(b[0]))
-                        .map(([teamName, cyclists]) => (
-                          <div key={teamName} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm hover:border-blue-200 transition-all">
-                            <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100 flex justify-between items-center">
-                              <h3 className="font-bold text-neutral-900 truncate">{teamName}</h3>
-                              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                {cyclists.length} CICLISTAS
-                              </span>
+                {draftSubTab === 'elecciones' && (
+                  <div className="space-y-6">
+                    {!files.elecciones.data ? (
+                      <div className="text-center py-20 text-neutral-500 italic">
+                        No hay datos del draft cargados.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+                          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 sm:w-64">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                              <input
+                                type="text"
+                                placeholder="Buscar ciclista..."
+                                value={draftSearchTerm}
+                                onChange={(e) => setDraftSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                              />
                             </div>
-                            <div className="p-4 space-y-2">
-                              {cyclists
-                                .sort((a, b) => {
-                                  const rA = parseInt(getVal(a, 'Ronda')) || 0;
-                                  const rB = parseInt(getVal(b, 'Ronda')) || 0;
-                                  return rA - rB;
-                                })
-                                .map((c, idx) => (
-                                  <div key={idx} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-neutral-50 border border-transparent hover:border-neutral-100 transition-all">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-bold text-neutral-400 w-4">
-                                        {getVal(c, 'Ronda') || '-'}
-                                      </span>
-                                      <span className="font-medium text-neutral-800">{getVal(c, 'Ciclista')}</span>
-                                    </div>
-                                    <span className="text-lg" title={getVal(c, 'País')}>
-                                      {getFlagEmoji(getVal(c, 'País'))}
-                                    </span>
-                                  </div>
-                                ))}
-                            </div>
+                            <select
+                              value={draftRoundFilter}
+                              onChange={(e) => setDraftRoundFilter(e.target.value)}
+                              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="all">Todas las rondas</option>
+                              {Array.from(new Set(files.elecciones.data.map(d => getVal(d, 'Ronda')).filter(Boolean))).sort((a, b) => parseInt(a as string) - parseInt(b as string)).map(r => (
+                                <option key={r as string} value={r as string}>Ronda {r as string}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={draftTeamFilter}
+                              onChange={(e) => setDraftTeamFilter(e.target.value)}
+                              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="all">Todos los equipos</option>
+                              {Array.from(new Set(files.elecciones.data.map(d => getVal(d, 'Nombre_Equipo') || getVal(d, 'Nombre_TG')).filter(Boolean))).sort().map(t => (
+                                <option key={t as string} value={t as string}>{t as string}</option>
+                              ))}
+                            </select>
                           </div>
-                        ));
-                    })()}
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsDraftTableExpanded(!isDraftTableExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Ampliar">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyDraftTableImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Copiar como imagen">
+                              {isDraftTableCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                            <button onClick={handleDownloadDraftTableImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Descargar imagen">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div ref={draftTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm", isDraftTableExpanded ? "fixed inset-4 z-50 overflow-auto" : "")}>
+                          {isDraftTableExpanded && (
+                            <button onClick={() => setIsDraftTableExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
+                          {(() => {
+                            const draftCyclistStats: Record<string, { puntos: number, victorias: number }> = {};
+                            leaderboard?.forEach(player => {
+                              player.detalles.forEach(d => {
+                                if (!draftCyclistStats[d.ciclista]) {
+                                  draftCyclistStats[d.ciclista] = { puntos: 0, victorias: 0 };
+                                }
+                                draftCyclistStats[d.ciclista].puntos += d.puntosObtenidos;
+                                
+                                const isPos01 = d.posicion === '01' || d.posicion === '1';
+                                const isValidType = [
+                                  'Etapa', 
+                                  'Etapa (Crono equipos)', 
+                                  'Clasificación final', 
+                                  'Clasificación final (Crono equipos)',
+                                  'Clásica'
+                                ].includes(d.tipoResultado);
+                                
+                                if (isPos01 && isValidType) {
+                                  draftCyclistStats[d.ciclista].victorias += 1;
+                                }
+                              });
+                            });
+                            
+                            const maxPuntos = Math.max(1, ...Object.values(draftCyclistStats).map(s => s.puntos));
+
+                            return (
+                              <table className="w-full text-sm text-left whitespace-nowrap">
+                                <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider">
+                                  <tr>
+                                    {['Elección', 'Nombre_Equipo', 'Orden_Draft', 'Ronda', 'Ciclista', 'Edad', 'País', 'Eq_Comp', 'Puntos', 'Victorias'].map(col => (
+                                      <th 
+                                        key={col}
+                                        className="px-4 py-3 font-semibold cursor-pointer hover:bg-neutral-100 transition-colors"
+                                        onClick={() => {
+                                          if (draftSortColumn === col) {
+                                            setDraftSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                                          } else {
+                                            setDraftSortColumn(col);
+                                            setDraftSortDirection('asc');
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex items-center gap-1">
+                                          {col.replace('_', ' ')}
+                                          {draftSortColumn === col && (
+                                            <span className="text-blue-600">
+                                              {draftSortDirection === 'asc' ? '↑' : '↓'}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100">
+                                  {files.elecciones.data
+                                    .filter(row => {
+                                      const matchesSearch = getVal(row, 'Ciclista')?.toLowerCase().includes(draftSearchTerm.toLowerCase());
+                                      const matchesRound = draftRoundFilter === 'all' || getVal(row, 'Ronda') === draftRoundFilter;
+                                      const matchesTeam = draftTeamFilter === 'all' || (getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG')) === draftTeamFilter;
+                                      return matchesSearch && matchesRound && matchesTeam;
+                                    })
+                                    .sort((a, b) => {
+                                      if (draftSortColumn === 'Puntos') {
+                                        const ptsA = draftCyclistStats[getVal(a, 'Ciclista') || '']?.puntos || 0;
+                                        const ptsB = draftCyclistStats[getVal(b, 'Ciclista') || '']?.puntos || 0;
+                                        return draftSortDirection === 'asc' ? ptsA - ptsB : ptsB - ptsA;
+                                      }
+                                      
+                                      if (draftSortColumn === 'Victorias') {
+                                        const vicA = draftCyclistStats[getVal(a, 'Ciclista') || '']?.victorias || 0;
+                                        const vicB = draftCyclistStats[getVal(b, 'Ciclista') || '']?.victorias || 0;
+                                        return draftSortDirection === 'asc' ? vicA - vicB : vicB - vicA;
+                                      }
+
+                                      const valA = getVal(a, draftSortColumn);
+                                      const valB = getVal(b, draftSortColumn);
+                                      
+                                      if (!valA) return 1;
+                                      if (!valB) return -1;
+                                      
+                                      const numA = parseFloat(valA);
+                                      const numB = parseFloat(valB);
+                                      
+                                      if (!isNaN(numA) && !isNaN(numB)) {
+                                        return draftSortDirection === 'asc' ? numA - numB : numB - numA;
+                                      }
+                                      
+                                      return draftSortDirection === 'asc' 
+                                        ? String(valA).localeCompare(String(valB))
+                                        : String(valB).localeCompare(String(valA));
+                                    })
+                                    .map((row, idx) => {
+                                      const ciclista = getVal(row, 'Ciclista') || '';
+                                      const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
+                                      
+                                      let pointsStyle = {};
+                                      if (stats.puntos === 0) {
+                                        pointsStyle = { backgroundColor: '#fee2e2', color: '#b91c1c' }; // red-100, red-700
+                                      } else {
+                                        const ratio = stats.puntos / maxPuntos;
+                                        // Hue from 45 (yellow) to 142 (green)
+                                        const hue = 45 + (ratio * (142 - 45));
+                                        pointsStyle = { 
+                                          backgroundColor: `hsl(${hue}, 80%, 85%)`, 
+                                          color: `hsl(${hue}, 90%, 25%)` 
+                                        };
+                                      }
+                                      
+                                      return (
+                                        <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                                          <td className="px-4 py-3 font-medium text-neutral-900">{getVal(row, 'Elección')}</td>
+                                          <td className="px-4 py-3">{getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG')}</td>
+                                          <td className="px-4 py-3 text-center">{getVal(row, 'Orden_Draft')}</td>
+                                          <td className="px-4 py-3 text-center">
+                                            <span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded text-xs font-bold">
+                                              {getVal(row, 'Ronda')}
+                                            </span>
+                                          </td>
+                                          <td className="px-4 py-3 font-medium text-blue-600">{ciclista}</td>
+                                          <td className="px-4 py-3 text-center">{getVal(row, 'Edad')}</td>
+                                          <td className="px-4 py-3 text-center" title={getVal(row, 'País')}>
+                                            <span className="text-lg">{getFlagEmoji(getVal(row, 'País'))}</span>
+                                          </td>
+                                          <td className="px-4 py-3 text-neutral-500">{getVal(row, 'Eq_Comp')}</td>
+                                          <td className="px-4 py-3 text-right">
+                                            <span 
+                                              className="inline-flex items-center justify-center px-2 py-1 rounded font-bold min-w-[3rem]"
+                                              style={pointsStyle}
+                                            >
+                                              {stats.puntos}
+                                            </span>
+                                          </td>
+                                          <td className="px-4 py-3 text-center">
+                                            {stats.victorias > 0 ? (
+                                              <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">
+                                                {stats.victorias}
+                                              </span>
+                                            ) : '-'}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                </tbody>
+                              </table>
+                            );
+                          })()}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                {draftSubTab === 'datos' && (
+                  <div className="space-y-6">
+                    {!files.elecciones.data ? (
+                      <div className="text-center py-20 text-neutral-500 italic">
+                        No hay datos del draft cargados.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+                          <div>
+                            <h3 className="font-semibold text-lg text-neutral-900">Puntos por Ronda y Equipo</h3>
+                            <p className="text-xs text-neutral-500">Puntos totales conseguidos por cada elección del draft.</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setIsDraftDatosTableExpanded(!isDraftDatosTableExpanded)} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Ampliar">
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={handleCopyDraftDatosTableImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Copiar como imagen">
+                              {isDraftDatosTableCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                            <button onClick={handleDownloadDraftDatosTableImage} className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore" title="Descargar imagen">
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div ref={draftDatosTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-x-auto shadow-sm", isDraftDatosTableExpanded ? "fixed inset-4 z-50 overflow-auto p-6 shadow-2xl m-0" : "")}>
+                          {isDraftDatosTableExpanded && (
+                            <button onClick={() => setIsDraftDatosTableExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
+                              <X className="w-6 h-6" />
+                            </button>
+                          )}
+                          {(() => {
+                            // 1. Pre-calculate cyclist points
+                            const cyclistPoints: Record<string, number> = {};
+                            leaderboard?.forEach(player => {
+                              player.detalles.forEach(d => {
+                                cyclistPoints[d.ciclista] = (cyclistPoints[d.ciclista] || 0) + d.puntosObtenidos;
+                              });
+                            });
+
+                            // 2. Map teams, rounds and orders
+                            const teamRoundData: Record<string, Record<number, number>> = {};
+                            const teamOrderMap: Record<string, string> = {};
+                            const teamsSet = new Set<string>();
+                            
+                            files.elecciones.data.forEach(row => {
+                              const teamName = getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG');
+                              const round = parseInt(getVal(row, 'Ronda'));
+                              const cyclist = getVal(row, 'Ciclista');
+                              const order = getVal(row, 'Orden_Draft');
+                              
+                              if (teamName && !isNaN(round)) {
+                                teamsSet.add(teamName);
+                                if (!teamRoundData[teamName]) teamRoundData[teamName] = {};
+                                teamRoundData[teamName][round] = cyclistPoints[cyclist] || 0;
+                                if (order) teamOrderMap[teamName] = order;
+                              }
+                            });
+
+                            const sortedTeams = Array.from(teamsSet).sort((a, b) => {
+                              if (draftDatosSortColumn === 'Orden') {
+                                const orderA = parseInt(teamOrderMap[a] || '0');
+                                const orderB = parseInt(teamOrderMap[b] || '0');
+                                return draftDatosSortDirection === 'asc' ? orderA - orderB : orderB - orderA;
+                              }
+                              if (draftDatosSortColumn === 'TOTAL') {
+                                const totalA = rounds.reduce((sum, r) => sum + (teamRoundData[a][r] || 0), 0);
+                                const totalB = rounds.reduce((sum, r) => sum + (teamRoundData[b][r] || 0), 0);
+                                return draftDatosSortDirection === 'asc' ? totalA - totalB : totalB - totalA;
+                              }
+                              if (draftDatosSortColumn.startsWith('R')) {
+                                const round = parseInt(draftDatosSortColumn.substring(1));
+                                const ptsA = teamRoundData[a][round] || 0;
+                                const ptsB = teamRoundData[b][round] || 0;
+                                return draftDatosSortDirection === 'asc' ? ptsA - ptsB : ptsB - ptsA;
+                              }
+                              // Default sort by order
+                              const orderA = parseInt(teamOrderMap[a] || '0');
+                              const orderB = parseInt(teamOrderMap[b] || '0');
+                              return orderA - orderB;
+                            });
+                            const rounds = Array.from({ length: 25 }, (_, i) => i + 1);
+
+                            // 3. Calculate max and min (min > 0) per round
+                            const roundStats: Record<number, { max: number, min: number }> = {};
+                            rounds.forEach(r => {
+                              const pointsInRound = sortedTeams.map(t => teamRoundData[t][r] || 0);
+                              const positivePoints = pointsInRound.filter(p => p > 0);
+                              roundStats[r] = {
+                                max: Math.max(...pointsInRound),
+                                min: positivePoints.length > 0 ? Math.min(...positivePoints) : 0
+                              };
+                            });
+
+                            return (
+                              <table className="w-full text-xs text-left whitespace-nowrap border-collapse">
+                                <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 z-10">
+                                  <tr>
+                                    <th 
+                                      className="px-4 py-3 font-bold text-neutral-900 border-r border-neutral-200 bg-neutral-50 sticky left-0 z-20 cursor-pointer hover:bg-neutral-100"
+                                      onClick={() => {
+                                        if (draftDatosSortColumn === 'Orden') {
+                                          setDraftDatosSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                                        } else {
+                                          setDraftDatosSortColumn('Orden');
+                                          setDraftDatosSortDirection('asc');
+                                        }
+                                      }}
+                                    >
+                                      <div className="flex items-center gap-1">
+                                        Equipo {draftDatosSortColumn === 'Orden' && (draftDatosSortDirection === 'asc' ? '↑' : '↓')}
+                                      </div>
+                                    </th>
+                                    {rounds.map(r => (
+                                      <th 
+                                        key={r} 
+                                        className="px-2 py-3 text-center font-bold text-neutral-500 border-r border-neutral-100 min-w-[3rem] cursor-pointer hover:bg-neutral-100"
+                                        onClick={() => {
+                                          const col = `R${r}`;
+                                          if (draftDatosSortColumn === col) {
+                                            setDraftDatosSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                                          } else {
+                                            setDraftDatosSortColumn(col);
+                                            setDraftDatosSortDirection('desc');
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-center gap-1">
+                                          R{r} {draftDatosSortColumn === `R${r}` && (draftDatosSortDirection === 'asc' ? '↑' : '↓')}
+                                        </div>
+                                      </th>
+                                    ))}
+                                    <th 
+                                      className="px-4 py-3 text-right font-bold text-blue-600 bg-blue-50/50 cursor-pointer hover:bg-blue-100/50"
+                                      onClick={() => {
+                                        if (draftDatosSortColumn === 'TOTAL') {
+                                          setDraftDatosSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                                        } else {
+                                          setDraftDatosSortColumn('TOTAL');
+                                          setDraftDatosSortDirection('desc');
+                                        }
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-end gap-1">
+                                        TOTAL {draftDatosSortColumn === 'TOTAL' && (draftDatosSortDirection === 'asc' ? '↑' : '↓')}
+                                      </div>
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100">
+                                  {sortedTeams.map(team => {
+                                    let teamTotal = 0;
+                                    const teamOrder = teamOrderMap[team] || '?';
+                                    return (
+                                      <tr key={team} className="hover:bg-neutral-50 transition-colors">
+                                        <td className="px-4 py-2 font-medium text-neutral-900 border-r border-neutral-200 bg-white sticky left-0 z-10">
+                                          {team} <span className="text-[10px] text-neutral-400 font-normal">[#{teamOrder}]</span>
+                                        </td>
+                                        {rounds.map(r => {
+                                          const pts = teamRoundData[team][r] || 0;
+                                          teamTotal += pts;
+                                          
+                                          const isMax = pts > 0 && pts === roundStats[r].max;
+                                          const isMin = pts > 0 && pts === roundStats[r].min;
+                                          const isZero = pts === 0;
+                                          
+                                          let cellStyle = {};
+                                          if (isZero) {
+                                            cellStyle = { backgroundColor: '#fee2e2' }; // red-100
+                                          } else if (isMax) {
+                                            cellStyle = { backgroundColor: '#dcfce7', color: '#166534', fontWeight: 'bold' }; // green-100, green-800
+                                          } else if (isMin) {
+                                            cellStyle = { backgroundColor: '#fef9c3', color: '#854d0e' }; // yellow-100, yellow-800
+                                          }
+                                          
+                                          return (
+                                            <td 
+                                              key={r} 
+                                              className={cn(
+                                                "px-2 py-2 text-center border-r border-neutral-100",
+                                                isZero ? "text-red-400" : "text-neutral-900"
+                                              )}
+                                              style={cellStyle}
+                                            >
+                                              {pts > 0 ? pts : '0'}
+                                            </td>
+                                          );
+                                        })}
+                                        <td className="px-4 py-2 text-right font-bold text-blue-700 bg-blue-50/30">
+                                          {teamTotal}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            );
+                          })()}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -5963,35 +7262,6 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         <tbody>
                           {(() => {
                             const now = new Date().getTime();
-                            
-                            // Calculate winners
-                            const raceWinners: Record<string, string> = {};
-                            if (leaderboard) {
-                              const races = files.carreras.data?.map(r => r.Carrera) || [];
-                              races.forEach(race => {
-                                if (!race) return;
-                                
-                                // Check if race has a final classification
-                                const hasFinalClassification = files.resultados.data?.some(r => 
-                                  getVal(r, 'Carrera') === race && 
-                                  getVal(r, 'Tipo')?.match(/Clasificación final/i)
-                                );
-                                
-                                if (!hasFinalClassification) return;
-
-                                let maxPoints = 0;
-                                let winner = '';
-                                leaderboard.forEach(player => {
-                                  if (player.nombreEquipo === 'No draft' || player.nombreEquipo === 'No draft [99]') return;
-                                  const pts = player.detalles.filter(d => d.carrera === race).reduce((sum, d) => sum + d.puntosObtenidos, 0);
-                                  if (pts > maxPoints) {
-                                    maxPoints = pts;
-                                    winner = player.nombreEquipo;
-                                  }
-                                });
-                                if (winner) raceWinners[race] = winner;
-                              });
-                            }
 
                             return files.carreras.data?.filter(r => {
                               const carreraName = getVal(r, 'Carrera')?.trim();
