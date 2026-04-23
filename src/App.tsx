@@ -117,6 +117,10 @@ export default function App() {
   const [topCyclistsLimit, setTopCyclistsLimit] = useState<number>(25);
   const [cyclistsMonthFilter, setCyclistsMonthFilter] = useState<string>('all');
   const [cyclistsRoundFilter, setCyclistsRoundFilter] = useState<string[]>([]);
+  const [cyclistsCategoryFilter, setCyclistsCategoryFilter] = useState<string[]>([]);
+  const [cyclistsTeamFilter, setCyclistsTeamFilter] = useState<string[]>([]);
+  const [isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen] = useState(false);
+  const [isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen] = useState(false);
   const [isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen] = useState(false);
   const [cyclistsSortColumn, setCyclistsSortColumn] = useState<string>('puntos');
   const [cyclistsSortDirection, setCyclistsSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -492,11 +496,13 @@ export default function App() {
       originalStyles.push({
         node,
         maxHeight: node.style.maxHeight,
+        height: node.style.height,
         overflowY: node.style.overflowY,
         overflowX: node.style.overflowX,
         overflow: node.style.overflow
-      });
+      } as any);
       node.style.setProperty('max-height', 'none', 'important');
+      node.style.setProperty('height', 'auto', 'important');
       node.style.setProperty('overflow-y', 'visible', 'important');
       node.style.setProperty('overflow-x', 'visible', 'important');
       node.style.setProperty('overflow', 'visible', 'important');
@@ -505,20 +511,25 @@ export default function App() {
     const originalElementStyle = {
       display: element.style.display,
       width: element.style.width,
+      height: element.style.height,
+      maxHeight: element.style.maxHeight,
       minWidth: element.style.minWidth,
       background: element.style.background
     };
     
     element.style.setProperty('display', 'inline-block', 'important');
     element.style.setProperty('width', 'auto', 'important');
+    element.style.setProperty('height', 'auto', 'important');
+    element.style.setProperty('max-height', 'none', 'important');
     element.style.setProperty('min-width', '100%', 'important');
     if (!element.style.background && !element.style.backgroundColor) {
       element.style.setProperty('background', '#ffffff', 'important');
     }
 
     return () => {
-      originalStyles.forEach(({ node, maxHeight, overflowY, overflowX, overflow }) => {
+      originalStyles.forEach(({ node, maxHeight, height, overflowY, overflowX, overflow }: any) => {
         node.style.maxHeight = maxHeight;
+        node.style.height = height;
         node.style.overflowY = overflowY;
         node.style.overflowX = overflowX;
         node.style.overflow = overflow;
@@ -526,6 +537,8 @@ export default function App() {
       
       element.style.display = originalElementStyle.display;
       element.style.width = originalElementStyle.width;
+      element.style.height = originalElementStyle.height;
+      element.style.maxHeight = originalElementStyle.maxHeight;
       element.style.minWidth = originalElementStyle.minWidth;
       element.style.background = originalElementStyle.background;
     };
@@ -563,11 +576,11 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying to clipboard:', err);
+      /* console.error suppressed */
       setIsCopying(false);
       // Fallback: Download
       handleDownloadChart();
-      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -629,10 +642,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsTopTeamsTableCopying(false);
       handleDownloadTopTeamsTable();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -691,10 +704,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying chart:', err);
+      /* console.error suppressed */
       setIsEvolutionChartCopying(false);
       handleDownloadEvolutionChart();
-      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -740,10 +753,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying chart:', err);
+      /* console.error suppressed */
       setIsWinsRankingCopying(false);
       handleDownloadWinsRanking();
-      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -784,10 +797,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying chart:', err);
+      /* console.error suppressed */
       setIsWinsEvolutionCopying(false);
       handleDownloadWinsEvolution();
-      alert('No se pudo copiar al portapapeles. El gráfico se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -839,10 +852,7 @@ export default function App() {
       if (subset && subset !== 'full') {
         const start = (['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10'].indexOf(subset)) * 50;
         const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add('hidden');
-        });
+
       }
 
       if (typeof ClipboardItem !== 'undefined') {
@@ -863,7 +873,7 @@ export default function App() {
           window.focus();
           await navigator.clipboard.write([clipboardItem]);
         } catch (copyErr) {
-          console.error('Clipboard write failed:', copyErr);
+          /* console.error suppressed */
           throw copyErr;
         }
         setTimeout(() => setIsWinsHistoryCopying(null), 2000);
@@ -871,13 +881,12 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsWinsHistoryCopying(null);
       handleDownloadWinsHistory(subset);
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      rows.forEach(row => row.classList.remove('hidden'));
     }
   };
 
@@ -892,10 +901,7 @@ export default function App() {
       if (subset && subset !== 'full') {
         const start = (['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10'].indexOf(subset)) * 50;
         const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add('hidden');
-        });
+
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
@@ -913,7 +919,6 @@ export default function App() {
       console.error('Error downloading table:', err);
     } finally {
       restore();
-      rows.forEach(row => row.classList.remove('hidden'));
     }
   };
 
@@ -939,10 +944,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsRaceClassificationCopying(false);
       handleDownloadRaceClassification();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -986,23 +991,19 @@ export default function App() {
     if (!topCyclistsDraftRef.current || isTopCyclistsDraftCopying) return;
     setIsTopCyclistsDraftCopying(subset || 'full');
     
+    // Wait for React to re-render the button states before capturing
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     const tableContainer = topCyclistsDraftRef.current;
+    if (!tableContainer) return;
     const rows = tableContainer.querySelectorAll('.top-cyclists-row');
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      if (subset && subset !== 'full') {
-        const pages = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20'];
-        const start = pages.indexOf(subset) * 50;
-        const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add('hidden');
-        });
-      }
+
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 4,
+        scale: subset === 'full' ? 0.9 : 3,
         backgroundColor: '#ffffff',
         style: { 
           overflow: 'visible',
@@ -1019,7 +1020,7 @@ export default function App() {
           window.focus();
           await navigator.clipboard.write([clipboardItem]);
         } catch (copyErr) {
-          console.error('Clipboard write failed:', copyErr);
+          /* console.error suppressed */
           // If write fails, it will fall through to the catch block and trigger download
           throw copyErr;
         }
@@ -1028,13 +1029,12 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsTopCyclistsDraftCopying(null);
       handleDownloadTopCyclistsDraft(subset);
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      rows.forEach(row => row.classList.remove('hidden'));
     }
   };
 
@@ -1046,18 +1046,10 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      if (subset && subset !== 'full') {
-        const pages = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20'];
-        const start = pages.indexOf(subset) * 50;
-        const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add('hidden');
-        });
-      }
+
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 4,
+        scale: subset === 'full' ? 0.9 : 3,
         backgroundColor: '#ffffff',
         style: { 
           overflow: 'visible',
@@ -1074,7 +1066,6 @@ export default function App() {
       console.error('Error downloading table:', err);
     } finally {
       restore();
-      rows.forEach(row => row.classList.remove('hidden'));
     }
   };
 
@@ -1100,10 +1091,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsCyclistsCopying(false);
       handleDownloadCyclists();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -1146,10 +1137,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsStageCopying(false);
       handleDownloadStage();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -1192,10 +1183,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsPointsImageCopying(false);
       handleDownloadPointsImage();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -1250,10 +1241,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying table:', err);
+      /* console.error suppressed */
       setIsRacesImageCopying(false);
       handleDownloadRacesImage();
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     }
   };
 
@@ -1304,10 +1295,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying team image:', err);
+      /* console.error suppressed */
       setIsTeamGlobalCopying(false);
       handleDownloadTeamGlobalImage();
-      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       if (tableContainer) {
         tableContainer.classList.add('overflow-x-auto');
@@ -1375,10 +1366,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying race breakdown image:', err);
+      /* console.error suppressed */
       setIsRaceBreakdownCopying(false);
       handleDownloadRaceBreakdownImage();
-      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       tableContainer.className = originalClass;
     }
@@ -1437,9 +1428,9 @@ export default function App() {
 
       if (typeof ClipboardItem !== 'undefined') {
         const dataUrl = await domToDataUrl(container, {
-          scale: 4,
-          backgroundColor: '#ffffff',
-          style: {
+          scale: subset === 'full' ? 0.9 : 3,
+        backgroundColor: '#ffffff',
+        style: {
             textRendering: 'optimizeLegibility'
           },
           filter: (node) => node instanceof Element ? !node.classList.contains('copy-button-ignore') : true
@@ -1452,7 +1443,7 @@ export default function App() {
           window.focus();
           await navigator.clipboard.write([clipboardItem]);
         } catch (copyErr) {
-          console.error('Clipboard write failed:', copyErr);
+          /* console.error suppressed */
           throw copyErr;
         }
         setTimeout(() => setIsDetailedBreakdownCopying(null), 2000);
@@ -1460,10 +1451,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying detailed breakdown image:', err);
+      /* console.error suppressed */
       setIsDetailedBreakdownCopying(null);
       handleDownloadDetailedBreakdownImage(subset);
-      alert('No se pudo copiar al portapapeles. La tabla se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       container.className = originalClass;
       cards.forEach(card => card.classList.remove('hidden'));
@@ -1494,7 +1485,7 @@ export default function App() {
       );
 
       const dataUrl = await domToDataUrl(container, {
-        scale: 4,
+        scale: subset === 'full' ? 0.9 : 3,
         backgroundColor: '#ffffff',
         style: {
           textRendering: 'optimizeLegibility'
@@ -1607,10 +1598,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying draft table image:', err);
+      /* console.error suppressed */
       setIsDraftTableCopying(null);
       handleDownloadDraftTableImage(subset);
-      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       tableContainer.className = originalClass;
       rows.forEach(row => row.classList.remove('hidden'));
@@ -1684,10 +1675,10 @@ export default function App() {
         throw new Error('ClipboardItem not supported');
       }
     } catch (err) {
-      console.error('Error copying draft datos table image:', err);
+      /* console.error suppressed */
       setIsDraftDatosTableCopying(false);
       handleDownloadDraftDatosTableImage();
-      alert('No se pudo copiar al portapapeles. La imagen se ha descargado automáticamente.');
+      /* Alert suppressed to improve user experience in iframe */
     } finally {
       tableContainer.className = originalClass;
     }
@@ -3835,7 +3826,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     <select 
                                       value={teamsMonthFilter}
                                       onChange={(e) => setTeamsMonthFilter(e.target.value)}
-                                      className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                      className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     >
                                       <option value="all">Todos los meses</option>
                                       <option value="0">Enero</option>
@@ -4808,7 +4799,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <select 
                                   value={historyTeamFilter}
                                   onChange={(e) => setHistoryTeamFilter(e.target.value)}
-                                  className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                  className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 >
                                   <option value="all">Todos los equipos</option>
                                   {[...filteredLeaderboard]
@@ -4820,7 +4811,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <select 
                                   value={historyMonthFilter}
                                   onChange={(e) => setHistoryMonthFilter(e.target.value)}
-                                  className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                  className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 >
                                   <option value="all">Todos los meses</option>
                                   <option value="0">Enero</option>
@@ -5011,45 +5002,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                           {cyclistsSubTab === 'draft' ? (
                             <>
-                              {(topCyclistsLimit >= 50 || topCyclistsLimit === 9999) && (
-                                <div className="flex flex-col gap-2 mb-4 copy-button-ignore">
-                                  <div className="flex items-center justify-end">
-                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Copiar bloques de imagen (v2):</span>
-                                  </div>
-                                  <div className="flex flex-wrap items-center justify-end gap-1.5">
-                                    {Array.from({ length: Math.ceil((topCyclistsLimit === 9999 ? 800 : topCyclistsLimit) / 50) }).map((_, i) => {
-                                      const s = `p${i + 1}`;
-                                      const start = i * 50 + 1;
-                                      const end = (i + 1) * 50;
-                                      const label = `${start}-${end}`;
-                                      const isCopyingThis = isTopCyclistsDraftCopying === s;
-                                      return (
-                                        <button 
-                                          key={s}
-                                          onClick={() => handleCopyTopCyclistsDraft(s as any)} 
-                                          disabled={!!isTopCyclistsDraftCopying}
-                                          className={cn(
-                                            "px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-[10px]",
-                                            isCopyingThis ? "bg-green-50 text-green-700 border-green-200" : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                                            (isTopCyclistsDraftCopying && !isCopyingThis) && "opacity-50 cursor-not-allowed"
-                                          )}
-                                        >
-                                          {isCopyingThis ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                          {label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
                               <div ref={topCyclistsDraftRef} className={cn("bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm relative", isTopCyclistsDraftExpanded && "fixed inset-4 z-50 overflow-y-auto max-h-none shadow-2xl p-0")}>
                                 {isTopCyclistsDraftExpanded && (
                                   <button onClick={() => setIsTopCyclistsDraftExpanded(false)} className="fixed top-8 right-8 p-3 bg-neutral-800 text-white rounded-full shadow-2xl z-[60] copy-button-ignore hover:bg-neutral-700 transition-all cursor-pointer">
                                     <X className="w-5 h-5" />
                                   </button>
                                 )}
-                              <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div>
+                              <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4">
+                                <div className="flex-shrink-0">
                                   <div className="flex items-center gap-4">
                                     <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
                                       <User className="w-5 h-5 text-orange-600" />
@@ -5073,7 +5033,127 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </div>
                                   <p className="text-xs text-neutral-500 mt-0.5">Ranking individual de todos los corredores con puntos.</p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="flex flex-wrap items-center gap-3">
+                                  
+                                  {/* Teams Multi-select Filter */}
+                                  <div className="relative">
+                                    <button 
+                                      onClick={() => setIsCyclistsTeamFilterOpen(!isCyclistsTeamFilterOpen)}
+                                      className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
+                                    >
+                                      <span className="truncate">
+                                        {cyclistsTeamFilter.length === 0 
+                                          ? "Todos los equipos" 
+                                          : `${cyclistsTeamFilter.length} equipos`}
+                                      </span>
+                                      <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isCyclistsTeamFilterOpen && "rotate-180")} />
+                                    </button>
+
+                                    {isCyclistsTeamFilterOpen && (
+                                      <>
+                                        <div 
+                                          className="fixed inset-0 z-10" 
+                                          onClick={() => setIsCyclistsTeamFilterOpen(false)}
+                                        />
+                                        <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
+                                          <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase">Equipos</span>
+                                            {cyclistsTeamFilter.length > 0 && (
+                                              <button 
+                                                onClick={() => setCyclistsTeamFilter([])}
+                                                className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+                                              >
+                                                Limpiar
+                                              </button>
+                                            )}
+                                          </div>
+                                          {Array.from(new Set(leaderboard?.filter(p => p.jugador !== 'No draft').map(p => p.nombreEquipo) || []))
+                                            .filter(Boolean)
+                                            .sort((a, b) => a!.localeCompare(b!))
+                                            .map(team => (
+                                              <label 
+                                                key={team} 
+                                                className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors"
+                                              >
+                                                <input 
+                                                  type="checkbox" 
+                                                  className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                                  checked={cyclistsTeamFilter.includes(team)}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      setCyclistsTeamFilter([...cyclistsTeamFilter, team]);
+                                                    } else {
+                                                      setCyclistsTeamFilter(cyclistsTeamFilter.filter(t => t !== team));
+                                                    }
+                                                  }}
+                                                />
+                                                <span className="ml-2 text-sm text-neutral-700 truncate">{team}</span>
+                                              </label>
+                                            ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* Category Multi-select Filter */}
+                                  <div className="relative">
+                                    <button 
+                                      onClick={() => setIsCyclistsCategoryFilterOpen(!isCyclistsCategoryFilterOpen)}
+                                      className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[150px]"
+                                    >
+                                      <span className="truncate">
+                                        {cyclistsCategoryFilter.length === 0 
+                                          ? "Todas las categorías" 
+                                          : `${cyclistsCategoryFilter.length} categorías`}
+                                      </span>
+                                      <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isCyclistsCategoryFilterOpen && "rotate-180")} />
+                                    </button>
+
+                                    {isCyclistsCategoryFilterOpen && (
+                                      <>
+                                        <div 
+                                          className="fixed inset-0 z-10" 
+                                          onClick={() => setIsCyclistsCategoryFilterOpen(false)}
+                                        />
+                                        <div className="absolute right-0 mt-2 w-56 bg-white border border-neutral-200 rounded-lg shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
+                                          <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase">Categorías</span>
+                                            {cyclistsCategoryFilter.length > 0 && (
+                                              <button 
+                                                onClick={() => setCyclistsCategoryFilter([])}
+                                                className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+                                              >
+                                                Limpiar
+                                              </button>
+                                            )}
+                                          </div>
+                                          {Array.from(new Set(files.carreras.data?.map(r => getVal(r, 'Categoría')).map(c => c?.trim()).filter(Boolean)))
+                                            .sort((a, b) => a.localeCompare(b))
+                                            .map(cat => (
+                                              <label 
+                                                key={cat} 
+                                                className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors"
+                                              >
+                                                <input 
+                                                  type="checkbox" 
+                                                  className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                                  checked={cyclistsCategoryFilter.includes(cat)}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      setCyclistsCategoryFilter([...cyclistsCategoryFilter, cat]);
+                                                    } else {
+                                                      setCyclistsCategoryFilter(cyclistsCategoryFilter.filter(c => c !== cat));
+                                                    }
+                                                  }}
+                                                />
+                                                <span className="ml-2 text-sm text-neutral-700 truncate">{cat}</span>
+                                              </label>
+                                            ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+
                                   {/* Round Multi-select Filter */}
                                   <div className="relative">
                                     <button 
@@ -5094,7 +5174,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           className="fixed inset-0 z-10" 
                                           onClick={() => setIsCyclistsRoundFilterOpen(false)}
                                         />
-                                        <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto">
+                                        <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
                                           <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
                                             <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
                                             {cyclistsRoundFilter.length > 0 && (
@@ -5137,7 +5217,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <select 
                                     value={cyclistsMonthFilter}
                                     onChange={(e) => setCyclistsMonthFilter(e.target.value)}
-                                    className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   >
                                     <option value="all">Todos los meses</option>
                                     <option value="0">Enero</option>
@@ -5199,7 +5279,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Copiar bloques de imagen:</span>
                                   </div>
                                   <div className="flex flex-wrap items-center justify-end gap-1.5">
-                                    {Array.from({ length: Math.ceil((topCyclistsLimit === 9999 ? 400 : topCyclistsLimit) / 50) }).map((_, i) => {
+                                    {Array.from({ length: Math.ceil((topCyclistsLimit === 9999 ? 500 : topCyclistsLimit) / 50) }).map((_, i) => {
                                       const s = `p${i + 1}`;
                                       const start = i * 50 + 1;
                                       const end = (i + 1) * 50;
@@ -5224,7 +5304,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </div>
                                 </div>
                               )}
-                              <div className="overflow-x-auto overflow-y-auto max-h-[75vh] min-h-[500px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
+                              <div className="overflow-x-auto overflow-y-auto max-h-[1050px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
                                 <table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                   <thead className="text-[10px] text-neutral-500 uppercase z-20">
                                     <tr className="divide-x divide-neutral-100">
@@ -5241,10 +5321,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         <div className="flex items-center gap-1">País {cyclistsSortColumn === 'pais' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
                                       <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200" onClick={() => { if (cyclistsSortColumn === 'victorias') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('victorias'); setCyclistsSortDirection('desc'); } }}>
-                                        <div className="flex items-center justify-center gap-1">Wins {cyclistsSortColumn === 'victorias' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
+                                        <div className="flex items-center justify-center gap-1">Victorias {cyclistsSortColumn === 'victorias' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
                                       <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200" onClick={() => { if (cyclistsSortColumn === 'carreras') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('carreras'); setCyclistsSortDirection('desc'); } }}>
-                                        <div className="flex items-center justify-center gap-1">Races {cyclistsSortColumn === 'carreras' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
+                                        <div className="flex items-center justify-center gap-1">Carreras {cyclistsSortColumn === 'carreras' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
                                       <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200" title="Días de competición" onClick={() => { if (cyclistsSortColumn === 'dias') { setCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setCyclistsSortColumn('dias'); setCyclistsSortDirection('desc'); } }}>
                                         <div className="flex items-center justify-center gap-1">Días {cyclistsSortColumn === 'dias' && (cyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
@@ -5274,16 +5354,38 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         dias: number
                                       }> = {};
 
-                                      // First, map races to months
+                                      // Initialize all drafted players
+                                      Object.entries(playerByCyclist).forEach(([ciclista, jugador]) => {
+                                        if (jugador !== 'No draft') {
+                                          cyclistStats[ciclista] = {
+                                            puntos: 0,
+                                            jugador: jugador,
+                                            nombreEquipo: playerTeamMap[jugador] || '',
+                                            orden: playerOrderMap[jugador] || '',
+                                            ronda: cyclistRoundMap[ciclista] || '',
+                                            pais: cyclistMetadata[ciclista]?.pais || '',
+                                            victorias: 0,
+                                            carreras: new Set(),
+                                            dias: 0
+                                          };
+                                        }
+                                      });
+
+                                      // First, map races to months and categories
                                       const raceMonths: Record<string, number> = {};
+                                      const raceCats: Record<string, string> = {};
                                       files.carreras.data?.forEach(r => {
                                         const carreraName = getVal(r, 'Carrera')?.trim();
                                         const fechaFin = getVal(r, 'Fecha');
-                                        if (carreraName && fechaFin) {
-                                          const parts = fechaFin.split(/[-/]/);
-                                          if (parts.length >= 2) {
-                                            const monthIndex = parseInt(parts[1]) - 1;
-                                            raceMonths[carreraName] = monthIndex;
+                                        const cat = getVal(r, 'Categoría')?.trim();
+                                        if (carreraName) {
+                                          if (cat) raceCats[carreraName] = cat;
+                                          if (fechaFin) {
+                                            const parts = fechaFin.split(/[-/]/);
+                                            if (parts.length >= 2) {
+                                              const monthIndex = parseInt(parts[1]) - 1;
+                                              raceMonths[carreraName] = monthIndex;
+                                            }
                                           }
                                         }
                                       });
@@ -5293,6 +5395,11 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           // Apply month filter
                                           if (cyclistsMonthFilter !== 'all' && raceMonths[d.carrera] !== parseInt(cyclistsMonthFilter)) {
                                             return;
+                                          }
+                                          // Apply category filter
+                                          if (cyclistsCategoryFilter.length > 0) {
+                                            const cat = raceCats[d.carrera];
+                                            if (!cat || !cyclistsCategoryFilter.includes(cat)) return;
                                           }
 
                                           if (!cyclistStats[d.ciclista]) {
@@ -5344,8 +5451,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                                       const allStats = Object.entries(cyclistStats)
                                         .filter(([name, data]) => {
-                                          if (cyclistsRoundFilter.length === 0) return true;
-                                          return cyclistsRoundFilter.includes(data.ronda);
+                                          if (data.nombreEquipo === 'No draft') return false;
+                                          if (cyclistsTeamFilter.length > 0 && !cyclistsTeamFilter.includes(data.nombreEquipo)) return false;
+                                          if (cyclistsRoundFilter.length > 0 && !cyclistsRoundFilter.includes(data.ronda)) return false;
+                                          return true;
                                         })
                                         .sort((a, b) => b[1].puntos - a[1].puntos)
                                         .map(([name, data], index) => {
@@ -5355,8 +5464,11 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           return { name, data, numCarreras, ppc, ppd, originalPos: index + 1 };
                                         });
 
-                                      // Sort the array
-                                      allStats.sort((a, b) => {
+                                      // Tomamos el top N primero para mantener siempre los corredores con más puntos
+                                      const topScorers = topCyclistsLimit === 9999 ? allStats : allStats.slice(0, topCyclistsLimit);
+
+                                      // Sort the array by column AFTER slicing
+                                      topScorers.sort((a, b) => {
                                         let valA: any, valB: any;
                                         switch (cyclistsSortColumn) {
                                           case 'pos': valA = a.originalPos; valB = b.originalPos; break;
@@ -5382,7 +5494,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         return 0;
                                       });
 
-                                      const sortedStats = topCyclistsLimit === 9999 ? allStats : allStats.slice(0, topCyclistsLimit);
+                                      const sortedStats = topScorers;
 
                                       let maxVictorias = 0;
                                       let maxCarreras = 0, minCarreras = Infinity;
@@ -5425,8 +5537,21 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       return sortedStats.map((s, idx) => {
                                         const { name, data, numCarreras, ppc, ppd, originalPos } = s;
 
+                                        let isHiddenVisual = false;
+                                        if (isTopCyclistsDraftCopying) {
+                                            if (isTopCyclistsDraftCopying === 'full') isHiddenVisual = false;
+                                            else {
+                                                const pageNum = parseInt(isTopCyclistsDraftCopying.substring(1));
+                                                const start = (pageNum - 1) * 50;
+                                                const end = start + 50;
+                                                isHiddenVisual = !(idx >= start && idx < end);
+                                            }
+                                        }
+
+                                        if (isHiddenVisual && isTopCyclistsDraftCopying) return null;
+
                                         return (
-                                          <tr key={name} className="hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100">
+                                          <tr key={name} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100", isHiddenVisual && "hidden")}>
                                             <td className="px-3 py-1 text-center">
                                               <span className={cn(
                                                 "w-5 h-5 mx-auto rounded-full flex items-center justify-center text-[9px] font-bold",
@@ -5568,7 +5693,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <select 
                                     value={unscoredCyclistsTeamFilter}
                                     onChange={(e) => setUnscoredCyclistsTeamFilter(e.target.value)}
-                                    className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   >
                                     <option value="all">Todos los equipos</option>
                                     {leaderboard?.map(p => (
@@ -5577,24 +5702,24 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </select>
                                 </div>
                               </div>
-                              <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
-                                <table className="w-full text-sm text-left">
-                                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10">
-                                    <tr>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (unscoredCyclistsSortColumn === 'jugador') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('jugador'); setUnscoredCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Jugador {unscoredCyclistsSortColumn === 'jugador' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                              <div className="overflow-x-auto overflow-y-auto max-h-[900px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
+                                <table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <thead className="text-[10px] text-neutral-500 uppercase z-20">
+                                    <tr className="divide-x divide-neutral-100">
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (unscoredCyclistsSortColumn === 'jugador') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('jugador'); setUnscoredCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1">Jugador {unscoredCyclistsSortColumn === 'jugador' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (unscoredCyclistsSortColumn === 'ciclista') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('ciclista'); setUnscoredCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Ciclista {unscoredCyclistsSortColumn === 'ciclista' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (unscoredCyclistsSortColumn === 'ciclista') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('ciclista'); setUnscoredCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1">Ciclista {unscoredCyclistsSortColumn === 'ciclista' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (unscoredCyclistsSortColumn === 'ronda') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('ronda'); setUnscoredCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Ronda {unscoredCyclistsSortColumn === 'ronda' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (unscoredCyclistsSortColumn === 'ronda') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('ronda'); setUnscoredCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1 text-center justify-center">Ronda {unscoredCyclistsSortColumn === 'ronda' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" title="Carreras disputadas" onClick={() => { if (unscoredCyclistsSortColumn === 'carreras') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('carreras'); setUnscoredCyclistsSortDirection('desc'); } }}>
-                                        <div className="flex items-center justify-center gap-1">Carreras {unscoredCyclistsSortColumn === 'carreras' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" title="Carreras disputadas" onClick={() => { if (unscoredCyclistsSortColumn === 'carreras') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('carreras'); setUnscoredCyclistsSortDirection('desc'); } }}>
+                                        <div className="flex items-center justify-center gap-1">Carreras {unscoredCyclistsSortColumn === 'carreras' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" title="Días de competición" onClick={() => { if (unscoredCyclistsSortColumn === 'dias') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('dias'); setUnscoredCyclistsSortDirection('desc'); } }}>
-                                        <div className="flex items-center justify-center gap-1">Días {unscoredCyclistsSortColumn === 'dias' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" title="Días de competición" onClick={() => { if (unscoredCyclistsSortColumn === 'dias') { setUnscoredCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUnscoredCyclistsSortColumn('dias'); setUnscoredCyclistsSortDirection('desc'); } }}>
+                                        <div className="flex items-center justify-center gap-1">Días {unscoredCyclistsSortColumn === 'dias' && (unscoredCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
                                     </tr>
                                   </thead>
@@ -5673,7 +5798,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       if (filtered.length === 0) {
                                         return (
                                           <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic">
+                                            <td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic text-[11px]">
                                               No hay ciclistas sin puntuar que coincidan con los criterios.
                                             </td>
                                           </tr>
@@ -5681,27 +5806,27 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       }
 
                                       return filtered.map((c, idx) => (
-                                        <tr key={idx} className="hover:bg-neutral-50 transition-colors">
-                                          <td className="px-6 py-4 text-neutral-600">
-                                            {c.nombreEquipo} [#{c.orden}]
+                                        <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
+                                          <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
+                                            <span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span>
                                           </td>
-                                          <td className="px-6 py-4 font-bold text-neutral-900">
+                                          <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
                                             {c.ciclista}
                                           </td>
                                           <td className={cn(
-                                            "px-6 py-4 text-center font-mono",
+                                            "px-4 py-1 text-center font-mono whitespace-nowrap",
                                             ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500"
                                           )}>
                                             {c.ronda}
                                           </td>
                                           <td className={cn(
-                                            "px-6 py-4 text-center",
+                                            "px-4 py-1 text-center font-mono whitespace-nowrap",
                                             c.carreras === 0 ? "text-red-600 font-bold" : c.carreras === maxCarreras && maxCarreras > 0 ? "text-green-600 font-bold" : "text-neutral-600"
                                           )}>
                                             {c.carreras}
                                           </td>
                                           <td className={cn(
-                                            "px-6 py-4 text-center",
+                                            "px-4 py-1 text-center font-mono whitespace-nowrap",
                                             c.dias === 0 ? "text-red-600 font-bold" : c.dias === maxDias && maxDias > 0 ? "text-green-600 font-bold" : "text-neutral-600"
                                           )}>
                                             {c.dias}
@@ -5811,7 +5936,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <select 
                                     value={undebutedCyclistsTeamFilter}
                                     onChange={(e) => setUndebutedCyclistsTeamFilter(e.target.value)}
-                                    className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   >
                                     <option value="all">Todos los equipos</option>
                                     {leaderboard?.map(p => (
@@ -5820,18 +5945,18 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </select>
                                 </div>
                               </div>
-                              <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
-                                <table className="w-full text-sm text-left">
-                                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10">
-                                    <tr>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (undebutedCyclistsSortColumn === 'jugador') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('jugador'); setUndebutedCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Jugador {undebutedCyclistsSortColumn === 'jugador' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                              <div className="overflow-x-auto overflow-y-auto max-h-[900px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
+                                <table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <thead className="text-[10px] text-neutral-500 uppercase z-20">
+                                    <tr className="divide-x divide-neutral-100">
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (undebutedCyclistsSortColumn === 'jugador') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('jugador'); setUndebutedCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1">Jugador {undebutedCyclistsSortColumn === 'jugador' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (undebutedCyclistsSortColumn === 'ciclista') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('ciclista'); setUndebutedCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Ciclista {undebutedCyclistsSortColumn === 'ciclista' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (undebutedCyclistsSortColumn === 'ciclista') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('ciclista'); setUndebutedCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1">Ciclista {undebutedCyclistsSortColumn === 'ciclista' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
-                                      <th className="px-6 py-3 font-semibold cursor-pointer hover:bg-neutral-100 select-none transition-colors" onClick={() => { if (undebutedCyclistsSortColumn === 'ronda') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('ronda'); setUndebutedCyclistsSortDirection('asc'); } }}>
-                                        <div className="flex items-center gap-1">Ronda {undebutedCyclistsSortColumn === 'ronda' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>)}</div>
+                                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 whitespace-nowrap" onClick={() => { if (undebutedCyclistsSortColumn === 'ronda') { setUndebutedCyclistsSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setUndebutedCyclistsSortColumn('ronda'); setUndebutedCyclistsSortDirection('asc'); } }}>
+                                        <div className="flex items-center gap-1">Ronda {undebutedCyclistsSortColumn === 'ronda' && (undebutedCyclistsSortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>)}</div>
                                       </th>
                                     </tr>
                                   </thead>
@@ -5888,19 +6013,19 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       });
 
                                       if (filtered.length === 0) {
-                                        return <tr><td colSpan={3} className="px-6 py-10 text-center text-neutral-400 italic">No hay ciclistas sin debutar que coincidan con los filtros.</td></tr>;
+                                        return <tr><td colSpan={3} className="px-6 py-10 text-center text-neutral-400 italic text-[11px]">No hay ciclistas sin debutar que coincidan con los filtros.</td></tr>;
                                       }
 
                                       return filtered.map((c, idx) => (
-                                        <tr key={idx} className="hover:bg-neutral-50 transition-colors">
-                                          <td className="px-6 py-4 text-neutral-600">
-                                            {c.nombreEquipo} [#{c.orden}]
+                                        <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
+                                          <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
+                                            <span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span>
                                           </td>
-                                          <td className="px-6 py-4 font-bold text-neutral-900">
+                                          <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
                                             {c.ciclista}
                                           </td>
                                           <td className={cn(
-                                            "px-6 py-4 text-center font-mono",
+                                            "px-4 py-1 text-center font-mono whitespace-nowrap",
                                             ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500"
                                           )}>
                                             {c.ronda}
@@ -5929,7 +6054,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <select 
                                     value={noDraftCyclistsMonthFilter}
                                     onChange={(e) => setNoDraftCyclistsMonthFilter(e.target.value)}
-                                    className="text-sm border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className="px-3 py-2 text-sm bg-white border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   >
                                     <option value="all">Todos los meses</option>
                                     <option value="0">Enero</option>
@@ -7210,7 +7335,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                        })()
                                      });
                                      await navigator.clipboard.write([clipboardItem]);
-                                     alert('Tabla copiada al portapapeles');
+                                     /* Alert suppressed to improve user experience in iframe */
                                    } else {
                                      alert('Copiar imagen no está soportado en este navegador.');
                                    }
