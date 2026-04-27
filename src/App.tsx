@@ -37,6 +37,8 @@ import {
   Save,
   Trash2,
   FileText,
+  ArrowUpDown,
+  HelpCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -44,6 +46,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
   CartesianGrid,
@@ -51,6 +54,14 @@ import {
   LineChart,
   Line,
   Legend,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  ReferenceLine,
+  ReferenceArea,
+  AreaChart,
+  Area,
+  ComposedChart
 } from "recharts";
 import { cn } from "./lib/utils";
 import { supabase } from "./supabase";
@@ -204,7 +215,7 @@ export default function App() {
     | "reporte-temporada"
   >("datos");
   const [publicTab, setPublicTab] = useState<
-    "season" | "race" | "startlist" | "team" | "draft" | "info"
+    "season" | "race" | "startlist" | "team" | "draft" | "info" | "pruebas"
   >("season");
   const [draftSubTab, setDraftSubTab] = useState<"elecciones" | "datos">(
     "elecciones",
@@ -214,6 +225,42 @@ export default function App() {
   const [draftTeamFilter, setDraftTeamFilter] = useState<string[]>([]);
   const [isDraftRoundFilterOpen, setIsDraftRoundFilterOpen] = useState(false);
   const [isDraftTeamFilterOpen, setIsDraftTeamFilterOpen] = useState(false);
+  const [draftStatsFilters, setDraftStatsFilters] = useState<{
+    minPoints?: number;
+    maxPoints?: number;
+    minWins?: number;
+    maxWins?: number;
+    minCarr?: number;
+    maxCarr?: number;
+    minDc?: number;
+    maxDc?: number;
+    minPpc?: number;
+    maxPpc?: number;
+    minPpd?: number;
+    maxPpd?: number;
+  }>({});
+  const [isDraftStatsFilterOpen, setIsDraftStatsFilterOpen] = useState(false);
+  const [draftDatosTooltip, setDraftDatosTooltip] = useState<{
+    show: boolean;
+    x: number;
+    y: number;
+    data: any;
+  } | null>(null);
+  const [draftDatosMonthFilter, setDraftDatosMonthFilter] = useState<string[]>(
+    [],
+  );
+  const [draftDatosCategoryFilter, setDraftDatosCategoryFilter] = useState<
+    string[]
+  >([]);
+  const [draftDatosTeamFilter, setDraftDatosTeamFilter] = useState<string[]>(
+    [],
+  );
+  const [isDraftDatosMonthFilterOpen, setIsDraftDatosMonthFilterOpen] =
+    useState(false);
+  const [isDraftDatosCategoryFilterOpen, setIsDraftDatosCategoryFilterOpen] =
+    useState(false);
+  const [isDraftDatosTeamFilterOpen, setIsDraftDatosTeamFilterOpen] =
+    useState(false);
   const [draftSortColumn, setDraftSortColumn] = useState<string>("Elección");
   const [draftSortDirection, setDraftSortDirection] = useState<"asc" | "desc">(
     "asc",
@@ -464,6 +511,13 @@ export default function App() {
   const [isDraftTableExpanded, setIsDraftTableExpanded] = useState(false);
   const [isDraftDatosTableExpanded, setIsDraftDatosTableExpanded] =
     useState(false);
+  const [isDraftSummaryExpanded, setIsDraftSummaryExpanded] = useState(false);
+  const draftSummaryTableRef = useRef<HTMLDivElement>(null);
+  const draftChartRef = useRef<HTMLDivElement>(null);
+  const [draftSummarySort, setDraftSummarySort] = useState<{
+    keys: string[];
+    order: "asc" | "desc";
+  }>({ keys: ["totalPoints"], order: "desc" });
   const [isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded] =
     useState(false);
   const [isUnscoredExpanded, setIsUnscoredExpanded] = useState(false);
@@ -554,7 +608,8 @@ export default function App() {
   const [startlistRace, setStartlistRace] = useState("");
   const [parsedStartlist, setParsedStartlist] = useState<{
     carrera: string;
-    resultados: { jugador: string; ciclistas: string[] }[];
+    resultados: { jugador: string; ciclistas: any[] }[];
+    updatedAt?: string;
   } | null>(null);
   const [isSavingStartlist, setIsSavingStartlist] = useState(false);
 
@@ -1957,9 +2012,14 @@ export default function App() {
     }
 
     try {
+      // Ensure layout is up to date
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
         scale: 2,
-        style: { overflow: "hidden" },
+        height: elHeight + (part !== "full" ? 20 : 10),
+        windowHeight: elHeight + 50,
+        style: { overflow: "visible", paddingBottom: "10px" },
         filter: (node: any) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -2022,9 +2082,14 @@ export default function App() {
     }
 
     try {
+      // Ensure layout is up to date
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
         scale: 2,
-        style: { overflow: "hidden" },
+        height: elHeight + (part !== "full" ? 20 : 10),
+        windowHeight: elHeight + 50,
+        style: { overflow: "visible", paddingBottom: "10px" },
         filter: (node: any) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -2064,7 +2129,7 @@ export default function App() {
       if (!selectedData) return;
 
       const teamStats: Record<string, { count: number; points: number }> = {};
-      const allTeams = new Set(Object.values(playerTeamMap));
+      const allTeams = new Set(Object.values(playerTeamMap) as string[]);
       allTeams.forEach((team) => {
         if (team) {
           teamStats[team] = { count: 0, points: 0 };
@@ -2192,9 +2257,13 @@ export default function App() {
     setIsStartlistTeamsCopying(part);
     const restore = expandNodeForCapture(startlistTeamsTableRef.current);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
         scale: 2,
-        style: { overflow: "hidden" },
+        height: elHeight + (part !== "full" ? 20 : 10),
+        windowHeight: elHeight + 50,
+        style: { overflow: "visible", paddingBottom: "10px" },
         filter: (node: any) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -2238,9 +2307,13 @@ export default function App() {
     if (!startlistTeamsTableRef.current) return;
     const restore = expandNodeForCapture(startlistTeamsTableRef.current);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
         scale: 2,
-        style: { overflow: "hidden" },
+        height: elHeight + (part !== "full" ? 20 : 10),
+        windowHeight: elHeight + 50,
+        style: { overflow: "visible", paddingBottom: "10px" },
         filter: (node: any) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -2461,14 +2534,22 @@ export default function App() {
   const handleCopyPointsImage = async () => {
     if (!pointsTableRef.current || isPointsImageCopying) return;
     setIsPointsImageCopying(true);
-    const restore = expandNodeForCapture(pointsTableRef.current);
+    const tableContainer = pointsTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass.replace("max-h-[600px]", "").replace("overflow-y-auto", "").replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const elHeight = tableContainer.scrollHeight;
+      const elWidth = tableContainer.scrollWidth;
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const dataUrl = await domToDataUrl(pointsTableRef.current!, {
-              scale: 2,
-              style: { overflow: "hidden" },
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 1,
+              width: elWidth,
+              height: elHeight,
+              style: { overflow: "visible", margin: "0" },
               filter: (node) =>
                 node instanceof Element
                   ? !node.classList.contains("copy-button-ignore")
@@ -2490,16 +2571,25 @@ export default function App() {
       /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
+      tableContainer.className = originalClass;
     }
   };
 
   const handleDownloadPointsImage = async () => {
     if (!pointsTableRef.current) return;
-    const restore = expandNodeForCapture(pointsTableRef.current);
+    const tableContainer = pointsTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass.replace("max-h-[600px]", "").replace("overflow-y-auto", "").replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(pointsTableRef.current, {
-        scale: 2,
-        style: { overflow: "hidden" },
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const elHeight = tableContainer.scrollHeight;
+      const elWidth = tableContainer.scrollWidth;
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 1,
+        width: elWidth,
+        height: elHeight,
+        style: { overflow: "visible", margin: "0" },
         filter: (node) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -2513,6 +2603,7 @@ export default function App() {
       console.error("Error downloading table:", err);
     } finally {
       restore();
+      tableContainer.className = originalClass;
     }
   };
 
@@ -3569,6 +3660,89 @@ export default function App() {
     return winners;
   }, [leaderboard, files.carreras.data, files.resultados.data]);
 
+  const globalTeamWinsCount = React.useMemo(() => {
+    if (!leaderboard) return {};
+    const teamWinsCount: Record<string, number> = {};
+    leaderboard.forEach((p) => {
+      if (p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]") {
+        teamWinsCount[p.nombreEquipo] = 0;
+      }
+    });
+
+    Object.values(raceWinners).forEach((teamName) => {
+      const name = teamName as string;
+      if (teamWinsCount[name] !== undefined) {
+        teamWinsCount[name]++;
+      }
+    });
+    return teamWinsCount;
+  }, [leaderboard, raceWinners]);
+
+  const globalTeamPartialWinsCount = React.useMemo(() => {
+    if (!leaderboard || !files.carreras.data || !files.resultados.data)
+      return { totals: {}, byRace: {} };
+    const partialWins: Record<string, number> = {};
+    const byRace: Record<string, Record<string, string[]>> = {};
+    const eventPoints: Record<
+      string,
+      Record<string, Record<string, number>>
+    > = {};
+
+    const validTypes = [
+      "Etapa",
+      "Etapa (Crono equipos)",
+      "Clasificación final",
+      "Clasificación final (Crono equipos)",
+    ];
+
+    leaderboard.forEach((player) => {
+      if (
+        player.nombreEquipo === "No draft" ||
+        player.nombreEquipo === "No draft [99]"
+      )
+        return;
+
+      partialWins[player.nombreEquipo] = 0;
+
+      player.detalles.forEach((d) => {
+        if (!validTypes.includes(d.tipoResultado || "")) return;
+
+        const raceName = d.carrera || "";
+        const eventKey = `${d.tipoResultado}_${d.etapa || ""}`;
+        if (!eventPoints[raceName]) eventPoints[raceName] = {};
+        if (!eventPoints[raceName][eventKey])
+          eventPoints[raceName][eventKey] = {};
+        if (!eventPoints[raceName][eventKey][player.nombreEquipo])
+          eventPoints[raceName][eventKey][player.nombreEquipo] = 0;
+
+        eventPoints[raceName][eventKey][player.nombreEquipo] +=
+          d.puntosObtenidos;
+      });
+    });
+
+    Object.entries(eventPoints).forEach(([raceName, raceEvents]) => {
+      byRace[raceName] = {};
+      Object.entries(raceEvents).forEach(([eventKey, teamPts]) => {
+        let maxPts = 0;
+        let winnerTeams: string[] = [];
+        Object.entries(teamPts).forEach(([team, pts]) => {
+          if (pts > maxPts) {
+            maxPts = pts;
+            winnerTeams = [team];
+          } else if (pts === maxPts && pts > 0) {
+            winnerTeams.push(team);
+          }
+        });
+        byRace[raceName][eventKey] = winnerTeams;
+        winnerTeams.forEach((team) => {
+          if (partialWins[team] !== undefined) partialWins[team]++;
+        });
+      });
+    });
+
+    return { totals: partialWins, byRace };
+  }, [leaderboard, files.carreras.data, files.resultados.data]);
+
   const formattedTeams = React.useMemo(() => {
     if (!files.elecciones.data) return [];
 
@@ -3640,11 +3814,16 @@ export default function App() {
         jugador,
         ciclistas, // Now array of objects: { nombre, dorsal }
       }))
-      .sort((a, b) => b.ciclistas.length - a.ciclistas.length);
+      .sort((a, b) => {
+        const teamA = playerTeamMap[a.jugador] || a.jugador;
+        const teamB = playerTeamMap[b.jugador] || b.jugador;
+        return teamA.localeCompare(teamB);
+      });
 
     setParsedStartlist({
       carrera: startlistRace || "Carrera sin nombre",
       resultados: results,
+      updatedAt: new Date().toISOString(),
     });
   };
 
@@ -4452,48 +4631,50 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           </span>
                         </div>
 
-                        {parsedStartlist.resultados.map((res, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm"
-                          >
-                            <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-2">
-                              <span className="font-bold text-neutral-800">
-                                {playerTeamMap[res.jugador] || res.jugador}{" "}
-                                {playerOrderMap[res.jugador]
-                                  ? `[#${playerOrderMap[res.jugador]}]`
-                                  : ""}
-                              </span>
-                              <span className="text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
-                                {res.ciclistas.length} ciclistas
-                              </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {parsedStartlist.resultados.map((res, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-white border border-neutral-200 p-2.5 rounded-lg shadow-sm"
+                            >
+                              <div className="flex justify-between items-center border-b border-neutral-100 pb-1.5 mb-1.5">
+                                <span className="font-bold text-neutral-800 text-xs truncate mr-2">
+                                  {playerTeamMap[res.jugador] || res.jugador}{" "}
+                                  {playerOrderMap[res.jugador]
+                                    ? `[#${playerOrderMap[res.jugador]}]`
+                                    : ""}
+                                </span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded-full shrink-0">
+                                  {res.ciclistas.length}
+                                </span>
+                              </div>
+                              <ul className="space-y-0.5">
+                                {res.ciclistas.map((c, i) => {
+                                  const nombre =
+                                    typeof c === "string" ? c : c.nombre;
+                                  const dorsal =
+                                    typeof c === "string" ? "" : c.dorsal;
+                                  return (
+                                    <li
+                                      key={i}
+                                      className="text-[11px] text-neutral-600 flex items-center gap-1.5"
+                                    >
+                                      <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0"></div>
+                                      <span className="truncate">
+                                        {dorsal ? (
+                                          <span className="text-neutral-400 mr-1 font-mono">
+                                            {dorsal}
+                                          </span>
+                                        ) : null}
+                                        {nombre}
+                                      </span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
                             </div>
-                            <ul className="space-y-1.5">
-                              {res.ciclistas.map((c, i) => {
-                                const nombre =
-                                  typeof c === "string" ? c : c.nombre;
-                                const dorsal =
-                                  typeof c === "string" ? "" : c.dorsal;
-                                return (
-                                  <li
-                                    key={i}
-                                    className="text-sm text-neutral-600 flex items-center gap-2"
-                                  >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
-                                    <span className="truncate">
-                                      {dorsal ? (
-                                        <span className="text-neutral-400 mr-2">
-                                          #{dorsal}
-                                        </span>
-                                      ) : null}
-                                      {nombre}
-                                    </span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
 
                         {parsedStartlist.resultados.length === 0 && (
                           <div className="text-center py-10 text-neutral-500 italic text-sm">
@@ -4526,14 +4707,26 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               <h4 className="font-semibold text-sm text-neutral-900 truncate">
                                 {sl.carrera}
                               </h4>
-                              <span className="text-[10px] text-neutral-500">
-                                {sl.resultados?.reduce(
-                                  (acc: number, curr: any) =>
-                                    acc + (curr.ciclistas?.length || 0),
-                                  0,
-                                )}{" "}
-                                participantes ligueros
-                              </span>
+                              <div className="flex flex-col text-[10px] text-neutral-500 mt-0.5">
+                                <span>
+                                  {sl.resultados?.reduce(
+                                    (acc: number, curr: any) =>
+                                      acc + (curr.ciclistas?.length || 0),
+                                    0,
+                                  )}{" "}
+                                  participantes ligueros
+                                </span>
+                                {(sl.updatedAt ||
+                                  (files.startlist as any).updatedAt) && (
+                                  <span className="text-neutral-400">
+                                    Actualizado:{" "}
+                                    {new Date(
+                                      sl.updatedAt ||
+                                        (files.startlist as any).updatedAt,
+                                    ).toLocaleString("es-ES")}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <button
                               onClick={() => handleDeleteStartlist(sl.carrera)}
@@ -4626,7 +4819,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                 )}
               >
                 <Flag className="w-4 h-4" />
-                Resultados carrera
+                Clasificación de la carrera
               </button>
               <button
                 onClick={() => setPublicTab("startlist")}
@@ -5945,6 +6138,30 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   },
                                 );
 
+                                // Calculate partial wins for this team in the filtered period
+                                let partialWins = 0;
+                                Object.entries(
+                                  globalTeamPartialWinsCount.byRace,
+                                ).forEach(([raceName, raceEvents]) => {
+                                  if (
+                                    teamsMonthFilter === "all" ||
+                                    raceMonths[raceName] ===
+                                      parseInt(teamsMonthFilter)
+                                  ) {
+                                    Object.values(raceEvents).forEach(
+                                      (winnerTeams) => {
+                                        if (
+                                          winnerTeams.includes(
+                                            team.nombreEquipo,
+                                          )
+                                        ) {
+                                          partialWins++;
+                                        }
+                                      },
+                                    );
+                                  }
+                                });
+
                                 const ppc =
                                   numCarreras > 0
                                     ? parseFloat(
@@ -5964,6 +6181,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   numCarreras,
                                   totalDays,
                                   wins,
+                                  partialWins,
                                   ppc,
                                   ppd,
                                   diff: parseInt(team.orden) || 0,
@@ -6003,6 +6221,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   valA = a.wins;
                                   valB = b.wins;
                                   break;
+                                case "victorias_parc":
+                                  valA = a.partialWins;
+                                  valB = b.partialWins;
+                                  break;
                                 case "puntos":
                                 default:
                                   valA = a.puntos;
@@ -6028,6 +6250,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                             let maxWins = 0,
                               minWins = Infinity;
+                            let maxPartialWins = 0,
+                              minPartialWins = Infinity;
                             let maxCarreras = 0,
                               minCarreras = Infinity;
                             let maxDias = 0,
@@ -6051,6 +6275,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               );
                               minWins = Math.min(
                                 ...teamStats.map((s) => s.wins),
+                              );
+                              maxPartialWins = Math.max(
+                                ...teamStats.map((s) => s.partialWins),
+                              );
+                              minPartialWins = Math.min(
+                                ...teamStats.map((s) => s.partialWins),
                               );
                               maxCarreras = Math.max(
                                 ...teamStats.map((s) => s.numCarreras),
@@ -6259,6 +6489,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         </th>
                                         <th
                                           className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors whitespace-nowrap border-b border-neutral-100"
+                                          title="Victorias del equipo (carrera)"
                                           onClick={() => {
                                             if (
                                               teamsSortColumn === "victorias"
@@ -6273,8 +6504,38 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           }}
                                         >
                                           <div className="flex items-center justify-center gap-1">
-                                            Victorias{" "}
+                                            Victorias eq.{" "}
                                             {teamsSortColumn === "victorias" &&
+                                              (teamsSortDirection === "asc" ? (
+                                                <ChevronUp className="w-3.5 h-3.5" />
+                                              ) : (
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                              ))}
+                                          </div>
+                                        </th>
+                                        <th
+                                          className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors whitespace-nowrap border-b border-neutral-100"
+                                          title="Victorias parciales del equipo (etapas, etc)"
+                                          onClick={() => {
+                                            if (
+                                              teamsSortColumn ===
+                                              "victorias_parc"
+                                            ) {
+                                              setTeamsSortDirection((d) =>
+                                                d === "asc" ? "desc" : "asc",
+                                              );
+                                            } else {
+                                              setTeamsSortColumn(
+                                                "victorias_parc",
+                                              );
+                                              setTeamsSortDirection("desc");
+                                            }
+                                          }}
+                                        >
+                                          <div className="flex items-center justify-center gap-1">
+                                            Victorias parc.{" "}
+                                            {teamsSortColumn ===
+                                              "victorias_parc" &&
                                               (teamsSortDirection === "asc" ? (
                                                 <ChevronUp className="w-3.5 h-3.5" />
                                               ) : (
@@ -6326,6 +6587,20 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               ? "text-green-600 font-bold"
                                               : team.wins === minWins &&
                                                   minWins < maxWins
+                                                ? "text-yellow-600 font-bold"
+                                                : "text-neutral-700";
+
+                                        const partialWinsColor =
+                                          team.partialWins === 0
+                                            ? "text-red-600 font-bold"
+                                            : team.partialWins ===
+                                                  maxPartialWins &&
+                                                maxPartialWins > 0
+                                              ? "text-green-600 font-bold"
+                                              : team.partialWins ===
+                                                    minPartialWins &&
+                                                  minPartialWins <
+                                                    maxPartialWins
                                                 ? "text-yellow-600 font-bold"
                                                 : "text-neutral-700";
 
@@ -6383,6 +6658,16 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               )}
                                             >
                                               {formatNumberSpanish(team.wins)}
+                                            </td>
+                                            <td
+                                              className={cn(
+                                                "px-4 py-1 text-center whitespace-nowrap font-mono",
+                                                partialWinsColor,
+                                              )}
+                                            >
+                                              {formatNumberSpanish(
+                                                team.partialWins,
+                                              )}
                                             </td>
                                             <td
                                               className="px-4 py-1 text-right text-sm whitespace-nowrap font-mono font-bold"
@@ -6504,6 +6789,29 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           },
                                         );
 
+                                        let partialWins = 0;
+                                        Object.entries(
+                                          globalTeamPartialWinsCount.byRace,
+                                        ).forEach(([raceName, raceEvents]) => {
+                                          if (
+                                            teamsMonthFilter === "all" ||
+                                            raceMonths[raceName] ===
+                                              parseInt(teamsMonthFilter)
+                                          ) {
+                                            Object.values(raceEvents).forEach(
+                                              (winnerTeams) => {
+                                                if (
+                                                  winnerTeams.includes(
+                                                    team.nombreEquipo,
+                                                  )
+                                                ) {
+                                                  partialWins++;
+                                                }
+                                              },
+                                            );
+                                          }
+                                        });
+
                                         const ppc =
                                           numCarreras > 0
                                             ? parseFloat(
@@ -6525,6 +6833,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           numCarreras,
                                           totalDays,
                                           wins,
+                                          partialWins,
                                           ppc,
                                           ppd,
                                           diff: parseInt(team.orden) || 0,
@@ -6562,6 +6871,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           valA = a.wins;
                                           valB = b.wins;
                                           break;
+                                        case "victorias_parc":
+                                          valA = a.partialWins;
+                                          valB = b.partialWins;
+                                          break;
                                         case "puntos":
                                         default:
                                           valA = a.puntos;
@@ -6591,6 +6904,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                                     let maxWins = 0,
                                       minWins = Infinity;
+                                    let maxPartialWins = 0,
+                                      minPartialWins = Infinity;
                                     let maxPuntos = 0,
                                       minPuntos = Infinity;
                                     if (modalTeamStats.length > 0) {
@@ -6605,6 +6920,16 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       );
                                       minWins = Math.min(
                                         ...modalTeamStats.map((s) => s.wins),
+                                      );
+                                      maxPartialWins = Math.max(
+                                        ...modalTeamStats.map(
+                                          (s) => s.partialWins,
+                                        ),
+                                      );
+                                      minPartialWins = Math.min(
+                                        ...modalTeamStats.map(
+                                          (s) => s.partialWins,
+                                        ),
                                       );
                                     }
 
@@ -6727,6 +7052,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                 </th>
                                                 <th
                                                   className="sticky top-0 z-30 bg-neutral-50 px-6 py-2.5 font-bold text-center whitespace-nowrap cursor-pointer hover:bg-neutral-100 transition-colors border-b border-neutral-100"
+                                                  title="Victorias del equipo (carrera)"
                                                   onClick={() => {
                                                     if (
                                                       teamsSortColumn ===
@@ -6743,15 +7069,51 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                         "victorias",
                                                       );
                                                       setTeamsSortDirection(
-                                                        "asc",
+                                                        "desc",
                                                       );
                                                     }
                                                   }}
                                                 >
                                                   <div className="flex items-center justify-center gap-1">
-                                                    Victorias{" "}
+                                                    Victorias eq.{" "}
                                                     {teamsSortColumn ===
                                                       "victorias" &&
+                                                      (teamsSortDirection ===
+                                                      "asc" ? (
+                                                        <ChevronUp className="w-3.5 h-3.5" />
+                                                      ) : (
+                                                        <ChevronDown className="w-3.5 h-3.5" />
+                                                      ))}
+                                                  </div>
+                                                </th>
+                                                <th
+                                                  className="sticky top-0 z-30 bg-neutral-50 px-6 py-2.5 font-bold text-center whitespace-nowrap cursor-pointer hover:bg-neutral-100 transition-colors border-b border-neutral-100"
+                                                  title="Victorias parciales del equipo (etapas, etc)"
+                                                  onClick={() => {
+                                                    if (
+                                                      teamsSortColumn ===
+                                                      "victorias_parc"
+                                                    ) {
+                                                      setTeamsSortDirection(
+                                                        (d) =>
+                                                          d === "asc"
+                                                            ? "desc"
+                                                            : "asc",
+                                                      );
+                                                    } else {
+                                                      setTeamsSortColumn(
+                                                        "victorias_parc",
+                                                      );
+                                                      setTeamsSortDirection(
+                                                        "desc",
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  <div className="flex items-center justify-center gap-1">
+                                                    Victorias parc.{" "}
+                                                    {teamsSortColumn ===
+                                                      "victorias_parc" &&
                                                       (teamsSortDirection ===
                                                       "asc" ? (
                                                         <ChevronUp className="w-3.5 h-3.5" />
@@ -6819,6 +7181,20 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                         ? "text-yellow-600 font-bold"
                                                         : "text-neutral-700";
 
+                                                const partialWinsColor =
+                                                  team.partialWins === 0
+                                                    ? "text-red-600 font-bold"
+                                                    : team.partialWins ===
+                                                          maxPartialWins &&
+                                                        maxPartialWins > 0
+                                                      ? "text-green-600 font-bold"
+                                                      : team.partialWins ===
+                                                            minPartialWins &&
+                                                          minPartialWins <
+                                                            maxPartialWins
+                                                        ? "text-yellow-600 font-bold"
+                                                        : "text-neutral-700";
+
                                                 return (
                                                   <tr
                                                     key={team.jugador}
@@ -6877,6 +7253,16 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                     >
                                                       {formatNumberSpanish(
                                                         team.wins,
+                                                      )}
+                                                    </td>
+                                                    <td
+                                                      className={cn(
+                                                        "px-6 py-2 text-center text-base whitespace-nowrap font-mono",
+                                                        partialWinsColor,
+                                                      )}
+                                                    >
+                                                      {formatNumberSpanish(
+                                                        team.partialWins,
                                                       )}
                                                     </td>
                                                     <td
@@ -9126,7 +9512,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         </th>
                                         <th
                                           className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
-                                          title="Puntos por carrera"
+                                          title="Puntos por carreras"
                                           onClick={() => {
                                             if (cyclistsSortColumn === "ppc") {
                                               setCyclistsSortDirection((d) =>
@@ -11659,7 +12045,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         </th>
                                         <th
                                           className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
-                                          title="Puntos por carrera"
+                                          title="Puntos por carreras"
                                           onClick={() => {
                                             if (
                                               noDraftCyclistsSortColumn ===
@@ -12061,6 +12447,19 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             t.nombreEquipo !== "No draft [99]",
                         ) || [];
 
+                    // Calculate partial wins in this race
+                    raceTeams.forEach((team) => {
+                      let partials = 0;
+                      const raceEvents =
+                        globalTeamPartialWinsCount.byRace[selectedRace] || {};
+                      Object.values(raceEvents).forEach((winnerTeams) => {
+                        if ((winnerTeams as string[]).includes(team.nombreEquipo)) {
+                          partials++;
+                        }
+                      });
+                      team.racePartialWins = partials;
+                    });
+
                     // Sort: 0 cyclists at bottom, then points desc, then cyclists asc
                     raceTeams.sort((a, b) => {
                       if (a.uniqueCyclists === 0 && b.uniqueCyclists !== 0)
@@ -12101,6 +12500,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                     );
                     const minRacePoints = Math.min(
                       ...rankedTeams.map((t) => t.totalPoints),
+                      0,
+                    );
+                    const maxRacePartialWins = Math.max(
+                      ...rankedTeams.map((t) => t.racePartialWins || 0),
+                      0,
+                    );
+                    const minRacePartialWins = Math.min(
+                      ...rankedTeams.map((t) => t.racePartialWins || 0),
                       0,
                     );
 
@@ -12353,12 +12760,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </button>
                             </div>
                           </div>
-                          <div className="flex justify-center">
+                          <div className="flex justify-center w-full">
                             <div
                               id="race-classification-table"
                               ref={raceClassificationTableRef}
                               className={cn(
-                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm inline-block",
+                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
                                 isRaceClassificationExpanded
                                   ? "fixed inset-4 z-50 max-h-none"
                                   : "",
@@ -12374,20 +12781,26 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <X className="w-6 h-6" />
                                 </button>
                               )}
-                              <table className="w-auto text-sm text-left border-collapse mx-auto">
+                              <table className="w-full text-sm text-left border-collapse mx-auto">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                                   <tr>
-                                    <th className="px-3 py-1.5 w-10 text-center">
+                                    <th className="px-2 py-1.5 w-8 text-center">
                                       Pos
                                     </th>
-                                    <th className="px-3 py-1.5 min-w-[140px]">
+                                    <th className="px-2 py-1.5 min-w-[120px]">
                                       Equipo
                                     </th>
-                                    <th className="px-3 py-1.5 text-center">
-                                      Cic.
+                                    <th className="px-2 py-1.5 w-10 text-center">
+                                      Cicl
                                     </th>
-                                    <th className="px-3 py-1.5 text-right w-16">
+                                    <th className="px-2 py-1.5 w-16 text-center">
                                       Puntos
+                                    </th>
+                                    <th className="px-2 py-1.5 w-20 text-center">
+                                      Ptos por cic
+                                    </th>
+                                    <th className="px-2 py-1.5 w-16 text-center">
+                                      Vict parc
                                     </th>
                                   </tr>
                                 </thead>
@@ -12404,13 +12817,17 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         className="hover:bg-blue-50/30 transition-colors group"
                                       >
                                         <td className="px-3 py-1.5 text-center font-mono text-xs text-neutral-400">
-                                          {team.pos === 1
-                                            ? "🥇"
-                                            : team.pos === 2
-                                              ? "🥈"
-                                              : team.pos === 3
-                                                ? "🥉"
-                                                : team.pos}
+                                          {team.totalPoints > 0 ? (
+                                            team.pos === 1
+                                              ? "🥇"
+                                              : team.pos === 2
+                                                ? "🥈"
+                                                : team.pos === 3
+                                                  ? "🥉"
+                                                  : team.pos
+                                          ) : (
+                                            team.pos
+                                          )}
                                         </td>
                                         <td className="px-3 py-1.5">
                                           <div className="flex flex-col">
@@ -12436,13 +12853,38 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           </span>
                                         </td>
                                         <td
-                                          className="px-3 py-1.5 text-right font-mono font-bold text-black text-xs border-l border-neutral-100"
+                                          className="px-3 py-1.5 text-center font-mono font-bold text-black text-xs border-l border-neutral-100"
                                           style={{
                                             backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.totalPoints - minRacePoints) / (maxRacePoints - minRacePoints || 1))) * 120}, 70%, 75%)`,
                                             color: "#000000",
                                           }}
                                         >
                                           {team.totalPoints}
+                                        </td>
+                                        <td className="px-3 py-1.5 text-center font-mono text-xs border-l border-neutral-100 text-neutral-600">
+                                          {team.uniqueCyclists > 0
+                                            ? (
+                                                team.totalPoints /
+                                                team.uniqueCyclists
+                                              ).toFixed(1)
+                                            : "0.0"}
+                                        </td>
+                                        <td
+                                          className="px-3 py-1.5 text-center font-mono font-bold text-xs border-l border-neutral-100"
+                                          style={
+                                            team.racePartialWins > 0
+                                              ? {
+                                                  backgroundColor: `hsl(45, 100%, ${Math.max(40, 95 - ((team.racePartialWins - minRacePartialWins) / Math.max(maxRacePartialWins - minRacePartialWins, 1)) * 45)}%)`,
+                                                  color: "#78350f",
+                                                }
+                                              : {
+                                                  color: "#d4d4d8",
+                                                }
+                                          }
+                                        >
+                                          {team.racePartialWins > 0
+                                            ? team.racePartialWins
+                                            : "-"}
                                         </td>
                                       </tr>
                                     ))}
@@ -12482,12 +12924,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </button>
                             </div>
                           </div>
-                          <div className="flex justify-center">
+                          <div className="flex justify-center w-full">
                             <div
                               id="cyclists-classification-table"
                               ref={cyclistsTableRef}
                               className={cn(
-                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm inline-block",
+                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
                                 isCyclistsExpanded
                                   ? "fixed inset-4 z-50 max-h-none"
                                   : "",
@@ -12501,7 +12943,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <X className="w-6 h-6" />
                                 </button>
                               )}
-                              <table className="w-auto text-sm text-left border-collapse mx-auto">
+                              <table className="w-full text-sm text-left border-collapse mx-auto">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                                   <tr>
                                     <th className="px-3 py-1.5 min-w-[140px]">
@@ -12513,8 +12955,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     <th className="px-3 py-1.5 text-center">
                                       Vict.
                                     </th>
-                                    <th className="px-3 py-1.5 text-right">
-                                      Pts
+                                    <th className="px-3 py-1.5 text-center">
+                                      Puntos
                                     </th>
                                   </tr>
                                 </thead>
@@ -12553,7 +12995,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         )}
                                       </td>
                                       <td
-                                        className="px-3 py-1.5 text-right font-mono font-bold text-blue-600 text-xs"
+                                        className="px-3 py-1.5 text-center font-mono font-bold text-blue-600 text-xs"
                                         style={{
                                           backgroundColor:
                                             c.puntos > 0
@@ -12609,12 +13051,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </button>
                               </div>
                             </div>
-                            <div className="flex justify-center">
+                            <div className="flex justify-center w-full">
                               <div
                                 id="race-breakdown-table"
                                 ref={raceBreakdownTableRef}
                                 className={cn(
-                                  "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm inline-block max-w-full",
+                                  "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full max-w-full",
                                   isStageExpanded
                                     ? "fixed inset-4 z-50 max-h-none"
                                     : "",
@@ -12628,7 +13070,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     <X className="w-6 h-6" />
                                   </button>
                                 )}
-                                <table className="w-auto text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
+                                <table className="w-full text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
                                   <thead
                                     className={cn(
                                       "bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10",
@@ -12649,7 +13091,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           {col.formatted}
                                         </th>
                                       ))}
-                                      <th className="px-2 py-1.5 text-right font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
+                                      <th className="px-2 py-1.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
                                         Puntos
                                       </th>
                                     </tr>
@@ -12675,13 +13117,17 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           className="hover:bg-blue-50/30 transition-colors group"
                                         >
                                           <td className="px-2 py-1 text-center font-mono text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
-                                            {team.pos === 1
-                                              ? "🥇"
-                                              : team.pos === 2
-                                                ? "🥈"
-                                                : team.pos === 3
-                                                  ? "🥉"
-                                                  : team.pos}
+                                            {team.total > 0 ? (
+                                              team.pos === 1
+                                                ? "🥇"
+                                                : team.pos === 2
+                                                  ? "🥈"
+                                                  : team.pos === 3
+                                                    ? "🥉"
+                                                    : team.pos
+                                            ) : (
+                                              team.pos
+                                            )}
                                           </td>
                                           <td className="px-2 py-1 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px]">
                                             <span>
@@ -12714,7 +13160,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             );
                                           })}
                                           <td
-                                            className="px-2 py-1 text-right font-mono font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
+                                            className="px-2 py-1 text-center font-mono font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
                                             style={{
                                               backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.total - minTotal) / (maxTotal - minTotal || 1))) * 120}, 70%, 75%)`,
                                               color: "#000000",
@@ -13045,6 +13491,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                     const teamWins = Object.values(raceWinners).filter(
                       (w) => w === selectedTeam,
                     ).length;
+                    const teamPartialWins =
+                      globalTeamPartialWinsCount.totals[selectedTeam] || 0;
 
                     const teamCyclistsData =
                       files.elecciones.data?.filter(
@@ -13255,18 +13703,45 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       (c) => c.puntos === 0,
                     ).length;
 
+                    const getMinNonZero = (arr: number[]) => {
+                      const nonZero = arr.filter((v) => v > 0);
+                      return nonZero.length > 0 ? Math.min(...nonZero) : null;
+                    };
+                    const minNonZeroCarr = getMinNonZero(
+                      cyclistStats.map((c) => c.carrerasDisputadas),
+                    );
+                    const minNonZeroDias = getMinNonZero(
+                      cyclistStats.map((c) => c.diasCompeticion),
+                    );
+                    const minNonZeroPpc = getMinNonZero(
+                      cyclistStats.map((c) => parseFloat(c.puntosPorCarrera)),
+                    );
+                    const minNonZeroPpd = getMinNonZero(
+                      cyclistStats.map((c) => parseFloat(c.puntosPorDia)),
+                    );
+                    const minNonZeroPct = getMinNonZero(
+                      cyclistStats.map((c) => c.pointsPct),
+                    );
+
                     const getStatColor = (
                       val: number,
                       max: number,
                       min: number,
                       zeroIsRed: boolean = true,
                       onlyMax: boolean = false,
+                      minNonZero: number | null = null,
                     ) => {
-                      if (!onlyMax && zeroIsRed && val === 0)
+                      if (zeroIsRed && val === 0)
                         return "text-red-600 font-bold";
                       if (val === max && max > 0)
                         return "text-green-600 font-bold";
-                      if (!onlyMax && val === min && min < max)
+                      if (
+                        minNonZero !== null &&
+                        val === minNonZero &&
+                        val < max
+                      )
+                        return "text-orange-500 font-bold";
+                      if (!onlyMax && val === min && min < max && min !== 0)
                         return "text-yellow-600 font-bold";
                       return "text-neutral-600";
                     };
@@ -13320,7 +13795,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             </p>
                           </div>
                           {/* KPIs */}
-                          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                          <div className="grid grid-cols-3 md:grid-cols-7 gap-2">
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 shadow-sm flex flex-col items-center justify-center min-h-[64px]">
                               <Trophy className="w-4 h-4 text-blue-600 mb-1 shrink-0" />
                               <p className="text-[8px] font-medium text-blue-600 uppercase tracking-tight leading-tight mb-1 text-center whitespace-nowrap">
@@ -13338,6 +13813,16 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               </p>
                               <p className="text-xl font-bold text-neutral-900 leading-none text-center">
                                 {teamWins}
+                              </p>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 shadow-sm flex flex-col items-center justify-center min-h-[64px]">
+                              <Medal className="w-4 h-4 text-amber-500 mb-1 shrink-0" />
+                              <p className="text-[8px] font-medium text-amber-600 uppercase tracking-tight leading-tight mb-1 text-center whitespace-nowrap">
+                                Vict. Parc.
+                              </p>
+                              <p className="text-xl font-bold text-neutral-900 leading-none text-center">
+                                {teamPartialWins}
                               </p>
                             </div>
 
@@ -13608,7 +14093,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </div>
                                     </th>
                                     <th
-                                      className="px-3 py-2 font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      className="px-3 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
                                       onClick={() => {
                                         if (
                                           teamCyclistsSortColumn === "equipo"
@@ -13622,7 +14107,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         }
                                       }}
                                     >
-                                      <div className="flex items-center gap-1">
+                                      <div className="flex items-center justify-center gap-1">
                                         Equipo{" "}
                                         {teamCyclistsSortColumn === "equipo" &&
                                           (teamCyclistsSortDirection ===
@@ -13634,7 +14119,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </div>
                                     </th>
                                     <th
-                                      className="px-2 py-2 text-right font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
                                       onClick={() => {
                                         if (
                                           teamCyclistsSortColumn === "puntos"
@@ -13648,7 +14133,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         }
                                       }}
                                     >
-                                      <div className="flex items-center justify-end gap-1">
+                                      <div className="flex items-center justify-center gap-1">
                                         Pts{" "}
                                         {teamCyclistsSortColumn === "puntos" &&
                                           (teamCyclistsSortDirection ===
@@ -13661,6 +14146,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </th>
                                     <th
                                       className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      title="Victorias"
                                       onClick={() => {
                                         if (
                                           teamCyclistsSortColumn === "victorias"
@@ -13690,6 +14176,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </th>
                                     <th
                                       className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      title="Carreras"
                                       onClick={() => {
                                         if (
                                           teamCyclistsSortColumn === "carreras"
@@ -13717,6 +14204,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </th>
                                     <th
                                       className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      title="Días de competición"
                                       onClick={() => {
                                         if (teamCyclistsSortColumn === "dias") {
                                           setTeamCyclistsSortDirection((d) =>
@@ -13729,7 +14217,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       }}
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        D.{" "}
+                                        DC{" "}
                                         {teamCyclistsSortColumn === "dias" &&
                                           (teamCyclistsSortDirection ===
                                           "asc" ? (
@@ -13740,8 +14228,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </div>
                                     </th>
                                     <th
-                                      className="px-2 py-2 text-right font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
-                                      title="Puntos por carrera disputada"
+                                      className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      title="Puntos por carreras"
                                       onClick={() => {
                                         if (teamCyclistsSortColumn === "ppc") {
                                           setTeamCyclistsSortDirection((d) =>
@@ -13753,7 +14241,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         }
                                       }}
                                     >
-                                      <div className="flex items-center justify-end gap-1">
+                                      <div className="flex items-center justify-center gap-1">
                                         P/C{" "}
                                         {teamCyclistsSortColumn === "ppc" &&
                                           (teamCyclistsSortDirection ===
@@ -13765,7 +14253,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </div>
                                     </th>
                                     <th
-                                      className="px-2 py-2 text-right font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
                                       title="Puntos por día de competición"
                                       onClick={() => {
                                         if (teamCyclistsSortColumn === "ppd") {
@@ -13778,7 +14266,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         }
                                       }}
                                     >
-                                      <div className="flex items-center justify-end gap-1">
+                                      <div className="flex items-center justify-center gap-1">
                                         P/D{" "}
                                         {teamCyclistsSortColumn === "ppd" &&
                                           (teamCyclistsSortDirection ===
@@ -13790,7 +14278,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </div>
                                     </th>
                                     <th
-                                      className="px-2 py-2 text-right font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
+                                      className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors"
                                       title="% de puntos sobre el total del equipo"
                                       onClick={() => {
                                         if (teamCyclistsSortColumn === "pct") {
@@ -13803,7 +14291,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         }
                                       }}
                                     >
-                                      <div className="flex items-center justify-end gap-1">
+                                      <div className="flex items-center justify-center gap-1">
                                         %{" "}
                                         {teamCyclistsSortColumn === "pct" &&
                                           (teamCyclistsSortDirection ===
@@ -13848,12 +14336,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       <td className="px-2 py-1.5 text-center text-neutral-600 text-[10px]">
                                         {c.pais}
                                       </td>
-                                      <td className="px-3 py-1.5 text-neutral-600 text-[9px]">
+                                      <td className="px-3 py-1.5 text-center text-neutral-600 text-[9px]">
                                         {c.equipoBreve}
                                       </td>
                                       <td
                                         className={cn(
-                                          "px-2 py-1.5 text-right font-bold text-[10px]",
+                                          "px-2 py-1.5 text-center font-bold text-[10px]",
                                           c.puntos === 0
                                             ? "text-red-600"
                                             : "text-blue-600",
@@ -13885,6 +14373,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             c.carrerasDisputadas,
                                             maxCarr,
                                             minCarr,
+                                            true,
+                                            false,
+                                            minNonZeroCarr,
                                           ),
                                         )}
                                       >
@@ -13897,6 +14388,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             c.diasCompeticion,
                                             maxDias,
                                             minDias,
+                                            true,
+                                            false,
+                                            minNonZeroDias,
                                           ),
                                         )}
                                       >
@@ -13904,13 +14398,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </td>
                                       <td
                                         className={cn(
-                                          "px-2 py-1.5 text-right font-mono text-[10px]",
+                                          "px-2 py-1.5 text-center font-mono text-[10px]",
                                           getStatColor(
                                             parseFloat(c.puntosPorCarrera),
                                             maxPpc,
                                             minPpc,
-                                            false,
                                             true,
+                                            true,
+                                            minNonZeroPpc,
                                           ),
                                         )}
                                       >
@@ -13918,13 +14413,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </td>
                                       <td
                                         className={cn(
-                                          "px-2 py-1.5 text-right font-mono text-[10px]",
+                                          "px-2 py-1.5 text-center font-mono text-[10px]",
                                           getStatColor(
                                             parseFloat(c.puntosPorDia),
                                             maxPpd,
                                             minPpd,
-                                            false,
                                             true,
+                                            true,
+                                            minNonZeroPpd,
                                           ),
                                         )}
                                       >
@@ -13932,13 +14428,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       </td>
                                       <td
                                         className={cn(
-                                          "px-2 py-1.5 text-right font-mono text-[10px]",
+                                          "px-2 py-1.5 text-center font-mono text-[10px]",
                                           getStatColor(
                                             c.pointsPct,
                                             maxPct,
                                             0,
-                                            false,
                                             true,
+                                            true,
+                                            minNonZeroPct,
                                           ),
                                         )}
                                       >
@@ -14161,7 +14658,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         { count: number; points: number }
                       > = {};
                       // Inicializar todos los equipos reales del juego a 0
-                      const allTeams = new Set(Object.values(playerTeamMap));
+                      const allTeams = new Set(Object.values(playerTeamMap) as string[]);
                       allTeams.forEach((team) => {
                         if (team) {
                           teamStats[team] = { count: 0, points: 0 };
@@ -14460,61 +14957,67 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       start: number;
                                       end: number;
                                     }[] = [];
-                                    let currentStart = 0;
-                                    for (
-                                      let i = 0;
-                                      i < filteredRows.length;
-                                      i++
-                                    ) {
-                                      const row = filteredRows[i];
-                                      const prevRow =
-                                        i > 0 ? filteredRows[i - 1] : null;
-                                      let isGroupBreak = false;
-                                      if (prevRow) {
-                                        if (
-                                          startlistSortColumn === "jugador" &&
-                                          row.jugador !== prevRow.jugador
-                                        )
-                                          isGroupBreak = true;
-                                        if (
-                                          startlistSortColumn === "equipo" &&
-                                          row.equipo !== prevRow.equipo
-                                        )
-                                          isGroupBreak = true;
-                                        if (
-                                          startlistSortColumn === "pais" &&
-                                          row.pais !== prevRow.pais
-                                        )
-                                          isGroupBreak = true;
+                                    const targetMidpoint = Math.floor(
+                                      filteredRows.length / 2,
+                                    );
+                                    let bestMidpoint = targetMidpoint;
 
-                                        if (
-                                          ![
-                                            "jugador",
-                                            "equipo",
-                                            "pais",
-                                          ].includes(startlistSortColumn)
-                                        ) {
-                                          isGroupBreak = true;
-                                        }
-                                      }
+                                    const isBreak = (idx: number) => {
                                       if (
-                                        (i - currentStart >= 45 &&
-                                          isGroupBreak) ||
-                                        i - currentStart >= 70
-                                      ) {
-                                        chunks.push({
-                                          start: currentStart,
-                                          end: i,
-                                        });
-                                        currentStart = i;
+                                        idx <= 0 ||
+                                        idx >= filteredRows.length
+                                      )
+                                        return false;
+                                      const row = filteredRows[idx];
+                                      const prevRow = filteredRows[idx - 1];
+
+                                      if (
+                                        startlistSortColumn === "jugador" &&
+                                        row.jugador !== prevRow.jugador
+                                      )
+                                        return true;
+                                      if (
+                                        startlistSortColumn === "equipo" &&
+                                        row.equipo !== prevRow.equipo
+                                      )
+                                        return true;
+                                      if (
+                                        startlistSortColumn === "pais" &&
+                                        row.pais !== prevRow.pais
+                                      )
+                                        return true;
+                                      if (
+                                        !["jugador", "equipo", "pais"].includes(
+                                          startlistSortColumn,
+                                        )
+                                      )
+                                        return true;
+                                      return false;
+                                    };
+
+                                    for (
+                                      let offset = 0;
+                                      offset <= targetMidpoint;
+                                      offset++
+                                    ) {
+                                      if (isBreak(targetMidpoint + offset)) {
+                                        bestMidpoint = targetMidpoint + offset;
+                                        break;
+                                      }
+                                      if (isBreak(targetMidpoint - offset)) {
+                                        bestMidpoint = targetMidpoint - offset;
+                                        break;
                                       }
                                     }
-                                    if (currentStart < filteredRows.length) {
-                                      chunks.push({
-                                        start: currentStart,
-                                        end: filteredRows.length,
-                                      });
-                                    }
+
+                                    chunks.push({
+                                      start: 0,
+                                      end: bestMidpoint,
+                                    });
+                                    chunks.push({
+                                      start: bestMidpoint,
+                                      end: filteredRows.length,
+                                    });
 
                                     return (
                                       <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1 flex-wrap">
@@ -14590,7 +15093,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                           <div
                             className={cn(
-                              "overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-white",
+                              "overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-white flex flex-col",
                               isStartlistExpanded
                                 ? "fixed inset-4 z-50 shadow-2xl p-4 m-0 max-h-none"
                                 : "max-h-[850px]",
@@ -14605,6 +15108,21 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <X className="w-6 h-6" />
                               </button>
                             )}
+                            <div className="bg-[#1e293b] text-white px-4 py-3 flex flex-col gap-0.5 border-b border-neutral-700">
+                              <h2 className="text-lg font-bold">
+                                Startlist: {publicStartlistRace}
+                              </h2>
+                              {(selectedData.updatedAt ||
+                                (files.startlist as any).updatedAt) && (
+                                <span className="text-xs text-neutral-300 font-medium italic">
+                                  Última actualización:{" "}
+                                  {new Date(
+                                    selectedData.updatedAt ||
+                                      (files.startlist as any).updatedAt,
+                                  ).toLocaleString("es-ES")}
+                                </span>
+                              )}
+                            </div>
                             <div
                               className={cn(
                                 "overflow-x-hidden overflow-y-auto scrollbar-thin",
@@ -14952,7 +15470,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                           <div
                             className={cn(
-                              "overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-white mb-8 mx-auto max-w-4xl",
+                              "overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-white mb-8 mx-auto max-w-4xl flex flex-col",
                               isStartlistTeamsExpanded
                                 ? "fixed inset-4 z-50 shadow-2xl p-4 m-0 max-h-none"
                                 : "",
@@ -14969,6 +15487,21 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <X className="w-6 h-6" />
                               </button>
                             )}
+                            <div className="bg-[#1e293b] text-white px-4 py-3 flex flex-col gap-0.5 border-b border-neutral-700">
+                              <h2 className="text-lg font-bold">
+                                Puntos por Equipo: {publicStartlistRace}
+                              </h2>
+                              {(selectedData.updatedAt ||
+                                (files.startlist as any).updatedAt) && (
+                                <span className="text-xs text-neutral-300 font-medium italic">
+                                  Última actualización:{" "}
+                                  {new Date(
+                                    selectedData.updatedAt ||
+                                      (files.startlist as any).updatedAt,
+                                  ).toLocaleString("es-ES")}
+                                </span>
+                              )}
+                            </div>
                             <div
                               className={cn(
                                 "overflow-x-hidden overflow-y-auto scrollbar-thin",
@@ -15196,6 +15729,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     !isDraftRoundFilterOpen,
                                   );
                                   setIsDraftTeamFilterOpen(false);
+                                  setIsDraftStatsFilterOpen(false);
                                 }}
                                 className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
                               >
@@ -15286,6 +15820,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     !isDraftTeamFilterOpen,
                                   );
                                   setIsDraftRoundFilterOpen(false);
+                                  setIsDraftStatsFilterOpen(false);
                                 }}
                                 className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[160px] justify-between cursor-pointer"
                               >
@@ -15368,6 +15903,114 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </div>
                               )}
                             </div>
+                            <div className="relative">
+                              <button
+                                onClick={() => {
+                                  setIsDraftStatsFilterOpen(
+                                    !isDraftStatsFilterOpen,
+                                  );
+                                  setIsDraftTeamFilterOpen(false);
+                                  setIsDraftRoundFilterOpen(false);
+                                }}
+                                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
+                              >
+                                <span className="text-neutral-700">
+                                  {Object.values(draftStatsFilters).some(
+                                    (v) => v !== undefined && v !== "",
+                                  )
+                                    ? "Estadísticas activas"
+                                    : "Estadísticas"}
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-4 h-4 text-neutral-400 transition-transform",
+                                    isDraftStatsFilterOpen && "rotate-180",
+                                  )}
+                                />
+                              </button>
+                              {isDraftStatsFilterOpen && (
+                                <div className="absolute top-full left-0 mt-1 w-96 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
+                                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-3">
+                                    <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">
+                                      Filtros de Estadísticas
+                                    </span>
+                                    {Object.values(draftStatsFilters).some(
+                                      (v) =>
+                                        v !== undefined && String(v) !== "",
+                                    ) && (
+                                      <button
+                                        onClick={() => setDraftStatsFilters({})}
+                                        className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
+                                      >
+                                        Limpiar todo
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+                                    {[
+                                      { key: "Points", label: "Puntos" },
+                                      { key: "Wins", label: "Victorias (V)" },
+                                      { key: "Carr", label: "Carreras (C)" },
+                                      { key: "Dc", label: "Días Comp. (DC)" },
+                                      {
+                                        key: "Ppc",
+                                        label: "Pto/Carrera (P/C)",
+                                      },
+                                      { key: "Ppd", label: "Pto/Día (P/D)" },
+                                    ].map((stat) => (
+                                      <div key={stat.key} className="space-y-1">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">
+                                          {stat.label}
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="number"
+                                            placeholder="Min"
+                                            className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                                            value={
+                                              (draftStatsFilters as any)[
+                                                `min${stat.key}`
+                                              ] ?? ""
+                                            }
+                                            onChange={(e) =>
+                                              setDraftStatsFilters((prev) => ({
+                                                ...prev,
+                                                [`min${stat.key}`]: e.target
+                                                  .value
+                                                  ? Number(e.target.value)
+                                                  : undefined,
+                                              }))
+                                            }
+                                          />
+                                          <span className="text-neutral-400">
+                                            -
+                                          </span>
+                                          <input
+                                            type="number"
+                                            placeholder="Max"
+                                            className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                                            value={
+                                              (draftStatsFilters as any)[
+                                                `max${stat.key}`
+                                              ] ?? ""
+                                            }
+                                            onChange={(e) =>
+                                              setDraftStatsFilters((prev) => ({
+                                                ...prev,
+                                                [`max${stat.key}`]: e.target
+                                                  .value
+                                                  ? Number(e.target.value)
+                                                  : undefined,
+                                              }))
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
@@ -15401,9 +16044,106 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         </div>
 
                         {(() => {
+                          const draftCyclistStats: Record<
+                            string,
+                            { puntos: number; victorias: number }
+                          > = {};
+                          leaderboard?.forEach((player) => {
+                            player.detalles.forEach((d) => {
+                              if (!draftCyclistStats[d.ciclista]) {
+                                draftCyclistStats[d.ciclista] = {
+                                  puntos: 0,
+                                  victorias: 0,
+                                };
+                              }
+                              draftCyclistStats[d.ciclista].puntos +=
+                                d.puntosObtenidos;
+
+                              const isPos01 =
+                                d.posicion === "01" || d.posicion === "1";
+                              const isValidType = [
+                                "Etapa",
+                                "Etapa (Crono equipos)",
+                                "Clasificación final",
+                                "Clasificación final (Crono equipos)",
+                                "Clásica",
+                              ].includes(d.tipoResultado);
+
+                              if (isPos01 && isValidType) {
+                                draftCyclistStats[d.ciclista].victorias += 1;
+                              }
+                            });
+                          });
+
+                          const maxPuntos = Math.max(
+                            1,
+                            ...Object.values(draftCyclistStats).map(
+                              (s) => s.puntos,
+                            ),
+                          );
+
+                          // Calculate min values for coloring
+                          let minCarreras = Infinity;
+                          let minDc = Infinity;
+                          let minPpc = Infinity;
+                          let minPpd = Infinity;
+                          let minPct = Infinity;
+
+                          // We need team total points first for % calculation
+                          const teamTotalPoints: Record<string, number> = {};
+                          files.elecciones.data.forEach((row) => {
+                            const ciclista = getVal(row, "Ciclista") as string;
+                            const equipo =
+                              getVal(row, "Nombre_Equipo") ||
+                              (getVal(row, "Nombre_TG") as string);
+                            const pts =
+                              draftCyclistStats[ciclista]?.puntos || 0;
+                            if (equipo) {
+                              teamTotalPoints[equipo] =
+                                (teamTotalPoints[equipo] || 0) + pts;
+                            }
+                          });
+
+                          files.elecciones.data.forEach((row) => {
+                            const ciclista = getVal(row, "Ciclista") as string;
+                            if (!ciclista) return;
+                            const stats = draftCyclistStats[ciclista] || {
+                              puntos: 0,
+                              victorias: 0,
+                            };
+                            const meta = cyclistMetadata[ciclista] || {
+                              carrerasDisputadas: 0,
+                              diasCompeticion: 0,
+                            };
+
+                            const carr = meta.carrerasDisputadas;
+                            const dc = meta.diasCompeticion;
+                            const ppc = carr > 0 ? stats.puntos / carr : 0;
+                            const ppd = dc > 0 ? stats.puntos / dc : 0;
+
+                            const equipo =
+                              getVal(row, "Nombre_Equipo") ||
+                              (getVal(row, "Nombre_TG") as string);
+                            const pct =
+                              equipo && teamTotalPoints[equipo] > 0
+                                ? (stats.puntos / teamTotalPoints[equipo]) * 100
+                                : 0;
+
+                            if (carr > 0 && carr < minCarreras)
+                              minCarreras = carr;
+                            if (dc > 0 && dc < minDc) minDc = dc;
+                            if (ppc > 0 && ppc < minPpc) minPpc = ppc;
+                            if (ppd > 0 && ppd < minPpd) minPpd = ppd;
+                            if (pct > 0 && pct < minPct) minPct = pct;
+                          });
+
                           const filteredData = files.elecciones.data.filter(
                             (row) => {
-                              const matchesSearch = getVal(row, "Ciclista")
+                              const ciclista = getVal(
+                                row,
+                                "Ciclista",
+                              ) as string;
+                              const matchesSearch = ciclista
                                 ?.toLowerCase()
                                 .includes(draftSearchTerm.toLowerCase());
                               const matchesRound =
@@ -15419,8 +16159,91 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       getVal(row, "Nombre_TG"),
                                   ),
                                 );
+
+                              let matchesStats = true;
+                              if (ciclista) {
+                                const stats = draftCyclistStats[ciclista] || {
+                                  puntos: 0,
+                                  victorias: 0,
+                                };
+                                const meta = cyclistMetadata[ciclista] || {
+                                  carrerasDisputadas: 0,
+                                  diasCompeticion: 0,
+                                };
+                                const puntos = stats.puntos;
+                                const victorias = stats.victorias;
+                                const carr = meta.carrerasDisputadas;
+                                const dc = meta.diasCompeticion;
+                                const ppc = carr > 0 ? puntos / carr : 0;
+                                const ppd = dc > 0 ? puntos / dc : 0;
+
+                                if (
+                                  draftStatsFilters.minPoints !== undefined &&
+                                  puntos < draftStatsFilters.minPoints
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxPoints !== undefined &&
+                                  puntos > draftStatsFilters.maxPoints
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.minWins !== undefined &&
+                                  victorias < draftStatsFilters.minWins
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxWins !== undefined &&
+                                  victorias > draftStatsFilters.maxWins
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.minCarr !== undefined &&
+                                  carr < draftStatsFilters.minCarr
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxCarr !== undefined &&
+                                  carr > draftStatsFilters.maxCarr
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.minDc !== undefined &&
+                                  dc < draftStatsFilters.minDc
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxDc !== undefined &&
+                                  dc > draftStatsFilters.maxDc
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.minPpc !== undefined &&
+                                  ppc < draftStatsFilters.minPpc
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxPpc !== undefined &&
+                                  ppc > draftStatsFilters.maxPpc
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.minPpd !== undefined &&
+                                  ppd < draftStatsFilters.minPpd
+                                )
+                                  matchesStats = false;
+                                if (
+                                  draftStatsFilters.maxPpd !== undefined &&
+                                  ppd > draftStatsFilters.maxPpd
+                                )
+                                  matchesStats = false;
+                              }
+
                               return (
-                                matchesSearch && matchesRound && matchesTeam
+                                matchesSearch &&
+                                matchesRound &&
+                                matchesTeam &&
+                                matchesStats
                               );
                             },
                           );
@@ -15478,7 +16301,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <div
                                   ref={draftTableRef}
                                   className={cn(
-                                    "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm inline-block max-w-full",
+                                    "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[1200px] overflow-y-auto shadow-sm inline-block max-w-full",
                                     isDraftTableExpanded
                                       ? "fixed inset-4 z-50 max-h-none"
                                       : "",
@@ -15495,49 +16318,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </button>
                                   )}
                                   {(() => {
-                                    const draftCyclistStats: Record<
-                                      string,
-                                      { puntos: number; victorias: number }
-                                    > = {};
-                                    leaderboard?.forEach((player) => {
-                                      player.detalles.forEach((d) => {
-                                        if (!draftCyclistStats[d.ciclista]) {
-                                          draftCyclistStats[d.ciclista] = {
-                                            puntos: 0,
-                                            victorias: 0,
-                                          };
-                                        }
-                                        draftCyclistStats[d.ciclista].puntos +=
-                                          d.puntosObtenidos;
-
-                                        const isPos01 =
-                                          d.posicion === "01" ||
-                                          d.posicion === "1";
-                                        const isValidType = [
-                                          "Etapa",
-                                          "Etapa (Crono equipos)",
-                                          "Clasificación final",
-                                          "Clasificación final (Crono equipos)",
-                                          "Clásica",
-                                        ].includes(d.tipoResultado);
-
-                                        if (isPos01 && isValidType) {
-                                          draftCyclistStats[
-                                            d.ciclista
-                                          ].victorias += 1;
-                                        }
-                                      });
-                                    });
-
-                                    const maxPuntos = Math.max(
-                                      1,
-                                      ...Object.values(draftCyclistStats).map(
-                                        (s) => s.puntos,
-                                      ),
-                                    );
-
                                     return (
-                                      <table className="w-auto text-sm text-left whitespace-nowrap border-collapse mx-auto">
+                                      <table className="w-auto text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
                                         <thead
                                           className={cn(
                                             "bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10",
@@ -15554,40 +16336,67 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               "País",
                                               "Eq_Comp",
                                               "Puntos",
-                                              "Victorias",
-                                            ].map((col) => (
-                                              <th
-                                                key={col}
-                                                className="px-4 py-3 font-semibold cursor-pointer hover:bg-neutral-100 transition-colors"
-                                                onClick={() => {
-                                                  if (draftSortColumn === col) {
-                                                    setDraftSortDirection(
-                                                      (prev) =>
-                                                        prev === "asc"
-                                                          ? "desc"
-                                                          : "asc",
-                                                    );
-                                                  } else {
-                                                    setDraftSortColumn(col);
-                                                    setDraftSortDirection(
-                                                      "asc",
-                                                    );
-                                                  }
-                                                }}
-                                              >
-                                                <div className="flex items-center gap-1">
-                                                  {col.replace("_", " ")}
-                                                  {draftSortColumn === col && (
-                                                    <span className="text-blue-600">
-                                                      {draftSortDirection ===
-                                                      "asc"
-                                                        ? "↑"
-                                                        : "↓"}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </th>
-                                            ))}
+                                              "V",
+                                              "C",
+                                              "DC",
+                                              "P/C",
+                                              "P/D",
+                                              "%",
+                                            ].map((col) => {
+                                              let colTitle = col;
+                                              if (col === "V")
+                                                colTitle = "Victorias";
+                                              if (col === "C")
+                                                colTitle =
+                                                  "Carreras Disputadas";
+                                              if (col === "DC")
+                                                colTitle =
+                                                  "Días de Competición";
+                                              if (col === "P/C")
+                                                colTitle = "Puntos por Carrera";
+                                              if (col === "P/D")
+                                                colTitle = "Puntos por Día";
+                                              if (col === "%")
+                                                colTitle =
+                                                  "% de puntos del equipo";
+                                              return (
+                                                <th
+                                                  key={col}
+                                                  className="px-2 py-1.5 font-semibold cursor-pointer hover:bg-neutral-100 transition-colors text-center"
+                                                  title={colTitle}
+                                                  onClick={() => {
+                                                    if (
+                                                      draftSortColumn === col
+                                                    ) {
+                                                      setDraftSortDirection(
+                                                        (prev) =>
+                                                          prev === "asc"
+                                                            ? "desc"
+                                                            : "asc",
+                                                      );
+                                                    } else {
+                                                      setDraftSortColumn(col);
+                                                      setDraftSortDirection(
+                                                        "asc",
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  <div className="flex items-center justify-center gap-1">
+                                                    {col.replace("_", " ")}
+                                                    {draftSortColumn ===
+                                                      col && (
+                                                      <span className="text-blue-600">
+                                                        {draftSortDirection ===
+                                                        "asc"
+                                                          ? "↑"
+                                                          : "↓"}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </th>
+                                              );
+                                            })}
                                           </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-100">
@@ -15610,9 +16419,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   : ptsB - ptsA;
                                               }
 
-                                              if (
-                                                draftSortColumn === "Victorias"
-                                              ) {
+                                              if (draftSortColumn === "V") {
                                                 const vicA =
                                                   draftCyclistStats[
                                                     getVal(a, "Ciclista") || ""
@@ -15625,6 +16432,124 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   "asc"
                                                   ? vicA - vicB
                                                   : vicB - vicA;
+                                              }
+                                              if (draftSortColumn === "C") {
+                                                const cA =
+                                                  cyclistMetadata[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.carrerasDisputadas || 0;
+                                                const cB =
+                                                  cyclistMetadata[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.carrerasDisputadas || 0;
+                                                return draftSortDirection ===
+                                                  "asc"
+                                                  ? cA - cB
+                                                  : cB - cA;
+                                              }
+                                              if (draftSortColumn === "DC") {
+                                                const dcA =
+                                                  cyclistMetadata[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.diasCompeticion || 0;
+                                                const dcB =
+                                                  cyclistMetadata[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.diasCompeticion || 0;
+                                                return draftSortDirection ===
+                                                  "asc"
+                                                  ? dcA - dcB
+                                                  : dcB - dcA;
+                                              }
+                                              if (draftSortColumn === "P/C") {
+                                                const cA =
+                                                  cyclistMetadata[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.carrerasDisputadas || 0;
+                                                const pA =
+                                                  draftCyclistStats[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valA =
+                                                  cA > 0 ? pA / cA : 0;
+                                                const cB =
+                                                  cyclistMetadata[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.carrerasDisputadas || 0;
+                                                const pB =
+                                                  draftCyclistStats[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valB =
+                                                  cB > 0 ? pB / cB : 0;
+                                                return draftSortDirection ===
+                                                  "asc"
+                                                  ? valA - valB
+                                                  : valB - valA;
+                                              }
+                                              if (draftSortColumn === "P/D") {
+                                                const cA =
+                                                  cyclistMetadata[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.diasCompeticion || 0;
+                                                const pA =
+                                                  draftCyclistStats[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valA =
+                                                  cA > 0 ? pA / cA : 0;
+                                                const cB =
+                                                  cyclistMetadata[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.diasCompeticion || 0;
+                                                const pB =
+                                                  draftCyclistStats[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valB =
+                                                  cB > 0 ? pB / cB : 0;
+                                                return draftSortDirection ===
+                                                  "asc"
+                                                  ? valA - valB
+                                                  : valB - valA;
+                                              }
+                                              if (draftSortColumn === "%") {
+                                                const eqA = (getVal(
+                                                  a,
+                                                  "Nombre_Equipo",
+                                                ) ||
+                                                  getVal(
+                                                    a,
+                                                    "Nombre_TG",
+                                                  )) as string;
+                                                const tA =
+                                                  teamTotalPoints[eqA] || 0;
+                                                const pA =
+                                                  draftCyclistStats[
+                                                    getVal(a, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valA =
+                                                  tA > 0 ? (pA / tA) * 100 : 0;
+                                                const eqB = (getVal(
+                                                  b,
+                                                  "Nombre_Equipo",
+                                                ) ||
+                                                  getVal(
+                                                    b,
+                                                    "Nombre_TG",
+                                                  )) as string;
+                                                const tB =
+                                                  teamTotalPoints[eqB] || 0;
+                                                const pB =
+                                                  draftCyclistStats[
+                                                    getVal(b, "Ciclista") || ""
+                                                  ]?.puntos || 0;
+                                                const valB =
+                                                  tB > 0 ? (pB / tB) * 100 : 0;
+                                                return draftSortDirection ===
+                                                  "asc"
+                                                  ? valA - valB
+                                                  : valB - valA;
                                               }
 
                                               const valA = getVal(
@@ -15689,61 +16614,218 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               return (
                                                 <tr
                                                   key={idx}
-                                                  className="draft-row hover:bg-neutral-50 transition-colors"
+                                                  className="draft-row hover:bg-neutral-50 transition-colors h-6"
                                                 >
-                                                  <td className="px-4 py-2 font-medium text-neutral-900">
+                                                  <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">
                                                     {getVal(row, "Elección")}
                                                   </td>
-                                                  <td className="px-4 py-2">
+                                                  <td className="px-1 py-0.5 text-center truncate max-w-[100px]">
                                                     {getVal(
                                                       row,
                                                       "Nombre_Equipo",
                                                     ) ||
                                                       getVal(row, "Nombre_TG")}
                                                   </td>
-                                                  <td className="px-4 py-2 text-center">
+                                                  <td className="px-1 py-0.5 text-center">
                                                     {getVal(row, "Orden_Draft")}
                                                   </td>
-                                                  <td className="px-4 py-2 text-center">
-                                                    <span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded text-xs font-bold">
+                                                  <td className="px-1 py-0.5 text-center">
+                                                    <span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">
                                                       {getVal(row, "Ronda")}
                                                     </span>
                                                   </td>
-                                                  <td className="px-4 py-2 font-medium text-blue-600">
+                                                  <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">
                                                     {ciclista}
                                                   </td>
-                                                  <td className="px-4 py-2 text-center">
+                                                  <td className="px-1 py-0.5 text-center">
                                                     {getVal(row, "Edad")}
                                                   </td>
                                                   <td
-                                                    className="px-4 py-2 text-center"
+                                                    className="px-1 py-0.5 text-center"
                                                     title={getVal(row, "País")}
                                                   >
-                                                    <span className="text-lg">
+                                                    <span className="text-xs">
                                                       {getFlagEmoji(
                                                         getVal(row, "País"),
                                                       )}
                                                     </span>
                                                   </td>
-                                                  <td className="px-4 py-2 text-neutral-500">
+                                                  <td className="px-1 py-0.5 text-center text-neutral-500 truncate max-w-[80px]">
                                                     {getVal(row, "Eq_Comp")}
                                                   </td>
-                                                  <td className="px-4 py-2 text-right">
+                                                  <td className="px-1 py-0.5 text-center">
                                                     <span
-                                                      className="inline-flex items-center justify-center px-2 py-1 rounded font-bold min-w-[3rem]"
+                                                      className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]"
                                                       style={pointsStyle}
                                                     >
                                                       {stats.puntos}
                                                     </span>
                                                   </td>
-                                                  <td className="px-4 py-3 text-center">
+                                                  <td className="px-1 py-0.5 text-center">
                                                     {stats.victorias > 0 ? (
-                                                      <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">
+                                                      <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">
                                                         {stats.victorias}
                                                       </span>
                                                     ) : (
-                                                      "-"
+                                                      <span className="text-neutral-300">
+                                                        -
+                                                      </span>
                                                     )}
+                                                  </td>
+                                                  <td
+                                                    className={cn(
+                                                      "px-1 py-0.5 text-center font-mono",
+                                                      (cyclistMetadata[ciclista]
+                                                        ?.carrerasDisputadas ||
+                                                        0) === 0
+                                                        ? "text-red-500"
+                                                        : cyclistMetadata[
+                                                              ciclista
+                                                            ]
+                                                              ?.carrerasDisputadas ===
+                                                            minCarreras
+                                                          ? "text-orange-500 font-bold"
+                                                          : "",
+                                                    )}
+                                                  >
+                                                    {cyclistMetadata[ciclista]
+                                                      ?.carrerasDisputadas || 0}
+                                                  </td>
+                                                  <td
+                                                    className={cn(
+                                                      "px-1 py-0.5 text-center font-mono",
+                                                      (cyclistMetadata[ciclista]
+                                                        ?.diasCompeticion ||
+                                                        0) === 0
+                                                        ? "text-red-500"
+                                                        : cyclistMetadata[
+                                                              ciclista
+                                                            ]
+                                                              ?.diasCompeticion ===
+                                                            minDc
+                                                          ? "text-orange-500 font-bold"
+                                                          : "",
+                                                    )}
+                                                  >
+                                                    {cyclistMetadata[ciclista]
+                                                      ?.diasCompeticion || 0}
+                                                  </td>
+                                                  <td
+                                                    className={cn(
+                                                      "px-1 py-0.5 text-center font-mono",
+                                                      (cyclistMetadata[ciclista]
+                                                        ?.carrerasDisputadas > 0
+                                                        ? stats.puntos /
+                                                          cyclistMetadata[
+                                                            ciclista
+                                                          ].carrerasDisputadas
+                                                        : 0) === 0
+                                                        ? "text-red-500"
+                                                        : stats.puntos /
+                                                              cyclistMetadata[
+                                                                ciclista
+                                                              ]
+                                                                .carrerasDisputadas ===
+                                                            minPpc
+                                                          ? "text-orange-500 font-bold"
+                                                          : "",
+                                                    )}
+                                                  >
+                                                    {cyclistMetadata[ciclista]
+                                                      ?.carrerasDisputadas > 0
+                                                      ? (
+                                                          stats.puntos /
+                                                          cyclistMetadata[
+                                                            ciclista
+                                                          ].carrerasDisputadas
+                                                        ).toFixed(1)
+                                                      : "0.0"}
+                                                  </td>
+                                                  <td
+                                                    className={cn(
+                                                      "px-1 py-0.5 text-center font-mono",
+                                                      (cyclistMetadata[ciclista]
+                                                        ?.diasCompeticion > 0
+                                                        ? stats.puntos /
+                                                          cyclistMetadata[
+                                                            ciclista
+                                                          ].diasCompeticion
+                                                        : 0) === 0
+                                                        ? "text-red-500"
+                                                        : stats.puntos /
+                                                              cyclistMetadata[
+                                                                ciclista
+                                                              ]
+                                                                .diasCompeticion ===
+                                                            minPpd
+                                                          ? "text-orange-500 font-bold"
+                                                          : "",
+                                                    )}
+                                                  >
+                                                    {cyclistMetadata[ciclista]
+                                                      ?.diasCompeticion > 0
+                                                      ? (
+                                                          stats.puntos /
+                                                          cyclistMetadata[
+                                                            ciclista
+                                                          ].diasCompeticion
+                                                        ).toFixed(1)
+                                                      : "0.0"}
+                                                  </td>
+                                                  <td
+                                                    className={cn(
+                                                      "px-1 py-0.5 text-center font-mono",
+                                                      (() => {
+                                                        const eq =
+                                                          getVal(
+                                                            row,
+                                                            "Nombre_Equipo",
+                                                          ) ||
+                                                          (getVal(
+                                                            row,
+                                                            "Nombre_TG",
+                                                          ) as string);
+                                                        const pct =
+                                                          eq &&
+                                                          teamTotalPoints[eq] >
+                                                            0
+                                                            ? (stats.puntos /
+                                                                teamTotalPoints[
+                                                                  eq
+                                                                ]) *
+                                                              100
+                                                            : 0;
+                                                        if (pct === 0)
+                                                          return "text-red-500";
+                                                        if (pct === minPct)
+                                                          return "text-orange-500 font-bold";
+                                                        return "";
+                                                      })(),
+                                                    )}
+                                                  >
+                                                    {(() => {
+                                                      const eq =
+                                                        getVal(
+                                                          row,
+                                                          "Nombre_Equipo",
+                                                        ) ||
+                                                        (getVal(
+                                                          row,
+                                                          "Nombre_TG",
+                                                        ) as string);
+                                                      const pct =
+                                                        eq &&
+                                                        teamTotalPoints[eq] > 0
+                                                          ? (stats.puntos /
+                                                              teamTotalPoints[
+                                                                eq
+                                                              ]) *
+                                                            100
+                                                          : 0;
+                                                      return (
+                                                        pct.toFixed(1) + "%"
+                                                      );
+                                                    })()}
                                                   </td>
                                                 </tr>
                                               );
@@ -15770,9 +16852,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
-                          <div>
-                            <h3 className="font-semibold text-lg text-neutral-900">
+                        <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-xl border border-neutral-200 shadow-sm gap-2">
+                          <div className="flex flex-col gap-1 w-full sm:w-auto">
+                            <h3 className="font-semibold text-lg text-neutral-900 leading-tight">
                               Puntos por Ronda y Equipo
                             </h3>
                             <p className="text-xs text-neutral-500">
@@ -15780,14 +16862,334 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               draft.
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Meses Filter */}
+                            <div className="relative">
+                              <button
+                                onClick={() => {
+                                  setIsDraftDatosMonthFilterOpen(
+                                    !isDraftDatosMonthFilterOpen,
+                                  );
+                                  setIsDraftDatosCategoryFilterOpen(false);
+                                  setIsDraftDatosTeamFilterOpen(false);
+                                }}
+                                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[120px] justify-between cursor-pointer"
+                              >
+                                <span className="text-neutral-700">
+                                  {draftDatosMonthFilter.length === 0
+                                    ? "Meses"
+                                    : `${draftDatosMonthFilter.length} meses`}
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-4 h-4 text-neutral-400 transition-transform",
+                                    isDraftDatosMonthFilterOpen && "rotate-180",
+                                  )}
+                                />
+                              </button>
+                              {isDraftDatosMonthFilterOpen && (
+                                <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                                  <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                                      Meses
+                                    </span>
+                                    {draftDatosMonthFilter.length > 0 && (
+                                      <button
+                                        onClick={() =>
+                                          setDraftDatosMonthFilter([])
+                                        }
+                                        className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
+                                      >
+                                        Limpiar
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="max-h-60 overflow-y-auto">
+                                    {[
+                                      "Ene",
+                                      "Feb",
+                                      "Mar",
+                                      "Abr",
+                                      "May",
+                                      "Jun",
+                                      "Jul",
+                                      "Ago",
+                                      "Sep",
+                                      "Oct",
+                                      "Nov",
+                                      "Dic",
+                                    ].map((mes) => (
+                                      <label
+                                        key={mes}
+                                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20"
+                                          checked={draftDatosMonthFilter.includes(
+                                            mes,
+                                          )}
+                                          onChange={() => {
+                                            if (
+                                              draftDatosMonthFilter.includes(
+                                                mes,
+                                              )
+                                            ) {
+                                              setDraftDatosMonthFilter(
+                                                draftDatosMonthFilter.filter(
+                                                  (m) => m !== mes,
+                                                ),
+                                              );
+                                            } else {
+                                              setDraftDatosMonthFilter([
+                                                ...draftDatosMonthFilter,
+                                                mes,
+                                              ]);
+                                            }
+                                          }}
+                                        />
+                                        <span className="text-sm text-neutral-700">
+                                          {mes}
+                                        </span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Categoría Filter */}
+                            <div className="relative">
+                              <button
+                                onClick={() => {
+                                  setIsDraftDatosCategoryFilterOpen(
+                                    !isDraftDatosCategoryFilterOpen,
+                                  );
+                                  setIsDraftDatosMonthFilterOpen(false);
+                                  setIsDraftDatosTeamFilterOpen(false);
+                                }}
+                                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[120px] justify-between cursor-pointer"
+                              >
+                                <span className="text-neutral-700">
+                                  {draftDatosCategoryFilter.length === 0
+                                    ? "Categoría"
+                                    : `${draftDatosCategoryFilter.length} categorías`}
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-4 h-4 text-neutral-400 transition-transform",
+                                    isDraftDatosCategoryFilterOpen &&
+                                      "rotate-180",
+                                  )}
+                                />
+                              </button>
+                              {isDraftDatosCategoryFilterOpen && (
+                                <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                                  <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                                      Categorías
+                                    </span>
+                                    {draftDatosCategoryFilter.length > 0 && (
+                                      <button
+                                        onClick={() =>
+                                          setDraftDatosCategoryFilter([])
+                                        }
+                                        className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
+                                      >
+                                        Limpiar
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="max-h-60 overflow-y-auto">
+                                    {(() => {
+                                      const raceTypeByName: Record<
+                                        string,
+                                        string
+                                      > = {};
+                                      files.carreras?.data?.forEach((row) => {
+                                        const carrera = getVal(
+                                          row,
+                                          "Carrera",
+                                        )?.trim();
+                                        const categoria = getVal(
+                                          row,
+                                          "Categoría",
+                                        )?.trim();
+                                        if (carrera && categoria)
+                                          raceTypeByName[carrera] = categoria;
+                                      });
+                                      const availableCategories =
+                                        new Set<string>();
+                                      leaderboard?.forEach((player) => {
+                                        player.detalles.forEach((d) => {
+                                          const cat = raceTypeByName[d.carrera];
+                                          if (cat) availableCategories.add(cat);
+                                        });
+                                      });
+                                      const items = Array.from(
+                                        availableCategories,
+                                      ).sort((a, b) => a.localeCompare(b));
+                                      if (items.length === 0)
+                                        return (
+                                          <div className="px-3 py-2 text-xs text-neutral-500">
+                                            Sin datos
+                                          </div>
+                                        );
+                                      return items.map((cat) => (
+                                        <label
+                                          key={cat}
+                                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20"
+                                            checked={draftDatosCategoryFilter.includes(
+                                              cat,
+                                            )}
+                                            onChange={() => {
+                                              if (
+                                                draftDatosCategoryFilter.includes(
+                                                  cat,
+                                                )
+                                              ) {
+                                                setDraftDatosCategoryFilter(
+                                                  draftDatosCategoryFilter.filter(
+                                                    (c) => c !== cat,
+                                                  ),
+                                                );
+                                              } else {
+                                                setDraftDatosCategoryFilter([
+                                                  ...draftDatosCategoryFilter,
+                                                  cat,
+                                                ]);
+                                              }
+                                            }}
+                                          />
+                                          <span className="text-sm text-neutral-700">
+                                            {cat}
+                                          </span>
+                                        </label>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Equipo Filter */}
+                            <div className="relative">
+                              <button
+                                onClick={() => {
+                                  setIsDraftDatosTeamFilterOpen(
+                                    !isDraftDatosTeamFilterOpen,
+                                  );
+                                  setIsDraftDatosMonthFilterOpen(false);
+                                  setIsDraftDatosCategoryFilterOpen(false);
+                                }}
+                                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[120px] justify-between cursor-pointer"
+                              >
+                                <span className="text-neutral-700">
+                                  {draftDatosTeamFilter.length === 0
+                                    ? "Equipo"
+                                    : `${draftDatosTeamFilter.length} equipos`}
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-4 h-4 text-neutral-400 transition-transform",
+                                    isDraftDatosTeamFilterOpen && "rotate-180",
+                                  )}
+                                />
+                              </button>
+                              {isDraftDatosTeamFilterOpen && (
+                                <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                                  <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                                      Equipos
+                                    </span>
+                                    {draftDatosTeamFilter.length > 0 && (
+                                      <button
+                                        onClick={() =>
+                                          setDraftDatosTeamFilter([])
+                                        }
+                                        className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
+                                      >
+                                        Limpiar
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="max-h-60 overflow-y-auto">
+                                    {(() => {
+                                      const availableTeams = new Set<string>();
+                                      files.elecciones.data.forEach((row) => {
+                                        const teamName =
+                                          getVal(row, "Nombre_Equipo") ||
+                                          getVal(row, "Nombre_TG");
+                                        if (teamName)
+                                          availableTeams.add(
+                                            teamName as string,
+                                          );
+                                      });
+                                      const items = Array.from(
+                                        availableTeams,
+                                      ).sort((a, b) => a.localeCompare(b));
+                                      if (items.length === 0)
+                                        return (
+                                          <div className="px-3 py-2 text-xs text-neutral-500">
+                                            Sin datos
+                                          </div>
+                                        );
+                                      return items.map((team) => (
+                                        <label
+                                          key={team}
+                                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20"
+                                            checked={draftDatosTeamFilter.includes(
+                                              team,
+                                            )}
+                                            onChange={() => {
+                                              if (
+                                                draftDatosTeamFilter.includes(
+                                                  team,
+                                                )
+                                              ) {
+                                                setDraftDatosTeamFilter(
+                                                  draftDatosTeamFilter.filter(
+                                                    (t) => t !== team,
+                                                  ),
+                                                );
+                                              } else {
+                                                setDraftDatosTeamFilter([
+                                                  ...draftDatosTeamFilter,
+                                                  team,
+                                                ]);
+                                              }
+                                            }}
+                                          />
+                                          <span
+                                            className="text-sm text-neutral-700 truncate"
+                                            title={team}
+                                          >
+                                            {team}
+                                          </span>
+                                        </label>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
                             <button
                               onClick={() =>
                                 setIsDraftDatosTableExpanded(
                                   !isDraftDatosTableExpanded,
                                 )
                               }
-                              className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                              className="p-2 ml-1 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
                               title="Ampliar"
                             >
                               <Maximize2 className="w-4 h-4" />
@@ -15813,12 +17215,13 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           </div>
                         </div>
 
+
                         <div
                           ref={draftDatosTableRef}
                           className={cn(
-                            "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm",
+                            "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-none overflow-y-auto shadow-sm",
                             isDraftDatosTableExpanded
-                              ? "fixed inset-4 z-50 p-6 shadow-2xl m-0 max-h-none"
+                              ? "fixed inset-4 z-50 p-6 shadow-2xl m-0"
                               : "",
                           )}
                         >
@@ -15833,39 +17236,169 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             </button>
                           )}
                           {(() => {
-                            // 1. Pre-calculate cyclist points
-                            const cyclistPoints: Record<string, number> = {};
-                            leaderboard?.forEach((player) => {
-                              player.detalles.forEach((d) => {
-                                cyclistPoints[d.ciclista] =
-                                  (cyclistPoints[d.ciclista] || 0) +
-                                  d.puntosObtenidos;
-                              });
+                            // Compute race properties
+                            const raceTypeByName: Record<string, string> = {};
+                            const raceDateByName: Record<string, string> = {};
+                            files.carreras?.data?.forEach((row) => {
+                              const carrera = getVal(row, "Carrera")?.trim();
+                              const categoria = getVal(
+                                row,
+                                "Categoría",
+                              )?.trim();
+                              const fecha = getVal(row, "Fecha")?.trim();
+                              if (carrera && categoria)
+                                raceTypeByName[carrera] = categoria;
+                              if (carrera && fecha)
+                                raceDateByName[carrera] = fecha;
                             });
 
-                            // 2. Map teams, rounds and orders
-                            const teamRoundData: Record<
-                              string,
-                              Record<number, number>
-                            > = {};
-                            const teamOrderMap: Record<string, string> = {};
-                            const teamsSet = new Set<string>();
+                            const availableMonths = new Set<string>();
+                            const availableCategories = new Set<string>();
+                            const availableTeams = new Set<string>();
+
+                            leaderboard?.forEach((player) => {
+                              player.detalles.forEach((d) => {
+                                const dateStr =
+                                  raceDateByName[d.carrera] || d.fecha;
+                                if (dateStr) {
+                                  const monthStr = dateStr.split("/")[1];
+                                  if (monthStr) {
+                                    const monthNames = [
+                                      "Ene",
+                                      "Feb",
+                                      "Mar",
+                                      "Abr",
+                                      "May",
+                                      "Jun",
+                                      "Jul",
+                                      "Ago",
+                                      "Sep",
+                                      "Oct",
+                                      "Nov",
+                                      "Dic",
+                                    ];
+                                    availableMonths.add(
+                                      monthNames[parseInt(monthStr, 10) - 1],
+                                    );
+                                  }
+                                }
+                                const cat = raceTypeByName[d.carrera];
+                                if (cat) availableCategories.add(cat);
+                              });
+                            });
 
                             files.elecciones.data.forEach((row) => {
                               const teamName =
                                 getVal(row, "Nombre_Equipo") ||
                                 getVal(row, "Nombre_TG");
+                              if (teamName)
+                                availableTeams.add(teamName as string);
+                            });
+
+                            // Pre-calculate cyclist points
+                            const cyclistPoints: Record<string, number> = {};
+                            const cyclistWins: Record<string, number> = {};
+                            leaderboard?.forEach((player) => {
+                              player.detalles.forEach((d) => {
+                                const dateStr =
+                                  raceDateByName[d.carrera] || d.fecha;
+                                let matchesMonth = true;
+                                if (draftDatosMonthFilter.length > 0) {
+                                  if (!dateStr) matchesMonth = false;
+                                  else {
+                                    const monthStr = dateStr.split("/")[1];
+                                    if (monthStr) {
+                                      const monthNames = [
+                                        "Ene",
+                                        "Feb",
+                                        "Mar",
+                                        "Abr",
+                                        "May",
+                                        "Jun",
+                                        "Jul",
+                                        "Ago",
+                                        "Sep",
+                                        "Oct",
+                                        "Nov",
+                                        "Dic",
+                                      ];
+                                      const mName =
+                                        monthNames[parseInt(monthStr, 10) - 1];
+                                      if (
+                                        !draftDatosMonthFilter.includes(mName)
+                                      )
+                                        matchesMonth = false;
+                                    } else matchesMonth = false;
+                                  }
+                                }
+
+                                let matchesCategory = true;
+                                if (draftDatosCategoryFilter.length > 0) {
+                                  const cat = raceTypeByName[d.carrera];
+                                  if (
+                                    !cat ||
+                                    !draftDatosCategoryFilter.includes(cat)
+                                  )
+                                    matchesCategory = false;
+                                }
+
+                                if (matchesMonth && matchesCategory) {
+                                  cyclistPoints[d.ciclista] =
+                                    (cyclistPoints[d.ciclista] || 0) +
+                                    d.puntosObtenidos;
+
+                                  const isPos01 =
+                                    d.posicion === "01" || d.posicion === "1";
+                                  const isValidType = [
+                                    "Etapa",
+                                    "Etapa (Crono equipos)",
+                                    "Clasificación final",
+                                    "Clasificación final (Crono equipos)",
+                                    "Clásica",
+                                  ].includes(d.tipoResultado);
+
+                                  if (isPos01 && isValidType) {
+                                    cyclistWins[d.ciclista] =
+                                      (cyclistWins[d.ciclista] || 0) + 1;
+                                  }
+                                }
+                              });
+                            });
+
+                            // Map teams, rounds and orders
+                            const teamRoundData: Record<
+                              string,
+                              Record<number, number>
+                            > = {};
+                            const teamRoundCyclist: Record<
+                              string,
+                              Record<number, any>
+                            > = {};
+                            const teamOrderMap: Record<string, string> = {};
+                            const teamsSet = new Set<string>();
+
+                            files.elecciones.data.forEach((row) => {
+                              const teamName = (getVal(row, "Nombre_Equipo") ||
+                                getVal(row, "Nombre_TG")) as string;
                               const round = parseInt(getVal(row, "Ronda"));
-                              const cyclist = getVal(row, "Ciclista");
+                              const cyclist = getVal(row, "Ciclista") as string;
                               const order = getVal(row, "Orden_Draft");
 
                               if (teamName && !isNaN(round)) {
-                                teamsSet.add(teamName);
-                                if (!teamRoundData[teamName])
-                                  teamRoundData[teamName] = {};
-                                teamRoundData[teamName][round] =
-                                  cyclistPoints[cyclist] || 0;
-                                if (order) teamOrderMap[teamName] = order;
+                                if (
+                                  draftDatosTeamFilter.length === 0 ||
+                                  draftDatosTeamFilter.includes(teamName)
+                                ) {
+                                  teamsSet.add(teamName);
+                                  if (!teamRoundData[teamName]) {
+                                    teamRoundData[teamName] = {};
+                                    teamRoundCyclist[teamName] = {};
+                                  }
+                                  teamRoundData[teamName][round] =
+                                    cyclistPoints[cyclist] || 0;
+                                  teamRoundCyclist[teamName][round] = row;
+                                  if (order) teamOrderMap[teamName] = order;
+                                }
                               }
                             });
 
@@ -16063,6 +17596,38 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             }; // yellow-100, yellow-800
                                           }
 
+                                          const cyclistRow =
+                                            teamRoundCyclist[team][r];
+                                          const cyclistName = cyclistRow
+                                            ? getVal(cyclistRow, "Ciclista")
+                                            : undefined;
+                                          const eqComp = cyclistRow
+                                            ? getVal(cyclistRow, "Eq_Comp")
+                                            : undefined;
+                                          const order = cyclistRow
+                                            ? getVal(cyclistRow, "Orden_Draft")
+                                            : undefined;
+                                          const wins = cyclistName
+                                            ? cyclistWins[cyclistName] || 0
+                                            : 0;
+                                          const meta = cyclistName
+                                            ? cyclistMetadata[cyclistName] || {
+                                                carrerasDisputadas: 0,
+                                                diasCompeticion: 0,
+                                              }
+                                            : {
+                                                carrerasDisputadas: 0,
+                                                diasCompeticion: 0,
+                                              };
+                                          const ppc =
+                                            meta.carrerasDisputadas > 0
+                                              ? pts / meta.carrerasDisputadas
+                                              : 0;
+                                          const ppdc =
+                                            meta.diasCompeticion > 0
+                                              ? pts / meta.diasCompeticion
+                                              : 0;
+
                                           return (
                                             <td
                                               key={r}
@@ -16073,8 +17638,50 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   : "text-neutral-900",
                                               )}
                                               style={cellStyle}
+                                              onMouseEnter={(e) => {
+                                                if (cyclistName) {
+                                                  setDraftDatosTooltip({
+                                                    show: true,
+                                                    x: e.clientX,
+                                                    y: e.clientY,
+                                                    data: {
+                                                      cyclistName,
+                                                      eqComp,
+                                                      r,
+                                                      order,
+                                                      wins,
+                                                      pts,
+                                                      meta,
+                                                      ppc,
+                                                      ppdc,
+                                                    },
+                                                  });
+                                                }
+                                              }}
+                                              onMouseMove={(e) => {
+                                                if (
+                                                  cyclistName &&
+                                                  draftDatosTooltip
+                                                ) {
+                                                  setDraftDatosTooltip(
+                                                    (prev) =>
+                                                      prev
+                                                        ? {
+                                                            ...prev,
+                                                            x: e.clientX,
+                                                            y: e.clientY,
+                                                          }
+                                                        : null,
+                                                  );
+                                                }
+                                              }}
+                                              onMouseLeave={() =>
+                                                setDraftDatosTooltip(null)
+                                              }
                                             >
-                                              {pts > 0 ? pts : "0"}
+                                              <span className="cursor-default">
+                                                {pts > 0 ? pts : "0"}
+                                              </span>
                                             </td>
                                           );
                                         })}
@@ -16086,6 +17693,818 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   })}
                                 </tbody>
                               </table>
+                            );
+                          })()}
+                        </div>
+
+
+                        {/* Resumen de Rendimiento */}
+                        <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm mb-6">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div>
+                              <h3 className="flex items-center gap-2 font-bold text-lg text-neutral-900">
+                                <Activity className="w-5 h-5 text-blue-600" />
+                                Resumen de Rendimiento del Draft
+                              </h3>
+                              <p className="text-xs text-neutral-500 mt-0.5">
+                                Clasificación de selecciones por equipo según los puntos medios conseguidos por ronda.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 self-end md:self-start">
+                              <button
+                                onClick={() => setIsDraftSummaryExpanded(true)}
+                                className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                title="Ampliar tabla"
+                              >
+                                <Maximize2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (draftSummaryTableRef.current) {
+                                    try {
+                                      const dataUrl = await domToDataUrl(draftSummaryTableRef.current, {
+                                        backgroundColor: "#ffffff",
+                                        scale: 2,
+                                      });
+                                      const blob = await (await fetch(dataUrl)).blob();
+                                      const clipboardItem = new ClipboardItem({ [blob.type]: blob });
+                                      await navigator.clipboard.write([clipboardItem]);
+                                    } catch (err) {
+                                      console.error("Error al copiar imagen:", err);
+                                    }
+                                  }
+                                }}
+                                className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                title="Copiar como imagen"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Logic to copy table as text
+                                  const table = draftSummaryTableRef.current?.querySelector("table");
+                                  if (table) {
+                                    let text = "";
+                                    const rows = table.querySelectorAll("tr");
+                                    rows.forEach(row => {
+                                      const cols = row.querySelectorAll("th, td");
+                                      const rowData = Array.from(cols).map(col => (col as HTMLElement).textContent?.trim() || "").join("\t");
+                                      text += rowData + "\n";
+                                    });
+                                    navigator.clipboard.writeText(text);
+                                  }
+                                }}
+                                className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                title="Copiar como texto (Excel)"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (draftSummaryTableRef.current) {
+                                    try {
+                                      const dataUrl = await domToDataUrl(draftSummaryTableRef.current, {
+                                        backgroundColor: "#ffffff",
+                                        scale: 2,
+                                      });
+                                      const link = document.createElement("a");
+                                      link.download = `resumen-draft-${new Date().toISOString().split("T")[0]}.png`;
+                                      link.href = dataUrl;
+                                      link.click();
+                                    } catch (err) {
+                                      console.error("Error al descargar imagen:", err);
+                                    }
+                                  }
+                                }}
+                                className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                title="Descargar imagen"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                              <div className="relative group ml-1">
+                                <button className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100">
+                                  <HelpCircle className="w-4 h-4" />
+                                </button>
+                                <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white border border-neutral-200 rounded-2xl shadow-2xl z-50 invisible group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all opacity-0 group-hover:opacity-100 ring-1 ring-black/5 pointer-events-none group-hover:pointer-events-auto">
+                                  <h4 className="font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3 text-sm">Criterios de Clasificación</h4>
+                                  <ul className="space-y-3 text-xs text-neutral-600">
+                                    <li className="flex gap-3">
+                                      <span className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold shadow-sm">G</span>
+                                      <span><strong className="text-blue-700">Ganador:</strong> Selección con la puntuación máxima absoluta en su ronda.</span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                      <span className="w-5 h-5 rounded-lg bg-green-100 text-green-700 flex items-center justify-center shrink-0 font-bold shadow-sm">B</span>
+                                      <span><strong className="text-green-700">Buenos:</strong> Selección igual o superior a la media de su ronda.</span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                      <span className="w-5 h-5 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center shrink-0 font-bold shadow-sm">M</span>
+                                      <span><strong className="text-orange-700">Malos:</strong> Selección por debajo de la media de su ronda.</span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                      <span className="w-5 h-5 rounded-lg bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0 font-bold shadow-sm">S</span>
+                                      <span><strong className="text-neutral-900">Sin Puntos:</strong> Ciclistas que no han sumado puntos (0 pts).</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {(() => {
+                            // Points extraction (no changes here logically, but re-structured for clarity)
+                            const raceTypeByName: Record<string, string> = {};
+                            const raceDateByName: Record<string, string> = {};
+                            files.carreras?.data?.forEach((row) => {
+                              const carrera = getVal(row, "Carrera")?.trim();
+                              const categoria = getVal(row, "Categoría")?.trim();
+                              const fecha = getVal(row, "Fecha")?.trim();
+                              if (carrera && categoria) raceTypeByName[carrera] = categoria;
+                              if (carrera && fecha) raceDateByName[carrera] = fecha;
+                            });
+
+                            const cyclistPointsQ: Record<string, number> = {};
+                            leaderboard?.forEach((player) => {
+                              player.detalles.forEach((d) => {
+                                const dateStr = raceDateByName[d.carrera] || d.fecha;
+                                let matchesMonth = true;
+                                if (draftDatosMonthFilter.length > 0) {
+                                  if (!dateStr) matchesMonth = false;
+                                  else {
+                                    const monthStr = dateStr.split("/")[1];
+                                    if (monthStr) {
+                                      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                                      const mName = monthNames[parseInt(monthStr, 10) - 1];
+                                      if (!draftDatosMonthFilter.includes(mName)) matchesMonth = false;
+                                    } else matchesMonth = false;
+                                  }
+                                }
+
+                                let matchesCategory = true;
+                                if (draftDatosCategoryFilter.length > 0) {
+                                  const cat = raceTypeByName[d.carrera];
+                                  if (!cat || !draftDatosCategoryFilter.includes(cat)) matchesCategory = false;
+                                }
+
+                                if (matchesMonth && matchesCategory) {
+                                  cyclistPointsQ[d.ciclista] = (cyclistPointsQ[d.ciclista] || 0) + d.puntosObtenidos;
+                                }
+                              });
+                            });
+
+                            const statsArray: any[] = [];
+                            files.elecciones.data.forEach((row) => {
+                              const teamName = (getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")) as string;
+                              const ronda = parseInt(getVal(row, "Ronda"));
+                              const ciclista = getVal(row, "Ciclista") as string;
+
+                              if (teamName && !isNaN(ronda)) {
+                                if (draftDatosTeamFilter.length === 0 || draftDatosTeamFilter.includes(teamName)) {
+                                  const pts = cyclistPointsQ[ciclista] || 0;
+                                  statsArray.push({
+                                    ciclista,
+                                    equipo: teamName,
+                                    ronda,
+                                    puntos: pts,
+                                  });
+                                }
+                              }
+                            });
+
+                            if (statsArray.length === 0) {
+                              return <div className="text-sm text-neutral-500 italic">No hay suficientes datos.</div>;
+                            }
+
+                            const teamData: Record<string, Record<number, { ciclista: string; puntos: number }[]>> = {};
+                            const roundPoints: Record<number, number[]> = {};
+                            const allTeamsSet = new Set<string>();
+
+                            statsArray.forEach(s => {
+                              allTeamsSet.add(s.equipo);
+                              if (!teamData[s.equipo]) teamData[s.equipo] = {};
+                              if (!teamData[s.equipo][s.ronda]) teamData[s.equipo][s.ronda] = [];
+                              teamData[s.equipo][s.ronda].push({ ciclista: s.ciclista, puntos: s.puntos });
+                              
+                              if (!roundPoints[s.ronda]) roundPoints[s.ronda] = [];
+                              roundPoints[s.ronda].push(s.puntos);
+                            });
+
+                            const roundStats: Record<number, { max: number; avg: number }> = {};
+                            const roundsList = Object.keys(roundPoints).map(r => parseInt(r));
+                            roundsList.forEach(r => {
+                              const pts = roundPoints[r];
+                              roundStats[r] = {
+                                max: Math.max(...pts),
+                                avg: pts.reduce((sum, val) => sum + val, 0) / pts.length
+                              };
+                            });
+
+                            const teamSummaries = Array.from(allTeamsSet).map(team => {
+                              let pickGanador = 0;
+                              let buenosPicks = 0;
+                              let malosPicks = 0;
+                              let sinPuntuar = 0;
+                              let totalPoints = 0;
+                              let totalPicks = 0;
+
+                              const ganadoresList: string[] = [];
+                              const buenosList: string[] = [];
+                              const malosList: string[] = [];
+                              const sinPuntuarList: string[] = [];
+
+                              roundsList.forEach(r => {
+                                const ptsArray = teamData[team]?.[r] || [];
+                                ptsArray.forEach(item => {
+                                  const pts = item.puntos;
+                                  const name = item.ciclista;
+                                  totalPoints += pts;
+                                  totalPicks++;
+                                  if (pts === 0) {
+                                    sinPuntuar++;
+                                    sinPuntuarList.push(name);
+                                    malosPicks++;
+                                  } else if (pts === roundStats[r].max && roundStats[r].max > 0) {
+                                    pickGanador++;
+                                    ganadoresList.push(name);
+                                    // Also counted as "bueno" for the table percentage
+                                    buenosPicks++;
+                                  } else if (pts >= roundStats[r].avg) {
+                                    buenosPicks++;
+                                    buenosList.push(name);
+                                  } else {
+                                    malosPicks++;
+                                    malosList.push(name);
+                                  }
+                                });
+                              });
+
+                              return { 
+                                team, 
+                                pickGanador, 
+                                buenosPicks, 
+                                malosPicks, 
+                                sinPuntuar, 
+                                totalPoints,
+                                totalPicks,
+                                ganadoresList,
+                                buenosList,
+                                malosList,
+                                sinPuntuarList,
+                                pctGanadores: totalPicks > 0 ? (pickGanador / totalPicks) * 100 : 0,
+                                pctBuenos: totalPicks > 0 ? (buenosPicks / totalPicks) * 100 : 0,
+                                pctMalos: totalPicks > 0 ? (malosPicks / totalPicks) * 100 : 0,
+                                pctSinPuntuar: totalPicks > 0 ? (sinPuntuar / totalPicks) * 100 : 0
+                              };
+                            });
+
+                            // Ordenación dinámica
+                            const sortedSummaries = [...teamSummaries].sort((a: any, b: any) => {
+                              const getVal = (item: any) => draftSummarySort.keys.reduce((sum, k) => sum + (Number(item[k]) || 0), 0);
+                              const valA = getVal(a);
+                              const valB = getVal(b);
+                              if (draftSummarySort.order === "asc") return valA > valB ? 1 : -1;
+                              return valA < valB ? 1 : -1;
+                            });
+
+                            // Cálculo de máximos y mínimos para el coloreado
+                            const maxPickGanador = Math.max(...teamSummaries.map(t => t.pickGanador));
+                            const minPickGanador = Math.min(...teamSummaries.map(t => t.pickGanador));
+                            
+                            const maxBuenosPicks = Math.max(...teamSummaries.map(t => t.buenosPicks));
+                            const minBuenosPicks = Math.min(...teamSummaries.map(t => t.buenosPicks));
+                            
+                            const maxMalosPicks = Math.max(...teamSummaries.map(t => t.malosPicks));
+                            const minMalosPicks = Math.min(...teamSummaries.map(t => t.malosPicks));
+                            
+                            const maxSinPuntuar = Math.max(...teamSummaries.map(t => t.sinPuntuar));
+                            const minSinPuntuar = Math.min(...teamSummaries.map(t => t.sinPuntuar));
+                            
+                            const maxTotalPoints = Math.max(...teamSummaries.map(t => t.totalPoints));
+                            const minTotalPoints = Math.min(...teamSummaries.map(t => t.totalPoints));
+
+                            const toggleSort = (key: string) => {
+                              setDraftSummarySort(prev => {
+                                const isSingleMatch = prev.keys.length === 1 && prev.keys[0] === key;
+                                return {
+                                  keys: [key],
+                                  order: isSingleMatch ? (prev.order === "asc" ? "desc" : "asc") : "desc"
+                                };
+                              });
+                            };
+
+                            const SortIcon = ({ col }: { col: string }) => {
+                              const isActive = draftSummarySort.keys.length === 1 && draftSummarySort.keys[0] === col;
+                              if (!isActive) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
+                              return draftSummarySort.order === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+                            };
+
+                            // Data for Chart
+                            const chartData = sortedSummaries.map(s => {
+                              const jugador = teamToPlayerMap[s.team] || s.team;
+                              const order = playerOrderMap[jugador];
+                              const equipoVisual = order ? `${s.team} [#${order}]` : s.team;
+                              return {
+                                equipo: equipoVisual,
+                                fullEquipo: s.team,
+                                ganador: s.pickGanador,
+                                bueno: s.buenosPicks - s.pickGanador, // Stacked independent
+                                malo: s.malosPicks - s.sinPuntuar,
+                                nulo: s.sinPuntuar,
+                                totalPicks: s.totalPicks,
+                                ganadorList: s.ganadoresList,
+                                buenoList: s.buenosList,
+                                maloList: s.malosList,
+                                nuloList: s.sinPuntuarList,
+                                pctBuenos: s.pctBuenos.toFixed(1),
+                                pctGanadores: s.pctGanadores.toFixed(1)
+                              };
+                            });
+
+                            const CustomDraftTooltip = ({ active, payload, label }: any) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-2xl text-xs max-w-xs ring-1 ring-black/5">
+                                    <div className="font-bold border-b border-neutral-100 pb-2 mb-3 text-sm text-neutral-900 truncate">
+                                      {data.fullEquipo}
+                                    </div>
+                                    <div className="space-y-4">
+                                      {payload.map((entry: any) => {
+                                        const list = data[entry.dataKey + "List"] || [];
+                                        if (entry.value === 0 && list.length === 0) return null;
+                                        
+                                        // Label adjustment for "bueno" vs "buenosPicks"
+                                        let displayLabel = entry.name;
+                                        let displayValue = entry.value;
+                                        if (entry.dataKey === "bueno") {
+                                          displayValue = data.ganador + data.bueno;
+                                          displayLabel = "Picks Buenos (incl. ganadores)";
+                                        }
+
+                                        return (
+                                          <div key={entry.dataKey}>
+                                            <div className="flex items-center justify-between gap-4 mb-1">
+                                              <div className="flex items-center gap-1.5 font-bold" style={{ color: entry.fill }}>
+                                                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: entry.fill }} />
+                                                {entry.name}
+                                              </div>
+                                              <div className="font-mono bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-100 text-neutral-600">
+                                                {entry.value} ({((entry.value / data.totalPicks) * 100).toFixed(0)}%)
+                                              </div>
+                                            </div>
+                                            {list.length > 0 && (
+                                              <div className="pl-4 text-neutral-500 leading-relaxed italic border-l-2 border-neutral-100 ml-1.25 py-0.5">
+                                                {list.join(", ")}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <div className="mt-4 pt-2 border-t border-neutral-100 flex justify-between items-center text-[10px] text-neutral-400 font-medium">
+                                      <span>Total Picks: {data.totalPicks}</span>
+                                      <span className="text-green-600">Eficiencia: {data.pctBuenos}%</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            };
+
+                            return (
+                              <div className="space-y-8">
+                                <div className="overflow-x-auto rounded-xl border border-neutral-200 shadow-sm bg-white" ref={draftSummaryTableRef}>
+                                  <table className="w-full text-sm text-left border-collapse">
+                                    <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
+                                      <tr>
+                                        <th className="px-3 py-2.5 font-bold border-b border-neutral-200">Equipo</th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-blue-100/50 transition-colors"
+                                          onClick={() => toggleSort("pctGanadores")}
+                                        >
+                                          <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-blue-700">Ganadores</span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <SortIcon col="pctGanadores" />
+                                            </div>
+                                          </div>
+                                        </th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-green-100/50 transition-colors"
+                                          onClick={() => toggleSort("pctBuenos")}
+                                        >
+                                          <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-green-700">Buenos</span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <SortIcon col="pctBuenos" />
+                                            </div>
+                                          </div>
+                                        </th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-orange-100/50 transition-colors"
+                                          onClick={() => toggleSort("pctMalos")}
+                                        >
+                                          <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-orange-700">Malos</span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <SortIcon col="pctMalos" />
+                                            </div>
+                                          </div>
+                                        </th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-neutral-200 transition-colors"
+                                          onClick={() => toggleSort("pctSinPuntuar")}
+                                        >
+                                          <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-neutral-700">Sin Puntos</span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <SortIcon col="pctSinPuntuar" />
+                                            </div>
+                                          </div>
+                                        </th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-green-100/50 transition-colors"
+                                          onClick={() => toggleSort("pctBuenos")}
+                                        >
+                                          <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-green-800">Eficiencia</span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <SortIcon col="pctBuenos" />
+                                            </div>
+                                          </div>
+                                        </th>
+                                        <th 
+                                          className="px-3 py-2.5 font-bold border-b border-neutral-200 text-right cursor-pointer hover:bg-neutral-100 transition-colors"
+                                          onClick={() => toggleSort("totalPoints")}
+                                        >
+                                          <div className="flex items-center justify-end gap-1.5">
+                                            <span>Total Pts</span>
+                                            <SortIcon col="totalPoints" />
+                                          </div>
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100">
+                                      {sortedSummaries.map((summary, idx) => {
+                                        const jugador = teamToPlayerMap[summary.team] || summary.team;
+                                        const order = playerOrderMap[jugador];
+                                        const teamFormatted = order ? `${summary.team} [#${order}]` : summary.team;
+                                        
+                                        const isMaxPG = summary.pickGanador === maxPickGanador && maxPickGanador !== minPickGanador;
+                                        const isMinPG = summary.pickGanador === minPickGanador && maxPickGanador !== minPickGanador;
+
+                                        const isMaxBP = summary.buenosPicks === maxBuenosPicks && maxBuenosPicks !== minBuenosPicks;
+                                        const isMinBP = summary.buenosPicks === minBuenosPicks && maxBuenosPicks !== minBuenosPicks;
+
+                                        const isMaxMP = summary.malosPicks === maxMalosPicks && maxMalosPicks !== minMalosPicks;
+                                        const isMinMP = summary.malosPicks === minMalosPicks  && maxMalosPicks !== minMalosPicks;
+
+                                        const isMaxSP = summary.sinPuntuar === maxSinPuntuar  && maxSinPuntuar !== minSinPuntuar;
+                                        const isMinSP = summary.sinPuntuar === minSinPuntuar  && maxSinPuntuar !== minSinPuntuar;
+
+                                        const isMaxTP = summary.totalPoints === maxTotalPoints  && maxTotalPoints !== minTotalPoints;
+                                        const isMinTP = summary.totalPoints === minTotalPoints  && maxTotalPoints !== minTotalPoints;
+
+                                        return (
+                                          <tr key={summary.team} className="hover:bg-neutral-50/80 transition-colors">
+                                            <td className="px-3 py-1.5 font-medium text-neutral-900 border-r border-neutral-100 flex items-center gap-2">
+                                              <div className="w-4 h-4 rounded flex items-center justify-center bg-neutral-100/80 text-[9px] text-neutral-500 shrink-0 select-none">
+                                                {idx + 1}
+                                              </div>
+                                              <span className="truncate max-w-[140px]" title={summary.team}>{teamFormatted}</span>
+                                            </td>
+                                            <td className={cn("px-3 py-1.5 text-center text-sm font-bold", 
+                                              isMaxPG ? "text-green-700 bg-green-100/80" : 
+                                              isMinPG ? "text-red-700 bg-red-100/80" : 
+                                              "text-blue-700 bg-blue-50/30"
+                                            )}>
+                                              <div className="flex flex-col">
+                                                <span>{summary.pickGanador}</span>
+                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctGanadores.toFixed(1)}%</span>
+                                              </div>
+                                            </td>
+                                            <td className={cn("px-3 py-1.5 text-center text-sm font-semibold",
+                                              isMaxBP ? "text-green-700 bg-green-100/80" : 
+                                              isMinBP ? "text-red-700 bg-red-100/80" : 
+                                              "text-green-700 bg-green-50/30"
+                                            )}>
+                                              <div className="flex flex-col">
+                                                <span>{summary.buenosPicks}</span>
+                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctBuenos.toFixed(1)}%</span>
+                                              </div>
+                                            </td>
+                                            <td className={cn("px-3 py-1.5 text-center text-sm font-medium",
+                                              isMaxMP ? "text-red-700 bg-red-100/80" : 
+                                              isMinMP ? "text-green-700 bg-green-100/80" : 
+                                              "text-orange-700 bg-orange-50/30"
+                                            )}>
+                                              <div className="flex flex-col">
+                                                <span>{summary.malosPicks}</span>
+                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctMalos.toFixed(1)}%</span>
+                                              </div>
+                                            </td>
+                                            <td className={cn("px-3 py-1.5 text-center text-sm font-medium",
+                                              isMaxSP ? "text-red-700 bg-red-100/80" : 
+                                              isMinSP ? "text-green-700 bg-green-100/80" : 
+                                              "text-neutral-600 bg-neutral-100/30 font-medium"
+                                            )}>
+                                              <div className="flex flex-col">
+                                                <span>{summary.sinPuntuar}</span>
+                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctSinPuntuar.toFixed(1)}%</span>
+                                              </div>
+                                            </td>
+                                            <td className="px-3 py-1.5 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
+                                              {summary.pctBuenos.toFixed(1)}%
+                                            </td>
+                                            <td className={cn("px-3 py-1.5 text-right tabular-nums text-sm",
+                                              isMaxTP ? "text-green-700 font-black bg-green-50" : 
+                                              isMinTP ? "text-red-700 font-black bg-red-50" : 
+                                              "font-bold text-neutral-900"
+                                            )}>
+                                              {summary.totalPoints.toLocaleString()}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-hidden" ref={draftChartRef}>
+                                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                    <div>
+                                      <h3 className="font-semibold text-lg text-neutral-900 flex items-center gap-2">
+                                        <BarChart3 className="w-5 h-5 text-blue-600" />
+                                        Rentabilidad de Picks por Equipo
+                                      </h3>
+                                      <p className="text-xs text-neutral-500 mt-1">Eficiencia relativa según segmentación de rendimiento por ronda</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <div className="flex items-center gap-1 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
+                                        <span className="text-[10px] text-neutral-400 font-bold px-2 uppercase tracking-wider">Ordenar por:</span>
+                                      <details className="relative group">
+                                        <summary className="text-xs bg-white border border-neutral-200 rounded-md px-3 py-1.5 outline-none font-medium flex items-center gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                                          <span>Opciones ({draftSummarySort.keys.length})</span>
+                                          <ChevronDown className="w-3 h-3" />
+                                        </summary>
+                                        <div className="absolute right-0 top-full mt-1 w-48 p-2 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] flex flex-col gap-1">
+                                          {[
+                                            { id: 'pctGanadores', label: '% Ganadores' },
+                                            { id: 'pctBuenos', label: '% Buenos' },
+                                            { id: 'pctMalos', label: '% Malos' },
+                                            { id: 'pctSinPuntuar', label: '% Sin Puntos' },
+                                            { id: 'totalPoints', label: 'Puntos Totales' },
+                                          ].map(opt => (
+                                            <label key={opt.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
+                                              <input 
+                                                type="checkbox" 
+                                                className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                                checked={draftSummarySort.keys.includes(opt.id)}
+                                                onChange={(e) => {
+                                                  setDraftSummarySort(prev => {
+                                                    const keys = e.target.checked 
+                                                      ? [...prev.keys, opt.id] 
+                                                      : prev.keys.filter(k => k !== opt.id);
+                                                    return { ...prev, keys: keys.length ? keys : prev.keys };
+                                                  });
+                                                }}
+                                              />
+                                              <span className="text-xs text-neutral-700 font-medium">{opt.label}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </details>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={async () => {
+                                            if (draftChartRef.current) {
+                                              try {
+                                                const dataUrl = await domToDataUrl(draftChartRef.current, {
+                                                  backgroundColor: "#ffffff",
+                                                  scale: 2,
+                                                });
+                                                const blob = await (await fetch(dataUrl)).blob();
+                                                const clipboardItem = new ClipboardItem({ [blob.type]: blob });
+                                                await navigator.clipboard.write([clipboardItem]);
+                                              } catch (err) {
+                                                console.error("Error al copiar imagen:", err);
+                                              }
+                                            }
+                                          }}
+                                          className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                          title="Copiar gráfico como imagen"
+                                        >
+                                          <Copy className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            if (draftChartRef.current) {
+                                              try {
+                                                const dataUrl = await domToDataUrl(draftChartRef.current, {
+                                                  backgroundColor: "#ffffff",
+                                                  scale: 2,
+                                                });
+                                                const link = document.createElement("a");
+                                                link.download = `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`;
+                                                link.href = dataUrl;
+                                                link.click();
+                                              } catch (err) {
+                                                console.error("Error al descargar gráfico:", err);
+                                              }
+                                            }
+                                          }}
+                                          className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
+                                          title="Descargar gráfico"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="h-[500px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <BarChart 
+                                        data={chartData} 
+                                        layout="vertical"
+                                        margin={{ top: 10, right: 30, left: 20, bottom: 0 }}
+                                        barSize={20}
+                                      >
+                                        <CartesianGrid strokeDasharray="2 2" horizontal={false} stroke="#f0f0f0" />
+                                        <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} stroke="#9ca3af" />
+                                        <YAxis 
+                                          dataKey="equipo" 
+                                          type="category" 
+                                          tickLine={false} 
+                                          axisLine={false} 
+                                          width={220} 
+                                          stroke="#4b5563"
+                                          interval={0}
+                                          tick={({ x, y, payload }) => (
+                                            <g transform={`translate(${x},${y})`}>
+                                              <text x={0} y={0} dy={4} textAnchor="end" fill="#4b5563" fontSize={11} fontWeight={600}>
+                                                {payload.value}
+                                              </text>
+                                            </g>
+                                          )}
+                                        />
+                                        <RechartsTooltip 
+                                          content={<CustomDraftTooltip />}
+                                          cursor={{ fill: '#f8fafc', opacity: 0.5 }}
+                                        />
+                                        <Legend 
+                                          verticalAlign="top" 
+                                          align="right"
+                                          iconType="square"
+                                          wrapperStyle={{ fontSize: '11px', paddingBottom: '20px', fontWeight: '500' }} 
+                                        />
+                                        <Bar dataKey="ganador" stackId="a" fill="#15803d" name="Ganadores" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="bueno" stackId="a" fill="#4ade80" name="Buenos" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="malo" stackId="a" fill="#fb923c" name="Malos" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="nulo" stackId="a" fill="#d4d4d8" name="Sin Puntos" radius={[0, 4, 4, 0]} />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                  <p className="text-[11px] text-neutral-400 mt-6 text-center italic">
+                                    * Pasa el ratón sobre las barras para ver los nombres de los ciclistas de cada categoría.
+                                  </p>
+                                </div>
+
+                                {/* Modal de expansión del Resumen del Draft */}
+                                {isDraftSummaryExpanded && (
+                                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-neutral-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+                                    <div 
+                                      className="bg-white w-full max-w-6xl h-full max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-neutral-200"
+                                    >
+                                      <div className="p-6 md:p-8 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/30">
+                                        <div className="flex items-center gap-4">
+                                          <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                                            <Activity className="w-6 h-6" />
+                                          </div>
+                                          <div>
+                                            <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Análisis de Rendimiento (Draft)</h2>
+                                            <p className="text-sm text-neutral-500 font-medium">Visualización detallada y comparativa de selecciones</p>
+                                          </div>
+                                        </div>
+                                        <button 
+                                          onClick={() => setIsDraftSummaryExpanded(false)}
+                                          className="w-12 h-12 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-900 transition-all active:scale-95"
+                                        >
+                                          <X className="w-6 h-6" />
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="flex-1 overflow-auto p-4 md:p-8 bg-neutral-50/30">
+                                        <div className="space-y-8 max-w-5xl mx-auto">
+                                          {/* Re-using the table in extreme detail */}
+                                          <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl overflow-hidden ring-1 ring-black/5">
+                                            <table className="w-full text-sm text-left border-collapse">
+                                              <thead className="text-[10px] text-neutral-400 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
+                                                <tr>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">Pos.</th>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">Equipo Manager</th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Ganadores</th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Buenos</th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Malos</th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Sin Puntos</th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center text-green-700">Eficiencia</th>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100 text-right">Puntos Totales</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody className="divide-y divide-neutral-50">
+                                                {sortedSummaries.map((summary, idx) => (
+                                                  <tr key={summary.team} className="hover:bg-neutral-50/50 transition-colors group">
+                                                    <td className="px-6 py-3 border-r border-neutral-50 font-mono text-neutral-300">
+                                                      {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                                                    </td>
+                                                    <td className="px-6 py-3 border-r border-neutral-50 font-bold text-neutral-900">
+                                                      {summary.team}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                      <div className="flex flex-col">
+                                                        <span className="font-black text-blue-600">{summary.pickGanador}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-medium">{summary.pctGanadores.toFixed(1)}%</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center bg-green-50/30">
+                                                      <div className="flex flex-col">
+                                                        <span className="font-black text-green-600">{summary.buenosPicks}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">{summary.pctBuenos.toFixed(1)}%</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center bg-orange-50/30">
+                                                      <div className="flex flex-col">
+                                                        <span className="font-black text-orange-600">{summary.malosPicks}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">{summary.pctMalos.toFixed(1)}%</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                      <div className="flex flex-col">
+                                                        <span className="font-black text-neutral-500">{summary.sinPuntuar}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-medium">{summary.pctSinPuntuar.toFixed(1)}%</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center bg-green-50 border-x border-neutral-100/50">
+                                                      <span className="font-black text-green-700">{summary.pctBuenos.toFixed(1)}%</span>
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right tabular-nums font-black text-neutral-900 bg-neutral-50/30">
+                                                      {summary.totalPoints.toLocaleString()}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                             <div className="bg-blue-50/50 border border-blue-100 rounded-3xl p-6">
+                                                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                                  <TrendingUp className="w-5 h-5" />
+                                                  Top Eficiencia (Picks Buenos)
+                                                </h4>
+                                                <div className="space-y-3">
+                                                  {[...teamSummaries].sort((a,b) => b.pctBuenos - a.pctBuenos).slice(0,3).map((t, i) => (
+                                                    <div key={t.team} className="flex items-center justify-between bg-white p-3 rounded-xl border border-blue-100/50 shadow-sm">
+                                                      <span className="font-bold text-neutral-700">{i+1}. {t.team}</span>
+                                                      <span className="text-blue-600 font-black">{t.pctBuenos.toFixed(1)}%</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                             </div>
+                                             <div className="bg-green-50/50 border border-green-100 rounded-3xl p-6">
+                                                <h4 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                                                  <Trophy className="w-5 h-5" />
+                                                  Top Ganadores (Picks #1)
+                                                </h4>
+                                                <div className="space-y-3">
+                                                  {[...teamSummaries].sort((a,b) => b.pickGanador - a.pickGanador).slice(0,3).map((t, i) => (
+                                                    <div key={t.team} className="flex items-center justify-between bg-white p-3 rounded-xl border border-green-100/50 shadow-sm">
+                                                      <span className="font-bold text-neutral-700">{i+1}. {t.team}</span>
+                                                      <span className="text-green-600 font-black">{t.pickGanador}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                             </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="p-6 bg-neutral-900 text-white flex items-center justify-between">
+                                        <div className="text-xs text-neutral-400 font-medium uppercase tracking-widest">
+                                          Sistema de Auditoría de Draft v2.0
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs font-bold bg-neutral-800 px-3 py-1.5 rounded-full border border-neutral-700">
+                                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                          Datos Sincronizados
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })()}
                         </div>
@@ -16216,10 +18635,11 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       </div>
                     </div>
                     <div
+                      ref={pointsTableRef}
                       className={cn(
-                        "overflow-x-auto max-h-[600px] overflow-y-auto",
+                        "overflow-x-auto max-h-[600px] overflow-y-auto bg-white",
                         isPointsExpanded
-                          ? "fixed inset-4 z-50 bg-white p-4 shadow-2xl rounded-xl"
+                          ? "fixed inset-4 z-50 p-4 shadow-2xl rounded-xl max-h-none m-0"
                           : "",
                       )}
                     >
@@ -16231,7 +18651,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           <X className="w-6 h-6" />
                         </button>
                       )}
-                      <div ref={pointsTableRef} className="bg-white">
+                      <div>
                         <table className="w-full text-sm text-left">
                           <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0 z-10">
                             <tr>
@@ -16555,9 +18975,77 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                 )}
               </div>
             )}
+
           </div>
         )}
       </main>
+
+
+      {draftDatosTooltip && draftDatosTooltip.show && (
+        <div
+          className="fixed z-[9999] pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3"
+          style={{ left: draftDatosTooltip.x, top: draftDatosTooltip.y }}
+        >
+          <div className="w-48 bg-neutral-900 text-white text-left text-xs rounded-lg shadow-xl p-3 flex flex-col gap-1.5 whitespace-nowrap">
+            <div className="font-bold border-b border-neutral-700 pb-1 mb-0.5 break-words whitespace-normal">
+              {draftDatosTooltip.data.cyclistName}
+            </div>
+            <div className="text-neutral-300">
+              Equipo:{" "}
+              <span className="text-white font-medium">
+                {draftDatosTooltip.data.eqComp || "-"}
+              </span>
+            </div>
+            <div className="text-neutral-300">
+              Ronda:{" "}
+              <span className="text-white font-medium">
+                {draftDatosTooltip.data.r}
+              </span>{" "}
+              | Orden:{" "}
+              <span className="text-white font-medium">
+                {draftDatosTooltip.data.order || "-"}
+              </span>
+            </div>
+            <div className="text-neutral-300">
+              Victorias:{" "}
+              <span className="text-yellow-400 font-bold">
+                {draftDatosTooltip.data.wins}
+              </span>
+            </div>
+            <div className="text-neutral-300">
+              Puntos:{" "}
+              <span className="text-white font-bold">
+                {draftDatosTooltip.data.pts}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-neutral-400">
+              <span>
+                C:{" "}
+                <span className="text-white font-mono">
+                  {draftDatosTooltip.data.meta.carrerasDisputadas}
+                </span>
+              </span>
+              <span>
+                DC:{" "}
+                <span className="text-white font-mono">
+                  {draftDatosTooltip.data.meta.diasCompeticion}
+                </span>
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] text-neutral-400">
+              <span>
+                {draftDatosTooltip.data.ppc.toFixed(1)}{" "}
+                <span className="text-neutral-500">P/C</span>
+              </span>
+              <span>
+                {draftDatosTooltip.data.ppdc.toFixed(1)}{" "}
+                <span className="text-neutral-500">P/DC</span>
+              </span>
+            </div>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral-900 rotate-45 border-r border-b border-neutral-900 pointer-events-none"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

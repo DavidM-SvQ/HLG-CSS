@@ -1,0 +1,251 @@
+17377:                          ref={draftDatosTableRef}
+17378-                          className={cn(
+17379-                            "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-none overflow-y-auto shadow-sm",
+17380-                            isDraftDatosTableExpanded
+17381-                              ? "fixed inset-4 z-50 p-6 shadow-2xl m-0"
+17382-                              : "",
+17383-                          )}
+17384-                        >
+17385-                          {isDraftDatosTableExpanded && (
+17386-                            <button
+17387-                              onClick={() =>
+17388-                                setIsDraftDatosTableExpanded(false)
+17389-                              }
+17390-                              className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
+17391-                            >
+17392-                              <X className="w-6 h-6" />
+17393-                            </button>
+17394-                          )}
+17395-                          {(() => {
+17396-                            // Compute race properties
+17397-                            const raceTypeByName: Record<string, string> = {};
+17398-                            const raceDateByName: Record<string, string> = {};
+17399-                            files.carreras?.data?.forEach((row) => {
+17400-                              const carrera = getVal(row, "Carrera")?.trim();
+17401-                              const categoria = getVal(
+17402-                                row,
+17403-                                "Categoría",
+17404-                              )?.trim();
+17405-                              const fecha = getVal(row, "Fecha")?.trim();
+17406-                              if (carrera && categoria)
+17407-                                raceTypeByName[carrera] = categoria;
+17408-                              if (carrera && fecha)
+17409-                                raceDateByName[carrera] = fecha;
+17410-                            });
+17411-
+17412-                            const availableMonths = new Set<string>();
+17413-                            const availableCategories = new Set<string>();
+17414-                            const availableTeams = new Set<string>();
+17415-
+17416-                            leaderboard?.forEach((player) => {
+17417-                              player.detalles.forEach((d) => {
+17418-                                const dateStr =
+17419-                                  raceDateByName[d.carrera] || d.fecha;
+17420-                                if (dateStr) {
+17421-                                  const monthStr = dateStr.split("/")[1];
+17422-                                  if (monthStr) {
+17423-                                    const monthNames = [
+17424-                                      "Ene",
+17425-                                      "Feb",
+17426-                                      "Mar",
+17427-                                      "Abr",
+17428-                                      "May",
+17429-                                      "Jun",
+17430-                                      "Jul",
+17431-                                      "Ago",
+17432-                                      "Sep",
+17433-                                      "Oct",
+17434-                                      "Nov",
+17435-                                      "Dic",
+17436-                                    ];
+17437-                                    availableMonths.add(
+17438-                                      monthNames[parseInt(monthStr, 10) - 1],
+17439-                                    );
+17440-                                  }
+17441-                                }
+17442-                                const cat = raceTypeByName[d.carrera];
+17443-                                if (cat) availableCategories.add(cat);
+17444-                              });
+17445-                            });
+17446-
+17447-                            files.elecciones.data.forEach((row) => {
+17448-                              const teamName =
+17449-                                getVal(row, "Nombre_Equipo") ||
+17450-                                getVal(row, "Nombre_TG");
+17451-                              if (teamName)
+17452-                                availableTeams.add(teamName as string);
+17453-                            });
+17454-
+17455-                            // Pre-calculate cyclist points
+17456-                            const cyclistPoints: Record<string, number> = {};
+17457-                            const cyclistWins: Record<string, number> = {};
+17458-                            leaderboard?.forEach((player) => {
+17459-                              player.detalles.forEach((d) => {
+17460-                                const dateStr =
+17461-                                  raceDateByName[d.carrera] || d.fecha;
+17462-                                let matchesMonth = true;
+17463-                                if (draftDatosMonthFilter.length > 0) {
+17464-                                  if (!dateStr) matchesMonth = false;
+17465-                                  else {
+17466-                                    const monthStr = dateStr.split("/")[1];
+17467-                                    if (monthStr) {
+17468-                                      const monthNames = [
+17469-                                        "Ene",
+17470-                                        "Feb",
+17471-                                        "Mar",
+17472-                                        "Abr",
+17473-                                        "May",
+17474-                                        "Jun",
+17475-                                        "Jul",
+17476-                                        "Ago",
+17477-                                        "Sep",
+17478-                                        "Oct",
+17479-                                        "Nov",
+17480-                                        "Dic",
+17481-                                      ];
+17482-                                      const mName =
+17483-                                        monthNames[parseInt(monthStr, 10) - 1];
+17484-                                      if (
+17485-                                        !draftDatosMonthFilter.includes(mName)
+17486-                                      )
+17487-                                        matchesMonth = false;
+17488-                                    } else matchesMonth = false;
+17489-                                  }
+17490-                                }
+17491-
+17492-                                let matchesCategory = true;
+17493-                                if (draftDatosCategoryFilter.length > 0) {
+17494-                                  const cat = raceTypeByName[d.carrera];
+17495-                                  if (
+17496-                                    !cat ||
+17497-                                    !draftDatosCategoryFilter.includes(cat)
+17498-                                  )
+17499-                                    matchesCategory = false;
+17500-                                }
+17501-
+17502-                                if (matchesMonth && matchesCategory) {
+17503-                                  cyclistPoints[d.ciclista] =
+17504-                                    (cyclistPoints[d.ciclista] || 0) +
+17505-                                    d.puntosObtenidos;
+17506-
+17507-                                  const isPos01 =
+17508-                                    d.posicion === "01" || d.posicion === "1";
+17509-                                  const isValidType = [
+17510-                                    "Etapa",
+17511-                                    "Etapa (Crono equipos)",
+17512-                                    "Clasificación final",
+17513-                                    "Clasificación final (Crono equipos)",
+17514-                                    "Clásica",
+17515-                                  ].includes(d.tipoResultado);
+17516-
+17517-                                  if (isPos01 && isValidType) {
+17518-                                    cyclistWins[d.ciclista] =
+17519-                                      (cyclistWins[d.ciclista] || 0) + 1;
+17520-                                  }
+17521-                                }
+17522-                              });
+17523-                            });
+17524-
+17525-                            // Map teams, rounds and orders
+17526-                            const teamRoundData: Record<
+17527-                              string,
+17528-                              Record<number, number>
+17529-                            > = {};
+17530-                            const teamRoundCyclist: Record<
+17531-                              string,
+17532-                              Record<number, any>
+17533-                            > = {};
+17534-                            const teamOrderMap: Record<string, string> = {};
+17535-                            const teamsSet = new Set<string>();
+17536-
+17537-                            files.elecciones.data.forEach((row) => {
+17538-                              const teamName = (getVal(row, "Nombre_Equipo") ||
+17539-                                getVal(row, "Nombre_TG")) as string;
+17540-                              const round = parseInt(getVal(row, "Ronda"));
+17541-                              const cyclist = getVal(row, "Ciclista") as string;
+17542-                              const order = getVal(row, "Orden_Draft");
+17543-
+17544-                              if (teamName && !isNaN(round)) {
+17545-                                if (
+17546-                                  draftDatosTeamFilter.length === 0 ||
+17547-                                  draftDatosTeamFilter.includes(teamName)
+17548-                                ) {
+17549-                                  teamsSet.add(teamName);
+17550-                                  if (!teamRoundData[teamName]) {
+17551-                                    teamRoundData[teamName] = {};
+17552-                                    teamRoundCyclist[teamName] = {};
+17553-                                  }
+17554-                                  teamRoundData[teamName][round] =
+17555-                                    cyclistPoints[cyclist] || 0;
+17556-                                  teamRoundCyclist[teamName][round] = row;
+17557-                                  if (order) teamOrderMap[teamName] = order;
+17558-                                }
+17559-                              }
+17560-                            });
+17561-
+17562-                            const sortedTeams = Array.from(teamsSet).sort(
+17563-                              (a, b) => {
+17564-                                if (draftDatosSortColumn === "Orden") {
+17565-                                  const orderA = parseInt(
+17566-                                    teamOrderMap[a] || "0",
+17567-                                  );
+17568-                                  const orderB = parseInt(
+17569-                                    teamOrderMap[b] || "0",
+17570-                                  );
+17571-                                  return draftDatosSortDirection === "asc"
+17572-                                    ? orderA - orderB
+17573-                                    : orderB - orderA;
+17574-                                }
+17575-                                if (draftDatosSortColumn === "TOTAL") {
+17576-                                  const totalA = rounds.reduce(
+17577-                                    (sum, r) =>
+17578-                                      sum + (teamRoundData[a][r] || 0),
+17579-                                    0,
+17580-                                  );
+17581-                                  const totalB = rounds.reduce(
+17582-                                    (sum, r) =>
+17583-                                      sum + (teamRoundData[b][r] || 0),
+17584-                                    0,
+17585-                                  );
+17586-                                  return draftDatosSortDirection === "asc"
+17587-                                    ? totalA - totalB
+17588-                                    : totalB - totalA;
+17589-                                }
+17590-                                if (draftDatosSortColumn.startsWith("R")) {
+17591-                                  const round = parseInt(
+17592-                                    draftDatosSortColumn.substring(1),
+17593-                                  );
+17594-                                  const ptsA = teamRoundData[a][round] || 0;
+17595-                                  const ptsB = teamRoundData[b][round] || 0;
+17596-                                  return draftDatosSortDirection === "asc"
+17597-                                    ? ptsA - ptsB
+17598-                                    : ptsB - ptsA;
+17599-                                }
+17600-                                // Default sort by order
+17601-                                const orderA = parseInt(teamOrderMap[a] || "0");
+17602-                                const orderB = parseInt(teamOrderMap[b] || "0");
+17603-                                return orderA - orderB;
+17604-                              },
+17605-                            );
+17606-                            const rounds = Array.from(
+17607-                              { length: 25 },
+17608-                              (_, i) => i + 1,
+17609-                            );
+17610-
+17611-                            // 3. Calculate max and min (min > 0) per round
+17612-                            const roundStats: Record<
+17613-                              number,
+17614-                              { max: number; min: number }
+17615-                            > = {};
+17616-                            rounds.forEach((r) => {
+17617-                              const pointsInRound = sortedTeams.map(
+17618-                                (t) => teamRoundData[t][r] || 0,
+17619-                              );
+17620-                              const positivePoints = pointsInRound.filter(
+17621-                                (p) => p > 0,
+17622-                              );
+17623-                              roundStats[r] = {
+17624-                                max: Math.max(...pointsInRound),
+17625-                                min:
+17626-                                  positivePoints.length > 0
+17627-                                    ? Math.min(...positivePoints)
