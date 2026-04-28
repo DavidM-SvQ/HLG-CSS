@@ -1,3 +1,4 @@
+import html2canvas from 'html2canvas';
 import React, { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
@@ -40,6 +41,7 @@ import {
   ArrowUpDown,
   HelpCircle,
 } from "lucide-react";
+import { MonthlyReportView } from "./MonthlyReportView";
 import {
   BarChart,
   Bar,
@@ -61,7 +63,7 @@ import {
   ReferenceArea,
   AreaChart,
   Area,
-  ComposedChart
+  ComposedChart,
 } from "recharts";
 import { cn } from "./lib/utils";
 import { supabase } from "./supabase";
@@ -200,6 +202,19 @@ const formatNumberSpanish = (val: number | string | undefined | null) => {
   const num = typeof val === "string" ? parseFloat(val) : val;
   if (isNaN(num)) return val.toString();
   return new Intl.NumberFormat("es-ES").format(num);
+};
+
+const normalizedKeyCache: Record<string, string> = {};
+const normalizeStr = (s: string) => {
+  if (normalizedKeyCache[s]) return normalizedKeyCache[s];
+  const res = s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+  normalizedKeyCache[s] = res;
+  return res;
 };
 
 export default function App() {
@@ -679,7 +694,15 @@ export default function App() {
     if (allFilesUploaded) {
       calculatePoints();
     }
-  }, [files, allFilesUploaded]);
+  }, [
+    files.carreras.data,
+    files.puntos.data,
+    files.elecciones.data,
+    files.resultados.data,
+    files.equipos.data,
+    files.ciclistas.data,
+    allFilesUploaded,
+  ]);
 
   // Supabase sync for global files
   useEffect(() => {
@@ -968,7 +991,8 @@ export default function App() {
           "image/png": (async () => {
             // Use domToDataUrl first as it seems more reliable for Recharts labels
             const dataUrl = await domToDataUrl(chartRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               filter: (node) => {
                 if (node instanceof Element) {
                   return !node.classList.contains("copy-button-ignore");
@@ -1001,7 +1025,8 @@ export default function App() {
     if (!chartRef.current) return;
     try {
       const dataUrl = await domToDataUrl(chartRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains("copy-button-ignore");
@@ -1031,7 +1056,8 @@ export default function App() {
             try {
               const dataUrl = await domToDataUrl(topTeamsTableRef.current!, {
                 scale: 3,
-                backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+                
                 style: { overflow: "visible" },
                 filter: (node) => {
                   if (node instanceof Element) {
@@ -1068,7 +1094,8 @@ export default function App() {
     try {
       const dataUrl = await domToDataUrl(topTeamsTableRef.current, {
         scale: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible" },
         filter: (node) => {
           if (node instanceof Element) {
@@ -1097,7 +1124,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               filter: (node) => {
                 if (node instanceof Element) {
                   return !node.classList.contains("copy-button-ignore");
@@ -1128,7 +1156,8 @@ export default function App() {
     if (!evolutionChartRef.current) return;
     try {
       const dataUrl = await domToDataUrl(evolutionChartRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains("copy-button-ignore");
@@ -1153,7 +1182,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsRankingRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               filter: (node) =>
                 node instanceof Element
                   ? !node.classList.contains("copy-button-ignore")
@@ -1180,7 +1210,8 @@ export default function App() {
     if (!winsRankingRef.current) return;
     try {
       const dataUrl = await domToDataUrl(winsRankingRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         filter: (node) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -1203,7 +1234,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               filter: (node) =>
                 node instanceof Element
                   ? !node.classList.contains("copy-button-ignore")
@@ -1230,7 +1262,8 @@ export default function App() {
     if (!winsEvolutionRef.current) return;
     try {
       const dataUrl = await domToDataUrl(winsEvolutionRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         filter: (node) =>
           node instanceof Element
             ? !node.classList.contains("copy-button-ignore")
@@ -1304,7 +1337,8 @@ export default function App() {
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3,
-              backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+              
               style: { overflow: "visible" },
               filter: (node) =>
                 node instanceof Element
@@ -1368,7 +1402,8 @@ export default function App() {
 
       const dataUrl = await domToDataUrl(tableContainer, {
         scale: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible" },
         filter: (node) =>
           node instanceof Element
@@ -1399,7 +1434,8 @@ export default function App() {
             const dataUrl = await domToDataUrl(
               raceClassificationTableRef.current!,
               {
-                scale: 2,
+                scale: 3,
+        backgroundColor: '#ffffff',
                 style: { overflow: "hidden" },
                 filter: (node) =>
                   node instanceof Element
@@ -1431,7 +1467,8 @@ export default function App() {
     const restore = expandNodeForCapture(raceClassificationTableRef.current);
     try {
       const dataUrl = await domToDataUrl(raceClassificationTableRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
         filter: (node) =>
           node instanceof Element
@@ -1509,8 +1546,8 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: subset === "full" ? 0.9 : 3,
-        backgroundColor: "#ffffff",
+        scale: 3,
+        
         style: {
           overflow: "visible",
           textRendering: "optimizeLegibility",
@@ -1579,8 +1616,8 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: subset === "full" ? 0.9 : 3,
-        backgroundColor: "#ffffff",
+        scale: 3,
+        
         style: {
           overflow: "visible",
           textRendering: "optimizeLegibility",
@@ -1633,15 +1670,8 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: subset === "full" ? 0.9 : 3,
-        backgroundColor: "#ffffff",
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
-      });
+      const canvas = await html2canvas(tableContainer, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+      const dataUrl = canvas.toDataURL("image/png");
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -1670,15 +1700,8 @@ export default function App() {
     const tableContainer = unscoredTableRef.current;
     const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: subset === "full" ? 1.5 : 3,
-        backgroundColor: "#ffffff",
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
-      });
+      const canvas = await html2canvas(tableContainer, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+      const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
       const suffix = subset && subset !== "full" ? `-${subset}` : "";
@@ -1721,7 +1744,8 @@ export default function App() {
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
         scale: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
         filter: (node) =>
           node instanceof Element
@@ -1756,7 +1780,8 @@ export default function App() {
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
         scale: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
         filter: (node) =>
           node instanceof Element
@@ -1795,8 +1820,9 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 2,
-        backgroundColor: "#ffffff",
+        scale: 3,
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
         filter: (node) =>
           node instanceof Element
@@ -1843,8 +1869,9 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 2,
-        backgroundColor: "#ffffff",
+        scale: 3,
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
         filter: (node) =>
           node instanceof Element
@@ -1951,7 +1978,8 @@ export default function App() {
       });
 
       const text =
-        `Startlist - ${publicStartlistRace}\n` +
+        `Startlist - ${publicStartlistRace}
+` +
         [
           "Equipo",
           "Dorsal",
@@ -2016,7 +2044,8 @@ export default function App() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
         style: { overflow: "visible", paddingBottom: "10px" },
@@ -2086,7 +2115,8 @@ export default function App() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
         style: { overflow: "visible", paddingBottom: "10px" },
@@ -2229,7 +2259,8 @@ export default function App() {
       });
 
       const text =
-        `Equipos Startlist - ${publicStartlistRace}\n` +
+        `Equipos Startlist - ${publicStartlistRace}
+` +
         ["Pos", "Equipo", "NºCiclistas", "Puntos", "P.Medios"].join("\t") +
         "\n" +
         rowsData
@@ -2260,7 +2291,8 @@ export default function App() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
         style: { overflow: "visible", paddingBottom: "10px" },
@@ -2310,7 +2342,8 @@ export default function App() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
         style: { overflow: "visible", paddingBottom: "10px" },
@@ -2423,14 +2456,8 @@ export default function App() {
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, {
-              scale: 2,
-              style: { overflow: "hidden" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
-            });
+            const canvas = await html2canvas(cyclistsTableRef.current!, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+            const dataUrl = canvas.toDataURL("image/png");
             const response = await fetch(dataUrl);
             return await response.blob();
           })() as Promise<Blob>,
@@ -2454,14 +2481,8 @@ export default function App() {
     if (!cyclistsTableRef.current) return;
     const restore = expandNodeForCapture(cyclistsTableRef.current);
     try {
-      const dataUrl = await domToDataUrl(cyclistsTableRef.current, {
-        scale: 2,
-        style: { overflow: "hidden" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
-      });
+      const canvas = await html2canvas(cyclistsTableRef.current!, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+      const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "clasificacion-ciclistas.png";
@@ -2482,7 +2503,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(stageTableRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
               filter: (node) =>
                 node instanceof Element
@@ -2513,7 +2535,8 @@ export default function App() {
     const restore = expandNodeForCapture(stageTableRef.current);
     try {
       const dataUrl = await domToDataUrl(stageTableRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
         filter: (node) =>
           node instanceof Element
@@ -2536,7 +2559,10 @@ export default function App() {
     setIsPointsImageCopying(true);
     const tableContainer = pointsTableRef.current;
     const originalClass = tableContainer.className;
-    tableContainer.className = originalClass.replace("max-h-[600px]", "").replace("overflow-y-auto", "").replace("overflow-x-auto", "");
+    tableContainer.className = originalClass
+      .replace("max-h-[600px]", "")
+      .replace("overflow-y-auto", "")
+      .replace("overflow-x-auto", "");
     const restore = expandNodeForCapture(tableContainer);
     try {
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -2546,7 +2572,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 1,
+              scale: 3,
               width: elWidth,
               height: elHeight,
               style: { overflow: "visible", margin: "0" },
@@ -2579,14 +2605,17 @@ export default function App() {
     if (!pointsTableRef.current) return;
     const tableContainer = pointsTableRef.current;
     const originalClass = tableContainer.className;
-    tableContainer.className = originalClass.replace("max-h-[600px]", "").replace("overflow-y-auto", "").replace("overflow-x-auto", "");
+    tableContainer.className = originalClass
+      .replace("max-h-[600px]", "")
+      .replace("overflow-y-auto", "")
+      .replace("overflow-x-auto", "");
     const restore = expandNodeForCapture(tableContainer);
     try {
       await new Promise((resolve) => setTimeout(resolve, 150));
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 1,
+        scale: 3,
         width: elWidth,
         height: elHeight,
         style: { overflow: "visible", margin: "0" },
@@ -2632,7 +2661,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(racesTableRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
               filter: (node) =>
                 node instanceof Element
@@ -2663,7 +2693,8 @@ export default function App() {
     const restore = expandNodeForCapture(racesTableRef.current);
     try {
       const dataUrl = await domToDataUrl(racesTableRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
         filter: (node) =>
           node instanceof Element
@@ -2698,7 +2729,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               width: teamGlobalRef.current!.scrollWidth,
               style: { overflow: "visible" },
               filter: (node) =>
@@ -2741,7 +2773,8 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(teamGlobalRef.current, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         width: teamGlobalRef.current.scrollWidth,
         style: { overflow: "visible" },
         filter: (node) =>
@@ -2775,7 +2808,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               style: { overflow: "visible" },
               filter: (node) =>
                 node instanceof Element
@@ -2809,7 +2843,8 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         style: { overflow: "visible" },
         filter: (node) =>
           node instanceof Element
@@ -2849,18 +2884,18 @@ export default function App() {
         });
       }
 
-      // Force a 4-column grid for wide capture
+      // Force a 3-column grid for wide capture to allow larger text to fit properly
       container.className = cn(
-        "grid grid-cols-4 gap-4 bg-white p-6 rounded-xl w-[1400px]",
-        subset ? "" : "grid-cols-4",
+        "grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]",
+        subset ? "" : "grid-cols-3",
       );
 
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(container, {
-              scale: subset === "full" ? 0.9 : 2, // Reduced from 3 to 2 for better performance
-              backgroundColor: "#ffffff",
+              scale: 3, // Increased scale for better resolution
+              
               style: {
                 textRendering: "optimizeLegibility",
               },
@@ -2918,13 +2953,13 @@ export default function App() {
       }
 
       container.className = cn(
-        "grid grid-cols-4 gap-4 bg-white p-6 rounded-xl w-[1400px]",
-        subset ? "" : "grid-cols-4",
+        "grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]",
+        subset ? "" : "grid-cols-3",
       );
 
       const dataUrl = await domToDataUrl(container, {
-        scale: subset === "full" ? 0.9 : 3,
-        backgroundColor: "#ffffff",
+        scale: 3,
+        
         style: {
           textRendering: "optimizeLegibility",
         },
@@ -2972,11 +3007,14 @@ export default function App() {
       )
       .sort((a, b) => b.totalPoints - a.totalPoints);
 
-    let text = `🏆 DESGLOSE POR EQUIPO - ${selectedRace}\n\n`;
+    let text = `🏆 DESGLOSE POR EQUIPO - ${selectedRace}
+
+`;
 
     teams.forEach((team) => {
       if (team.totalPoints === 0) return;
-      text += `--- ${team.nombreEquipo} [#${team.orden}] (${team.totalPoints} pts) ---\n`;
+      text += `--- ${team.nombreEquipo} [#${team.orden}] (${team.totalPoints} pts) ---
+`;
 
       const cyclistMap = new Map<string, { total: number; concepts: any[] }>();
       team.details.forEach((d) => {
@@ -2995,13 +3033,17 @@ export default function App() {
         .sort((a, b) => b[1].total - a[1].total);
 
       sortedCyclists.forEach(([ciclista, data]) => {
-        text += `📍 ${ciclista}: +${data.total} pts\n`;
+        text += `📍 ${ciclista}: +${data.total} pts
+`;
         data.concepts.forEach((c) => {
-          text += `   • ${c.tipoResultado} ${c.posicion ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})` : ""}: +${c.puntosObtenidos}\n`;
+          text += `   • ${c.tipoResultado} ${c.posicion ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})` : ""}: +${c.puntosObtenidos}
+`;
         });
-        text += `\n`;
+        text += `
+`;
       });
-      text += `\n`;
+      text += `
+`;
     });
 
     navigator.clipboard.writeText(text);
@@ -3051,7 +3093,8 @@ export default function App() {
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3,
-              backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+              
               style: { overflow: "visible" },
               filter: (node) =>
                 node instanceof Element
@@ -3115,7 +3158,8 @@ export default function App() {
 
       const dataUrl = await domToDataUrl(tableContainer, {
         scale: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
+        
         style: { overflow: "visible" },
         filter: (node) =>
           node instanceof Element
@@ -3149,7 +3193,8 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 2,
+              scale: 3,
+        backgroundColor: '#ffffff',
               width: tableContainer.scrollWidth,
               style: { overflow: "visible" },
               filter: (node) =>
@@ -3186,7 +3231,8 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 2,
+        scale: 3,
+        backgroundColor: '#ffffff',
         width: tableContainer.scrollWidth,
         style: { overflow: "visible" },
         filter: (node) =>
@@ -3277,6 +3323,18 @@ export default function App() {
           pais: pais || "",
           equipoBreve: (full && fullToBreve[full]) || "",
         };
+      }
+    });
+
+    files.resultados.data?.forEach((row) => {
+      const ciclista = getVal(row, "Ciclista")?.toString().trim();
+      const full = getVal(row, "Equipo")?.toString().trim().toLowerCase();
+      if (ciclista && full) {
+        if (!cyclistToInfo[ciclista])
+          cyclistToInfo[ciclista] = { pais: "", equipoBreve: "" };
+        if (fullToBreve[full]) {
+          cyclistToInfo[ciclista].equipoBreve = fullToBreve[full];
+        }
       }
     });
 
@@ -3567,17 +3625,10 @@ export default function App() {
 
   const getVal = (row: any, key: string) => {
     if (!row) return "";
-    const normalize = (s: string) =>
-      s
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]/g, "")
-        .trim();
-
-    const normalizedKey = normalize(key);
+    if (row[key] !== undefined) return row[key];
+    const normalizedKey = normalizeStr(key);
     const actualKey = Object.keys(row).find(
-      (k) => normalize(k) === normalizedKey,
+      (k) => normalizeStr(k) === normalizedKey,
     );
     return actualKey ? row[actualKey] : "";
   };
@@ -3799,8 +3850,17 @@ export default function App() {
         const originalLine = textLines[lineIndex];
         const lineParts = originalLine.split(/[\s\t]+/);
         let dorsal = "";
-        if (lineParts.length > 0 && /^[A-Za-z0-9]+$/.test(lineParts[0])) {
-          dorsal = lineParts[0];
+        if (lineParts.length > 0) {
+          const match = originalLine.trim().match(/^([0-9]+[A-Za-z]?)[^\w]/) || originalLine.trim().match(/^([0-9]+[A-Za-z]?)$/);
+          if (match) {
+            dorsal = match[1];
+          } else {
+            // fallback, check first word
+            const firstWord = lineParts[0].replace(/[^A-Za-z0-9]/g, '');
+            if (/^[0-9]+[A-Za-z]?$/.test(firstWord)) {
+              dorsal = firstWord;
+            }
+          }
         }
 
         const player = playerByCyclist[cyclist];
@@ -3891,6 +3951,1109 @@ export default function App() {
     } catch (err: any) {
       console.error("Error al eliminar startlist:", err);
     }
+  };
+
+  const renderRaceView = (isAdminReport: boolean = false) => {
+    return (
+      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+        <div className="max-w-md mb-8">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            Selecciona una carrera
+          </label>
+          <select
+            value={selectedRace}
+            onChange={(e) => setSelectedRace(e.target.value)}
+            className="w-full border border-neutral-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          >
+            <option value="">-- Seleccionar Carrera --</option>
+            {uniqueRaces.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {selectedRace ? (
+          (() => {
+            const raceTeams =
+              leaderboard
+                ?.map((player) => {
+                  const details = player.detalles.filter(
+                    (d) => d.carrera === selectedRace,
+                  );
+                  const totalPoints = details.reduce(
+                    (sum, d) => sum + d.puntosObtenidos,
+                    0,
+                  );
+                  const uniqueCyclists = new Set(details.map((d) => d.ciclista))
+                    .size;
+                  return {
+                    jugador: player.jugador,
+                    nombreEquipo: player.nombreEquipo,
+                    orden: player.orden,
+                    totalPoints,
+                    uniqueCyclists,
+                    details,
+                  };
+                })
+                .filter(
+                  (t) =>
+                    t.nombreEquipo !== "No draft" &&
+                    t.nombreEquipo !== "No draft [99]",
+                ) || [];
+
+            // Calculate partial wins in this race
+            raceTeams.forEach((team) => {
+              let partials = 0;
+              const raceEvents =
+                globalTeamPartialWinsCount.byRace[selectedRace] || {};
+              Object.values(raceEvents).forEach((winnerTeams) => {
+                if ((winnerTeams as string[]).includes(team.nombreEquipo)) {
+                  partials++;
+                }
+              });
+              team.racePartialWins = partials;
+            });
+
+            // Sort: 0 cyclists at bottom, then points desc, then cyclists asc
+            raceTeams.sort((a, b) => {
+              if (a.uniqueCyclists === 0 && b.uniqueCyclists !== 0) return 1;
+              if (a.uniqueCyclists !== 0 && b.uniqueCyclists === 0) return -1;
+              if (b.totalPoints !== a.totalPoints)
+                return b.totalPoints - a.totalPoints;
+              return a.uniqueCyclists - b.uniqueCyclists;
+            });
+
+            // Pre-calculate positions
+            const rankedTeams = raceTeams.map((team, idx, arr) => {
+              // Find the first team with the same points to determine position
+              const firstInGroup = arr.findIndex(
+                (t) => t.totalPoints === team.totalPoints,
+              );
+              const pos = firstInGroup + 1;
+
+              // Check if this position is tied by counting how many have the same points
+              const countInGroup = arr.filter(
+                (t) => t.totalPoints === team.totalPoints,
+              ).length;
+
+              return { ...team, pos, isTied: countInGroup > 1 };
+            });
+            const maxUniqueCyclists = Math.max(
+              ...rankedTeams.map((t) => t.uniqueCyclists),
+              0,
+            );
+            const minUniqueCyclists = Math.min(
+              ...rankedTeams.map((t) => t.uniqueCyclists),
+              0,
+            );
+            const maxRacePoints = Math.max(
+              ...rankedTeams.map((t) => t.totalPoints),
+              0,
+            );
+            const minRacePoints = Math.min(
+              ...rankedTeams.map((t) => t.totalPoints),
+              0,
+            );
+            const maxRacePartialWins = Math.max(
+              ...rankedTeams.map((t) => t.racePartialWins || 0),
+              0,
+            );
+            const minRacePartialWins = Math.min(
+              ...rankedTeams.map((t) => t.racePartialWins || 0),
+              0,
+            );
+
+            const allRaceResults =
+              files.resultados.data?.filter(
+                (r) => getVal(r, "Carrera") === selectedRace,
+              ) || [];
+
+            const formatTipoResultado = (tipo: string) => {
+              const etapaMatch = tipo.match(/Etapa\s+(\d+[a-zA-Z]?)/i);
+              if (etapaMatch) return etapaMatch[1];
+              if (tipo.match(/Clasificación General|CG|Clasificación final/i))
+                return "CG";
+              if (tipo.match(/Clasificación.*Montaña|CM|Montaña final/i))
+                return "CM";
+              if (tipo.match(/Clasificación.*Puntos|CP|Regularidad final/i))
+                return "CP";
+              if (tipo.match(/Clasificación.*Jóvenes|CJ/i)) return "CJ";
+              return tipo;
+            };
+
+            const columnDefinitions = new Map<
+              string,
+              {
+                originalTipo: string;
+                originalEtapa?: string;
+                formatted: string;
+              }
+            >();
+
+            allRaceResults.forEach((r) => {
+              const tipo = getVal(r, "Tipo")?.trim();
+              const etapa = getVal(r, "Etapa")?.toString().trim();
+
+              if (!tipo) return;
+
+              const formatted = formatTipoResultado(tipo);
+              const isStage =
+                /^\d+[a-zA-Z]?$/.test(formatted) ||
+                tipo.toLowerCase() === "etapa";
+
+              if (isStage) {
+                const stageNum = etapa || formatted;
+                const key = `Stage_${stageNum}`;
+                if (!columnDefinitions.has(key)) {
+                  columnDefinitions.set(key, {
+                    originalTipo: tipo,
+                    originalEtapa: etapa,
+                    formatted: stageNum,
+                  });
+                }
+              } else {
+                if (!columnDefinitions.has(formatted)) {
+                  columnDefinitions.set(formatted, {
+                    originalTipo: tipo,
+                    formatted: formatted,
+                  });
+                }
+              }
+            });
+
+            const typesWithPoints = new Set<string>();
+            raceTeams.forEach((team) =>
+              team.details.forEach((d) => {
+                if (d.puntosObtenidos > 0) {
+                  if (d.etapa) {
+                    typesWithPoints.add(`Stage_${d.etapa}`);
+                  } else {
+                    typesWithPoints.add(formatTipoResultado(d.tipoResultado));
+                  }
+                }
+              }),
+            );
+
+            // Filter out CM/CP if no points
+            const finalColumns = Array.from(columnDefinitions.values()).filter(
+              (col) => {
+                if (col.formatted === "CM" || col.formatted === "CP") {
+                  return typesWithPoints.has(col.formatted);
+                }
+                return true;
+              },
+            );
+
+            finalColumns.sort((a, b) => {
+              const isNumA = /^\d+[a-zA-Z]?$/.test(a.formatted);
+              const isNumB = /^\d+[a-zA-Z]?$/.test(b.formatted);
+              if (isNumA && isNumB)
+                return parseInt(a.formatted) - parseInt(b.formatted);
+              if (isNumA) return -1;
+              if (isNumB) return 1;
+
+              const order = ["CG", "CP", "CM", "CJ"];
+              const idxA = order.indexOf(a.formatted);
+              const idxB = order.indexOf(b.formatted);
+              if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+              if (idxA !== -1) return -1;
+              if (idxB !== -1) return 1;
+              return a.formatted.localeCompare(b.formatted);
+            });
+
+            const teamStagePoints = rankedTeams
+              .map((team) => {
+                const pointsByCol: Record<string, number> = {};
+                finalColumns.forEach((col) => {
+                  pointsByCol[col.formatted] = team.details
+                    .filter((d) => {
+                      if (col.originalEtapa) {
+                        return (
+                          d.tipoResultado === col.originalTipo &&
+                          d.etapa === col.originalEtapa
+                        );
+                      }
+                      // If it's a stage from "Etapa 1" format but no Etapa column
+                      if (
+                        /^\d+[a-zA-Z]?$/.test(col.formatted) &&
+                        !col.originalEtapa
+                      ) {
+                        return (
+                          formatTipoResultado(d.tipoResultado) === col.formatted
+                        );
+                      }
+                      return (
+                        formatTipoResultado(d.tipoResultado) === col.formatted
+                      );
+                    })
+                    .reduce((sum, d) => sum + d.puntosObtenidos, 0);
+                });
+                return {
+                  jugador: team.jugador,
+                  nombreEquipo: team.nombreEquipo,
+                  orden: team.orden,
+                  total: team.totalPoints,
+                  pos: team.pos,
+                  isTied: team.isTied,
+                  pointsByCol,
+                };
+              })
+              .filter(
+                (t) =>
+                  t.nombreEquipo !== "No draft" &&
+                  t.nombreEquipo !== "No draft [99]",
+              );
+
+            const maxPointsByCol: Record<string, number> = {};
+            finalColumns.forEach((col) => {
+              maxPointsByCol[col.formatted] = Math.max(
+                ...teamStagePoints.map(
+                  (t) => t.pointsByCol[col.formatted] || 0,
+                ),
+              );
+            });
+
+            const raceCyclistsMap = new Map<
+              string,
+              {
+                ciclista: string;
+                ronda: string;
+                jugador: string;
+                orden: string;
+                puntos: number;
+                victorias: number;
+              }
+            >();
+
+            raceTeams.forEach((team) => {
+              team.details.forEach((d) => {
+                if (!raceCyclistsMap.has(d.ciclista)) {
+                  raceCyclistsMap.set(d.ciclista, {
+                    ciclista: d.ciclista,
+                    ronda: d.ronda,
+                    jugador: team.nombreEquipo,
+                    orden: team.orden,
+                    puntos: 0,
+                    victorias: 0,
+                  });
+                }
+                const c = raceCyclistsMap.get(d.ciclista)!;
+                c.jugador = team.nombreEquipo; // Ensure it uses the team name if updated
+                c.puntos += d.puntosObtenidos;
+
+                const isVictory =
+                  (d.posicion === "1" || d.posicion === "01") &&
+                  d.tipoResultado !== "Montaña final" &&
+                  d.tipoResultado !== "Regularidad final";
+                if (isVictory) {
+                  c.victorias += 1;
+                }
+              });
+            });
+
+            const raceCyclists = Array.from(raceCyclistsMap.values())
+              .filter((c) => c.puntos > 0 || c.victorias > 0)
+              .sort((a, b) => b.puntos - a.puntos);
+
+            const maxCyclistRacePoints = Math.max(
+              ...raceCyclists.map((c) => c.puntos),
+              0,
+            );
+            const minCyclistRacePoints = Math.min(
+              ...raceCyclists.map((c) => c.puntos),
+              0,
+            );
+
+            const __raceWinnerTeam = raceWinners?.[selectedRace];
+            const __winnerPlayer = __raceWinnerTeam
+              ? leaderboard?.find((p) => p.nombreEquipo === __raceWinnerTeam)
+              : null;
+            const __winnerNombreTG = __winnerPlayer
+              ? __winnerPlayer.nombreEquipo
+              : "...";
+            const __winnerWins =
+              __raceWinnerTeam && globalTeamWinsCount
+                ? globalTeamWinsCount[__raceWinnerTeam] || 1
+                : 1;
+
+            const __bestCyclist =
+              raceCyclists.length > 0 ? raceCyclists[0] : null;
+            const __bestCyclistName = __bestCyclist
+              ? __bestCyclist.ciclista
+              : "...";
+            const __bestCyclistPoints = __bestCyclist
+              ? __bestCyclist.puntos
+              : 0;
+
+            const __eventsInfo =
+              globalTeamPartialWinsCount?.byRace?.[selectedRace] || {};
+            const __stageWinsByUser: Record<string, number> = {};
+            let __generalWinners: string[] = [];
+            let __hasEtapas = false;
+
+            Object.entries(__eventsInfo).forEach(([eventKey, _teams]) => {
+              const teams = _teams as string[];
+              if (eventKey.startsWith("Etapa")) {
+                __hasEtapas = true;
+                teams.forEach((t) => {
+                  const p = leaderboard?.find((p) => p.nombreEquipo === t);
+                  const tName = p ? p.nombreEquipo : t;
+                  __stageWinsByUser[tName] =
+                    (__stageWinsByUser[tName] || 0) + 1;
+                });
+              }
+              if (eventKey.startsWith("Clasificación final")) {
+                teams.forEach((t) => {
+                  const p = leaderboard?.find((p) => p.nombreEquipo === t);
+                  const tName = p ? p.nombreEquipo : t;
+                  if (!__generalWinners.includes(tName)) {
+                    __generalWinners.push(tName);
+                  }
+                });
+              }
+            });
+
+            const __etapasItems = Object.entries(__stageWinsByUser);
+            const __etapasStr =
+              __etapasItems.length > 0
+                ? __etapasItems
+                    .map(
+                      ([user, count]) =>
+                        `🏆 ${user} se lleva ${count} etapa${count !== 1 ? "s" : ""}`,
+                    )
+                    .join("\n")
+                : "";
+            const __generalWinner =
+              __generalWinners.length > 0 ? __generalWinners.join(", ") : "...";
+
+            const __textValue =
+              `🏁 **CARRERA FINALIZADA: ${selectedRace}** 🏁
+Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
+
+🚴‍♂️ ${__bestCyclistName} con ${__bestCyclistPoints} es el ciclista con más puntos.` +
+              (__hasEtapas
+                ? `\n\nClasificación por Etapas / Conceptos:\n${__etapasStr}\n🏆 ${__generalWinner} se lleva la clasificación general`
+                : "");
+
+            return (
+              <div className="space-y-10">
+                {isAdminReport && rankedTeams && raceCyclists && (
+                  <div className="bg-neutral-50 rounded-xl p-6 border border-neutral-200 mt-8 mb-12">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <ClipboardList className="w-5 h-5 text-blue-500" />
+                      Reporte Telegram
+                    </h3>
+                    <textarea
+                      readOnly
+                      value={__textValue}
+                      className="w-full h-48 text-sm font-mono p-4 border rounded-lg mb-4 bg-white"
+                    />
+                    <div className="flex gap-4">
+                      <button
+                        onClick={(e) => {
+                          // @ts-ignore
+                          navigator.clipboard.writeText(
+                            e.target.parentElement.previousElementSibling.value,
+                          );
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium transition-colors"
+                      >
+                        <ClipboardList className="w-4 h-4" /> Copiar para
+                        Telegram
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Clean Leaderboard */}
+                <div>
+                  <div className="flex items-center justify-between border-b pb-3 mb-4">
+                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                      <Trophy className="w-5 h-5 text-blue-600" />
+                      Clasificación de la Carrera
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setIsRaceClassificationExpanded(
+                            !isRaceClassificationExpanded,
+                          )
+                        }
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleCopyRaceClassification}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleDownloadRaceClassification}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-center w-full">
+                    <div
+                      id="race-classification-table"
+                      ref={raceClassificationTableRef}
+                      className={cn(
+                        "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
+                        isRaceClassificationExpanded
+                          ? "fixed inset-4 z-50 max-h-none"
+                          : "",
+                      )}
+                    >
+                      {isRaceClassificationExpanded && (
+                        <button
+                          onClick={() => setIsRaceClassificationExpanded(false)}
+                          className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+                      <table className="w-full text-sm text-left border-collapse mx-auto">
+                        <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
+                          <tr>
+                            <th className="px-2 py-1.5 w-8 text-center">Pos</th>
+                            <th className="px-2 py-1.5 min-w-[120px]">
+                              Equipo
+                            </th>
+                            <th className="px-2 py-1.5 w-10 text-center">
+                              Cicl
+                            </th>
+                            <th className="px-2 py-1.5 w-16 text-center">
+                              Puntos
+                            </th>
+                            <th className="px-2 py-1.5 w-20 text-center">
+                              Ptos por cic
+                            </th>
+                            <th className="px-2 py-1.5 w-16 text-center">
+                              Vict parc
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {rankedTeams
+                            .filter(
+                              (t) =>
+                                t.nombreEquipo !== "No draft" &&
+                                t.nombreEquipo !== "No draft [99]",
+                            )
+                            .map((team) => (
+                              <tr
+                                key={team.jugador}
+                                className="hover:bg-blue-50/30 transition-colors group"
+                              >
+                                <td className="px-3 py-1.5 text-center font-mono text-xs text-neutral-400">
+                                  {team.totalPoints > 0
+                                    ? team.pos === 1
+                                      ? "🥇"
+                                      : team.pos === 2
+                                        ? "🥈"
+                                        : team.pos === 3
+                                          ? "🥉"
+                                          : team.pos
+                                    : team.pos}
+                                </td>
+                                <td className="px-3 py-1.5">
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-neutral-900 leading-tight text-xs">
+                                      {team.nombreEquipo} [#{team.orden}]
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-1.5 text-center">
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                                      team.uniqueCyclists === 0
+                                        ? "bg-red-50 text-red-500"
+                                        : team.uniqueCyclists ===
+                                            maxUniqueCyclists
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-neutral-100 text-neutral-600",
+                                    )}
+                                  >
+                                    {team.uniqueCyclists}
+                                  </span>
+                                </td>
+                                <td
+                                  className="px-3 py-1.5 text-center font-mono font-bold text-black text-xs border-l border-neutral-100"
+                                  style={{
+                                    backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.totalPoints - minRacePoints) / (maxRacePoints - minRacePoints || 1))) * 120}, 70%, 75%)`,
+                                    color: "#000000",
+                                  }}
+                                >
+                                  {team.totalPoints}
+                                </td>
+                                <td className="px-3 py-1.5 text-center font-mono text-xs border-l border-neutral-100 text-neutral-600">
+                                  {team.uniqueCyclists > 0
+                                    ? (
+                                        team.totalPoints / team.uniqueCyclists
+                                      ).toFixed(1)
+                                    : "0.0"}
+                                </td>
+                                <td
+                                  className="px-3 py-1.5 text-center font-mono font-bold text-xs border-l border-neutral-100"
+                                  style={
+                                    team.racePartialWins > 0
+                                      ? {
+                                          backgroundColor: `hsl(45, 100%, ${Math.max(40, 95 - ((team.racePartialWins - minRacePartialWins) / Math.max(maxRacePartialWins - minRacePartialWins, 1)) * 45)}%)`,
+                                          color: "#78350f",
+                                        }
+                                      : {
+                                          color: "#d4d4d8",
+                                        }
+                                  }
+                                >
+                                  {team.racePartialWins > 0
+                                    ? team.racePartialWins
+                                    : "-"}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cyclists Table */}
+                <div className="mt-12">
+                  <div className="flex items-center justify-between border-b pb-3 mb-4">
+                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-600" />
+                      Clasificación de Ciclistas
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setIsCyclistsExpanded(!isCyclistsExpanded)
+                        }
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleCopyCyclists}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleDownloadCyclists}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-center w-full">
+                    <div
+                      id="cyclists-classification-table"
+                      ref={cyclistsTableRef}
+                      className={cn(
+                        "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
+                        isCyclistsExpanded
+                          ? "fixed inset-4 z-50 max-h-none"
+                          : "",
+                      )}
+                    >
+                      {isCyclistsExpanded && (
+                        <button
+                          onClick={() => setIsCyclistsExpanded(false)}
+                          className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+                      <table className="w-full text-sm text-left border-collapse mx-auto">
+                        <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
+                          <tr>
+                            <th className="px-3 py-1.5 min-w-[140px]">
+                              Ciclista
+                            </th>
+                            <th className="px-3 py-1.5 min-w-[140px]">
+                              Nombre_Equipo [#Orden]
+                            </th>
+                            <th className="px-3 py-1.5 text-center">Vict.</th>
+                            <th className="px-3 py-1.5 text-center">Puntos</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {raceCyclists.map((c, idx) => (
+                            <tr
+                              key={c.ciclista}
+                              className="hover:bg-blue-50/30 transition-colors"
+                            >
+                              <td className="px-3 py-1.5">
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-neutral-900 leading-tight text-xs">
+                                    {c.ciclista}{" "}
+                                    <span className="text-neutral-400 font-normal">
+                                      &lt;{c.ronda}&gt;
+                                    </span>
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 pr-8">
+                                <div className="flex flex-col">
+                                  <span className="text-neutral-700 font-medium leading-tight text-xs">
+                                    {c.jugador} [#{c.orden}]
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 text-center">
+                                {c.victorias > 0 ? (
+                                  <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 w-4 h-4 rounded text-[10px] font-bold">
+                                    {c.victorias}
+                                  </span>
+                                ) : (
+                                  <span className="text-neutral-300">-</span>
+                                )}
+                              </td>
+                              <td
+                                className="px-3 py-1.5 text-center font-mono font-bold text-blue-600 text-xs"
+                                style={{
+                                  backgroundColor:
+                                    c.puntos > 0
+                                      ? `rgba(34, 197, 94, ${0.03 + ((c.puntos - minCyclistRacePoints) / (maxCyclistRacePoints - minCyclistRacePoints || 1)) * 0.15})`
+                                      : "transparent",
+                                }}
+                              >
+                                {c.puntos}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage Breakdown (if multiple types or stage race) */}
+                {(finalColumns.length > 1 ||
+                  finalColumns.some((c) => /^\d+/.test(c.formatted))) && (
+                  <div className="mt-12">
+                    <div className="flex items-center justify-between border-b pb-3 mb-6">
+                      <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                        <Flag className="w-5 h-5 text-blue-600" />
+                        Clasificación por Etapas / Conceptos
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setIsStageExpanded(!isStageExpanded)}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleCopyRaceBreakdownImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                        >
+                          {isRaceBreakdownCopying ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={handleDownloadRaceBreakdownImage}
+                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
+                        >
+                          <UploadCloud className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-center w-full">
+                      <div
+                        id="race-breakdown-table"
+                        ref={raceBreakdownTableRef}
+                        className={cn(
+                          "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full max-w-full",
+                          isStageExpanded
+                            ? "fixed inset-4 z-50 max-h-none"
+                            : "",
+                        )}
+                      >
+                        {isStageExpanded && (
+                          <button
+                            onClick={() => setIsStageExpanded(false)}
+                            className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
+                          >
+                            <X className="w-6 h-6" />
+                          </button>
+                        )}
+                        <table className="w-full text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
+                          <thead
+                            className={cn(
+                              "bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10",
+                            )}
+                          >
+                            <tr>
+                              <th className="px-2 py-1.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px]">
+                                Pos
+                              </th>
+                              <th className="px-2 py-1.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700">
+                                Equipo
+                              </th>
+                              {finalColumns.map((col) => (
+                                <th
+                                  key={col.formatted}
+                                  className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700"
+                                >
+                                  {col.formatted}
+                                </th>
+                              ))}
+                              <th className="px-2 py-1.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
+                                Puntos
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-100 italic md:not-italic">
+                            {teamStagePoints.map((team, idx) => {
+                              const maxTotal = Math.max(
+                                ...teamStagePoints.map((t) => t.total),
+                              );
+                              const minTotal = Math.min(
+                                ...teamStagePoints.map((t) => t.total),
+                              );
+                              const totalRange = maxTotal - minTotal || 1;
+                              const intensity = Math.max(
+                                0.1,
+                                (team.total - minTotal) / totalRange,
+                              );
+
+                              return (
+                                <tr
+                                  key={team.jugador}
+                                  className="hover:bg-blue-50/30 transition-colors group"
+                                >
+                                  <td className="px-2 py-1 text-center font-mono text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
+                                    {team.total > 0
+                                      ? team.pos === 1
+                                        ? "🥇"
+                                        : team.pos === 2
+                                          ? "🥈"
+                                          : team.pos === 3
+                                            ? "🥉"
+                                            : team.pos
+                                      : team.pos}
+                                  </td>
+                                  <td className="px-2 py-1 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px]">
+                                    <span>
+                                      {team.nombreEquipo} [#{team.orden}]
+                                    </span>
+                                  </td>
+                                  {finalColumns.map((col) => {
+                                    const pts =
+                                      team.pointsByCol[col.formatted] || 0;
+                                    const isMax =
+                                      pts > 0 &&
+                                      pts === maxPointsByCol[col.formatted];
+                                    return (
+                                      <td
+                                        key={col.formatted}
+                                        className={cn(
+                                          "px-1.5 py-1 text-center font-mono border-r border-neutral-50 text-[10px]",
+                                          isMax
+                                            ? "bg-yellow-100 font-bold text-yellow-800"
+                                            : pts > 0
+                                              ? "text-neutral-700"
+                                              : "text-neutral-200",
+                                        )}
+                                      >
+                                        {pts > 0 ? pts : "-"}
+                                      </td>
+                                    );
+                                  })}
+                                  <td
+                                    className="px-2 py-1 text-center font-mono font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
+                                    style={{
+                                      backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.total - minTotal) / (maxTotal - minTotal || 1))) * 120}, 70%, 75%)`,
+                                      color: "#000000",
+                                    }}
+                                  >
+                                    {team.total}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Breakdown */}
+                <div className="mt-12">
+                  <div className="flex items-center justify-between border-b pb-3 mb-6">
+                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-600" />
+                      Desglose por Equipo
+                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={handleCopyDetailedBreakdownText}
+                        disabled={isDetailedBreakdownTextCopying}
+                        className={cn(
+                          "px-2 py-1.5 text-xs font-semibold rounded-lg border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
+                          isDetailedBreakdownTextCopying
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
+                        )}
+                        title="Copiar como texto"
+                      >
+                        {isDetailedBreakdownTextCopying ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <ClipboardList className="w-4 h-4" />
+                        )}
+                        <span className="sr-only sm:not-sr-only">Texto</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setIsDetailedBreakdownExpanded(
+                            !isDetailedBreakdownExpanded,
+                          )
+                        }
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
+                        title="Ampliar"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleCopyDetailedBreakdownImage("full")}
+                        disabled={!!isDetailedBreakdownCopying}
+                        className={cn(
+                          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border copy-button-ignore",
+                          isDetailedBreakdownCopying === "full"
+                            ? "bg-green-50 text-green-600 border-green-200"
+                            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
+                        )}
+                        title="Copiar como imagen completa"
+                      >
+                        {isDetailedBreakdownCopying === "full" ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDownloadDetailedBreakdownImage()}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
+                        title="Descargar imagen completa"
+                      >
+                        <UploadCloud className="w-4 h-4 rotate-180" />
+                      </button>
+                      {raceTeams.length > 12 && (
+                        <div className="flex border-l border-neutral-200 pl-2 gap-1.5 ml-1">
+                          <button
+                            onClick={() =>
+                              handleCopyDetailedBreakdownImage("first")
+                            }
+                            disabled={!!isDetailedBreakdownCopying}
+                            className={cn(
+                              "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
+                              isDetailedBreakdownCopying === "first"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                              isDetailedBreakdownCopying &&
+                                isDetailedBreakdownCopying !== "first" &&
+                                "opacity-50 cursor-not-allowed",
+                            )}
+                            title="Copiar equipos 1-12"
+                          >
+                            {isDetailedBreakdownCopying === "first" ? (
+                              <CheckCircle2 className="w-3 h-3" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            1-12
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleCopyDetailedBreakdownImage("second")
+                            }
+                            disabled={!!isDetailedBreakdownCopying}
+                            className={cn(
+                              "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
+                              isDetailedBreakdownCopying === "second"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                              isDetailedBreakdownCopying &&
+                                isDetailedBreakdownCopying !== "second" &&
+                                "opacity-50 cursor-not-allowed",
+                            )}
+                            title="Copiar equipos 13-24"
+                          >
+                            {isDetailedBreakdownCopying === "second" ? (
+                              <CheckCircle2 className="w-3 h-3" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            13-24
+                          </button>
+                          {raceTeams.length > 24 && (
+                            <button
+                              onClick={() =>
+                                handleCopyDetailedBreakdownImage("third")
+                              }
+                              disabled={!!isDetailedBreakdownCopying}
+                              className={cn(
+                                "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
+                                isDetailedBreakdownCopying === "third"
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                                isDetailedBreakdownCopying &&
+                                  isDetailedBreakdownCopying !== "third" &&
+                                  "opacity-50 cursor-not-allowed",
+                              )}
+                              title="Copiar equipos 25+"
+                            >
+                              {isDetailedBreakdownCopying === "third" ? (
+                                <CheckCircle2 className="w-3 h-3" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                              25+
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    id="detailed-team-breakdown"
+                    ref={detailedBreakdownRef}
+                    className={cn(
+                      "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-2 -mx-2 rounded-xl",
+                      isDetailedBreakdownExpanded
+                        ? "fixed inset-4 z-50 overflow-auto p-6 shadow-2xl m-0"
+                        : "",
+                    )}
+                  >
+                    {isDetailedBreakdownExpanded && (
+                      <button
+                        onClick={() => setIsDetailedBreakdownExpanded(false)}
+                        className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    )}
+                    {raceTeams.map((team) => {
+                      const cyclistMap = new Map<
+                        string,
+                        {
+                          ronda: string;
+                          total: number;
+                          concepts: any[];
+                        }
+                      >();
+                      team.details.forEach((d) => {
+                        if (!cyclistMap.has(d.ciclista)) {
+                          cyclistMap.set(d.ciclista, {
+                            ronda: d.ronda,
+                            total: 0,
+                            concepts: [],
+                          });
+                        }
+                        const c = cyclistMap.get(d.ciclista)!;
+                        c.total += d.puntosObtenidos;
+                        c.concepts.push(d);
+                      });
+
+                      const sortedCyclists = Array.from(cyclistMap.entries())
+                        .filter(
+                          ([_, data]) =>
+                            team.jugador !== "No draft" || data.total > 0,
+                        )
+                        .sort((a, b) => b[1].total - a[1].total);
+
+                      if (sortedCyclists.length === 0) return null;
+
+                      return (
+                        <div
+                          key={team.jugador}
+                          className="team-card-breakdown bg-neutral-50 rounded-lg p-4 border border-neutral-200 flex flex-col h-full min-w-[240px]"
+                        >
+                          <div className="flex justify-between items-center mb-2 border-b border-neutral-200 pb-1.5 gap-4">
+                            <span className="font-bold text-neutral-900 text-base whitespace-nowrap">
+                              {team.nombreEquipo} [#{team.orden}]
+                            </span>
+                            <span className="font-mono font-bold text-blue-600 text-base whitespace-nowrap">
+                              {team.totalPoints} pts
+                            </span>
+                          </div>
+                          <div className="space-y-1.5 flex-1">
+                            {sortedCyclists.map(([ciclista, data], idx) => (
+                              <div
+                                key={idx}
+                                className="bg-white p-3 rounded border border-neutral-100 shadow-sm"
+                              >
+                                <div className="flex justify-between items-center mb-1 gap-2">
+                                  <span className="font-bold text-neutral-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {ciclista} &lt;{data.ronda}&gt;
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "font-mono font-bold px-2 py-0.5 rounded text-xs whitespace-nowrap shrink-0",
+                                      data.total > 0
+                                        ? "text-green-700 bg-green-50"
+                                        : "text-neutral-400 bg-neutral-50",
+                                    )}
+                                  >
+                                    {data.total > 0 ? `+${data.total}` : "0"}
+                                  </span>
+                                </div>
+                                <div className="space-y-0.5">
+                                  {data.concepts
+                                    .filter((c) => c.puntosObtenidos > 0)
+                                    .map((c, cIdx) => (
+                                      <div
+                                        key={cIdx}
+                                        className="flex justify-between items-center text-[12px] mt-1 text-neutral-500 pl-2 border-l-2 border-neutral-200 gap-2"
+                                      >
+                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                          {c.tipoResultado}{" "}
+                                          {c.posicion
+                                            ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})`
+                                            : ""}
+                                        </span>
+                                        <span className="font-mono text-[11px] whitespace-nowrap shrink-0">
+                                          {c.puntosObtenidos > 0
+                                            ? `+${c.puntosObtenidos}`
+                                            : "0"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          <div className="text-center py-12 text-neutral-500">
+            Selecciona una carrera para ver el desglose de puntos.
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -4748,34 +5911,10 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
               </div>
             )}
 
-            {adminTab === "reporte-carrera" && (
-              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
-                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                  <Flag className="w-8 h-8 text-purple-600" />
-                </div>
-                <h2 className="text-xl font-bold text-neutral-900">
-                  Reporte de Carrera
-                </h2>
-                <p className="text-neutral-500 max-w-sm mt-2">
-                  Próximamente podrás generar reportes detallados por
-                  competición aquí.
-                </p>
-              </div>
-            )}
+            {adminTab === "reporte-carrera" && renderRaceView(true)}
 
             {adminTab === "reporte-mes" && (
-              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
-                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                  <Clock className="w-8 h-8 text-purple-600" />
-                </div>
-                <h2 className="text-xl font-bold text-neutral-900">
-                  Reporte Mensual
-                </h2>
-                <p className="text-neutral-500 max-w-sm mt-2">
-                  Próximamente podrás generar resúmenes mensuales del juego
-                  aquí.
-                </p>
-              </div>
+              <MonthlyReportView files={files} leaderboard={leaderboard} />
             )}
 
             {adminTab === "reporte-temporada" && (
@@ -12397,1071 +13536,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
               </div>
             )}
 
-            {publicTab === "race" && (
-              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
-                <div className="max-w-md mb-8">
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Selecciona una carrera
-                  </label>
-                  <select
-                    value={selectedRace}
-                    onChange={(e) => setSelectedRace(e.target.value)}
-                    className="w-full border border-neutral-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
-                    <option value="">-- Seleccionar Carrera --</option>
-                    {uniqueRaces.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedRace ? (
-                  (() => {
-                    const raceTeams =
-                      leaderboard
-                        ?.map((player) => {
-                          const details = player.detalles.filter(
-                            (d) => d.carrera === selectedRace,
-                          );
-                          const totalPoints = details.reduce(
-                            (sum, d) => sum + d.puntosObtenidos,
-                            0,
-                          );
-                          const uniqueCyclists = new Set(
-                            details.map((d) => d.ciclista),
-                          ).size;
-                          return {
-                            jugador: player.jugador,
-                            nombreEquipo: player.nombreEquipo,
-                            orden: player.orden,
-                            totalPoints,
-                            uniqueCyclists,
-                            details,
-                          };
-                        })
-                        .filter(
-                          (t) =>
-                            t.nombreEquipo !== "No draft" &&
-                            t.nombreEquipo !== "No draft [99]",
-                        ) || [];
-
-                    // Calculate partial wins in this race
-                    raceTeams.forEach((team) => {
-                      let partials = 0;
-                      const raceEvents =
-                        globalTeamPartialWinsCount.byRace[selectedRace] || {};
-                      Object.values(raceEvents).forEach((winnerTeams) => {
-                        if ((winnerTeams as string[]).includes(team.nombreEquipo)) {
-                          partials++;
-                        }
-                      });
-                      team.racePartialWins = partials;
-                    });
-
-                    // Sort: 0 cyclists at bottom, then points desc, then cyclists asc
-                    raceTeams.sort((a, b) => {
-                      if (a.uniqueCyclists === 0 && b.uniqueCyclists !== 0)
-                        return 1;
-                      if (a.uniqueCyclists !== 0 && b.uniqueCyclists === 0)
-                        return -1;
-                      if (b.totalPoints !== a.totalPoints)
-                        return b.totalPoints - a.totalPoints;
-                      return a.uniqueCyclists - b.uniqueCyclists;
-                    });
-
-                    // Pre-calculate positions
-                    const rankedTeams = raceTeams.map((team, idx, arr) => {
-                      // Find the first team with the same points to determine position
-                      const firstInGroup = arr.findIndex(
-                        (t) => t.totalPoints === team.totalPoints,
-                      );
-                      const pos = firstInGroup + 1;
-
-                      // Check if this position is tied by counting how many have the same points
-                      const countInGroup = arr.filter(
-                        (t) => t.totalPoints === team.totalPoints,
-                      ).length;
-
-                      return { ...team, pos, isTied: countInGroup > 1 };
-                    });
-                    const maxUniqueCyclists = Math.max(
-                      ...rankedTeams.map((t) => t.uniqueCyclists),
-                      0,
-                    );
-                    const minUniqueCyclists = Math.min(
-                      ...rankedTeams.map((t) => t.uniqueCyclists),
-                      0,
-                    );
-                    const maxRacePoints = Math.max(
-                      ...rankedTeams.map((t) => t.totalPoints),
-                      0,
-                    );
-                    const minRacePoints = Math.min(
-                      ...rankedTeams.map((t) => t.totalPoints),
-                      0,
-                    );
-                    const maxRacePartialWins = Math.max(
-                      ...rankedTeams.map((t) => t.racePartialWins || 0),
-                      0,
-                    );
-                    const minRacePartialWins = Math.min(
-                      ...rankedTeams.map((t) => t.racePartialWins || 0),
-                      0,
-                    );
-
-                    const allRaceResults =
-                      files.resultados.data?.filter(
-                        (r) => getVal(r, "Carrera") === selectedRace,
-                      ) || [];
-
-                    const formatTipoResultado = (tipo: string) => {
-                      const etapaMatch = tipo.match(/Etapa\s+(\d+[a-zA-Z]?)/i);
-                      if (etapaMatch) return etapaMatch[1];
-                      if (
-                        tipo.match(
-                          /Clasificación General|CG|Clasificación final/i,
-                        )
-                      )
-                        return "CG";
-                      if (
-                        tipo.match(/Clasificación.*Montaña|CM|Montaña final/i)
-                      )
-                        return "CM";
-                      if (
-                        tipo.match(
-                          /Clasificación.*Puntos|CP|Regularidad final/i,
-                        )
-                      )
-                        return "CP";
-                      if (tipo.match(/Clasificación.*Jóvenes|CJ/i)) return "CJ";
-                      return tipo;
-                    };
-
-                    const columnDefinitions = new Map<
-                      string,
-                      {
-                        originalTipo: string;
-                        originalEtapa?: string;
-                        formatted: string;
-                      }
-                    >();
-
-                    allRaceResults.forEach((r) => {
-                      const tipo = getVal(r, "Tipo")?.trim();
-                      const etapa = getVal(r, "Etapa")?.toString().trim();
-
-                      if (!tipo) return;
-
-                      const formatted = formatTipoResultado(tipo);
-                      const isStage =
-                        /^\d+[a-zA-Z]?$/.test(formatted) ||
-                        tipo.toLowerCase() === "etapa";
-
-                      if (isStage) {
-                        const stageNum = etapa || formatted;
-                        const key = `Stage_${stageNum}`;
-                        if (!columnDefinitions.has(key)) {
-                          columnDefinitions.set(key, {
-                            originalTipo: tipo,
-                            originalEtapa: etapa,
-                            formatted: stageNum,
-                          });
-                        }
-                      } else {
-                        if (!columnDefinitions.has(formatted)) {
-                          columnDefinitions.set(formatted, {
-                            originalTipo: tipo,
-                            formatted: formatted,
-                          });
-                        }
-                      }
-                    });
-
-                    const typesWithPoints = new Set<string>();
-                    raceTeams.forEach((team) =>
-                      team.details.forEach((d) => {
-                        if (d.puntosObtenidos > 0) {
-                          if (d.etapa) {
-                            typesWithPoints.add(`Stage_${d.etapa}`);
-                          } else {
-                            typesWithPoints.add(
-                              formatTipoResultado(d.tipoResultado),
-                            );
-                          }
-                        }
-                      }),
-                    );
-
-                    // Filter out CM/CP if no points
-                    const finalColumns = Array.from(
-                      columnDefinitions.values(),
-                    ).filter((col) => {
-                      if (col.formatted === "CM" || col.formatted === "CP") {
-                        return typesWithPoints.has(col.formatted);
-                      }
-                      return true;
-                    });
-
-                    finalColumns.sort((a, b) => {
-                      const isNumA = /^\d+[a-zA-Z]?$/.test(a.formatted);
-                      const isNumB = /^\d+[a-zA-Z]?$/.test(b.formatted);
-                      if (isNumA && isNumB)
-                        return parseInt(a.formatted) - parseInt(b.formatted);
-                      if (isNumA) return -1;
-                      if (isNumB) return 1;
-
-                      const order = ["CG", "CP", "CM", "CJ"];
-                      const idxA = order.indexOf(a.formatted);
-                      const idxB = order.indexOf(b.formatted);
-                      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                      if (idxA !== -1) return -1;
-                      if (idxB !== -1) return 1;
-                      return a.formatted.localeCompare(b.formatted);
-                    });
-
-                    const teamStagePoints = rankedTeams
-                      .map((team) => {
-                        const pointsByCol: Record<string, number> = {};
-                        finalColumns.forEach((col) => {
-                          pointsByCol[col.formatted] = team.details
-                            .filter((d) => {
-                              if (col.originalEtapa) {
-                                return (
-                                  d.tipoResultado === col.originalTipo &&
-                                  d.etapa === col.originalEtapa
-                                );
-                              }
-                              // If it's a stage from "Etapa 1" format but no Etapa column
-                              if (
-                                /^\d+[a-zA-Z]?$/.test(col.formatted) &&
-                                !col.originalEtapa
-                              ) {
-                                return (
-                                  formatTipoResultado(d.tipoResultado) ===
-                                  col.formatted
-                                );
-                              }
-                              return (
-                                formatTipoResultado(d.tipoResultado) ===
-                                col.formatted
-                              );
-                            })
-                            .reduce((sum, d) => sum + d.puntosObtenidos, 0);
-                        });
-                        return {
-                          jugador: team.jugador,
-                          nombreEquipo: team.nombreEquipo,
-                          orden: team.orden,
-                          total: team.totalPoints,
-                          pos: team.pos,
-                          isTied: team.isTied,
-                          pointsByCol,
-                        };
-                      })
-                      .filter(
-                        (t) =>
-                          t.nombreEquipo !== "No draft" &&
-                          t.nombreEquipo !== "No draft [99]",
-                      );
-
-                    const maxPointsByCol: Record<string, number> = {};
-                    finalColumns.forEach((col) => {
-                      maxPointsByCol[col.formatted] = Math.max(
-                        ...teamStagePoints.map(
-                          (t) => t.pointsByCol[col.formatted] || 0,
-                        ),
-                      );
-                    });
-
-                    const raceCyclistsMap = new Map<
-                      string,
-                      {
-                        ciclista: string;
-                        ronda: string;
-                        jugador: string;
-                        orden: string;
-                        puntos: number;
-                        victorias: number;
-                      }
-                    >();
-
-                    raceTeams.forEach((team) => {
-                      team.details.forEach((d) => {
-                        if (!raceCyclistsMap.has(d.ciclista)) {
-                          raceCyclistsMap.set(d.ciclista, {
-                            ciclista: d.ciclista,
-                            ronda: d.ronda,
-                            jugador: team.nombreEquipo,
-                            orden: team.orden,
-                            puntos: 0,
-                            victorias: 0,
-                          });
-                        }
-                        const c = raceCyclistsMap.get(d.ciclista)!;
-                        c.jugador = team.nombreEquipo; // Ensure it uses the team name if updated
-                        c.puntos += d.puntosObtenidos;
-
-                        const isVictory =
-                          (d.posicion === "1" || d.posicion === "01") &&
-                          d.tipoResultado !== "Montaña final" &&
-                          d.tipoResultado !== "Regularidad final";
-                        if (isVictory) {
-                          c.victorias += 1;
-                        }
-                      });
-                    });
-
-                    const raceCyclists = Array.from(raceCyclistsMap.values())
-                      .filter((c) => c.puntos > 0 || c.victorias > 0)
-                      .sort((a, b) => b.puntos - a.puntos);
-
-                    const maxCyclistRacePoints = Math.max(
-                      ...raceCyclists.map((c) => c.puntos),
-                      0,
-                    );
-                    const minCyclistRacePoints = Math.min(
-                      ...raceCyclists.map((c) => c.puntos),
-                      0,
-                    );
-
-                    return (
-                      <div className="space-y-10">
-                        {/* Clean Leaderboard */}
-                        <div>
-                          <div className="flex items-center justify-between border-b pb-3 mb-4">
-                            <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 whitespace-nowrap">
-                              <Trophy className="w-5 h-5 text-blue-600" />
-                              Clasificación de la Carrera
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() =>
-                                  setIsRaceClassificationExpanded(
-                                    !isRaceClassificationExpanded,
-                                  )
-                                }
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <Maximize2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={handleCopyRaceClassification}
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={handleDownloadRaceClassification}
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <UploadCloud className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex justify-center w-full">
-                            <div
-                              id="race-classification-table"
-                              ref={raceClassificationTableRef}
-                              className={cn(
-                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
-                                isRaceClassificationExpanded
-                                  ? "fixed inset-4 z-50 max-h-none"
-                                  : "",
-                              )}
-                            >
-                              {isRaceClassificationExpanded && (
-                                <button
-                                  onClick={() =>
-                                    setIsRaceClassificationExpanded(false)
-                                  }
-                                  className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                                >
-                                  <X className="w-6 h-6" />
-                                </button>
-                              )}
-                              <table className="w-full text-sm text-left border-collapse mx-auto">
-                                <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
-                                  <tr>
-                                    <th className="px-2 py-1.5 w-8 text-center">
-                                      Pos
-                                    </th>
-                                    <th className="px-2 py-1.5 min-w-[120px]">
-                                      Equipo
-                                    </th>
-                                    <th className="px-2 py-1.5 w-10 text-center">
-                                      Cicl
-                                    </th>
-                                    <th className="px-2 py-1.5 w-16 text-center">
-                                      Puntos
-                                    </th>
-                                    <th className="px-2 py-1.5 w-20 text-center">
-                                      Ptos por cic
-                                    </th>
-                                    <th className="px-2 py-1.5 w-16 text-center">
-                                      Vict parc
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-neutral-100">
-                                  {rankedTeams
-                                    .filter(
-                                      (t) =>
-                                        t.nombreEquipo !== "No draft" &&
-                                        t.nombreEquipo !== "No draft [99]",
-                                    )
-                                    .map((team) => (
-                                      <tr
-                                        key={team.jugador}
-                                        className="hover:bg-blue-50/30 transition-colors group"
-                                      >
-                                        <td className="px-3 py-1.5 text-center font-mono text-xs text-neutral-400">
-                                          {team.totalPoints > 0 ? (
-                                            team.pos === 1
-                                              ? "🥇"
-                                              : team.pos === 2
-                                                ? "🥈"
-                                                : team.pos === 3
-                                                  ? "🥉"
-                                                  : team.pos
-                                          ) : (
-                                            team.pos
-                                          )}
-                                        </td>
-                                        <td className="px-3 py-1.5">
-                                          <div className="flex flex-col">
-                                            <span className="font-bold text-neutral-900 leading-tight text-xs">
-                                              {team.nombreEquipo} [#{team.orden}
-                                              ]
-                                            </span>
-                                          </div>
-                                        </td>
-                                        <td className="px-3 py-1.5 text-center">
-                                          <span
-                                            className={cn(
-                                              "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
-                                              team.uniqueCyclists === 0
-                                                ? "bg-red-50 text-red-500"
-                                                : team.uniqueCyclists ===
-                                                    maxUniqueCyclists
-                                                  ? "bg-green-100 text-green-700"
-                                                  : "bg-neutral-100 text-neutral-600",
-                                            )}
-                                          >
-                                            {team.uniqueCyclists}
-                                          </span>
-                                        </td>
-                                        <td
-                                          className="px-3 py-1.5 text-center font-mono font-bold text-black text-xs border-l border-neutral-100"
-                                          style={{
-                                            backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.totalPoints - minRacePoints) / (maxRacePoints - minRacePoints || 1))) * 120}, 70%, 75%)`,
-                                            color: "#000000",
-                                          }}
-                                        >
-                                          {team.totalPoints}
-                                        </td>
-                                        <td className="px-3 py-1.5 text-center font-mono text-xs border-l border-neutral-100 text-neutral-600">
-                                          {team.uniqueCyclists > 0
-                                            ? (
-                                                team.totalPoints /
-                                                team.uniqueCyclists
-                                              ).toFixed(1)
-                                            : "0.0"}
-                                        </td>
-                                        <td
-                                          className="px-3 py-1.5 text-center font-mono font-bold text-xs border-l border-neutral-100"
-                                          style={
-                                            team.racePartialWins > 0
-                                              ? {
-                                                  backgroundColor: `hsl(45, 100%, ${Math.max(40, 95 - ((team.racePartialWins - minRacePartialWins) / Math.max(maxRacePartialWins - minRacePartialWins, 1)) * 45)}%)`,
-                                                  color: "#78350f",
-                                                }
-                                              : {
-                                                  color: "#d4d4d8",
-                                                }
-                                          }
-                                        >
-                                          {team.racePartialWins > 0
-                                            ? team.racePartialWins
-                                            : "-"}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Cyclists Table */}
-                        <div className="mt-12">
-                          <div className="flex items-center justify-between border-b pb-3 mb-4">
-                            <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-                              <Users className="w-5 h-5 text-blue-600" />
-                              Clasificación de Ciclistas
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() =>
-                                  setIsCyclistsExpanded(!isCyclistsExpanded)
-                                }
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <Maximize2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={handleCopyCyclists}
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={handleDownloadCyclists}
-                                className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              >
-                                <UploadCloud className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex justify-center w-full">
-                            <div
-                              id="cyclists-classification-table"
-                              ref={cyclistsTableRef}
-                              className={cn(
-                                "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
-                                isCyclistsExpanded
-                                  ? "fixed inset-4 z-50 max-h-none"
-                                  : "",
-                              )}
-                            >
-                              {isCyclistsExpanded && (
-                                <button
-                                  onClick={() => setIsCyclistsExpanded(false)}
-                                  className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                                >
-                                  <X className="w-6 h-6" />
-                                </button>
-                              )}
-                              <table className="w-full text-sm text-left border-collapse mx-auto">
-                                <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
-                                  <tr>
-                                    <th className="px-3 py-1.5 min-w-[140px]">
-                                      Ciclista
-                                    </th>
-                                    <th className="px-3 py-1.5 min-w-[140px]">
-                                      Nombre_Equipo [#Orden]
-                                    </th>
-                                    <th className="px-3 py-1.5 text-center">
-                                      Vict.
-                                    </th>
-                                    <th className="px-3 py-1.5 text-center">
-                                      Puntos
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-neutral-100">
-                                  {raceCyclists.map((c, idx) => (
-                                    <tr
-                                      key={c.ciclista}
-                                      className="hover:bg-blue-50/30 transition-colors"
-                                    >
-                                      <td className="px-3 py-1.5">
-                                        <div className="flex flex-col">
-                                          <span className="font-bold text-neutral-900 leading-tight text-xs">
-                                            {c.ciclista}{" "}
-                                            <span className="text-neutral-400 font-normal">
-                                              &lt;{c.ronda}&gt;
-                                            </span>
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="px-3 py-1.5 pr-8">
-                                        <div className="flex flex-col">
-                                          <span className="text-neutral-700 font-medium leading-tight text-xs">
-                                            {c.jugador} [#{c.orden}]
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="px-3 py-1.5 text-center">
-                                        {c.victorias > 0 ? (
-                                          <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 w-4 h-4 rounded text-[10px] font-bold">
-                                            {c.victorias}
-                                          </span>
-                                        ) : (
-                                          <span className="text-neutral-300">
-                                            -
-                                          </span>
-                                        )}
-                                      </td>
-                                      <td
-                                        className="px-3 py-1.5 text-center font-mono font-bold text-blue-600 text-xs"
-                                        style={{
-                                          backgroundColor:
-                                            c.puntos > 0
-                                              ? `rgba(34, 197, 94, ${0.03 + ((c.puntos - minCyclistRacePoints) / (maxCyclistRacePoints - minCyclistRacePoints || 1)) * 0.15})`
-                                              : "transparent",
-                                        }}
-                                      >
-                                        {c.puntos}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Stage Breakdown (if multiple types or stage race) */}
-                        {(finalColumns.length > 1 ||
-                          finalColumns.some((c) =>
-                            /^\d+/.test(c.formatted),
-                          )) && (
-                          <div className="mt-12">
-                            <div className="flex items-center justify-between border-b pb-3 mb-6">
-                              <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-                                <Flag className="w-5 h-5 text-blue-600" />
-                                Clasificación por Etapas / Conceptos
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() =>
-                                    setIsStageExpanded(!isStageExpanded)
-                                  }
-                                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                                >
-                                  <Maximize2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={handleCopyRaceBreakdownImage}
-                                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                                >
-                                  {isRaceBreakdownCopying ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={handleDownloadRaceBreakdownImage}
-                                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                                >
-                                  <UploadCloud className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex justify-center w-full">
-                              <div
-                                id="race-breakdown-table"
-                                ref={raceBreakdownTableRef}
-                                className={cn(
-                                  "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full max-w-full",
-                                  isStageExpanded
-                                    ? "fixed inset-4 z-50 max-h-none"
-                                    : "",
-                                )}
-                              >
-                                {isStageExpanded && (
-                                  <button
-                                    onClick={() => setIsStageExpanded(false)}
-                                    className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                                  >
-                                    <X className="w-6 h-6" />
-                                  </button>
-                                )}
-                                <table className="w-full text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
-                                  <thead
-                                    className={cn(
-                                      "bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10",
-                                    )}
-                                  >
-                                    <tr>
-                                      <th className="px-2 py-1.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px]">
-                                        Pos
-                                      </th>
-                                      <th className="px-2 py-1.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700">
-                                        Equipo
-                                      </th>
-                                      {finalColumns.map((col) => (
-                                        <th
-                                          key={col.formatted}
-                                          className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700"
-                                        >
-                                          {col.formatted}
-                                        </th>
-                                      ))}
-                                      <th className="px-2 py-1.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
-                                        Puntos
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-neutral-100 italic md:not-italic">
-                                    {teamStagePoints.map((team, idx) => {
-                                      const maxTotal = Math.max(
-                                        ...teamStagePoints.map((t) => t.total),
-                                      );
-                                      const minTotal = Math.min(
-                                        ...teamStagePoints.map((t) => t.total),
-                                      );
-                                      const totalRange =
-                                        maxTotal - minTotal || 1;
-                                      const intensity = Math.max(
-                                        0.1,
-                                        (team.total - minTotal) / totalRange,
-                                      );
-
-                                      return (
-                                        <tr
-                                          key={team.jugador}
-                                          className="hover:bg-blue-50/30 transition-colors group"
-                                        >
-                                          <td className="px-2 py-1 text-center font-mono text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
-                                            {team.total > 0 ? (
-                                              team.pos === 1
-                                                ? "🥇"
-                                                : team.pos === 2
-                                                  ? "🥈"
-                                                  : team.pos === 3
-                                                    ? "🥉"
-                                                    : team.pos
-                                            ) : (
-                                              team.pos
-                                            )}
-                                          </td>
-                                          <td className="px-2 py-1 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px]">
-                                            <span>
-                                              {team.nombreEquipo} [#{team.orden}
-                                              ]
-                                            </span>
-                                          </td>
-                                          {finalColumns.map((col) => {
-                                            const pts =
-                                              team.pointsByCol[col.formatted] ||
-                                              0;
-                                            const isMax =
-                                              pts > 0 &&
-                                              pts ===
-                                                maxPointsByCol[col.formatted];
-                                            return (
-                                              <td
-                                                key={col.formatted}
-                                                className={cn(
-                                                  "px-1.5 py-1 text-center font-mono border-r border-neutral-50 text-[10px]",
-                                                  isMax
-                                                    ? "bg-yellow-100 font-bold text-yellow-800"
-                                                    : pts > 0
-                                                      ? "text-neutral-700"
-                                                      : "text-neutral-200",
-                                                )}
-                                              >
-                                                {pts > 0 ? pts : "-"}
-                                              </td>
-                                            );
-                                          })}
-                                          <td
-                                            className="px-2 py-1 text-center font-mono font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
-                                            style={{
-                                              backgroundColor: `hsl(${Math.max(0, Math.min(1, (team.total - minTotal) / (maxTotal - minTotal || 1))) * 120}, 70%, 75%)`,
-                                              color: "#000000",
-                                            }}
-                                          >
-                                            {team.total}
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Detailed Breakdown */}
-                        <div className="mt-12">
-                          <div className="flex items-center justify-between border-b pb-3 mb-6">
-                            <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-                              <Users className="w-5 h-5 text-blue-600" />
-                              Desglose por Equipo
-                            </h3>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={handleCopyDetailedBreakdownText}
-                                disabled={isDetailedBreakdownTextCopying}
-                                className={cn(
-                                  "px-2 py-1.5 text-xs font-semibold rounded-lg border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                                  isDetailedBreakdownTextCopying
-                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
-                                )}
-                                title="Copiar como texto"
-                              >
-                                {isDetailedBreakdownTextCopying ? (
-                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <ClipboardList className="w-4 h-4" />
-                                )}
-                                <span className="sr-only sm:not-sr-only">
-                                  Texto
-                                </span>
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setIsDetailedBreakdownExpanded(
-                                    !isDetailedBreakdownExpanded,
-                                  )
-                                }
-                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
-                                title="Ampliar"
-                              >
-                                <Maximize2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleCopyDetailedBreakdownImage("full")
-                                }
-                                disabled={!!isDetailedBreakdownCopying}
-                                className={cn(
-                                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border copy-button-ignore",
-                                  isDetailedBreakdownCopying === "full"
-                                    ? "bg-green-50 text-green-600 border-green-200"
-                                    : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
-                                )}
-                                title="Copiar como imagen completa"
-                              >
-                                {isDetailedBreakdownCopying === "full" ? (
-                                  <CheckCircle2 className="w-4 h-4" />
-                                ) : (
-                                  <Copy className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleDownloadDetailedBreakdownImage()
-                                }
-                                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
-                                title="Descargar imagen completa"
-                              >
-                                <UploadCloud className="w-4 h-4 rotate-180" />
-                              </button>
-                              {raceTeams.length > 12 && (
-                                <div className="flex border-l border-neutral-200 pl-2 gap-1.5 ml-1">
-                                  <button
-                                    onClick={() =>
-                                      handleCopyDetailedBreakdownImage("first")
-                                    }
-                                    disabled={!!isDetailedBreakdownCopying}
-                                    className={cn(
-                                      "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                                      isDetailedBreakdownCopying === "first"
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                                      isDetailedBreakdownCopying &&
-                                        isDetailedBreakdownCopying !==
-                                          "first" &&
-                                        "opacity-50 cursor-not-allowed",
-                                    )}
-                                    title="Copiar equipos 1-12"
-                                  >
-                                    {isDetailedBreakdownCopying === "first" ? (
-                                      <CheckCircle2 className="w-3 h-3" />
-                                    ) : (
-                                      <Copy className="w-3 h-3" />
-                                    )}
-                                    1-12
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleCopyDetailedBreakdownImage("second")
-                                    }
-                                    disabled={!!isDetailedBreakdownCopying}
-                                    className={cn(
-                                      "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                                      isDetailedBreakdownCopying === "second"
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                                      isDetailedBreakdownCopying &&
-                                        isDetailedBreakdownCopying !==
-                                          "second" &&
-                                        "opacity-50 cursor-not-allowed",
-                                    )}
-                                    title="Copiar equipos 13-24"
-                                  >
-                                    {isDetailedBreakdownCopying === "second" ? (
-                                      <CheckCircle2 className="w-3 h-3" />
-                                    ) : (
-                                      <Copy className="w-3 h-3" />
-                                    )}
-                                    13-24
-                                  </button>
-                                  {raceTeams.length > 24 && (
-                                    <button
-                                      onClick={() =>
-                                        handleCopyDetailedBreakdownImage(
-                                          "third",
-                                        )
-                                      }
-                                      disabled={!!isDetailedBreakdownCopying}
-                                      className={cn(
-                                        "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                                        isDetailedBreakdownCopying === "third"
-                                          ? "bg-green-50 text-green-700 border-green-200"
-                                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                                        isDetailedBreakdownCopying &&
-                                          isDetailedBreakdownCopying !==
-                                            "third" &&
-                                          "opacity-50 cursor-not-allowed",
-                                      )}
-                                      title="Copiar equipos 25+"
-                                    >
-                                      {isDetailedBreakdownCopying ===
-                                      "third" ? (
-                                        <CheckCircle2 className="w-3 h-3" />
-                                      ) : (
-                                        <Copy className="w-3 h-3" />
-                                      )}
-                                      25+
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div
-                            id="detailed-team-breakdown"
-                            ref={detailedBreakdownRef}
-                            className={cn(
-                              "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-2 -mx-2 rounded-xl",
-                              isDetailedBreakdownExpanded
-                                ? "fixed inset-4 z-50 overflow-auto p-6 shadow-2xl m-0"
-                                : "",
-                            )}
-                          >
-                            {isDetailedBreakdownExpanded && (
-                              <button
-                                onClick={() =>
-                                  setIsDetailedBreakdownExpanded(false)
-                                }
-                                className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                              >
-                                <X className="w-6 h-6" />
-                              </button>
-                            )}
-                            {raceTeams.map((team) => {
-                              const cyclistMap = new Map<
-                                string,
-                                {
-                                  ronda: string;
-                                  total: number;
-                                  concepts: any[];
-                                }
-                              >();
-                              team.details.forEach((d) => {
-                                if (!cyclistMap.has(d.ciclista)) {
-                                  cyclistMap.set(d.ciclista, {
-                                    ronda: d.ronda,
-                                    total: 0,
-                                    concepts: [],
-                                  });
-                                }
-                                const c = cyclistMap.get(d.ciclista)!;
-                                c.total += d.puntosObtenidos;
-                                c.concepts.push(d);
-                              });
-
-                              const sortedCyclists = Array.from(
-                                cyclistMap.entries(),
-                              )
-                                .filter(
-                                  ([_, data]) =>
-                                    team.jugador !== "No draft" ||
-                                    data.total > 0,
-                                )
-                                .sort((a, b) => b[1].total - a[1].total);
-
-                              if (sortedCyclists.length === 0) return null;
-
-                              return (
-                                <div
-                                  key={team.jugador}
-                                  className="team-card-breakdown bg-neutral-50 rounded-lg p-3 border border-neutral-200 flex flex-col h-full min-w-[240px]"
-                                >
-                                  <div className="flex justify-between items-center mb-2 border-b border-neutral-200 pb-1.5 gap-4">
-                                    <span className="font-bold text-neutral-900 text-[13px] whitespace-nowrap">
-                                      {team.nombreEquipo} [#{team.orden}]
-                                    </span>
-                                    <span className="font-mono font-bold text-blue-600 text-sm whitespace-nowrap">
-                                      {team.totalPoints} pts
-                                    </span>
-                                  </div>
-                                  <div className="space-y-1.5 flex-1">
-                                    {sortedCyclists.map(
-                                      ([ciclista, data], idx) => (
-                                        <div
-                                          key={idx}
-                                          className="bg-white p-2 rounded border border-neutral-100 shadow-sm"
-                                        >
-                                          <div className="flex justify-between items-center mb-1 gap-2">
-                                            <span className="font-bold text-neutral-800 text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">
-                                              {ciclista} &lt;{data.ronda}&gt;
-                                            </span>
-                                            <span
-                                              className={cn(
-                                                "font-mono font-bold px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap shrink-0",
-                                                data.total > 0
-                                                  ? "text-green-700 bg-green-50"
-                                                  : "text-neutral-400 bg-neutral-50",
-                                              )}
-                                            >
-                                              {data.total > 0
-                                                ? `+${data.total}`
-                                                : "0"}
-                                            </span>
-                                          </div>
-                                          <div className="space-y-0.5">
-                                            {data.concepts
-                                              .filter(
-                                                (c) => c.puntosObtenidos > 0,
-                                              )
-                                              .map((c, cIdx) => (
-                                                <div
-                                                  key={cIdx}
-                                                  className="flex justify-between items-center text-[9px] text-neutral-500 pl-1.5 border-l border-neutral-200 gap-2"
-                                                >
-                                                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                    {c.tipoResultado}{" "}
-                                                    {c.posicion
-                                                      ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})`
-                                                      : ""}
-                                                  </span>
-                                                  <span className="font-mono whitespace-nowrap shrink-0">
-                                                    {c.puntosObtenidos > 0
-                                                      ? `+${c.puntosObtenidos}`
-                                                      : "0"}
-                                                  </span>
-                                                </div>
-                                              ))}
-                                          </div>
-                                        </div>
-                                      ),
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="text-center py-12 text-neutral-500">
-                    Selecciona una carrera para ver el desglose de puntos.
-                  </div>
-                )}
-              </div>
-            )}
+            {publicTab === "race" && renderRaceView(false)}
 
             {publicTab === "team" && (
               <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
@@ -14658,7 +14733,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         { count: number; points: number }
                       > = {};
                       // Inicializar todos los equipos reales del juego a 0
-                      const allTeams = new Set(Object.values(playerTeamMap) as string[]);
+                      const allTeams = new Set(
+                        Object.values(playerTeamMap) as string[],
+                      );
                       allTeams.forEach((team) => {
                         if (team) {
                           teamStats[team] = { count: 0, points: 0 };
@@ -16383,7 +16460,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   }}
                                                 >
                                                   <div className="flex items-center justify-center gap-1">
-                                                    {col.replace("_", " ")}
+                                                    {col === "Eq_Comp"
+                                                      ? "EQ BREVE"
+                                                      : col.replace("_", " ")}
                                                     {draftSortColumn ===
                                                       col && (
                                                       <span className="text-blue-600">
@@ -16619,7 +16698,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">
                                                     {getVal(row, "Elección")}
                                                   </td>
-                                                  <td className="px-1 py-0.5 text-center truncate max-w-[100px]">
+                                                  <td className="px-1 py-0.5 text-left truncate max-w-[100px]">
                                                     {getVal(
                                                       row,
                                                       "Nombre_Equipo",
@@ -16651,7 +16730,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                     </span>
                                                   </td>
                                                   <td className="px-1 py-0.5 text-center text-neutral-500 truncate max-w-[80px]">
-                                                    {getVal(row, "Eq_Comp")}
+                                                    {cyclistMetadata[ciclista]
+                                                      ?.equipoBreve ||
+                                                      getVal(row, "Eq_Comp")}
                                                   </td>
                                                   <td className="px-1 py-0.5 text-center">
                                                     <span
@@ -17215,7 +17296,6 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           </div>
                         </div>
 
-
                         <div
                           ref={draftDatosTableRef}
                           className={cn(
@@ -17697,7 +17777,6 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           })()}
                         </div>
 
-
                         {/* Resumen de Rendimiento */}
                         <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -17707,7 +17786,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 Resumen de Rendimiento del Draft
                               </h3>
                               <p className="text-xs text-neutral-500 mt-0.5">
-                                Clasificación de selecciones por equipo según los puntos medios conseguidos por ronda.
+                                Clasificación de selecciones por equipo según
+                                los puntos medios conseguidos por ronda.
                               </p>
                             </div>
                             <div className="flex items-center gap-1.5 self-end md:self-start">
@@ -17722,15 +17802,28 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 onClick={async () => {
                                   if (draftSummaryTableRef.current) {
                                     try {
-                                      const dataUrl = await domToDataUrl(draftSummaryTableRef.current, {
-                                        backgroundColor: "#ffffff",
-                                        scale: 2,
+                                      const dataUrl = await domToDataUrl(
+                                        draftSummaryTableRef.current,
+                                        {
+                                          
+                                          scale: 3,
+        backgroundColor: '#ffffff',
+                                        },
+                                      );
+                                      const blob = await (
+                                        await fetch(dataUrl)
+                                      ).blob();
+                                      const clipboardItem = new ClipboardItem({
+                                        [blob.type]: blob,
                                       });
-                                      const blob = await (await fetch(dataUrl)).blob();
-                                      const clipboardItem = new ClipboardItem({ [blob.type]: blob });
-                                      await navigator.clipboard.write([clipboardItem]);
+                                      await navigator.clipboard.write([
+                                        clipboardItem,
+                                      ]);
                                     } catch (err) {
-                                      console.error("Error al copiar imagen:", err);
+                                      console.error(
+                                        "Error al copiar imagen:",
+                                        err,
+                                      );
                                     }
                                   }
                                 }}
@@ -17742,13 +17835,24 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               <button
                                 onClick={() => {
                                   // Logic to copy table as text
-                                  const table = draftSummaryTableRef.current?.querySelector("table");
+                                  const table =
+                                    draftSummaryTableRef.current?.querySelector(
+                                      "table",
+                                    );
                                   if (table) {
                                     let text = "";
                                     const rows = table.querySelectorAll("tr");
-                                    rows.forEach(row => {
-                                      const cols = row.querySelectorAll("th, td");
-                                      const rowData = Array.from(cols).map(col => (col as HTMLElement).textContent?.trim() || "").join("\t");
+                                    rows.forEach((row) => {
+                                      const cols =
+                                        row.querySelectorAll("th, td");
+                                      const rowData = Array.from(cols)
+                                        .map(
+                                          (col) =>
+                                            (
+                                              col as HTMLElement
+                                            ).textContent?.trim() || "",
+                                        )
+                                        .join("\t");
                                       text += rowData + "\n";
                                     });
                                     navigator.clipboard.writeText(text);
@@ -17763,16 +17867,23 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 onClick={async () => {
                                   if (draftSummaryTableRef.current) {
                                     try {
-                                      const dataUrl = await domToDataUrl(draftSummaryTableRef.current, {
-                                        backgroundColor: "#ffffff",
-                                        scale: 2,
-                                      });
+                                      const dataUrl = await domToDataUrl(
+                                        draftSummaryTableRef.current,
+                                        {
+                                          
+                                          scale: 3,
+        backgroundColor: '#ffffff',
+                                        },
+                                      );
                                       const link = document.createElement("a");
                                       link.download = `resumen-draft-${new Date().toISOString().split("T")[0]}.png`;
                                       link.href = dataUrl;
                                       link.click();
                                     } catch (err) {
-                                      console.error("Error al descargar imagen:", err);
+                                      console.error(
+                                        "Error al descargar imagen:",
+                                        err,
+                                      );
                                     }
                                   }
                                 }}
@@ -17786,23 +17897,69 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <HelpCircle className="w-4 h-4" />
                                 </button>
                                 <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white border border-neutral-200 rounded-2xl shadow-2xl z-50 invisible group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all opacity-0 group-hover:opacity-100 ring-1 ring-black/5 pointer-events-none group-hover:pointer-events-auto">
-                                  <h4 className="font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3 text-sm">Criterios de Clasificación</h4>
+                                  <h4 className="font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3 text-sm">
+                                    Criterios de Clasificación
+                                  </h4>
                                   <ul className="space-y-3 text-xs text-neutral-600">
                                     <li className="flex gap-3">
-                                      <span className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold shadow-sm">G</span>
-                                      <span><strong className="text-blue-700">Ganador:</strong> Selección con la puntuación máxima absoluta en su ronda.</span>
+                                      <span className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold shadow-sm">
+                                        G
+                                      </span>
+                                      <span>
+                                        <strong className="text-blue-700">
+                                          Ganador:
+                                        </strong>{" "}
+                                        Selección con la puntuación máxima
+                                        absoluta en su ronda.
+                                      </span>
                                     </li>
                                     <li className="flex gap-3">
-                                      <span className="w-5 h-5 rounded-lg bg-green-100 text-green-700 flex items-center justify-center shrink-0 font-bold shadow-sm">B</span>
-                                      <span><strong className="text-green-700">Buenos:</strong> Selección igual o superior a la media de su ronda.</span>
+                                      <span className="w-5 h-5 rounded-lg bg-green-100 text-green-700 flex items-center justify-center shrink-0 font-bold shadow-sm">
+                                        B
+                                      </span>
+                                      <span>
+                                        <strong className="text-green-700">
+                                          Buenos:
+                                        </strong>{" "}
+                                        Selección igual o superior a la media de
+                                        su ronda.
+                                      </span>
                                     </li>
                                     <li className="flex gap-3">
-                                      <span className="w-5 h-5 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center shrink-0 font-bold shadow-sm">M</span>
-                                      <span><strong className="text-orange-700">Malos:</strong> Selección por debajo de la media de su ronda.</span>
+                                      <span className="w-5 h-5 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center shrink-0 font-bold shadow-sm">
+                                        M
+                                      </span>
+                                      <span>
+                                        <strong className="text-orange-700">
+                                          Malos:
+                                        </strong>{" "}
+                                        Selección por debajo de la media de su
+                                        ronda.
+                                      </span>
                                     </li>
                                     <li className="flex gap-3">
-                                      <span className="w-5 h-5 rounded-lg bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0 font-bold shadow-sm">S</span>
-                                      <span><strong className="text-neutral-900">Sin Puntos:</strong> Ciclistas que no han sumado puntos (0 pts).</span>
+                                      <span className="w-5 h-5 rounded-lg bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0 font-bold shadow-sm">
+                                        S
+                                      </span>
+                                      <span>
+                                        <strong className="text-neutral-900">
+                                          Sin Puntos:
+                                        </strong>{" "}
+                                        Ciclistas que no han sumado puntos (0
+                                        pts).
+                                      </span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                      <span className="w-5 h-5 rounded-lg bg-green-50 bg-opacity-50 border border-green-200 text-green-700 flex items-center justify-center shrink-0 font-bold shadow-sm">
+                                        %
+                                      </span>
+                                      <span>
+                                        <strong className="text-green-700">
+                                          Eficiencia:
+                                        </strong>{" "}
+                                        Porcentaje de picks buenos sobre el
+                                        total de las elecciones de ese equipo.
+                                      </span>
                                     </li>
                                   </ul>
                                 </div>
@@ -17815,25 +17972,48 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const raceDateByName: Record<string, string> = {};
                             files.carreras?.data?.forEach((row) => {
                               const carrera = getVal(row, "Carrera")?.trim();
-                              const categoria = getVal(row, "Categoría")?.trim();
+                              const categoria = getVal(
+                                row,
+                                "Categoría",
+                              )?.trim();
                               const fecha = getVal(row, "Fecha")?.trim();
-                              if (carrera && categoria) raceTypeByName[carrera] = categoria;
-                              if (carrera && fecha) raceDateByName[carrera] = fecha;
+                              if (carrera && categoria)
+                                raceTypeByName[carrera] = categoria;
+                              if (carrera && fecha)
+                                raceDateByName[carrera] = fecha;
                             });
 
                             const cyclistPointsQ: Record<string, number> = {};
                             leaderboard?.forEach((player) => {
                               player.detalles.forEach((d) => {
-                                const dateStr = raceDateByName[d.carrera] || d.fecha;
+                                const dateStr =
+                                  raceDateByName[d.carrera] || d.fecha;
                                 let matchesMonth = true;
                                 if (draftDatosMonthFilter.length > 0) {
                                   if (!dateStr) matchesMonth = false;
                                   else {
                                     const monthStr = dateStr.split("/")[1];
                                     if (monthStr) {
-                                      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-                                      const mName = monthNames[parseInt(monthStr, 10) - 1];
-                                      if (!draftDatosMonthFilter.includes(mName)) matchesMonth = false;
+                                      const monthNames = [
+                                        "Ene",
+                                        "Feb",
+                                        "Mar",
+                                        "Abr",
+                                        "May",
+                                        "Jun",
+                                        "Jul",
+                                        "Ago",
+                                        "Sep",
+                                        "Oct",
+                                        "Nov",
+                                        "Dic",
+                                      ];
+                                      const mName =
+                                        monthNames[parseInt(monthStr, 10) - 1];
+                                      if (
+                                        !draftDatosMonthFilter.includes(mName)
+                                      )
+                                        matchesMonth = false;
                                     } else matchesMonth = false;
                                   }
                                 }
@@ -17841,23 +18021,36 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 let matchesCategory = true;
                                 if (draftDatosCategoryFilter.length > 0) {
                                   const cat = raceTypeByName[d.carrera];
-                                  if (!cat || !draftDatosCategoryFilter.includes(cat)) matchesCategory = false;
+                                  if (
+                                    !cat ||
+                                    !draftDatosCategoryFilter.includes(cat)
+                                  )
+                                    matchesCategory = false;
                                 }
 
                                 if (matchesMonth && matchesCategory) {
-                                  cyclistPointsQ[d.ciclista] = (cyclistPointsQ[d.ciclista] || 0) + d.puntosObtenidos;
+                                  cyclistPointsQ[d.ciclista] =
+                                    (cyclistPointsQ[d.ciclista] || 0) +
+                                    d.puntosObtenidos;
                                 }
                               });
                             });
 
                             const statsArray: any[] = [];
                             files.elecciones.data.forEach((row) => {
-                              const teamName = (getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")) as string;
+                              const teamName = (getVal(row, "Nombre_Equipo") ||
+                                getVal(row, "Nombre_TG")) as string;
                               const ronda = parseInt(getVal(row, "Ronda"));
-                              const ciclista = getVal(row, "Ciclista") as string;
+                              const ciclista = getVal(
+                                row,
+                                "Ciclista",
+                              ) as string;
 
                               if (teamName && !isNaN(ronda)) {
-                                if (draftDatosTeamFilter.length === 0 || draftDatosTeamFilter.includes(teamName)) {
+                                if (
+                                  draftDatosTeamFilter.length === 0 ||
+                                  draftDatosTeamFilter.includes(teamName)
+                                ) {
                                   const pts = cyclistPointsQ[ciclista] || 0;
                                   statsArray.push({
                                     ciclista,
@@ -17870,137 +18063,220 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             });
 
                             if (statsArray.length === 0) {
-                              return <div className="text-sm text-neutral-500 italic">No hay suficientes datos.</div>;
+                              return (
+                                <div className="text-sm text-neutral-500 italic">
+                                  No hay suficientes datos.
+                                </div>
+                              );
                             }
 
-                            const teamData: Record<string, Record<number, { ciclista: string; puntos: number }[]>> = {};
+                            const teamData: Record<
+                              string,
+                              Record<
+                                number,
+                                { ciclista: string; puntos: number }[]
+                              >
+                            > = {};
                             const roundPoints: Record<number, number[]> = {};
                             const allTeamsSet = new Set<string>();
 
-                            statsArray.forEach(s => {
+                            statsArray.forEach((s) => {
                               allTeamsSet.add(s.equipo);
                               if (!teamData[s.equipo]) teamData[s.equipo] = {};
-                              if (!teamData[s.equipo][s.ronda]) teamData[s.equipo][s.ronda] = [];
-                              teamData[s.equipo][s.ronda].push({ ciclista: s.ciclista, puntos: s.puntos });
-                              
-                              if (!roundPoints[s.ronda]) roundPoints[s.ronda] = [];
+                              if (!teamData[s.equipo][s.ronda])
+                                teamData[s.equipo][s.ronda] = [];
+                              teamData[s.equipo][s.ronda].push({
+                                ciclista: s.ciclista,
+                                puntos: s.puntos,
+                              });
+
+                              if (!roundPoints[s.ronda])
+                                roundPoints[s.ronda] = [];
                               roundPoints[s.ronda].push(s.puntos);
                             });
 
-                            const roundStats: Record<number, { max: number; avg: number }> = {};
-                            const roundsList = Object.keys(roundPoints).map(r => parseInt(r));
-                            roundsList.forEach(r => {
+                            const roundStats: Record<
+                              number,
+                              { max: number; avg: number }
+                            > = {};
+                            const roundsList = Object.keys(roundPoints).map(
+                              (r) => parseInt(r),
+                            );
+                            roundsList.forEach((r) => {
                               const pts = roundPoints[r];
                               roundStats[r] = {
                                 max: Math.max(...pts),
-                                avg: pts.reduce((sum, val) => sum + val, 0) / pts.length
+                                avg:
+                                  pts.reduce((sum, val) => sum + val, 0) /
+                                  pts.length,
                               };
                             });
 
-                            const teamSummaries = Array.from(allTeamsSet).map(team => {
-                              let pickGanador = 0;
-                              let buenosPicks = 0;
-                              let malosPicks = 0;
-                              let sinPuntuar = 0;
-                              let totalPoints = 0;
-                              let totalPicks = 0;
+                            const teamSummaries = Array.from(allTeamsSet).map(
+                              (team) => {
+                                let pickGanador = 0;
+                                let buenosPicks = 0;
+                                let malosPicks = 0;
+                                let sinPuntuar = 0;
+                                let totalPoints = 0;
+                                let totalPicks = 0;
 
-                              const ganadoresList: string[] = [];
-                              const buenosList: string[] = [];
-                              const malosList: string[] = [];
-                              const sinPuntuarList: string[] = [];
+                                const ganadoresList: string[] = [];
+                                const buenosList: string[] = [];
+                                const malosList: string[] = [];
+                                const sinPuntuarList: string[] = [];
 
-                              roundsList.forEach(r => {
-                                const ptsArray = teamData[team]?.[r] || [];
-                                ptsArray.forEach(item => {
-                                  const pts = item.puntos;
-                                  const name = item.ciclista;
-                                  totalPoints += pts;
-                                  totalPicks++;
-                                  if (pts === 0) {
-                                    sinPuntuar++;
-                                    sinPuntuarList.push(name);
-                                    malosPicks++;
-                                  } else if (pts === roundStats[r].max && roundStats[r].max > 0) {
-                                    pickGanador++;
-                                    ganadoresList.push(name);
-                                    // Also counted as "bueno" for the table percentage
-                                    buenosPicks++;
-                                  } else if (pts >= roundStats[r].avg) {
-                                    buenosPicks++;
-                                    buenosList.push(name);
-                                  } else {
-                                    malosPicks++;
-                                    malosList.push(name);
-                                  }
+                                roundsList.forEach((r) => {
+                                  const ptsArray = teamData[team]?.[r] || [];
+                                  ptsArray.forEach((item) => {
+                                    const pts = item.puntos;
+                                    const name = item.ciclista;
+                                    totalPoints += pts;
+                                    totalPicks++;
+                                    if (pts === 0) {
+                                      sinPuntuar++;
+                                      sinPuntuarList.push(name);
+                                      malosPicks++;
+                                    } else if (
+                                      pts === roundStats[r].max &&
+                                      roundStats[r].max > 0
+                                    ) {
+                                      pickGanador++;
+                                      ganadoresList.push(name);
+                                      // Also counted as "bueno" for the table percentage
+                                      buenosPicks++;
+                                    } else if (pts >= roundStats[r].avg) {
+                                      buenosPicks++;
+                                      buenosList.push(name);
+                                    } else {
+                                      malosPicks++;
+                                      malosList.push(name);
+                                    }
+                                  });
                                 });
-                              });
 
-                              return { 
-                                team, 
-                                pickGanador, 
-                                buenosPicks, 
-                                malosPicks, 
-                                sinPuntuar, 
-                                totalPoints,
-                                totalPicks,
-                                ganadoresList,
-                                buenosList,
-                                malosList,
-                                sinPuntuarList,
-                                pctGanadores: totalPicks > 0 ? (pickGanador / totalPicks) * 100 : 0,
-                                pctBuenos: totalPicks > 0 ? (buenosPicks / totalPicks) * 100 : 0,
-                                pctMalos: totalPicks > 0 ? (malosPicks / totalPicks) * 100 : 0,
-                                pctSinPuntuar: totalPicks > 0 ? (sinPuntuar / totalPicks) * 100 : 0
-                              };
-                            });
+                                return {
+                                  team,
+                                  pickGanador,
+                                  buenosPicks,
+                                  malosPicks,
+                                  sinPuntuar,
+                                  totalPoints,
+                                  totalPicks,
+                                  ganadoresList,
+                                  buenosList,
+                                  malosList,
+                                  sinPuntuarList,
+                                  pctGanadores:
+                                    totalPicks > 0
+                                      ? (pickGanador / totalPicks) * 100
+                                      : 0,
+                                  pctBuenos:
+                                    totalPicks > 0
+                                      ? (buenosPicks / totalPicks) * 100
+                                      : 0,
+                                  pctMalos:
+                                    totalPicks > 0
+                                      ? (malosPicks / totalPicks) * 100
+                                      : 0,
+                                  pctSinPuntuar:
+                                    totalPicks > 0
+                                      ? (sinPuntuar / totalPicks) * 100
+                                      : 0,
+                                };
+                              },
+                            );
 
                             // Ordenación dinámica
-                            const sortedSummaries = [...teamSummaries].sort((a: any, b: any) => {
-                              const getVal = (item: any) => draftSummarySort.keys.reduce((sum, k) => sum + (Number(item[k]) || 0), 0);
-                              const valA = getVal(a);
-                              const valB = getVal(b);
-                              if (draftSummarySort.order === "asc") return valA > valB ? 1 : -1;
-                              return valA < valB ? 1 : -1;
-                            });
+                            const sortedSummaries = [...teamSummaries].sort(
+                              (a: any, b: any) => {
+                                const getVal = (item: any) =>
+                                  draftSummarySort.keys.reduce(
+                                    (sum, k) => sum + (Number(item[k]) || 0),
+                                    0,
+                                  );
+                                const valA = getVal(a);
+                                const valB = getVal(b);
+                                if (draftSummarySort.order === "asc")
+                                  return valA > valB ? 1 : -1;
+                                return valA < valB ? 1 : -1;
+                              },
+                            );
 
                             // Cálculo de máximos y mínimos para el coloreado
-                            const maxPickGanador = Math.max(...teamSummaries.map(t => t.pickGanador));
-                            const minPickGanador = Math.min(...teamSummaries.map(t => t.pickGanador));
-                            
-                            const maxBuenosPicks = Math.max(...teamSummaries.map(t => t.buenosPicks));
-                            const minBuenosPicks = Math.min(...teamSummaries.map(t => t.buenosPicks));
-                            
-                            const maxMalosPicks = Math.max(...teamSummaries.map(t => t.malosPicks));
-                            const minMalosPicks = Math.min(...teamSummaries.map(t => t.malosPicks));
-                            
-                            const maxSinPuntuar = Math.max(...teamSummaries.map(t => t.sinPuntuar));
-                            const minSinPuntuar = Math.min(...teamSummaries.map(t => t.sinPuntuar));
-                            
-                            const maxTotalPoints = Math.max(...teamSummaries.map(t => t.totalPoints));
-                            const minTotalPoints = Math.min(...teamSummaries.map(t => t.totalPoints));
+                            const maxPickGanador = Math.max(
+                              ...teamSummaries.map((t) => t.pickGanador),
+                            );
+                            const minPickGanador = Math.min(
+                              ...teamSummaries.map((t) => t.pickGanador),
+                            );
+
+                            const maxBuenosPicks = Math.max(
+                              ...teamSummaries.map((t) => t.buenosPicks),
+                            );
+                            const minBuenosPicks = Math.min(
+                              ...teamSummaries.map((t) => t.buenosPicks),
+                            );
+
+                            const maxMalosPicks = Math.max(
+                              ...teamSummaries.map((t) => t.malosPicks),
+                            );
+                            const minMalosPicks = Math.min(
+                              ...teamSummaries.map((t) => t.malosPicks),
+                            );
+
+                            const maxSinPuntuar = Math.max(
+                              ...teamSummaries.map((t) => t.sinPuntuar),
+                            );
+                            const minSinPuntuar = Math.min(
+                              ...teamSummaries.map((t) => t.sinPuntuar),
+                            );
+
+                            const maxTotalPoints = Math.max(
+                              ...teamSummaries.map((t) => t.totalPoints),
+                            );
+                            const minTotalPoints = Math.min(
+                              ...teamSummaries.map((t) => t.totalPoints),
+                            );
 
                             const toggleSort = (key: string) => {
-                              setDraftSummarySort(prev => {
-                                const isSingleMatch = prev.keys.length === 1 && prev.keys[0] === key;
+                              setDraftSummarySort((prev) => {
+                                const isSingleMatch =
+                                  prev.keys.length === 1 &&
+                                  prev.keys[0] === key;
                                 return {
                                   keys: [key],
-                                  order: isSingleMatch ? (prev.order === "asc" ? "desc" : "asc") : "desc"
+                                  order: isSingleMatch
+                                    ? prev.order === "asc"
+                                      ? "desc"
+                                      : "asc"
+                                    : "desc",
                                 };
                               });
                             };
 
                             const SortIcon = ({ col }: { col: string }) => {
-                              const isActive = draftSummarySort.keys.length === 1 && draftSummarySort.keys[0] === col;
-                              if (!isActive) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
-                              return draftSummarySort.order === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+                              const isActive =
+                                draftSummarySort.keys.length === 1 &&
+                                draftSummarySort.keys[0] === col;
+                              if (!isActive)
+                                return (
+                                  <ArrowUpDown className="w-3 h-3 opacity-30" />
+                                );
+                              return draftSummarySort.order === "asc" ? (
+                                <ChevronUp className="w-3 h-3" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3" />
+                              );
                             };
 
                             // Data for Chart
-                            const chartData = sortedSummaries.map(s => {
+                            const chartData = sortedSummaries.map((s) => {
                               const jugador = teamToPlayerMap[s.team] || s.team;
                               const order = playerOrderMap[jugador];
-                              const equipoVisual = order ? `${s.team} [#${order}]` : s.team;
+                              const equipoVisual = order
+                                ? `${s.team} [#${order}]`
+                                : s.team;
                               return {
                                 equipo: equipoVisual,
                                 fullEquipo: s.team,
@@ -18014,11 +18290,15 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 maloList: s.malosList,
                                 nuloList: s.sinPuntuarList,
                                 pctBuenos: s.pctBuenos.toFixed(1),
-                                pctGanadores: s.pctGanadores.toFixed(1)
+                                pctGanadores: s.pctGanadores.toFixed(1),
                               };
                             });
 
-                            const CustomDraftTooltip = ({ active, payload, label }: any) => {
+                            const CustomDraftTooltip = ({
+                              active,
+                              payload,
+                              label,
+                            }: any) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
                                 return (
@@ -18028,26 +18308,47 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </div>
                                     <div className="space-y-4">
                                       {payload.map((entry: any) => {
-                                        const list = data[entry.dataKey + "List"] || [];
-                                        if (entry.value === 0 && list.length === 0) return null;
-                                        
+                                        const list =
+                                          data[entry.dataKey + "List"] || [];
+                                        if (
+                                          entry.value === 0 &&
+                                          list.length === 0
+                                        )
+                                          return null;
+
                                         // Label adjustment for "bueno" vs "buenosPicks"
                                         let displayLabel = entry.name;
                                         let displayValue = entry.value;
                                         if (entry.dataKey === "bueno") {
-                                          displayValue = data.ganador + data.bueno;
-                                          displayLabel = "Picks Buenos (incl. ganadores)";
+                                          displayValue =
+                                            data.ganador + data.bueno;
+                                          displayLabel =
+                                            "Picks Buenos (incl. ganadores)";
                                         }
 
                                         return (
                                           <div key={entry.dataKey}>
                                             <div className="flex items-center justify-between gap-4 mb-1">
-                                              <div className="flex items-center gap-1.5 font-bold" style={{ color: entry.fill }}>
-                                                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: entry.fill }} />
+                                              <div
+                                                className="flex items-center gap-1.5 font-bold"
+                                                style={{ color: entry.fill }}
+                                              >
+                                                <div
+                                                  className="w-2.5 h-2.5 rounded-sm"
+                                                  style={{
+                                                    backgroundColor: entry.fill,
+                                                  }}
+                                                />
                                                 {entry.name}
                                               </div>
                                               <div className="font-mono bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-100 text-neutral-600">
-                                                {entry.value} ({((entry.value / data.totalPicks) * 100).toFixed(0)}%)
+                                                {entry.value} (
+                                                {(
+                                                  (entry.value /
+                                                    data.totalPicks) *
+                                                  100
+                                                ).toFixed(0)}
+                                                %)
                                               </div>
                                             </div>
                                             {list.length > 0 && (
@@ -18060,8 +18361,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       })}
                                     </div>
                                     <div className="mt-4 pt-2 border-t border-neutral-100 flex justify-between items-center text-[10px] text-neutral-400 font-medium">
-                                      <span>Total Picks: {data.totalPicks}</span>
-                                      <span className="text-green-600">Eficiencia: {data.pctBuenos}%</span>
+                                      <span>
+                                        Total Picks: {data.totalPicks}
+                                      </span>
+                                      <span className="text-green-600">
+                                        Eficiencia: {data.pctBuenos}%
+                                      </span>
                                     </div>
                                   </div>
                                 );
@@ -18071,74 +18376,109 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                             return (
                               <div className="space-y-8">
-                                <div className="overflow-x-auto rounded-xl border border-neutral-200 shadow-sm bg-white" ref={draftSummaryTableRef}>
+                                <div
+                                  className="overflow-x-auto rounded-xl border border-neutral-200 shadow-sm bg-white"
+                                  ref={draftSummaryTableRef}
+                                >
                                   <table className="w-full text-sm text-left border-collapse">
                                     <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
                                       <tr>
-                                        <th className="px-3 py-2.5 font-bold border-b border-neutral-200">Equipo</th>
-                                        <th 
+                                        <th className="px-3 py-2.5 font-bold border-b border-neutral-200">
+                                          Equipo
+                                        </th>
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-blue-100/50 transition-colors"
-                                          onClick={() => toggleSort("pctGanadores")}
+                                          onClick={() =>
+                                            toggleSort("pctGanadores")
+                                          }
                                         >
                                           <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-blue-700">Ganadores</span>
+                                            <span className="text-blue-700">
+                                              Ganadores
+                                            </span>
                                             <div className="flex items-center gap-1">
-                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <span className="normal-case font-medium text-[9px] opacity-70">
+                                                %
+                                              </span>
                                               <SortIcon col="pctGanadores" />
                                             </div>
                                           </div>
                                         </th>
-                                        <th 
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-green-100/50 transition-colors"
-                                          onClick={() => toggleSort("pctBuenos")}
+                                          onClick={() =>
+                                            toggleSort("pctBuenos")
+                                          }
                                         >
                                           <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-green-700">Buenos</span>
+                                            <span className="text-green-700">
+                                              Buenos
+                                            </span>
                                             <div className="flex items-center gap-1">
-                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <span className="normal-case font-medium text-[9px] opacity-70">
+                                                %
+                                              </span>
                                               <SortIcon col="pctBuenos" />
                                             </div>
                                           </div>
                                         </th>
-                                        <th 
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-orange-100/50 transition-colors"
                                           onClick={() => toggleSort("pctMalos")}
                                         >
                                           <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-orange-700">Malos</span>
+                                            <span className="text-orange-700">
+                                              Malos
+                                            </span>
                                             <div className="flex items-center gap-1">
-                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <span className="normal-case font-medium text-[9px] opacity-70">
+                                                %
+                                              </span>
                                               <SortIcon col="pctMalos" />
                                             </div>
                                           </div>
                                         </th>
-                                        <th 
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-neutral-200 transition-colors"
-                                          onClick={() => toggleSort("pctSinPuntuar")}
+                                          onClick={() =>
+                                            toggleSort("pctSinPuntuar")
+                                          }
                                         >
                                           <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-neutral-700">Sin Puntos</span>
+                                            <span className="text-neutral-700">
+                                              Sin Puntos
+                                            </span>
                                             <div className="flex items-center gap-1">
-                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <span className="normal-case font-medium text-[9px] opacity-70">
+                                                %
+                                              </span>
                                               <SortIcon col="pctSinPuntuar" />
                                             </div>
                                           </div>
                                         </th>
-                                        <th 
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-center cursor-pointer hover:bg-green-100/50 transition-colors"
-                                          onClick={() => toggleSort("pctBuenos")}
+                                          onClick={() =>
+                                            toggleSort("pctBuenos")
+                                          }
                                         >
                                           <div className="flex flex-col items-center gap-0.5">
-                                            <span className="text-green-800">Eficiencia</span>
+                                            <span className="text-green-800">
+                                              Eficiencia
+                                            </span>
                                             <div className="flex items-center gap-1">
-                                              <span className="normal-case font-medium text-[9px] opacity-70">%</span>
+                                              <span className="normal-case font-medium text-[9px] opacity-70">
+                                                %
+                                              </span>
                                               <SortIcon col="pctBuenos" />
                                             </div>
                                           </div>
                                         </th>
-                                        <th 
+                                        <th
                                           className="px-3 py-2.5 font-bold border-b border-neutral-200 text-right cursor-pointer hover:bg-neutral-100 transition-colors"
-                                          onClick={() => toggleSort("totalPoints")}
+                                          onClick={() =>
+                                            toggleSort("totalPoints")
+                                          }
                                         >
                                           <div className="flex items-center justify-end gap-1.5">
                                             <span>Total Pts</span>
@@ -18149,81 +18489,171 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100">
                                       {sortedSummaries.map((summary, idx) => {
-                                        const jugador = teamToPlayerMap[summary.team] || summary.team;
+                                        const jugador =
+                                          teamToPlayerMap[summary.team] ||
+                                          summary.team;
                                         const order = playerOrderMap[jugador];
-                                        const teamFormatted = order ? `${summary.team} [#${order}]` : summary.team;
-                                        
-                                        const isMaxPG = summary.pickGanador === maxPickGanador && maxPickGanador !== minPickGanador;
-                                        const isMinPG = summary.pickGanador === minPickGanador && maxPickGanador !== minPickGanador;
+                                        const teamFormatted = order
+                                          ? `${summary.team} [#${order}]`
+                                          : summary.team;
 
-                                        const isMaxBP = summary.buenosPicks === maxBuenosPicks && maxBuenosPicks !== minBuenosPicks;
-                                        const isMinBP = summary.buenosPicks === minBuenosPicks && maxBuenosPicks !== minBuenosPicks;
+                                        const isMaxPG =
+                                          summary.pickGanador ===
+                                            maxPickGanador &&
+                                          maxPickGanador !== minPickGanador;
+                                        const isMinPG =
+                                          summary.pickGanador ===
+                                            minPickGanador &&
+                                          maxPickGanador !== minPickGanador;
 
-                                        const isMaxMP = summary.malosPicks === maxMalosPicks && maxMalosPicks !== minMalosPicks;
-                                        const isMinMP = summary.malosPicks === minMalosPicks  && maxMalosPicks !== minMalosPicks;
+                                        const isMaxBP =
+                                          summary.buenosPicks ===
+                                            maxBuenosPicks &&
+                                          maxBuenosPicks !== minBuenosPicks;
+                                        const isMinBP =
+                                          summary.buenosPicks ===
+                                            minBuenosPicks &&
+                                          maxBuenosPicks !== minBuenosPicks;
 
-                                        const isMaxSP = summary.sinPuntuar === maxSinPuntuar  && maxSinPuntuar !== minSinPuntuar;
-                                        const isMinSP = summary.sinPuntuar === minSinPuntuar  && maxSinPuntuar !== minSinPuntuar;
+                                        const isMaxMP =
+                                          summary.malosPicks ===
+                                            maxMalosPicks &&
+                                          maxMalosPicks !== minMalosPicks;
+                                        const isMinMP =
+                                          summary.malosPicks ===
+                                            minMalosPicks &&
+                                          maxMalosPicks !== minMalosPicks;
 
-                                        const isMaxTP = summary.totalPoints === maxTotalPoints  && maxTotalPoints !== minTotalPoints;
-                                        const isMinTP = summary.totalPoints === minTotalPoints  && maxTotalPoints !== minTotalPoints;
+                                        const isMaxSP =
+                                          summary.sinPuntuar ===
+                                            maxSinPuntuar &&
+                                          maxSinPuntuar !== minSinPuntuar;
+                                        const isMinSP =
+                                          summary.sinPuntuar ===
+                                            minSinPuntuar &&
+                                          maxSinPuntuar !== minSinPuntuar;
+
+                                        const isMaxTP =
+                                          summary.totalPoints ===
+                                            maxTotalPoints &&
+                                          maxTotalPoints !== minTotalPoints;
+                                        const isMinTP =
+                                          summary.totalPoints ===
+                                            minTotalPoints &&
+                                          maxTotalPoints !== minTotalPoints;
 
                                         return (
-                                          <tr key={summary.team} className="hover:bg-neutral-50/80 transition-colors">
+                                          <tr
+                                            key={summary.team}
+                                            className="hover:bg-neutral-50/80 transition-colors"
+                                          >
                                             <td className="px-3 py-1.5 font-medium text-neutral-900 border-r border-neutral-100 flex items-center gap-2">
                                               <div className="w-4 h-4 rounded flex items-center justify-center bg-neutral-100/80 text-[9px] text-neutral-500 shrink-0 select-none">
                                                 {idx + 1}
                                               </div>
-                                              <span className="truncate max-w-[140px]" title={summary.team}>{teamFormatted}</span>
+                                              <span
+                                                className="truncate max-w-[140px]"
+                                                title={summary.team}
+                                              >
+                                                {teamFormatted}
+                                              </span>
                                             </td>
-                                            <td className={cn("px-3 py-1.5 text-center text-sm font-bold", 
-                                              isMaxPG ? "text-green-700 bg-green-100/80" : 
-                                              isMinPG ? "text-red-700 bg-red-100/80" : 
-                                              "text-blue-700 bg-blue-50/30"
-                                            )}>
+                                            <td
+                                              className={cn(
+                                                "px-2 py-1 text-center text-sm font-bold",
+                                                isMaxPG
+                                                  ? "text-green-700 bg-green-100/80"
+                                                  : isMinPG
+                                                    ? "text-red-700 bg-red-100/80"
+                                                    : "text-blue-700 bg-blue-50/30",
+                                              )}
+                                            >
                                               <div className="flex flex-col">
-                                                <span>{summary.pickGanador}</span>
-                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctGanadores.toFixed(1)}%</span>
+                                                <span>
+                                                  {summary.pickGanador}
+                                                </span>
+                                                <span className="text-[10px] opacity-60 font-medium">
+                                                  {summary.pctGanadores.toFixed(
+                                                    1,
+                                                  )}
+                                                  %
+                                                </span>
                                               </div>
                                             </td>
-                                            <td className={cn("px-3 py-1.5 text-center text-sm font-semibold",
-                                              isMaxBP ? "text-green-700 bg-green-100/80" : 
-                                              isMinBP ? "text-red-700 bg-red-100/80" : 
-                                              "text-green-700 bg-green-50/30"
-                                            )}>
+                                            <td
+                                              className={cn(
+                                                "px-2 py-1 text-center text-sm font-semibold",
+                                                isMaxBP
+                                                  ? "text-green-700 bg-green-100/80"
+                                                  : isMinBP
+                                                    ? "text-red-700 bg-red-100/80"
+                                                    : "text-green-700 bg-green-50/30",
+                                              )}
+                                            >
                                               <div className="flex flex-col">
-                                                <span>{summary.buenosPicks}</span>
-                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctBuenos.toFixed(1)}%</span>
+                                                <span>
+                                                  {summary.buenosPicks}
+                                                </span>
+                                                <span className="text-[10px] opacity-60 font-medium">
+                                                  {summary.pctBuenos.toFixed(1)}
+                                                  %
+                                                </span>
                                               </div>
                                             </td>
-                                            <td className={cn("px-3 py-1.5 text-center text-sm font-medium",
-                                              isMaxMP ? "text-red-700 bg-red-100/80" : 
-                                              isMinMP ? "text-green-700 bg-green-100/80" : 
-                                              "text-orange-700 bg-orange-50/30"
-                                            )}>
+                                            <td
+                                              className={cn(
+                                                "px-2 py-1 text-center text-sm font-medium",
+                                                isMaxMP
+                                                  ? "text-red-700 bg-red-100/80"
+                                                  : isMinMP
+                                                    ? "text-green-700 bg-green-100/80"
+                                                    : "text-orange-700 bg-orange-50/30",
+                                              )}
+                                            >
                                               <div className="flex flex-col">
-                                                <span>{summary.malosPicks}</span>
-                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctMalos.toFixed(1)}%</span>
+                                                <span>
+                                                  {summary.malosPicks}
+                                                </span>
+                                                <span className="text-[10px] opacity-60 font-medium">
+                                                  {summary.pctMalos.toFixed(1)}%
+                                                </span>
                                               </div>
                                             </td>
-                                            <td className={cn("px-3 py-1.5 text-center text-sm font-medium",
-                                              isMaxSP ? "text-red-700 bg-red-100/80" : 
-                                              isMinSP ? "text-green-700 bg-green-100/80" : 
-                                              "text-neutral-600 bg-neutral-100/30 font-medium"
-                                            )}>
+                                            <td
+                                              className={cn(
+                                                "px-2 py-1 text-center text-sm font-medium",
+                                                isMaxSP
+                                                  ? "text-red-700 bg-red-100/80"
+                                                  : isMinSP
+                                                    ? "text-green-700 bg-green-100/80"
+                                                    : "text-neutral-600 bg-neutral-100/30 font-medium",
+                                              )}
+                                            >
                                               <div className="flex flex-col">
-                                                <span>{summary.sinPuntuar}</span>
-                                                <span className="text-[10px] opacity-60 font-medium">{summary.pctSinPuntuar.toFixed(1)}%</span>
+                                                <span>
+                                                  {summary.sinPuntuar}
+                                                </span>
+                                                <span className="text-[10px] opacity-60 font-medium">
+                                                  {summary.pctSinPuntuar.toFixed(
+                                                    1,
+                                                  )}
+                                                  %
+                                                </span>
                                               </div>
                                             </td>
-                                            <td className="px-3 py-1.5 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
+                                            <td className="px-2 py-1 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
                                               {summary.pctBuenos.toFixed(1)}%
                                             </td>
-                                            <td className={cn("px-3 py-1.5 text-right tabular-nums text-sm",
-                                              isMaxTP ? "text-green-700 font-black bg-green-50" : 
-                                              isMinTP ? "text-red-700 font-black bg-red-50" : 
-                                              "font-bold text-neutral-900"
-                                            )}>
+                                            <td
+                                              className={cn(
+                                                "px-3 py-1.5 text-right tabular-nums text-sm",
+                                                isMaxTP
+                                                  ? "text-green-700 font-black bg-green-50"
+                                                  : isMinTP
+                                                    ? "text-red-700 font-black bg-red-50"
+                                                    : "font-bold text-neutral-900",
+                                              )}
+                                            >
                                               {summary.totalPoints.toLocaleString()}
                                             </td>
                                           </tr>
@@ -18233,65 +18663,127 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </table>
                                 </div>
 
-                                <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-hidden" ref={draftChartRef}>
+                                <div
+                                  className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-hidden"
+                                  ref={draftChartRef}
+                                >
                                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                     <div>
                                       <h3 className="font-semibold text-lg text-neutral-900 flex items-center gap-2">
                                         <BarChart3 className="w-5 h-5 text-blue-600" />
                                         Rentabilidad de Picks por Equipo
                                       </h3>
-                                      <p className="text-xs text-neutral-500 mt-1">Eficiencia relativa según segmentación de rendimiento por ronda</p>
+                                      <p className="text-xs text-neutral-500 mt-1">
+                                        Eficiencia relativa según segmentación
+                                        de rendimiento por ronda
+                                      </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                       <div className="flex items-center gap-1 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
-                                        <span className="text-[10px] text-neutral-400 font-bold px-2 uppercase tracking-wider">Ordenar por:</span>
-                                      <details className="relative group">
-                                        <summary className="text-xs bg-white border border-neutral-200 rounded-md px-3 py-1.5 outline-none font-medium flex items-center gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                                          <span>Opciones ({draftSummarySort.keys.length})</span>
-                                          <ChevronDown className="w-3 h-3" />
-                                        </summary>
-                                        <div className="absolute right-0 top-full mt-1 w-48 p-2 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] flex flex-col gap-1">
-                                          {[
-                                            { id: 'pctGanadores', label: '% Ganadores' },
-                                            { id: 'pctBuenos', label: '% Buenos' },
-                                            { id: 'pctMalos', label: '% Malos' },
-                                            { id: 'pctSinPuntuar', label: '% Sin Puntos' },
-                                            { id: 'totalPoints', label: 'Puntos Totales' },
-                                          ].map(opt => (
-                                            <label key={opt.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
-                                              <input 
-                                                type="checkbox" 
-                                                className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                                                checked={draftSummarySort.keys.includes(opt.id)}
-                                                onChange={(e) => {
-                                                  setDraftSummarySort(prev => {
-                                                    const keys = e.target.checked 
-                                                      ? [...prev.keys, opt.id] 
-                                                      : prev.keys.filter(k => k !== opt.id);
-                                                    return { ...prev, keys: keys.length ? keys : prev.keys };
-                                                  });
-                                                }}
-                                              />
-                                              <span className="text-xs text-neutral-700 font-medium">{opt.label}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      </details>
+                                        <span className="text-[10px] text-neutral-400 font-bold px-2 uppercase tracking-wider">
+                                          Ordenar por:
+                                        </span>
+                                        <details className="relative group">
+                                          <summary className="text-xs bg-white border border-neutral-200 rounded-md px-3 py-1.5 outline-none font-medium flex items-center gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                                            <span>
+                                              Opciones (
+                                              {draftSummarySort.keys.length})
+                                            </span>
+                                            <ChevronDown className="w-3 h-3" />
+                                          </summary>
+                                          <div className="absolute right-0 top-full mt-1 w-48 p-2 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] flex flex-col gap-1">
+                                            {[
+                                              {
+                                                id: "pctGanadores",
+                                                label: "% Ganadores",
+                                              },
+                                              {
+                                                id: "pctBuenos",
+                                                label: "% Buenos",
+                                              },
+                                              {
+                                                id: "pctMalos",
+                                                label: "% Malos",
+                                              },
+                                              {
+                                                id: "pctSinPuntuar",
+                                                label: "% Sin Puntos",
+                                              },
+                                              {
+                                                id: "totalPoints",
+                                                label: "Puntos Totales",
+                                              },
+                                            ].map((opt) => (
+                                              <label
+                                                key={opt.id}
+                                                className="flex items-center gap-2 px-2 py-1.5 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors"
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                                  checked={draftSummarySort.keys.includes(
+                                                    opt.id,
+                                                  )}
+                                                  onChange={(e) => {
+                                                    setDraftSummarySort(
+                                                      (prev) => {
+                                                        const keys = e.target
+                                                          .checked
+                                                          ? [
+                                                              ...prev.keys,
+                                                              opt.id,
+                                                            ]
+                                                          : prev.keys.filter(
+                                                              (k) =>
+                                                                k !== opt.id,
+                                                            );
+                                                        return {
+                                                          ...prev,
+                                                          keys: keys.length
+                                                            ? keys
+                                                            : prev.keys,
+                                                        };
+                                                      },
+                                                    );
+                                                  }}
+                                                />
+                                                <span className="text-xs text-neutral-700 font-medium">
+                                                  {opt.label}
+                                                </span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </details>
                                       </div>
                                       <div className="flex items-center gap-1">
                                         <button
                                           onClick={async () => {
                                             if (draftChartRef.current) {
                                               try {
-                                                const dataUrl = await domToDataUrl(draftChartRef.current, {
-                                                  backgroundColor: "#ffffff",
-                                                  scale: 2,
-                                                });
-                                                const blob = await (await fetch(dataUrl)).blob();
-                                                const clipboardItem = new ClipboardItem({ [blob.type]: blob });
-                                                await navigator.clipboard.write([clipboardItem]);
+                                                const dataUrl =
+                                                  await domToDataUrl(
+                                                    draftChartRef.current,
+                                                    {
+                                                      
+                                                      scale: 3,
+        backgroundColor: '#ffffff',
+                                                    },
+                                                  );
+                                                const blob = await (
+                                                  await fetch(dataUrl)
+                                                ).blob();
+                                                const clipboardItem =
+                                                  new ClipboardItem({
+                                                    [blob.type]: blob,
+                                                  });
+                                                await navigator.clipboard.write(
+                                                  [clipboardItem],
+                                                );
                                               } catch (err) {
-                                                console.error("Error al copiar imagen:", err);
+                                                console.error(
+                                                  "Error al copiar imagen:",
+                                                  err,
+                                                );
                                               }
                                             }
                                           }}
@@ -18304,16 +18796,25 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           onClick={async () => {
                                             if (draftChartRef.current) {
                                               try {
-                                                const dataUrl = await domToDataUrl(draftChartRef.current, {
-                                                  backgroundColor: "#ffffff",
-                                                  scale: 2,
-                                                });
-                                                const link = document.createElement("a");
+                                                const dataUrl =
+                                                  await domToDataUrl(
+                                                    draftChartRef.current,
+                                                    {
+                                                      
+                                                      scale: 3,
+        backgroundColor: '#ffffff',
+                                                    },
+                                                  );
+                                                const link =
+                                                  document.createElement("a");
                                                 link.download = `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`;
                                                 link.href = dataUrl;
                                                 link.click();
                                               } catch (err) {
-                                                console.error("Error al descargar gráfico:", err);
+                                                console.error(
+                                                  "Error al descargar gráfico:",
+                                                  err,
+                                                );
                                               }
                                             }
                                           }}
@@ -18326,77 +18827,143 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </div>
                                   </div>
                                   <div className="h-[500px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                      <BarChart 
-                                        data={chartData} 
+                                    <ResponsiveContainer
+                                      width="100%"
+                                      height="100%"
+                                    >
+                                      <BarChart
+                                        data={chartData}
                                         layout="vertical"
-                                        margin={{ top: 10, right: 30, left: 20, bottom: 0 }}
+                                        margin={{
+                                          top: 10,
+                                          right: 30,
+                                          left: 20,
+                                          bottom: 0,
+                                        }}
                                         barSize={20}
                                       >
-                                        <CartesianGrid strokeDasharray="2 2" horizontal={false} stroke="#f0f0f0" />
-                                        <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} stroke="#9ca3af" />
-                                        <YAxis 
-                                          dataKey="equipo" 
-                                          type="category" 
-                                          tickLine={false} 
-                                          axisLine={false} 
-                                          width={220} 
+                                        <CartesianGrid
+                                          strokeDasharray="2 2"
+                                          horizontal={false}
+                                          stroke="#f0f0f0"
+                                        />
+                                        <XAxis
+                                          type="number"
+                                          fontSize={10}
+                                          tickLine={false}
+                                          axisLine={false}
+                                          stroke="#9ca3af"
+                                        />
+                                        <YAxis
+                                          dataKey="equipo"
+                                          type="category"
+                                          tickLine={false}
+                                          axisLine={false}
+                                          width={220}
                                           stroke="#4b5563"
                                           interval={0}
                                           tick={({ x, y, payload }) => (
-                                            <g transform={`translate(${x},${y})`}>
-                                              <text x={0} y={0} dy={4} textAnchor="end" fill="#4b5563" fontSize={11} fontWeight={600}>
+                                            <g
+                                              transform={`translate(${x},${y})`}
+                                            >
+                                              <text
+                                                x={0}
+                                                y={0}
+                                                dy={4}
+                                                textAnchor="end"
+                                                fill="#4b5563"
+                                                fontSize={11}
+                                                fontWeight={600}
+                                              >
                                                 {payload.value}
                                               </text>
                                             </g>
                                           )}
                                         />
-                                        <RechartsTooltip 
+                                        <RechartsTooltip
                                           content={<CustomDraftTooltip />}
-                                          cursor={{ fill: '#f8fafc', opacity: 0.5 }}
+                                          cursor={{
+                                            fill: "#f8fafc",
+                                            opacity: 0.5,
+                                          }}
                                         />
-                                        <Legend 
-                                          verticalAlign="top" 
+                                        <Legend
+                                          verticalAlign="top"
                                           align="right"
                                           iconType="square"
-                                          wrapperStyle={{ fontSize: '11px', paddingBottom: '20px', fontWeight: '500' }} 
+                                          wrapperStyle={{
+                                            fontSize: "11px",
+                                            paddingBottom: "20px",
+                                            fontWeight: "500",
+                                          }}
                                         />
-                                        <Bar dataKey="ganador" stackId="a" fill="#15803d" name="Ganadores" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="bueno" stackId="a" fill="#4ade80" name="Buenos" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="malo" stackId="a" fill="#fb923c" name="Malos" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="nulo" stackId="a" fill="#d4d4d8" name="Sin Puntos" radius={[0, 4, 4, 0]} />
+                                        <Bar
+                                          dataKey="ganador"
+                                          stackId="a"
+                                          fill="#15803d"
+                                          name="Ganadores"
+                                          radius={[0, 0, 0, 0]}
+                                        />
+                                        <Bar
+                                          dataKey="bueno"
+                                          stackId="a"
+                                          fill="#4ade80"
+                                          name="Buenos"
+                                          radius={[0, 0, 0, 0]}
+                                        />
+                                        <Bar
+                                          dataKey="malo"
+                                          stackId="a"
+                                          fill="#fb923c"
+                                          name="Malos"
+                                          radius={[0, 0, 0, 0]}
+                                        />
+                                        <Bar
+                                          dataKey="nulo"
+                                          stackId="a"
+                                          fill="#d4d4d8"
+                                          name="Sin Puntos"
+                                          radius={[0, 4, 4, 0]}
+                                        />
                                       </BarChart>
                                     </ResponsiveContainer>
                                   </div>
                                   <p className="text-[11px] text-neutral-400 mt-6 text-center italic">
-                                    * Pasa el ratón sobre las barras para ver los nombres de los ciclistas de cada categoría.
+                                    * Pasa el ratón sobre las barras para ver
+                                    los nombres de los ciclistas de cada
+                                    categoría.
                                   </p>
                                 </div>
 
                                 {/* Modal de expansión del Resumen del Draft */}
                                 {isDraftSummaryExpanded && (
                                   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-neutral-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                                    <div 
-                                      className="bg-white w-full max-w-6xl h-full max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-neutral-200"
-                                    >
+                                    <div className="bg-white w-full max-w-6xl h-full max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-neutral-200">
                                       <div className="p-6 md:p-8 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/30">
                                         <div className="flex items-center gap-4">
                                           <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
                                             <Activity className="w-6 h-6" />
                                           </div>
                                           <div>
-                                            <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Análisis de Rendimiento (Draft)</h2>
-                                            <p className="text-sm text-neutral-500 font-medium">Visualización detallada y comparativa de selecciones</p>
+                                            <h2 className="text-2xl font-black text-neutral-900 tracking-tight">
+                                              Análisis de Rendimiento (Draft)
+                                            </h2>
+                                            <p className="text-sm text-neutral-500 font-medium">
+                                              Visualización detallada y
+                                              comparativa de selecciones
+                                            </p>
                                           </div>
                                         </div>
-                                        <button 
-                                          onClick={() => setIsDraftSummaryExpanded(false)}
+                                        <button
+                                          onClick={() =>
+                                            setIsDraftSummaryExpanded(false)
+                                          }
                                           className="w-12 h-12 flex items-center justify-center hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-900 transition-all active:scale-95"
                                         >
                                           <X className="w-6 h-6" />
                                         </button>
                                       </div>
-                                      
+
                                       <div className="flex-1 overflow-auto p-4 md:p-8 bg-neutral-50/30">
                                         <div className="space-y-8 max-w-5xl mx-auto">
                                           {/* Re-using the table in extreme detail */}
@@ -18404,94 +18971,182 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             <table className="w-full text-sm text-left border-collapse">
                                               <thead className="text-[10px] text-neutral-400 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
                                                 <tr>
-                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">Pos.</th>
-                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">Equipo Manager</th>
-                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Ganadores</th>
-                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Buenos</th>
-                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Malos</th>
-                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">Sin Puntos</th>
-                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center text-green-700">Eficiencia</th>
-                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100 text-right">Puntos Totales</th>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">
+                                                    Pos.
+                                                  </th>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100">
+                                                    Equipo Manager
+                                                  </th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">
+                                                    Ganadores
+                                                  </th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">
+                                                    Buenos
+                                                  </th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">
+                                                    Malos
+                                                  </th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center">
+                                                    Sin Puntos
+                                                  </th>
+                                                  <th className="px-4 py-4 font-bold border-b border-neutral-100 text-center text-green-700">
+                                                    Eficiencia
+                                                  </th>
+                                                  <th className="px-6 py-4 font-bold border-b border-neutral-100 text-right">
+                                                    Puntos Totales
+                                                  </th>
                                                 </tr>
                                               </thead>
                                               <tbody className="divide-y divide-neutral-50">
-                                                {sortedSummaries.map((summary, idx) => (
-                                                  <tr key={summary.team} className="hover:bg-neutral-50/50 transition-colors group">
-                                                    <td className="px-6 py-3 border-r border-neutral-50 font-mono text-neutral-300">
-                                                      {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                                                    </td>
-                                                    <td className="px-6 py-3 border-r border-neutral-50 font-bold text-neutral-900">
-                                                      {summary.team}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                      <div className="flex flex-col">
-                                                        <span className="font-black text-blue-600">{summary.pickGanador}</span>
-                                                        <span className="text-[10px] text-neutral-400 font-medium">{summary.pctGanadores.toFixed(1)}%</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center bg-green-50/30">
-                                                      <div className="flex flex-col">
-                                                        <span className="font-black text-green-600">{summary.buenosPicks}</span>
-                                                        <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">{summary.pctBuenos.toFixed(1)}%</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center bg-orange-50/30">
-                                                      <div className="flex flex-col">
-                                                        <span className="font-black text-orange-600">{summary.malosPicks}</span>
-                                                        <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">{summary.pctMalos.toFixed(1)}%</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                      <div className="flex flex-col">
-                                                        <span className="font-black text-neutral-500">{summary.sinPuntuar}</span>
-                                                        <span className="text-[10px] text-neutral-400 font-medium">{summary.pctSinPuntuar.toFixed(1)}%</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center bg-green-50 border-x border-neutral-100/50">
-                                                      <span className="font-black text-green-700">{summary.pctBuenos.toFixed(1)}%</span>
-                                                    </td>
-                                                    <td className="px-6 py-3 text-right tabular-nums font-black text-neutral-900 bg-neutral-50/30">
-                                                      {summary.totalPoints.toLocaleString()}
-                                                    </td>
-                                                  </tr>
-                                                ))}
+                                                {sortedSummaries.map(
+                                                  (summary, idx) => (
+                                                    <tr
+                                                      key={summary.team}
+                                                      className="hover:bg-neutral-50/50 transition-colors group"
+                                                    >
+                                                      <td className="px-3 py-1.5 border-r border-neutral-50 font-mono text-neutral-300">
+                                                        {idx + 1 < 10
+                                                          ? `0${idx + 1}`
+                                                          : idx + 1}
+                                                      </td>
+                                                      <td className="px-3 py-1.5 border-r border-neutral-50 font-bold text-neutral-900">
+                                                        {summary.team}
+                                                      </td>
+                                                      <td className="px-2 py-1.5 text-center">
+                                                        <div className="flex flex-col">
+                                                          <span className="font-black text-blue-600">
+                                                            {
+                                                              summary.pickGanador
+                                                            }
+                                                          </span>
+                                                          <span className="text-[10px] text-neutral-400 font-medium">
+                                                            {summary.pctGanadores.toFixed(
+                                                              1,
+                                                            )}
+                                                            %
+                                                          </span>
+                                                        </div>
+                                                      </td>
+                                                      <td className="px-2 py-1.5 text-center bg-green-50/30">
+                                                        <div className="flex flex-col">
+                                                          <span className="font-black text-green-600">
+                                                            {
+                                                              summary.buenosPicks
+                                                            }
+                                                          </span>
+                                                          <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">
+                                                            {summary.pctBuenos.toFixed(
+                                                              1,
+                                                            )}
+                                                            %
+                                                          </span>
+                                                        </div>
+                                                      </td>
+                                                      <td className="px-2 py-1.5 text-center bg-orange-50/30">
+                                                        <div className="flex flex-col">
+                                                          <span className="font-black text-orange-600">
+                                                            {summary.malosPicks}
+                                                          </span>
+                                                          <span className="text-[10px] text-neutral-400 font-medium bg-white px-1 py-0.5 rounded shadow-sm border border-neutral-100 inline-block mx-auto">
+                                                            {summary.pctMalos.toFixed(
+                                                              1,
+                                                            )}
+                                                            %
+                                                          </span>
+                                                        </div>
+                                                      </td>
+                                                      <td className="px-2 py-1.5 text-center">
+                                                        <div className="flex flex-col">
+                                                          <span className="font-black text-neutral-500">
+                                                            {summary.sinPuntuar}
+                                                          </span>
+                                                          <span className="text-[10px] text-neutral-400 font-medium">
+                                                            {summary.pctSinPuntuar.toFixed(
+                                                              1,
+                                                            )}
+                                                            %
+                                                          </span>
+                                                        </div>
+                                                      </td>
+                                                      <td className="px-2 py-1.5 text-center bg-green-50 border-x border-neutral-100/50">
+                                                        <span className="font-black text-green-700">
+                                                          {summary.pctBuenos.toFixed(
+                                                            1,
+                                                          )}
+                                                          %
+                                                        </span>
+                                                      </td>
+                                                      <td className="px-3 py-1.5 text-right tabular-nums font-black text-neutral-900 bg-neutral-50/30">
+                                                        {summary.totalPoints.toLocaleString()}
+                                                      </td>
+                                                    </tr>
+                                                  ),
+                                                )}
                                               </tbody>
                                             </table>
                                           </div>
 
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                             <div className="bg-blue-50/50 border border-blue-100 rounded-3xl p-6">
-                                                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                                  <TrendingUp className="w-5 h-5" />
-                                                  Top Eficiencia (Picks Buenos)
-                                                </h4>
-                                                <div className="space-y-3">
-                                                  {[...teamSummaries].sort((a,b) => b.pctBuenos - a.pctBuenos).slice(0,3).map((t, i) => (
-                                                    <div key={t.team} className="flex items-center justify-between bg-white p-3 rounded-xl border border-blue-100/50 shadow-sm">
-                                                      <span className="font-bold text-neutral-700">{i+1}. {t.team}</span>
-                                                      <span className="text-blue-600 font-black">{t.pctBuenos.toFixed(1)}%</span>
+                                            <div className="bg-blue-50/50 border border-blue-100 rounded-3xl p-6">
+                                              <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                                <TrendingUp className="w-5 h-5" />
+                                                Top Eficiencia (Picks Buenos)
+                                              </h4>
+                                              <div className="space-y-3">
+                                                {[...teamSummaries]
+                                                  .sort(
+                                                    (a, b) =>
+                                                      b.pctBuenos - a.pctBuenos,
+                                                  )
+                                                  .slice(0, 3)
+                                                  .map((t, i) => (
+                                                    <div
+                                                      key={t.team}
+                                                      className="flex items-center justify-between bg-white p-3 rounded-xl border border-blue-100/50 shadow-sm"
+                                                    >
+                                                      <span className="font-bold text-neutral-700">
+                                                        {i + 1}. {t.team}
+                                                      </span>
+                                                      <span className="text-blue-600 font-black">
+                                                        {t.pctBuenos.toFixed(1)}
+                                                        %
+                                                      </span>
                                                     </div>
                                                   ))}
-                                                </div>
-                                             </div>
-                                             <div className="bg-green-50/50 border border-green-100 rounded-3xl p-6">
-                                                <h4 className="font-bold text-green-900 mb-2 flex items-center gap-2">
-                                                  <Trophy className="w-5 h-5" />
-                                                  Top Ganadores (Picks #1)
-                                                </h4>
-                                                <div className="space-y-3">
-                                                  {[...teamSummaries].sort((a,b) => b.pickGanador - a.pickGanador).slice(0,3).map((t, i) => (
-                                                    <div key={t.team} className="flex items-center justify-between bg-white p-3 rounded-xl border border-green-100/50 shadow-sm">
-                                                      <span className="font-bold text-neutral-700">{i+1}. {t.team}</span>
-                                                      <span className="text-green-600 font-black">{t.pickGanador}</span>
+                                              </div>
+                                            </div>
+                                            <div className="bg-green-50/50 border border-green-100 rounded-3xl p-6">
+                                              <h4 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                                                <Trophy className="w-5 h-5" />
+                                                Top Ganadores (Picks #1)
+                                              </h4>
+                                              <div className="space-y-3">
+                                                {[...teamSummaries]
+                                                  .sort(
+                                                    (a, b) =>
+                                                      b.pickGanador -
+                                                      a.pickGanador,
+                                                  )
+                                                  .slice(0, 3)
+                                                  .map((t, i) => (
+                                                    <div
+                                                      key={t.team}
+                                                      className="flex items-center justify-between bg-white p-3 rounded-xl border border-green-100/50 shadow-sm"
+                                                    >
+                                                      <span className="font-bold text-neutral-700">
+                                                        {i + 1}. {t.team}
+                                                      </span>
+                                                      <span className="text-green-600 font-black">
+                                                        {t.pickGanador}
+                                                      </span>
                                                     </div>
                                                   ))}
-                                                </div>
-                                             </div>
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
-                                      
+
                                       <div className="p-6 bg-neutral-900 text-white flex items-center justify-between">
                                         <div className="text-xs text-neutral-400 font-medium uppercase tracking-widest">
                                           Sistema de Auditoría de Draft v2.0
@@ -18975,11 +19630,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                 )}
               </div>
             )}
-
           </div>
         )}
       </main>
-
 
       {draftDatosTooltip && draftDatosTooltip.show && (
         <div
