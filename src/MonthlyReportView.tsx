@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { domToDataUrl } from "modern-screenshot";
 import React, { useState, useMemo } from "react";
 import {
   Trophy,
@@ -281,8 +281,7 @@ const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTM
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const canvas = await html2canvas(container, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-            const dataUrl = canvas.toDataURL("image/png");
+            const dataUrl = await domToDataUrl(container, { scale: 3, backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             return blob;
@@ -309,8 +308,7 @@ const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTM
     }
 
     try {
-      const canvas = await html2canvas(container, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-            const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = await domToDataUrl(container, { scale: 3, backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
       const link = document.createElement("a");

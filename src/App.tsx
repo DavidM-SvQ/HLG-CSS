@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import React, { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
@@ -42,6 +41,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { MonthlyReportView } from "./MonthlyReportView";
+import { SeasonReportView } from "./SeasonReportView";
 import {
   BarChart,
   Bar,
@@ -1670,8 +1670,7 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      const canvas = await html2canvas(tableContainer, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-      const dataUrl = canvas.toDataURL("image/png");
+            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, backgroundColor: "#ffffff" });
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -1700,8 +1699,7 @@ export default function App() {
     const tableContainer = unscoredTableRef.current;
     const restore = expandNodeForCapture(tableContainer);
     try {
-      const canvas = await html2canvas(tableContainer, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-      const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = await domToDataUrl(tableContainer, { scale: 3, backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       const suffix = subset && subset !== "full" ? `-${subset}` : "";
@@ -2456,8 +2454,7 @@ export default function App() {
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const canvas = await html2canvas(cyclistsTableRef.current!, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-            const dataUrl = canvas.toDataURL("image/png");
+            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             return await response.blob();
           })() as Promise<Blob>,
@@ -2481,8 +2478,7 @@ export default function App() {
     if (!cyclistsTableRef.current) return;
     const restore = expandNodeForCapture(cyclistsTableRef.current);
     try {
-      const canvas = await html2canvas(cyclistsTableRef.current!, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-      const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "clasificacion-ciclistas.png";
@@ -5918,18 +5914,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
             )}
 
             {adminTab === "reporte-temporada" && (
-              <div className="bg-white border border-neutral-200 rounded-2xl p-8 shadow-sm flex flex-col items-center justify-center text-center min-h-[400px]">
-                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                  <Trophy className="w-8 h-8 text-purple-600" />
-                </div>
-                <h2 className="text-xl font-bold text-neutral-900">
-                  Reporte de Temporada
-                </h2>
-                <p className="text-neutral-500 max-w-sm mt-2">
-                  Próximamente podrás generar el informe final de la temporada
-                  aquí.
-                </p>
-              </div>
+              <SeasonReportView files={files} leaderboard={leaderboard} cyclistRoundMap={cyclistRoundMap} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} />
             )}
           </div>
         ) : (
