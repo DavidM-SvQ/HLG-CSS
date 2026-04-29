@@ -160,58 +160,72 @@ const getFlagEmoji = (countryName: string) => {
 
 
 const expandNodeForCapture = (element: HTMLElement) => {
-    const originalStyles: any[] = [];
-    const targets = element.querySelectorAll('.overflow-auto, .overflow-y-auto, .overflow-x-auto, [style*="max-height"]');
-    targets.forEach((node: any) => {
-      originalStyles.push({
-        node,
-        maxHeight: node.style.maxHeight,
-        height: node.style.height,
-        overflowY: node.style.overflowY,
-        overflowX: node.style.overflowX,
-        overflow: node.style.overflow
-      });
-      node.style.setProperty('max-height', 'none', 'important');
-      node.style.setProperty('height', 'auto', 'important');
-      node.style.setProperty('overflow-y', 'visible', 'important');
-      node.style.setProperty('overflow-x', 'visible', 'important');
-      node.style.setProperty('overflow', 'visible', 'important');
+  const targets = Array.from(element.querySelectorAll<HTMLElement>('.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-hidden, .table-responsive-wrapper, [style*="max-height"], [class*="max-h-"]'));
+  targets.push(element);
+
+  const tables = Array.from(element.querySelectorAll<HTMLElement>('table'));
+  const cells = Array.from(element.querySelectorAll<HTMLElement>('td, th'));
+
+  const originalStyles = targets.map((node) => ({
+    node,
+    maxHeight: node.style.maxHeight,
+    height: node.style.height,
+    overflowY: node.style.overflowY,
+    overflowX: node.style.overflowX,
+    overflow: node.style.overflow,
+    display: node.style.display,
+    width: node.style.width,
+    minWidth: node.style.minWidth,
+    paddingBottom: node.style.paddingBottom,
+  }));
+  
+  const originalTableStyles = tables.map((node) => ({
+    node,
+    width: node.style.width,
+    minWidth: node.style.minWidth,
+  }));
+  
+  const originalCellStyles = cells.map((node) => ({
+    node,
+    whiteSpace: node.style.whiteSpace,
+  }));
+
+  targets.forEach((node) => {
+    node.style.setProperty('max-height', 'none', 'important');
+    node.style.setProperty('height', 'auto', 'important');
+    node.style.setProperty('overflow-y', 'visible', 'important');
+    node.style.setProperty('overflow-x', 'visible', 'important');
+    node.style.setProperty('overflow', 'visible', 'important');
+  });
+  
+  tables.forEach((node) => {
+    node.style.setProperty('width', 'max-content', 'important');
+    node.style.setProperty('min-width', 'max-content', 'important');
+  });
+  
+  cells.forEach((node) => {
+    node.style.setProperty('white-space', 'nowrap', 'important');
+  });
+
+  element.style.setProperty('display', 'inline-block', 'important');
+  element.style.setProperty('width', 'max-content', 'important');
+  element.style.setProperty('min-width', 'max-content', 'important');
+  element.style.setProperty('padding-bottom', '32px', 'important');
+
+  return () => {
+    originalStyles.forEach((styleObj) => {
+      const { node, ...styles } = styleObj;
+      Object.assign(node.style, styles);
     });
-
-    const originalElementStyle = {
-      display: element.style.display,
-      width: element.style.width,
-      height: element.style.height,
-      maxHeight: element.style.maxHeight,
-      minWidth: element.style.minWidth,
-      background: element.style.background
-    };
-    
-    element.style.setProperty('display', 'inline-block', 'important');
-    element.style.setProperty('width', 'auto', 'important');
-    element.style.setProperty('height', 'auto', 'important');
-    element.style.setProperty('max-height', 'none', 'important');
-    element.style.setProperty('min-width', '100%', 'important');
-    if (!element.style.background && !element.style.backgroundColor) {
-      element.style.setProperty('background', '#ffffff', 'important');
-    }
-
-    return () => {
-      originalStyles.forEach(({ node, maxHeight, height, overflowY, overflowX, overflow }: any) => {
-        node.style.maxHeight = maxHeight;
-        node.style.height = height;
-        node.style.overflowY = overflowY;
-        node.style.overflowX = overflowX;
-        node.style.overflow = overflow;
-      });
-      
-      element.style.display = originalElementStyle.display;
-      element.style.width = originalElementStyle.width;
-      element.style.height = originalElementStyle.height;
-      element.style.maxHeight = originalElementStyle.maxHeight;
-      element.style.minWidth = originalElementStyle.minWidth;
-      element.style.background = originalElementStyle.background;
-    };
+    originalTableStyles.forEach((styleObj) => {
+      const { node, ...styles } = styleObj;
+      Object.assign(node.style, styles);
+    });
+    originalCellStyles.forEach((styleObj) => {
+      const { node, ...styles } = styleObj;
+      Object.assign(node.style, styles);
+    });
+  };
 };
 
 const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTMLElement>, filename: string }) => {
@@ -281,7 +295,7 @@ const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTM
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const dataUrl = await domToDataUrl(container, { scale: 3, backgroundColor: "#ffffff" });
+            const dataUrl = await domToDataUrl(container, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             return blob;
@@ -308,7 +322,7 @@ const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTM
     }
 
     try {
-      const dataUrl = await domToDataUrl(container, { scale: 3, backgroundColor: "#ffffff" });
+      const dataUrl = await domToDataUrl(container, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
       const link = document.createElement("a");
@@ -325,7 +339,7 @@ const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTM
   };
 
   return (
-    <div className="flex items-center gap-1.5 ml-auto copy-button-ignore">
+    <div className="flex items-center gap-1.5 ml-auto shrink-0 copy-button-ignore">
       <button
         onClick={handleCopyText}
         className={cn(
@@ -460,10 +474,10 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     const cyclistTeamMap: Record<string, string> = {};
     const cyclistRondaMap: Record<string, string> = {};
 
-    leaderboard.forEach((player) => {
+    leaderboard?.forEach((player) => {
       const draftRank = DRAFT_RANK_MAP[player.nombreEquipo] || "-";
       const teamNameWithDraftRank = `${player.nombreEquipo} [#${draftRank}]`;
-      player.detalles.forEach((d) => {
+      player?.detalles?.forEach((d) => {
         if (d.ciclista) {
           cyclistRondaMap[d.ciclista] = d.ronda || "-";
           cyclistTeamMap[d.ciclista] = teamNameWithDraftRank;
@@ -485,7 +499,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
     const raceTeamScores: Record<string, Record<string, number>> = {}; // [race][team] -> points
 
-    leaderboard.forEach((player) => {
+    leaderboard?.forEach((player) => {
       const team = player.nombreEquipo;
       const isDraft = team !== "No draft" && team !== "No draft [99]";
 
@@ -493,7 +507,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       if (isDraft && !teamPoints[team]) teamPoints[team] = 0;
       if (isDraft && !panenkitaTeamPoints[team]) panenkitaTeamPoints[team] = 0;
 
-      player.detalles.forEach((d) => {
+      player?.detalles?.forEach((d) => {
         if (!visibleRaces.has(d.carrera)) return;
 
         const isPos01 = d.posicion === "01" || d.posicion === "1";
@@ -556,7 +570,16 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       });
     });
 
-    const raceWinners = Object.entries(raceTeamScores).map(([race, ptsMap]) => {
+    const raceWinners = Object.entries(raceTeamScores)
+      .filter(([race]) => {
+        const hasFinalClassification = files?.resultados?.data?.some(
+          (r: any) =>
+            getVal(r, "Carrera") === race &&
+            getVal(r, "Tipo")?.match(/Clasificación final/i),
+        );
+        return hasFinalClassification;
+      })
+      .map(([race, ptsMap]) => {
       const sorted = Object.entries(ptsMap).sort((a, b) => b[1] - a[1]);
       const winner = sorted.length > 0 ? sorted[0] : null;
       const raceData = files?.carreras?.data?.find((r: any) => getVal(r, "Carrera")?.trim() === race);
@@ -644,13 +667,13 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
     const cyclistStats: Record<string, any> = {};
 
-    leaderboard.forEach((player) => {
+    leaderboard?.forEach((player) => {
       const team = player.nombreEquipo;
       const isDraft = team !== "No draft" && team !== "No draft [99]";
       const draftRank = DRAFT_RANK_MAP[team] || "-";
       const teamNameWithDraftRank = isDraft ? `${team} [#${draftRank}]` : team;
 
-      player.detalles.forEach((d) => {
+      player?.detalles?.forEach((d) => {
         if (!visibleRaces.has(d.carrera)) return;
 
         monthlyCyclistTeamMap[d.ciclista] = teamNameWithDraftRank;
@@ -751,11 +774,11 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         let eq = "-";
         let pais = "-";
         if (files?.ciclistas?.data) {
-           const match = files.ciclistas.data.find((c: any) => getVal(c, "Ciclista")?.trim() === cyclist);
+           const match = files.ciclistas.data?.find((c: any) => getVal(c, "Ciclista")?.trim() === cyclist);
            if (match) {
              const teamFromCiclistas = getVal(match, "Equipo")?.trim();
              if (teamFromCiclistas && files?.equipos?.data) {
-               const teamMatch = files.equipos.data.find((e: any) => 
+               const teamMatch = files.equipos.data?.find((e: any) => 
                  getVal(e, "EQUIPO COMPLETO")?.trim() === teamFromCiclistas
                );
                if (teamMatch) {
@@ -800,14 +823,14 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     let bestPanenkitaTeamPicks: { cyclist: string; pts: number }[] = [];
 
     if (winningTeamObj) {
-      const player = leaderboard.find(
+      const player = leaderboard?.find(
         (x) => x.nombreEquipo === winningTeamObj.teamClean,
       );
       if (player) {
         const teamCyclistsRounds = new Map<string, string>();
         const teamPointsMap = new Map<string, number>();
 
-        player.detalles.forEach((d) => {
+        player?.detalles?.forEach((d) => {
           const rNum = parseInt(d.ronda || "0", 10);
           if (rNum >= 20 && rNum <= 25) {
             teamCyclistsRounds.set(d.ciclista, d.ronda || "");
@@ -1007,25 +1030,25 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
             <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col relative" ref={ref1}>
               <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
                 <div>
-                  <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                  <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 ">
                     <Grid className="w-5 h-5 text-blue-600" />
                     Top Equipos por Puntuación {monthsText ? ` [${monthsText}]` : ""}
                   </h3>
-                  <p className="text-xs text-neutral-500 mt-0.5 whitespace-nowrap">
+                  <p className="text-xs text-neutral-500 mt-0.5 ">
                     Ranking de los equipos fantasy por puntuación en este periodo.
                   </p>
                 </div>
                 <ExportToolbar targetRef={ref1} filename="top-equipos" />
               </div>
               <div className="overflow-x-auto flex justify-center bg-neutral-50/20 pb-8 relative mt-2 text-sm">
-                <table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
                   <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                     <tr>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold whitespace-nowrap border-b border-neutral-100">Pos</th>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold whitespace-nowrap border-b border-neutral-100">Equipo</th>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold whitespace-nowrap border-b border-neutral-100 text-center">Victorias eq.</th>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold whitespace-nowrap border-b border-neutral-100 text-center">Victorias parc.</th>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold whitespace-nowrap border-b border-neutral-100 text-right">Puntos</th>
+                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Pos</th>
+                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Equipo</th>
+                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-center">Victorias eq.</th>
+                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-center">Victorias parc.</th>
+                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-right">Puntos</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -1039,7 +1062,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                         const difColor = team.dif > 0 ? "text-green-600 bg-green-50/50" : team.dif < 0 ? "text-red-600 bg-red-50/50" : "text-neutral-400 bg-neutral-50/50";
                         return (
                           <tr key={team.team} className="hover:bg-blue-50/30 transition-colors text-xs">
-                            <td className={cn("px-4 py-1 font-bold text-center whitespace-nowrap", posColor)}>
+                            <td className={cn("px-4 py-1 font-bold text-center ", posColor)}>
                               <div className="flex items-center justify-center gap-1 text-[11px]">{team.currentPos === 1 ? (<Crown className="w-3 h-3 text-yellow-600" />) : team.currentPos === 2 ? (<Medal className="w-3 h-3 text-neutral-400" />) : team.currentPos === 3 ? (<Medal className="w-3 h-3 text-amber-700" />) : null}{team.currentPos}º</div>
                             </td>
                             <td className="px-4 py-1 font-bold text-neutral-900 border-l border-neutral-100/50">{team.team} [#{team.originalPos}]</td>
@@ -1055,38 +1078,38 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       });
                     })()}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             </div>
 
             <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col relative mt-8" ref={ref2}>
               <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
                 <div>
-                  <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                  <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 ">
                     <History className="w-5 h-5 text-purple-600" />
                     Historial de Ganadores por Carrera {monthsText ? ` [${monthsText}]` : ""}
                   </h3>
-                  <p className="text-sm text-neutral-500 whitespace-nowrap">
+                  <p className="text-sm text-neutral-500 ">
                     Relación cronológica de las victorias obtenidas por los equipos en cada carrera.
                   </p>
                 </div>
                 <ExportToolbar targetRef={ref2} filename="historial-ganadores" />
               </div>
               <div className="overflow-x-auto bg-neutral-50/20 pb-8 rounded-b-2xl">
-                <table className="w-full text-sm text-left">
+                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
                   <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10 border-b border-neutral-200">
                     <tr>
-                      <th className="px-6 py-3 font-semibold whitespace-nowrap">Fecha</th>
-                      <th className="px-6 py-3 font-semibold whitespace-nowrap">Carrera</th>
-                      <th className="px-6 py-3 font-semibold whitespace-nowrap">Categoría</th>
-                      <th className="px-6 py-3 font-semibold whitespace-nowrap text-center">Ganador</th>
-                      <th className="px-6 py-3 font-semibold whitespace-nowrap text-right">Puntos</th>
+                      <th className="px-6 py-3 font-semibold ">Fecha</th>
+                      <th className="px-6 py-3 font-semibold ">Carrera</th>
+                      <th className="px-6 py-3 font-semibold ">Categoría</th>
+                      <th className="px-6 py-3 font-semibold  text-center">Ganador</th>
+                      <th className="px-6 py-3 font-semibold  text-right">Puntos</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-white">
                     {monthReportData.raceWinners.map((r, idx) => (
                       <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
-                        <td className="px-6 py-2.5 whitespace-nowrap font-mono text-xs text-neutral-500">{r.fecha}</td>
+                        <td className="px-6 py-2.5  font-mono text-xs text-neutral-500">{r.fecha}</td>
                         <td className="px-6 py-2.5 font-medium text-neutral-900 max-w-[200px] truncate" title={r.race}>{r.race}</td>
                         <td className="px-6 py-2.5">
                           {r.categoria ? <span className="px-2 py-1 text-[10px] font-bold rounded-md bg-neutral-100 text-neutral-600 tracking-wider uppercase">{r.categoria}</span> : null}
@@ -1107,7 +1130,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             </div>
           </div>
@@ -1116,18 +1139,18 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col relative mt-8" ref={ref3}>
             <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 ">
                   <User className="w-5 h-5 text-orange-600" />
                   Top Ciclistas por Puntuación {monthsText ? ` [${monthsText}]` : ""}
                 </h3>
-                <p className="text-sm text-neutral-500 whitespace-nowrap">
+                <p className="text-sm text-neutral-500 ">
                   Top 50 ciclistas con más puntos en las carreras de este periodo.
                 </p>
               </div>
               <ExportToolbar targetRef={ref3} filename="top-ciclistas" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20">
                   <tr className="divide-x divide-neutral-100">
                     {['pos', 'nombre', 'equipo', 'pais', 'victorias', 'carreras', 'dias', 'ppc', 'ppd', 'puntos'].map((col) => {
@@ -1166,10 +1189,10 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                             {originalPos}
                           </span>
                         </td>
-                        <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
+                        <td className="px-4 py-1 font-bold text-neutral-900 ">
                           {name} <span className="text-neutral-400 font-normal text-[9px]">&lt;{data.ronda || "-"}&gt;</span>
                         </td>
-                        <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
+                        <td className="px-4 py-1 text-neutral-600 ">
                           <span className="font-medium">{data.equipo}</span>
                         </td>
                         <td className="px-3 py-1 text-base text-center" title={data.pais}>{getFlagEmoji(data.pais)}</td>
@@ -1195,7 +1218,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           </div>
 
@@ -1203,18 +1226,18 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col relative mt-8" ref={ref4}>
             <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 ">
                   <User className="w-5 h-5 text-red-600" />
                   Top Ciclistas No Elegidos (No draft) {monthsText ? ` [${monthsText}]` : ""}
                 </h3>
-                <p className="text-sm text-neutral-500 whitespace-nowrap">
+                <p className="text-sm text-neutral-500 ">
                   Corredores que han sumado puntos pero no fueron elegidos por ningún equipo.
                 </p>
               </div>
               <ExportToolbar targetRef={ref4} filename="top-ciclistas-no-draft" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20">
                   <tr className="divide-x divide-neutral-100">
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">Pos</th>
@@ -1230,10 +1253,10 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       <td className="px-3 py-1 text-center font-bold text-neutral-400">
                         {s.originalPos}º
                       </td>
-                      <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
+                      <td className="px-4 py-1 font-bold text-neutral-900 ">
                         {s.cyclist}
                       </td>
-                      <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
+                      <td className="px-4 py-1 text-neutral-600 ">
                         {s.eq}
                       </td>
                       <td className="px-3 py-1 text-base text-center" title={s.pais}>
@@ -1245,20 +1268,20 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           </div>
 
           
           {/* SECTION 2: Points per Round and Team Matrix */}
           <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-200 overflow-x-auto" ref={ref5}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start mb-4 gap-4">
               <h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
                 <Grid className="w-5 h-5 text-indigo-600" /> Puntos por Ronda y Equipo {monthsText ? ` [${monthsText}]` : ""}
               </h3>
               <ExportToolbar targetRef={ref5} filename="puntos-ronda-equipo" />
             </div>
-            <table className="w-full text-xs text-left whitespace-nowrap border-separate border-spacing-0">
+            <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
               <thead>
                 <tr>
                   <th className="pb-2 sticky left-0 bg-neutral-50 z-20 border-r border-b border-neutral-200 pr-2 shadow-sm font-bold">
@@ -1337,20 +1360,20 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* SECTION 4: Min/Max by Team and Round */}
           <div className="space-y-8">
             <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-200 overflow-x-auto" ref={ref6}>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start mb-4 gap-4">
                 <h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
                   <Medal className="w-5 h-5 text-purple-600" /> Mejores y Peores
                   Ciclistas por Equipo {monthsText ? ` [${monthsText}]` : ""}
                 </h3>
                 <ExportToolbar targetRef={ref6} filename="mejores-peores-equipo" />
               </div>
-              <table className="w-full text-xs text-left whitespace-nowrap">
+              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap">
                 <thead className="sticky top-0 bg-neutral-50">
                   <tr className="border-b">
                     <th className="pb-2">Equipo</th>
@@ -1397,11 +1420,11 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
 
             <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-200 overflow-x-auto" ref={ref7}>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start mb-4 gap-4">
                 <h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
                   <Star className="w-5 h-5 text-orange-500" /> Mejores y Peores
                   Ciclistas por Ronda {monthsText ? ` [${monthsText}]` : ""}
@@ -1409,7 +1432,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <ExportToolbar targetRef={ref7} filename="mejores-peores-ronda" />
               </div>
               <div className="">
-                <table className="w-full text-sm text-left">
+                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
                   <thead className="sticky top-0 bg-neutral-50 shadow-sm">
                     <tr className="border-b">
                       <th className="pb-2">Ronda</th>
@@ -1424,7 +1447,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     {monthReportData.minMaxRound.map((r, idx) => (
                       <tr
                         key={idx}
-                        className="border-b last:border-0 hover:bg-neutral-100 whitespace-nowrap"
+                        className="border-b last:border-0 hover:bg-neutral-100 "
                       >
                         <td className="py-2.5 font-bold text-neutral-500 w-16 text-center">
                           R{r.round}
@@ -1456,14 +1479,14 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             </div>
           </div>
 
           {/* SECTION 5: Premio Panenkita {monthsText ? ` [${monthsText}]` : ""} */}
           <div className="space-y-6 bg-pink-50 p-6 -mx-6 rounded-xl border-y border-pink-100" ref={ref8} >
-            <div className="flex justify-between items-center pb-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start pb-2 gap-4">
               <h3 className="text-xl font-bold text-pink-900 flex items-center gap-2">
                 <Award className="w-6 h-6 text-pink-500" /> Premio Panenkita {monthsText ? ` [${monthsText}]` : ""}
                 (Puntos con elecciones R20 - R25)
@@ -1473,13 +1496,13 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref9} >
-                <div className="flex justify-between items-center border-b border-pink-100 pb-2 mb-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4 className="font-bold text-pink-800 text-sm">
                     Mejores Equipos (R20-25)
                   </h4>
                   <ExportToolbar targetRef={ref9} filename="mejores-equipos-panenkita" />
                 </div>
-                <table className="w-full text-sm text-left">
+                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
                   <tbody>
                     {monthReportData.panenkitaTopTeams.map((t, idx) => (
                       <tr
@@ -1503,18 +1526,18 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       </tr>
                     )}
                   </tbody>
-                </table>
+                </table></div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref10}>
-                <div className="flex justify-between items-center border-b border-pink-100 pb-2 mb-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4 className="font-bold text-pink-800 text-sm">
                     Top 50 Panenkitas (Ciclistas)
                   </h4>
                   <ExportToolbar targetRef={ref10} filename="top-50-panenkitas" />
                 </div>
                 <div className="">
-                  <table className="w-full text-sm text-left">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
                     <tbody>
                       {monthReportData.panenkitaTopCyclists.map((c, idx) => (
                         <tr
@@ -1540,12 +1563,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                         </tr>
                       )}
                     </tbody>
-                  </table>
+                  </table></div>
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref11}>
-                <div className="flex justify-between items-center border-b border-pink-100 pb-2 mb-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4
                     className="font-bold text-pink-800 text-sm truncate"
                     title={monthReportData.bestPanenkitaTeam || "N/A"}
@@ -1555,7 +1578,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   <ExportToolbar targetRef={ref11} filename="elecciones-equipo-panenkita" />
                 </div>
                 <div className="overflow-auto max-h-[250px]">
-                  <table className="w-full text-sm text-left">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
                     <tbody>
                       {monthReportData.bestPanenkitaTeamPicks.map((c, idx) => (
                         <tr
@@ -1576,7 +1599,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                         </tr>
                       )}
                     </tbody>
-                  </table>
+                  </table></div>
                 </div>
               </div>
             </div>

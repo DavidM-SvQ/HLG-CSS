@@ -888,95 +888,72 @@ export default function App() {
     });
   };
 
-  const expandNodeForCapture = (element: HTMLElement) => {
-    const scrollables = Array.from(
-      element.querySelectorAll<HTMLElement>('[class*="max-h-"]'),
-    );
-    if (
-      element.className &&
-      typeof element.className === "string" &&
-      element.className.includes("max-h-")
-    ) {
-      scrollables.push(element);
-    }
-
-    const overflowNodes = Array.from(
-      element.querySelectorAll<HTMLElement>(
-        ".overflow-y-auto, .overflow-y-scroll, .overflow-x-auto, .overflow-x-scroll, .overflow-hidden",
-      ),
-    );
-    if (
-      element.classList &&
-      (element.classList.contains("overflow-y-auto") ||
-        element.classList.contains("overflow-y-scroll") ||
-        element.classList.contains("overflow-x-auto") ||
-        element.classList.contains("overflow-x-scroll") ||
-        element.classList.contains("overflow-hidden"))
-    ) {
-      overflowNodes.push(element);
-    }
-
-    const targets = new Set([...scrollables, ...overflowNodes]);
-
-    const originalStyles: {
-      node: HTMLElement;
-      maxHeight: string;
-      overflowY: string;
-      overflowX: string;
-      overflow: string;
-    }[] = [];
-
+      const expandNodeForCapture = (element: HTMLElement) => {
+    const targets = Array.from(element.querySelectorAll<HTMLElement>('.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-hidden, .table-responsive-wrapper, [style*="max-height"], [class*="max-h-"]'));
+    targets.push(element);
+  
+    const tables = Array.from(element.querySelectorAll<HTMLElement>('table'));
+    const cells = Array.from(element.querySelectorAll<HTMLElement>('td, th'));
+  
+    const originalStyles = targets.map((node) => ({
+      node,
+      maxHeight: node.style.maxHeight,
+      height: node.style.height,
+      overflowY: node.style.overflowY,
+      overflowX: node.style.overflowX,
+      overflow: node.style.overflow,
+      display: node.style.display,
+      width: node.style.width,
+      minWidth: node.style.minWidth,
+      paddingBottom: node.style.paddingBottom,
+    }));
+    
+    const originalTableStyles = tables.map((node) => ({
+      node,
+      width: node.style.width,
+      minWidth: node.style.minWidth,
+    }));
+    
+    const originalCellStyles = cells.map((node) => ({
+      node,
+      whiteSpace: node.style.whiteSpace,
+    }));
+  
     targets.forEach((node) => {
-      originalStyles.push({
-        node,
-        maxHeight: node.style.maxHeight,
-        height: node.style.height,
-        overflowY: node.style.overflowY,
-        overflowX: node.style.overflowX,
-        overflow: node.style.overflow,
-      } as any);
-      node.style.setProperty("max-height", "none", "important");
-      node.style.setProperty("height", "auto", "important");
-      node.style.setProperty("overflow-y", "visible", "important");
-      node.style.setProperty("overflow-x", "visible", "important");
-      node.style.setProperty("overflow", "visible", "important");
+      node.style.setProperty('max-height', 'none', 'important');
+      node.style.setProperty('height', 'auto', 'important');
+      node.style.setProperty('overflow-y', 'visible', 'important');
+      node.style.setProperty('overflow-x', 'visible', 'important');
+      node.style.setProperty('overflow', 'visible', 'important');
     });
-
-    const originalElementStyle = {
-      display: element.style.display,
-      width: element.style.width,
-      height: element.style.height,
-      maxHeight: element.style.maxHeight,
-      minWidth: element.style.minWidth,
-      background: element.style.background,
-    };
-
-    element.style.setProperty("display", "inline-block", "important");
-    element.style.setProperty("width", "auto", "important");
-    element.style.setProperty("height", "auto", "important");
-    element.style.setProperty("max-height", "none", "important");
-    element.style.setProperty("min-width", "fit-content", "important");
-    if (!element.style.background && !element.style.backgroundColor) {
-      element.style.setProperty("background", "#ffffff", "important");
-    }
-
+    
+    tables.forEach((node) => {
+      node.style.setProperty('width', 'max-content', 'important');
+      node.style.setProperty('min-width', 'max-content', 'important');
+    });
+    
+    cells.forEach((node) => {
+      node.style.setProperty('white-space', 'nowrap', 'important');
+    });
+  
+    element.style.setProperty('display', 'inline-block', 'important');
+    element.style.setProperty('width', 'max-content', 'important');
+    element.style.setProperty('min-width', 'max-content', 'important');
+    element.style.setProperty('padding-bottom', '32px', 'important');
+  
     return () => {
-      originalStyles.forEach(
-        ({ node, maxHeight, height, overflowY, overflowX, overflow }: any) => {
-          node.style.maxHeight = maxHeight;
-          node.style.height = height;
-          node.style.overflowY = overflowY;
-          node.style.overflowX = overflowX;
-          node.style.overflow = overflow;
-        },
-      );
-
-      element.style.display = originalElementStyle.display;
-      element.style.width = originalElementStyle.width;
-      element.style.height = originalElementStyle.height;
-      element.style.maxHeight = originalElementStyle.maxHeight;
-      element.style.minWidth = originalElementStyle.minWidth;
-      element.style.background = originalElementStyle.background;
+      originalStyles.forEach((styleObj) => {
+        const { node, ...styles } = styleObj;
+        Object.assign(node.style, styles);
+      });
+      originalTableStyles.forEach((styleObj) => {
+        const { node, ...styles } = styleObj;
+        Object.assign(node.style, styles);
+      });
+      originalCellStyles.forEach((styleObj) => {
+        const { node, ...styles } = styleObj;
+        Object.assign(node.style, styles);
+      });
     };
   };
 
@@ -991,14 +968,10 @@ export default function App() {
           "image/png": (async () => {
             // Use domToDataUrl first as it seems more reliable for Recharts labels
             const dataUrl = await domToDataUrl(chartRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-              filter: (node) => {
-                if (node instanceof Element) {
-                  return !node.classList.contains("copy-button-ignore");
-                }
-                return true;
-              },
+              
             });
 
             const response = await fetch(dataUrl);
@@ -1025,14 +998,10 @@ export default function App() {
     if (!chartRef.current) return;
     try {
       const dataUrl = await domToDataUrl(chartRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-        filter: (node) => {
-          if (node instanceof Element) {
-            return !node.classList.contains("copy-button-ignore");
-          }
-          return true;
-        },
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1055,16 +1024,12 @@ export default function App() {
             restore = expandNodeForCapture(topTeamsTableRef.current!);
             try {
               const dataUrl = await domToDataUrl(topTeamsTableRef.current!, {
-                scale: 3,
+                scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                 
                 style: { overflow: "visible" },
-                filter: (node) => {
-                  if (node instanceof Element) {
-                    return !node.classList.contains("copy-button-ignore");
-                  }
-                  return true;
-                },
+                
               });
               const response = await fetch(dataUrl);
               const blob = await response.blob();
@@ -1093,16 +1058,12 @@ export default function App() {
     const restore = expandNodeForCapture(topTeamsTableRef.current);
     try {
       const dataUrl = await domToDataUrl(topTeamsTableRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible" },
-        filter: (node) => {
-          if (node instanceof Element) {
-            return !node.classList.contains("copy-button-ignore");
-          }
-          return true;
-        },
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1124,14 +1085,10 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-              filter: (node) => {
-                if (node instanceof Element) {
-                  return !node.classList.contains("copy-button-ignore");
-                }
-                return true;
-              },
+              
             });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
@@ -1156,14 +1113,10 @@ export default function App() {
     if (!evolutionChartRef.current) return;
     try {
       const dataUrl = await domToDataUrl(evolutionChartRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-        filter: (node) => {
-          if (node instanceof Element) {
-            return !node.classList.contains("copy-button-ignore");
-          }
-          return true;
-        },
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1182,12 +1135,10 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsRankingRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -1210,12 +1161,10 @@ export default function App() {
     if (!winsRankingRef.current) return;
     try {
       const dataUrl = await domToDataUrl(winsRankingRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1234,12 +1183,10 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -1262,12 +1209,10 @@ export default function App() {
     if (!winsEvolutionRef.current) return;
     try {
       const dataUrl = await domToDataUrl(winsEvolutionRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1336,14 +1281,12 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               
               style: { overflow: "visible" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -1401,14 +1344,12 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1434,13 +1375,11 @@ export default function App() {
             const dataUrl = await domToDataUrl(
               raceClassificationTableRef.current!,
               {
-                scale: 3,
+                scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                 style: { overflow: "hidden" },
-                filter: (node) =>
-                  node instanceof Element
-                    ? !node.classList.contains("copy-button-ignore")
-                    : true,
+                
               },
             );
             const response = await fetch(dataUrl);
@@ -1467,13 +1406,11 @@ export default function App() {
     const restore = expandNodeForCapture(raceClassificationTableRef.current);
     try {
       const dataUrl = await domToDataUrl(raceClassificationTableRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1546,16 +1483,15 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
+        
         
         style: {
           overflow: "visible",
           textRendering: "optimizeLegibility",
         },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
 
       if (typeof ClipboardItem !== "undefined") {
@@ -1616,16 +1552,15 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
+        
         
         style: {
           overflow: "visible",
           textRendering: "optimizeLegibility",
         },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1670,7 +1605,7 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, backgroundColor: "#ffffff" });
+            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -1699,7 +1634,7 @@ export default function App() {
     const tableContainer = unscoredTableRef.current;
     const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(tableContainer, { scale: 3, backgroundColor: "#ffffff" });
+      const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       const suffix = subset && subset !== "full" ? `-${subset}` : "";
@@ -1741,14 +1676,12 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
@@ -1777,14 +1710,12 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1818,14 +1749,12 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
@@ -1867,14 +1796,12 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1893,14 +1820,14 @@ export default function App() {
     setIsStartlistTextCopying(true);
 
     try {
-      const selectedData = files.startlist.data.find(
+      const selectedData = files.startlist.data?.find(
         (d) => d.carrera === publicStartlistRace,
       );
       if (!selectedData) return;
 
       let rows: any[] = [];
-      selectedData.resultados.forEach((res: any) => {
-        res.ciclistas.forEach((c: any) => {
+      selectedData.resultados?.forEach((res: any) => {
+        res.ciclistas?.forEach((c: any) => {
           const nombre = typeof c === "string" ? c : c.nombre;
           const dorsal = typeof c === "string" ? "" : c.dorsal;
           const jugador = res.jugador;
@@ -2043,6 +1970,7 @@ export default function App() {
       const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
         scale: 3,
+        
         backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
@@ -2114,6 +2042,7 @@ export default function App() {
       const elHeight = startlistTableRef.current.scrollHeight;
       const options: any = {
         scale: 3,
+        
         backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
@@ -2151,25 +2080,25 @@ export default function App() {
     setIsStartlistTeamsTextCopying(true);
 
     try {
-      const selectedData = files.startlist.data.find(
+      const selectedData = files.startlist.data?.find(
         (d) => d.carrera === publicStartlistRace,
       );
       if (!selectedData) return;
 
       const teamStats: Record<string, { count: number; points: number }> = {};
       const allTeams = new Set(Object.values(playerTeamMap) as string[]);
-      allTeams.forEach((team) => {
+      allTeams?.forEach((team) => {
         if (team) {
           teamStats[team] = { count: 0, points: 0 };
         }
       });
-      selectedData.resultados.forEach((res: any) => {
+      selectedData.resultados?.forEach((res: any) => {
         const jugador = res.jugador;
         const equipoManger = playerTeamMap[jugador] || jugador;
         if (!teamStats[equipoManger])
           teamStats[equipoManger] = { count: 0, points: 0 };
 
-        res.ciclistas.forEach((c: any) => {
+        res.ciclistas?.forEach((c: any) => {
           const nombre = typeof c === "string" ? c : c.nombre;
           const meta = cyclistMetadata[nombre] || {};
           const totalPuntos = meta.puntosTotales || 0;
@@ -2290,6 +2219,7 @@ export default function App() {
       const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
         scale: 3,
+        
         backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
@@ -2341,6 +2271,7 @@ export default function App() {
       const elHeight = startlistTeamsTableRef.current.scrollHeight;
       let options: any = {
         scale: 3,
+        
         backgroundColor: '#ffffff',
         height: elHeight + (part !== "full" ? 20 : 10),
         windowHeight: elHeight + 50,
@@ -2381,7 +2312,7 @@ export default function App() {
     setIsNoDraftCyclistsTextCopying(true);
 
     try {
-      const noDraftPlayer = leaderboard.find((p) => p.jugador === "No draft");
+      const noDraftPlayer = leaderboard?.find((p) => p.jugador === "No draft");
       if (!noDraftPlayer) return;
 
       const cyclistStats: Record<string, any> = {};
@@ -2454,7 +2385,7 @@ export default function App() {
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
+            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             return await response.blob();
           })() as Promise<Blob>,
@@ -2478,7 +2409,7 @@ export default function App() {
     if (!cyclistsTableRef.current) return;
     const restore = expandNodeForCapture(cyclistsTableRef.current);
     try {
-      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
+      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "clasificacion-ciclistas.png";
@@ -2499,13 +2430,11 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(stageTableRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2531,13 +2460,11 @@ export default function App() {
     const restore = expandNodeForCapture(stageTableRef.current);
     try {
       const dataUrl = await domToDataUrl(stageTableRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -2568,14 +2495,12 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              
               width: elWidth,
               height: elHeight,
               style: { overflow: "visible", margin: "0" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2611,14 +2536,12 @@ export default function App() {
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         width: elWidth,
         height: elHeight,
         style: { overflow: "visible", margin: "0" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -2657,13 +2580,11 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(racesTableRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2689,13 +2610,11 @@ export default function App() {
     const restore = expandNodeForCapture(racesTableRef.current);
     try {
       const dataUrl = await domToDataUrl(racesTableRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -2712,27 +2631,28 @@ export default function App() {
     if (!teamGlobalRef.current || isTeamGlobalCopying) return;
     setIsTeamGlobalCopying(true);
 
-    const tableContainer = teamGlobalRef.current.querySelector(
-      ".table-container-for-capture",
-    );
-    if (tableContainer) {
-      tableContainer.classList.remove("overflow-x-auto");
-      tableContainer.classList.add("overflow-visible");
-    }
+    const tableElement = teamGlobalRef.current.querySelector('table');
+    const targetWidth = tableElement ? Math.max(tableElement.scrollWidth + 64, 800) : 1000;
+
+    const restore = expandNodeForCapture(teamGlobalRef.current);
+
+    // Prevent flex/grid items from causing max-content to become a single unbounded row
+    teamGlobalRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+    teamGlobalRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+    teamGlobalRef.current.style.setProperty("display", "block", "important");
 
     try {
+      await new Promise(resolve => setTimeout(resolve, 50));
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-              width: teamGlobalRef.current!.scrollWidth,
+              width: targetWidth,
               style: { overflow: "visible" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2749,34 +2669,32 @@ export default function App() {
       handleDownloadTeamGlobalImage();
       /* Alert suppressed to improve user experience in iframe */
     } finally {
-      if (tableContainer) {
-        tableContainer.classList.add("overflow-x-auto");
-        tableContainer.classList.remove("overflow-visible");
-      }
+      restore();
     }
   };
 
   const handleDownloadTeamGlobalImage = async () => {
     if (!teamGlobalRef.current) return;
 
-    const tableContainer = teamGlobalRef.current.querySelector(
-      ".table-container-for-capture",
-    );
-    if (tableContainer) {
-      tableContainer.classList.remove("overflow-x-auto");
-      tableContainer.classList.add("overflow-visible");
-    }
+    const tableElement = teamGlobalRef.current.querySelector('table');
+    const targetWidth = tableElement ? Math.max(tableElement.scrollWidth + 64, 800) : 1000;
+
+    const restore = expandNodeForCapture(teamGlobalRef.current);
+
+    // Prevent flex/grid items from causing max-content to become a single unbounded row
+    teamGlobalRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+    teamGlobalRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+    teamGlobalRef.current.style.setProperty("display", "block", "important");
 
     try {
+      await new Promise(resolve => setTimeout(resolve, 50));
       const dataUrl = await domToDataUrl(teamGlobalRef.current, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
-        width: teamGlobalRef.current.scrollWidth,
+        width: targetWidth,
         style: { overflow: "visible" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -2785,10 +2703,7 @@ export default function App() {
     } catch (err) {
       console.error("Error downloading team image:", err);
     } finally {
-      if (tableContainer) {
-        tableContainer.classList.add("overflow-x-auto");
-        tableContainer.classList.remove("overflow-visible");
-      }
+      restore();
     }
   };
 
@@ -2804,13 +2719,11 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2839,13 +2752,11 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         style: { overflow: "visible" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -2890,15 +2801,12 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(container, {
-              scale: 3, // Increased scale for better resolution
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  // Increased scale for better resolution
               
               style: {
                 textRendering: "optimizeLegibility",
               },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -2954,15 +2862,14 @@ export default function App() {
       );
 
       const dataUrl = await domToDataUrl(container, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
+        
         
         style: {
           textRendering: "optimizeLegibility",
         },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -3013,7 +2920,7 @@ export default function App() {
 `;
 
       const cyclistMap = new Map<string, { total: number; concepts: any[] }>();
-      team.details.forEach((d) => {
+      team?.details?.forEach((d) => {
         if (!cyclistMap.has(d.ciclista)) {
           cyclistMap.set(d.ciclista, { total: 0, concepts: [] });
         }
@@ -3088,14 +2995,12 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               
               style: { overflow: "visible" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -3153,14 +3058,12 @@ export default function App() {
         "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         
         style: { overflow: "visible" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -3180,23 +3083,19 @@ export default function App() {
     setIsDraftDatosTableCopying(true);
 
     const tableContainer = draftDatosTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.classList.remove("overflow-x-auto");
-    tableContainer.classList.add("overflow-visible");
+    const restore = expandNodeForCapture(tableContainer);
 
     try {
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3,
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
               width: tableContainer.scrollWidth,
               style: { overflow: "visible" },
-              filter: (node) =>
-                node instanceof Element
-                  ? !node.classList.contains("copy-button-ignore")
-                  : true,
+              
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -3213,7 +3112,7 @@ export default function App() {
       handleDownloadDraftDatosTableImage();
       /* Alert suppressed to improve user experience in iframe */
     } finally {
-      tableContainer.className = originalClass;
+      restore();
     }
   };
 
@@ -3221,20 +3120,16 @@ export default function App() {
     if (!draftDatosTableRef.current) return;
 
     const tableContainer = draftDatosTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.classList.remove("overflow-x-auto");
-    tableContainer.classList.add("overflow-visible");
+    const restore = expandNodeForCapture(tableContainer);
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
         width: tableContainer.scrollWidth,
         style: { overflow: "visible" },
-        filter: (node) =>
-          node instanceof Element
-            ? !node.classList.contains("copy-button-ignore")
-            : true,
+        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -3243,7 +3138,7 @@ export default function App() {
     } catch (err) {
       console.error("Error downloading draft datos table image:", err);
     } finally {
-      tableContainer.className = originalClass;
+      restore();
     }
   };
 
@@ -3636,7 +3531,7 @@ export default function App() {
     ].filter(Boolean) as string[];
 
     const raceDates: Record<string, number> = {};
-    files.carreras.data.forEach((r) => {
+    files.carreras?.data?.forEach((r) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -3688,7 +3583,7 @@ export default function App() {
 
       let maxPoints = 0;
       let winnerTeam = "";
-      leaderboard.forEach((player) => {
+      leaderboard?.forEach((player) => {
         if (
           player.nombreEquipo === "No draft" ||
           player.nombreEquipo === "No draft [99]"
@@ -3710,7 +3605,7 @@ export default function App() {
   const globalTeamWinsCount = React.useMemo(() => {
     if (!leaderboard) return {};
     const teamWinsCount: Record<string, number> = {};
-    leaderboard.forEach((p) => {
+    leaderboard?.forEach((p) => {
       if (p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]") {
         teamWinsCount[p.nombreEquipo] = 0;
       }
@@ -3742,7 +3637,7 @@ export default function App() {
       "Clasificación final (Crono equipos)",
     ];
 
-    leaderboard.forEach((player) => {
+    leaderboard?.forEach((player) => {
       if (
         player.nombreEquipo === "No draft" ||
         player.nombreEquipo === "No draft [99]"
@@ -3751,7 +3646,7 @@ export default function App() {
 
       partialWins[player.nombreEquipo] = 0;
 
-      player.detalles.forEach((d) => {
+      player?.detalles?.forEach((d) => {
         if (!validTypes.includes(d.tipoResultado || "")) return;
 
         const raceName = d.carrera || "";
@@ -3802,7 +3697,7 @@ export default function App() {
       ),
     ] as string[];
 
-    files.elecciones.data.forEach((row) => {
+    files.elecciones?.data?.forEach((row) => {
       const jugador = getVal(row, "Nombre_TG")?.trim();
       const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim() || jugador;
       if (jugador && nombreEquipo && !teamData[nombreEquipo]) {
@@ -3894,7 +3789,7 @@ export default function App() {
         : [];
 
       // Upsert: replace if same name, otherwise push
-      const existingIdx = currentData.findIndex(
+      const existingIdx = currentData?.findIndex(
         (d) => d.carrera === parsedStartlist.carrera,
       );
       const newData = [...currentData];
@@ -4121,7 +4016,7 @@ export default function App() {
 
             const typesWithPoints = new Set<string>();
             raceTeams.forEach((team) =>
-              team.details.forEach((d) => {
+              team?.details?.forEach((d) => {
                 if (d.puntosObtenidos > 0) {
                   if (d.etapa) {
                     typesWithPoints.add(`Stage_${d.etapa}`);
@@ -4224,7 +4119,7 @@ export default function App() {
             >();
 
             raceTeams.forEach((team) => {
-              team.details.forEach((d) => {
+              team?.details?.forEach((d) => {
                 if (!raceCyclistsMap.has(d.ciclista)) {
                   raceCyclistsMap.set(d.ciclista, {
                     ciclista: d.ciclista,
@@ -4400,7 +4295,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                       id="race-classification-table"
                       ref={raceClassificationTableRef}
                       className={cn(
-                        "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
+                        "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full",
                         isRaceClassificationExpanded
                           ? "fixed inset-4 z-50 max-h-none"
                           : "",
@@ -4414,7 +4309,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                           <X className="w-6 h-6" />
                         </button>
                       )}
-                      <table className="w-full text-sm text-left border-collapse mx-auto">
+                      <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
                         <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                           <tr>
                             <th className="px-2 py-1.5 w-8 text-center">Pos</th>
@@ -4516,7 +4411,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                               </tr>
                             ))}
                         </tbody>
-                      </table>
+                      </table></div>
                     </div>
                   </div>
                 </div>
@@ -4556,7 +4451,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                       id="cyclists-classification-table"
                       ref={cyclistsTableRef}
                       className={cn(
-                        "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full",
+                        "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full",
                         isCyclistsExpanded
                           ? "fixed inset-4 z-50 max-h-none"
                           : "",
@@ -4570,7 +4465,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                           <X className="w-6 h-6" />
                         </button>
                       )}
-                      <table className="w-full text-sm text-left border-collapse mx-auto">
+                      <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
                         <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                           <tr>
                             <th className="px-3 py-1.5 min-w-[140px]">
@@ -4629,7 +4524,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </table></div>
                     </div>
                   </div>
                 </div>
@@ -4673,7 +4568,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                         id="race-breakdown-table"
                         ref={raceBreakdownTableRef}
                         className={cn(
-                          "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[75vh] overflow-y-auto shadow-sm w-full max-w-full",
+                          "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full max-w-full",
                           isStageExpanded
                             ? "fixed inset-4 z-50 max-h-none"
                             : "",
@@ -4687,7 +4582,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                             <X className="w-6 h-6" />
                           </button>
                         )}
-                        <table className="w-full text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
+                        <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
                           <thead
                             className={cn(
                               "bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10",
@@ -4783,7 +4678,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                               );
                             })}
                           </tbody>
-                        </table>
+                        </table></div>
                       </div>
                     </div>
                   </div>
@@ -4954,7 +4849,7 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                           concepts: any[];
                         }
                       >();
-                      team.details.forEach((d) => {
+                      team?.details?.forEach((d) => {
                         if (!cyclistMap.has(d.ciclista)) {
                           cyclistMap.set(d.ciclista, {
                             ronda: d.ronda,
@@ -5529,14 +5424,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             height: Math.max(500, leaderboard.length * 40 + 60),
                           }}
                         >
-                          <ResponsiveContainer width="100%" height="100%">
+                          <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={leaderboard.map((p) => {
                                 const cyclistPointsMap: Record<
                                   string,
                                   { points: number; ronda: string }
                                 > = {};
-                                p.detalles.forEach((d) => {
+                                p?.detalles?.forEach((d) => {
                                   if (!cyclistPointsMap[d.ciclista]) {
                                     cyclistPointsMap[d.ciclista] = {
                                       points: 0,
@@ -5670,7 +5565,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 ))}
                               </Bar>
                             </BarChart>
-                          </ResponsiveContainer>
+                          </ResponsiveContainer></div></div>
                         </div>
                       )}
                     </div>
@@ -6018,7 +5913,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                   // Calculate wins per team (excluding No draft)
                   const teamWinsCount: Record<string, number> = {};
-                  filteredLeaderboard.forEach((p) => {
+                  filteredLeaderboard?.forEach((p) => {
                     if (
                       p.nombreEquipo !== "No draft" &&
                       p.nombreEquipo !== "No draft [99]"
@@ -6255,7 +6150,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 ),
                               }}
                             >
-                              <ResponsiveContainer width="100%" height="100%">
+                              <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                   data={filteredLeaderboard.map((p, idx) => {
                                     const draftOrder = p.orden
@@ -6296,7 +6191,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     interval={0}
                                     tick={(props) => {
                                       const { x, y, payload } = props;
-                                      const item = filteredLeaderboard.find(
+                                      const item = filteredLeaderboard?.find(
                                         (p, idx) => {
                                           const displayName = `${p.nombreEquipo} [#${p.orden}]`;
                                           return displayName === payload.value;
@@ -6420,7 +6315,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     />
                                   </Bar>
                                 </BarChart>
-                              </ResponsiveContainer>
+                              </ResponsiveContainer></div></div>
                             </div>
                           </div>
 
@@ -6450,10 +6345,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       ),
                                     }}
                                   >
-                                    <ResponsiveContainer
-                                      width="100%"
-                                      height="100%"
-                                    >
+                                    <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                       <BarChart
                                         data={filteredLeaderboard.map(
                                           (p, idx) => {
@@ -6499,7 +6391,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           tick={(props) => {
                                             const { x, y, payload } = props;
                                             const item =
-                                              filteredLeaderboard.find(
+                                              filteredLeaderboard?.find(
                                                 (p, idx) => {
                                                   const displayName = `${p.nombreEquipo} [#${p.orden}]`;
                                                   return (
@@ -6636,7 +6528,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           />
                                         </Bar>
                                       </BarChart>
-                                    </ResponsiveContainer>
+                                    </ResponsiveContainer></div></div>
                                   </div>
                                 </div>
                               </div>
@@ -6662,7 +6554,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const currentMonthIdx = new Date().getMonth(); // 0-indexed
 
                             const teamColors: Record<string, string> = {};
-                            filteredLeaderboard.forEach((team, idx) => {
+                            filteredLeaderboard?.forEach((team, idx) => {
                               const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                               if (idx === 0)
                                 teamColors[teamKey] = "#fbbf24"; // Gold
@@ -6680,7 +6572,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 month: m,
                               }));
 
-                              filteredLeaderboard.forEach((team) => {
+                              filteredLeaderboard?.forEach((team) => {
                                 const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
 
                                 // Skip if not selected (if any are selected)
@@ -6907,10 +6799,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </div>
 
                                   <div className="h-[600px] w-full">
-                                    <ResponsiveContainer
-                                      width="100%"
-                                      height="100%"
-                                    >
+                                    <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                       <LineChart
                                         data={monthlyEvolutionData}
                                         margin={{
@@ -6982,7 +6871,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           },
                                         )}
                                       </LineChart>
-                                    </ResponsiveContainer>
+                                    </ResponsiveContainer></div></div>
                                   </div>
                                 </div>
                               </div>
@@ -7033,7 +6922,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                                       const teamColors: Record<string, string> =
                                         {};
-                                      filteredLeaderboard.forEach(
+                                      filteredLeaderboard?.forEach(
                                         (team, idx) => {
                                           const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                                           if (idx === 0)
@@ -7055,7 +6944,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           (m) => ({ month: m }),
                                         );
 
-                                        filteredLeaderboard.forEach((team) => {
+                                        filteredLeaderboard?.forEach((team) => {
                                           const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                                           if (
                                             selectedEvolutionTeams.length > 0 &&
@@ -7106,10 +6995,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       })();
 
                                       return (
-                                        <ResponsiveContainer
-                                          width="100%"
-                                          height="100%"
-                                        >
+                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                           <LineChart
                                             data={modalEvolutionData}
                                             margin={{
@@ -7183,7 +7069,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               },
                                             )}
                                           </LineChart>
-                                        </ResponsiveContainer>
+                                        </ResponsiveContainer></div></div>
                                       );
                                     })()}
                                   </div>
@@ -7319,7 +7205,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 b.puntos - a.puntos ||
                                 parseInt(a.orden) - parseInt(b.orden),
                             );
-                            teamStats.forEach((team, idx) => {
+                            teamStats?.forEach((team, idx) => {
                               team.originalPos = idx + 1;
                               team.diff =
                                 (parseInt(team.orden) || 0) - (idx + 1);
@@ -7538,7 +7424,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </div>
                                 </div>
                                 <div className="overflow-x-auto overflow-y-auto max-h-none min-h-[600px] flex justify-center bg-neutral-50/20 pb-8 scrollbar-thin relative mt-2">
-                                  <table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                                       <tr>
                                         <th
@@ -7807,7 +7693,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         );
                                       })}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
                             );
@@ -8072,7 +7958,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     return (
                                       <div className="max-h-[85vh] overflow-y-auto scrollbar-thin">
                                         <div className="flex justify-center bg-neutral-50/20 py-6">
-                                          <table className="w-auto min-w-[700px] text-base text-left bg-white border-separate border-spacing-0 shadow-xl rounded-xl border border-neutral-100">
+                                          <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[700px] text-base text-left bg-white border-separate border-spacing-0 shadow-xl rounded-xl border border-neutral-100">
                                             <thead className="text-xs text-neutral-500 uppercase z-20">
                                               <tr>
                                                 <th
@@ -8405,7 +8291,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                 );
                                               })}
                                             </tbody>
-                                          </table>
+                                          </table></div>
                                         </div>
                                       </div>
                                     );
@@ -8470,7 +8356,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               {(() => {
                                 const chartData = Object.entries(teamWinsCount)
                                   .map(([name, wins]) => {
-                                    const teamInfo = filteredLeaderboard.find(
+                                    const teamInfo = filteredLeaderboard?.find(
                                       (p) => p.nombreEquipo === name,
                                     );
                                     const displayName = teamInfo
@@ -8483,10 +8369,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   chartData.length > 0 ? chartData[0].wins : 0;
 
                                 return (
-                                  <ResponsiveContainer
-                                    width="100%"
-                                    height="100%"
-                                  >
+                                  <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                       data={chartData}
                                       layout="vertical"
@@ -8546,7 +8429,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         />
                                       </Bar>
                                     </BarChart>
-                                  </ResponsiveContainer>
+                                  </ResponsiveContainer></div></div>
                                 );
                               })()}
                             </div>
@@ -8578,7 +8461,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       )
                                         .map(([name, wins]) => {
                                           const teamInfo =
-                                            filteredLeaderboard.find(
+                                            filteredLeaderboard?.find(
                                               (p) => p.nombreEquipo === name,
                                             );
                                           const displayName = teamInfo
@@ -8589,10 +8472,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         .sort((a, b) => b.wins - a.wins);
 
                                       return (
-                                        <ResponsiveContainer
-                                          width="100%"
-                                          height="100%"
-                                        >
+                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                           <BarChart
                                             data={chartData}
                                             layout="vertical"
@@ -8646,7 +8526,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               />
                                             </Bar>
                                           </BarChart>
-                                        </ResponsiveContainer>
+                                        </ResponsiveContainer></div></div>
                                       );
                                     })()}
                                   </div>
@@ -8674,7 +8554,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const currentMonthIdx = new Date().getMonth(); // 0-indexed
 
                             const teamColors: Record<string, string> = {};
-                            filteredLeaderboard.forEach((team, idx) => {
+                            filteredLeaderboard?.forEach((team, idx) => {
                               const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                               if (idx === 0)
                                 teamColors[teamKey] = "#fbbf24"; // Gold
@@ -8709,7 +8589,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 }
                               });
 
-                              filteredLeaderboard.forEach((team) => {
+                              filteredLeaderboard?.forEach((team) => {
                                 const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
 
                                 // Skip if not selected (if any are selected)
@@ -8921,10 +8801,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                                   <div className="h-[400px] w-full">
                                     {monthlyWinsEvolutionData.length > 0 ? (
-                                      <ResponsiveContainer
-                                        width="100%"
-                                        height="100%"
-                                      >
+                                      <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                         <LineChart
                                           data={monthlyWinsEvolutionData}
                                           margin={{
@@ -9015,7 +8892,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             );
                                           })}
                                         </LineChart>
-                                      </ResponsiveContainer>
+                                      </ResponsiveContainer></div></div>
                                     ) : (
                                       <div className="h-full flex items-center justify-center text-neutral-400 text-sm">
                                         No hay datos de victorias para mostrar
@@ -9072,7 +8949,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                                       const teamColors: Record<string, string> =
                                         {};
-                                      filteredLeaderboard.forEach(
+                                      filteredLeaderboard?.forEach(
                                         (team, idx) => {
                                           const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                                           if (idx === 0)
@@ -9094,7 +8971,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           (m) => ({ month: m }),
                                         );
 
-                                        filteredLeaderboard.forEach((team) => {
+                                        filteredLeaderboard?.forEach((team) => {
                                           const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                                           if (
                                             selectedEvolutionTeams.length > 0 &&
@@ -9168,10 +9045,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       })();
 
                                       return (
-                                        <ResponsiveContainer
-                                          width="100%"
-                                          height="100%"
-                                        >
+                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                           <LineChart
                                             data={modalWinsEvolutionData}
                                             margin={{
@@ -9245,7 +9119,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               },
                                             )}
                                           </LineChart>
-                                        </ResponsiveContainer>
+                                        </ResponsiveContainer></div></div>
                                       );
                                     })()}
                                   </div>
@@ -9277,7 +9151,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               let winnerPoints = 0;
 
                               if (winnerTeamName) {
-                                const teamInfo = filteredLeaderboard.find(
+                                const teamInfo = filteredLeaderboard?.find(
                                   (p) => p.nombreEquipo === winnerTeamName,
                                 );
                                 if (teamInfo) {
@@ -9558,7 +9432,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </div>
                                   </div>
                                   <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
-                                    <table className="w-full text-sm text-left">
+                                    <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left">
                                       <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10">
                                         <tr>
                                           <th
@@ -9752,7 +9626,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           );
                                         })()}
                                       </tbody>
-                                    </table>
+                                    </table></div>
                                   </div>
                                 </div>
                               </>
@@ -9778,7 +9652,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   </button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-8">
-                                  <table className="w-full text-base text-left">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-base text-left">
                                     <thead className="text-sm text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10">
                                       <tr>
                                         <th className="px-6 py-4 font-bold">
@@ -9814,7 +9688,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                 "Fecha",
                                               );
                                               const teamInfo =
-                                                filteredLeaderboard.find(
+                                                filteredLeaderboard?.find(
                                                   (p) =>
                                                     p.nombreEquipo ===
                                                     winnerTeam,
@@ -9894,7 +9768,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           ));
                                       })()}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
                             </div>
@@ -10450,7 +10324,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </div>
 
                                 <div className="overflow-x-auto overflow-y-auto max-h-[750px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
-                                  <table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -10792,7 +10666,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         });
 
                                         leaderboard?.forEach((player) => {
-                                          player.detalles.forEach((d) => {
+                                          player?.detalles?.forEach((d) => {
                                             // Apply month filter
                                             if (
                                               cyclistsMonthFilter !== "all" &&
@@ -11255,7 +11129,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         });
                                       })()}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
 
@@ -11282,7 +11156,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           let points = 0;
                                           leaderboard?.forEach((p) => {
                                             if (p.jugador === jugador) {
-                                              p.detalles.forEach((d) => {
+                                              p?.detalles?.forEach((d) => {
                                                 if (d.ciclista === ciclista) {
                                                   points += d.puntosObtenidos;
                                                 }
@@ -11384,7 +11258,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               let points = 0;
                                               leaderboard?.forEach((p) => {
                                                 if (p.jugador === jugador) {
-                                                  p.detalles.forEach((d) => {
+                                                  p?.detalles?.forEach((d) => {
                                                     if (d.ciclista === ciclista)
                                                       points +=
                                                         d.puntosObtenidos;
@@ -11630,7 +11504,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       : "h-[800px]",
                                   )}
                                 >
-                                  <table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -11828,7 +11702,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             let points = 0;
                                             leaderboard?.forEach((p) => {
                                               if (p.jugador === jugador) {
-                                                p.detalles.forEach((d) => {
+                                                p?.detalles?.forEach((d) => {
                                                   if (d.ciclista === ciclista) {
                                                     points += d.puntosObtenidos;
                                                   }
@@ -12041,7 +11915,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         });
                                       })()}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
 
@@ -12404,7 +12278,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       : "max-h-[750px]",
                                   )}
                                 >
-                                  <table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -12689,7 +12563,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         });
                                       })()}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
                             </>
@@ -12761,7 +12635,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         const noDraftCyclists =
                                           new Set<string>();
                                         leaderboard?.forEach((player) => {
-                                          player.detalles.forEach((d) => {
+                                          player?.detalles?.forEach((d) => {
                                             if (
                                               d.ciclista &&
                                               d.jugador === "No elegido"
@@ -12770,7 +12644,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                             }
                                           });
                                         });
-                                        files.puntos.data.forEach((row) => {
+                                        files.puntos?.data?.forEach((row) => {
                                           const ciclista = getVal(
                                             row,
                                             "Ciclista",
@@ -12966,7 +12840,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       : "h-[800px]",
                                   )}
                                 >
-                                  <table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -13508,7 +13382,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         ));
                                       })()}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
                               </div>
                             </div>
@@ -13572,7 +13446,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                     // New KPIs: Puesto and Dif con orden
                     const currentPuesto = leaderboard
-                      ? leaderboard.findIndex(
+                      ? leaderboard?.findIndex(
                           (p) => p.nombreEquipo === selectedTeam,
                         ) + 1
                       : 0;
@@ -14047,7 +13921,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               Plantilla del Equipo
                             </h3>
                             <div className="table-container-for-capture bg-white border border-neutral-200 rounded-xl overflow-x-auto overflow-y-auto shadow-sm flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                              <table className="w-auto text-xs text-left whitespace-nowrap border-collapse mx-auto">
+                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto text-xs text-left whitespace-nowrap border-collapse mx-auto">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-100 text-[9px] tracking-tight uppercase font-bold sticky top-0 z-10">
                                   <tr>
                                     <th
@@ -14504,7 +14378,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </tr>
                                   ))}
                                 </tbody>
-                              </table>
+                              </table></div>
                             </div>
                           </div>
                         </div>
@@ -14571,14 +14445,14 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                 ) : (
                   <div className="space-y-6">
                     {(() => {
-                      const selectedData = files.startlist.data.find(
+                      const selectedData = files.startlist.data?.find(
                         (d) => d.carrera === publicStartlistRace,
                       );
                       if (!selectedData) return null;
 
                       let rows: any[] = [];
-                      selectedData.resultados.forEach((res: any) => {
-                        res.ciclistas.forEach((c: any) => {
+                      selectedData.resultados?.forEach((res: any) => {
+                        res.ciclistas?.forEach((c: any) => {
                           const nombre = typeof c === "string" ? c : c.nombre;
                           const dorsal = typeof c === "string" ? "" : c.dorsal;
 
@@ -14721,7 +14595,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       const allTeams = new Set(
                         Object.values(playerTeamMap) as string[],
                       );
-                      allTeams.forEach((team) => {
+                      allTeams?.forEach((team) => {
                         if (team) {
                           teamStats[team] = { count: 0, points: 0 };
                         }
@@ -15193,7 +15067,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   : "max-h-[850px]",
                               )}
                             >
-                              <table className="w-full text-sm text-left">
+                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-200 sticky top-0 z-10">
                                   <tr className="divide-x divide-neutral-600">
                                     <th
@@ -15441,7 +15315,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     );
                                   })}
                                 </tbody>
-                              </table>
+                              </table></div>
                             </div>
                           </div>
 
@@ -15572,7 +15446,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   : "max-h-[600px]",
                               )}
                             >
-                              <table className="w-full text-sm text-left border-r border-neutral-200">
+                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left border-r border-neutral-200">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-200 sticky top-0 z-10">
                                   <tr className="divide-x divide-neutral-600">
                                     <th className="px-3 py-3 font-semibold whitespace-nowrap bg-[#1e293b] w-12 text-center">
@@ -15714,7 +15588,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </tr>
                                   ))}
                                 </tbody>
-                              </table>
+                              </table></div>
                             </div>
                           </div>
                         </div>
@@ -16111,7 +15985,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             { puntos: number; victorias: number }
                           > = {};
                           leaderboard?.forEach((player) => {
-                            player.detalles.forEach((d) => {
+                            player?.detalles?.forEach((d) => {
                               if (!draftCyclistStats[d.ciclista]) {
                                 draftCyclistStats[d.ciclista] = {
                                   puntos: 0,
@@ -16153,7 +16027,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                           // We need team total points first for % calculation
                           const teamTotalPoints: Record<string, number> = {};
-                          files.elecciones.data.forEach((row) => {
+                          files.elecciones?.data?.forEach((row) => {
                             const ciclista = getVal(row, "Ciclista") as string;
                             const equipo =
                               getVal(row, "Nombre_Equipo") ||
@@ -16166,7 +16040,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             }
                           });
 
-                          files.elecciones.data.forEach((row) => {
+                          files.elecciones?.data?.forEach((row) => {
                             const ciclista = getVal(row, "Ciclista") as string;
                             if (!ciclista) return;
                             const stats = draftCyclistStats[ciclista] || {
@@ -16363,7 +16237,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 <div
                                   ref={draftTableRef}
                                   className={cn(
-                                    "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-[1200px] overflow-y-auto shadow-sm inline-block max-w-full",
+                                    "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[1200px] shadow-sm inline-block max-w-full",
                                     isDraftTableExpanded
                                       ? "fixed inset-4 z-50 max-h-none"
                                       : "",
@@ -16381,7 +16255,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   )}
                                   {(() => {
                                     return (
-                                      <table className="w-auto text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
+                                      <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
                                         <thead
                                           className={cn(
                                             "bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10",
@@ -16897,7 +16771,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                               );
                                             })}
                                         </tbody>
-                                      </table>
+                                      </table></div>
                                     );
                                   })()}
                                 </div>
@@ -17088,7 +16962,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       const availableCategories =
                                         new Set<string>();
                                       leaderboard?.forEach((player) => {
-                                        player.detalles.forEach((d) => {
+                                        player?.detalles?.forEach((d) => {
                                           const cat = raceTypeByName[d.carrera];
                                           if (cat) availableCategories.add(cat);
                                         });
@@ -17187,7 +17061,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   <div className="max-h-60 overflow-y-auto">
                                     {(() => {
                                       const availableTeams = new Set<string>();
-                                      files.elecciones.data.forEach((row) => {
+                                      files.elecciones?.data?.forEach((row) => {
                                         const teamName =
                                           getVal(row, "Nombre_Equipo") ||
                                           getVal(row, "Nombre_TG");
@@ -17284,7 +17158,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         <div
                           ref={draftDatosTableRef}
                           className={cn(
-                            "bg-white border border-neutral-200 rounded-xl overflow-x-auto max-h-none overflow-y-auto shadow-sm",
+                            "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h- shadow-sm",
                             isDraftDatosTableExpanded
                               ? "fixed inset-4 z-50 p-6 shadow-2xl m-0"
                               : "",
@@ -17322,7 +17196,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const availableTeams = new Set<string>();
 
                             leaderboard?.forEach((player) => {
-                              player.detalles.forEach((d) => {
+                              player?.detalles?.forEach((d) => {
                                 const dateStr =
                                   raceDateByName[d.carrera] || d.fecha;
                                 if (dateStr) {
@@ -17352,7 +17226,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               });
                             });
 
-                            files.elecciones.data.forEach((row) => {
+                            files.elecciones?.data?.forEach((row) => {
                               const teamName =
                                 getVal(row, "Nombre_Equipo") ||
                                 getVal(row, "Nombre_TG");
@@ -17364,7 +17238,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const cyclistPoints: Record<string, number> = {};
                             const cyclistWins: Record<string, number> = {};
                             leaderboard?.forEach((player) => {
-                              player.detalles.forEach((d) => {
+                              player?.detalles?.forEach((d) => {
                                 const dateStr =
                                   raceDateByName[d.carrera] || d.fecha;
                                 let matchesMonth = true;
@@ -17442,7 +17316,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             const teamOrderMap: Record<string, string> = {};
                             const teamsSet = new Set<string>();
 
-                            files.elecciones.data.forEach((row) => {
+                            files.elecciones?.data?.forEach((row) => {
                               const teamName = (getVal(row, "Nombre_Equipo") ||
                                 getVal(row, "Nombre_TG")) as string;
                               const round = parseInt(getVal(row, "Ronda"));
@@ -17538,7 +17412,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             });
 
                             return (
-                              <table className="w-full text-xs text-left whitespace-nowrap border-collapse">
+                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-collapse">
                                 <thead
                                   className={cn(
                                     "bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10",
@@ -17757,7 +17631,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     );
                                   })}
                                 </tbody>
-                              </table>
+                              </table></div>
                             );
                           })()}
                         </div>
@@ -17791,7 +17665,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         draftSummaryTableRef.current,
                                         {
                                           
-                                          scale: 3,
+                                          scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                                         },
                                       );
@@ -17856,7 +17731,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         draftSummaryTableRef.current,
                                         {
                                           
-                                          scale: 3,
+                                          scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                                         },
                                       );
@@ -17970,7 +17846,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
                             const cyclistPointsQ: Record<string, number> = {};
                             leaderboard?.forEach((player) => {
-                              player.detalles.forEach((d) => {
+                              player?.detalles?.forEach((d) => {
                                 const dateStr =
                                   raceDateByName[d.carrera] || d.fecha;
                                 let matchesMonth = true;
@@ -18022,7 +17898,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             });
 
                             const statsArray: any[] = [];
-                            files.elecciones.data.forEach((row) => {
+                            files.elecciones?.data?.forEach((row) => {
                               const teamName = (getVal(row, "Nombre_Equipo") ||
                                 getVal(row, "Nombre_TG")) as string;
                               const ronda = parseInt(getVal(row, "Ronda"));
@@ -18365,7 +18241,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   className="overflow-x-auto rounded-xl border border-neutral-200 shadow-sm bg-white"
                                   ref={draftSummaryTableRef}
                                 >
-                                  <table className="w-full text-sm text-left border-collapse">
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left border-collapse">
                                     <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
                                       <tr>
                                         <th className="px-3 py-2.5 font-bold border-b border-neutral-200">
@@ -18645,7 +18521,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         );
                                       })}
                                     </tbody>
-                                  </table>
+                                  </table></div>
                                 </div>
 
                                 <div
@@ -18750,7 +18626,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                     draftChartRef.current,
                                                     {
                                                       
-                                                      scale: 3,
+                                                      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                                                     },
                                                   );
@@ -18786,7 +18663,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                     draftChartRef.current,
                                                     {
                                                       
-                                                      scale: 3,
+                                                      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        
         backgroundColor: '#ffffff',
                                                     },
                                                   );
@@ -18812,10 +18690,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                     </div>
                                   </div>
                                   <div className="h-[500px]">
-                                    <ResponsiveContainer
-                                      width="100%"
-                                      height="100%"
-                                    >
+                                    <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
                                       <BarChart
                                         data={chartData}
                                         layout="vertical"
@@ -18911,7 +18786,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                           radius={[0, 4, 4, 0]}
                                         />
                                       </BarChart>
-                                    </ResponsiveContainer>
+                                    </ResponsiveContainer></div></div>
                                   </div>
                                   <p className="text-[11px] text-neutral-400 mt-6 text-center italic">
                                     * Pasa el ratón sobre las barras para ver
@@ -18952,8 +18827,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       <div className="flex-1 overflow-auto p-4 md:p-8 bg-neutral-50/30">
                                         <div className="space-y-8 max-w-5xl mx-auto">
                                           {/* Re-using the table in extreme detail */}
-                                          <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl overflow-hidden ring-1 ring-black/5">
-                                            <table className="w-full text-sm text-left border-collapse">
+                                          <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl overflow-hidden overflow-x-auto ring-1 ring-black/5">
+                                            <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="min-w-[800px] w-full text-sm text-left border-collapse">
                                               <thead className="text-[10px] text-neutral-400 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-10">
                                                 <tr>
                                                   <th className="px-6 py-4 font-bold border-b border-neutral-100">
@@ -19068,7 +18943,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   ),
                                                 )}
                                               </tbody>
-                                            </table>
+                                            </table></div>
                                           </div>
 
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -19277,7 +19152,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                     <div
                       ref={pointsTableRef}
                       className={cn(
-                        "overflow-x-auto max-h-[600px] overflow-y-auto bg-white",
+                        "overflow-hidden relative max-h-[75vh] bg-white",
                         isPointsExpanded
                           ? "fixed inset-4 z-50 p-4 shadow-2xl rounded-xl max-h-none m-0"
                           : "",
@@ -19292,7 +19167,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         </button>
                       )}
                       <div>
-                        <table className="w-full text-sm text-left">
+                        <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left">
                           <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0 z-10">
                             <tr>
                               <th className="px-6 py-3">Categoría</th>
@@ -19351,7 +19226,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               ));
                             })()}
                           </tbody>
-                        </table>
+                        </table></div>
                       </div>
                     </div>
                   </div>
@@ -19471,7 +19346,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                     <div
                       ref={racesTableRef}
                       className={cn(
-                        "overflow-x-auto max-h-[600px] overflow-y-auto",
+                        "overflow-hidden relative max-h-[75vh]",
                         isRacesExpanded
                           ? "fixed inset-4 z-50 bg-white p-4 shadow-2xl rounded-xl"
                           : "",
@@ -19485,7 +19360,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                           <X className="w-6 h-6" />
                         </button>
                       )}
-                      <table className="w-full text-sm text-left">
+                      <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full min-w-[600px] text-sm text-left">
                         <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0 z-10">
                           <tr>
                             <th className="px-6 py-3">Carrera</th>
@@ -19609,7 +19484,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               });
                           })()}
                         </tbody>
-                      </table>
+                      </table></div>
                     </div>
                   </div>
                 )}
