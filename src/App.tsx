@@ -961,7 +961,22 @@ export default function App() {
     if (!chartRef.current || isCopying) return;
 
     setIsCopying(true);
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
+    
     try {
+      const scrollWidth = chartRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = chartRef.current.style.width;
+      originalTargetMinWidth = chartRef.current.style.minWidth;
+      
+      chartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      chartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(chartRef.current);
+      
       // Check if ClipboardItem is supported
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
@@ -971,7 +986,8 @@ export default function App() {
               scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-              
+              width: targetWidth,
+              style: { overflow: "visible" },
             });
 
             const response = await fetch(dataUrl);
@@ -991,17 +1007,40 @@ export default function App() {
       // Fallback: Download
       handleDownloadChart();
       /* Alert suppressed to improve user experience in iframe */
+    } finally {
+      restore();
+      if (chartRef.current) {
+        chartRef.current.style.width = originalTargetWidth;
+        chartRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleDownloadChart = async () => {
     if (!chartRef.current) return;
+    
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
+    
     try {
+      const scrollWidth = chartRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = chartRef.current.style.width;
+      originalTargetMinWidth = chartRef.current.style.minWidth;
+      
+      chartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      chartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(chartRef.current);
+      
       const dataUrl = await domToDataUrl(chartRef.current, {
         scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-        
+        width: targetWidth,
+        style: { overflow: "visible" },
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1009,6 +1048,12 @@ export default function App() {
       link.click();
     } catch (err) {
       console.error("Error downloading chart:", err);
+    } finally {
+      restore();
+      if (chartRef.current) {
+        chartRef.current.style.width = originalTargetWidth;
+        chartRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
@@ -1080,7 +1125,22 @@ export default function App() {
     if (!evolutionChartRef.current || isEvolutionChartCopying) return;
 
     setIsEvolutionChartCopying(true);
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
+    
     try {
+      const scrollWidth = evolutionChartRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = evolutionChartRef.current.style.width;
+      originalTargetMinWidth = evolutionChartRef.current.style.minWidth;
+      
+      evolutionChartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      evolutionChartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(evolutionChartRef.current);
+      
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
@@ -1088,7 +1148,8 @@ export default function App() {
               scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-              
+              width: targetWidth,
+              style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
@@ -1106,17 +1167,40 @@ export default function App() {
       setIsEvolutionChartCopying(false);
       handleDownloadEvolutionChart();
       /* Alert suppressed to improve user experience in iframe */
+    } finally {
+      restore();
+      if (evolutionChartRef.current) {
+        evolutionChartRef.current.style.width = originalTargetWidth;
+        evolutionChartRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleDownloadEvolutionChart = async () => {
     if (!evolutionChartRef.current) return;
+    
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
+    
     try {
+      const scrollWidth = evolutionChartRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = evolutionChartRef.current.style.width;
+      originalTargetMinWidth = evolutionChartRef.current.style.minWidth;
+      
+      evolutionChartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      evolutionChartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(evolutionChartRef.current);
+      
       const dataUrl = await domToDataUrl(evolutionChartRef.current, {
         scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-        
+        width: targetWidth,
+        style: { overflow: "visible" },
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1124,13 +1208,33 @@ export default function App() {
       link.click();
     } catch (err) {
       console.error("Error downloading chart:", err);
+    } finally {
+      restore();
+      if (evolutionChartRef.current) {
+        evolutionChartRef.current.style.width = originalTargetWidth;
+        evolutionChartRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleCopyWinsRanking = async () => {
     if (!winsRankingRef.current || isWinsRankingCopying) return;
     setIsWinsRankingCopying(true);
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
     try {
+      const scrollWidth = winsRankingRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = winsRankingRef.current.style.width;
+      originalTargetMinWidth = winsRankingRef.current.style.minWidth;
+      
+      winsRankingRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      winsRankingRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(winsRankingRef.current);
+      
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
@@ -1138,7 +1242,8 @@ export default function App() {
               scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-              
+              width: targetWidth,
+              style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -1154,17 +1259,38 @@ export default function App() {
       setIsWinsRankingCopying(false);
       handleDownloadWinsRanking();
       /* Alert suppressed to improve user experience in iframe */
+    } finally {
+      restore();
+      if (winsRankingRef.current) {
+        winsRankingRef.current.style.width = originalTargetWidth;
+        winsRankingRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleDownloadWinsRanking = async () => {
     if (!winsRankingRef.current) return;
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
     try {
+      const scrollWidth = winsRankingRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = winsRankingRef.current.style.width;
+      originalTargetMinWidth = winsRankingRef.current.style.minWidth;
+      
+      winsRankingRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      winsRankingRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(winsRankingRef.current);
+      
       const dataUrl = await domToDataUrl(winsRankingRef.current, {
         scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-        
+        width: targetWidth,
+        style: { overflow: "visible" },
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1172,13 +1298,33 @@ export default function App() {
       link.click();
     } catch (err) {
       console.error("Error downloading chart:", err);
+    } finally {
+      restore();
+      if (winsRankingRef.current) {
+        winsRankingRef.current.style.width = originalTargetWidth;
+        winsRankingRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleCopyWinsEvolution = async () => {
     if (!winsEvolutionRef.current || isWinsEvolutionCopying) return;
     setIsWinsEvolutionCopying(true);
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
     try {
+      const scrollWidth = winsEvolutionRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = winsEvolutionRef.current.style.width;
+      originalTargetMinWidth = winsEvolutionRef.current.style.minWidth;
+      
+      winsEvolutionRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      winsEvolutionRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(winsEvolutionRef.current);
+
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
@@ -1186,7 +1332,8 @@ export default function App() {
               scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-              
+              width: targetWidth,
+              style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             return await response.blob();
@@ -1202,17 +1349,38 @@ export default function App() {
       setIsWinsEvolutionCopying(false);
       handleDownloadWinsEvolution();
       /* Alert suppressed to improve user experience in iframe */
+    } finally {
+      restore();
+      if (winsEvolutionRef.current) {
+        winsEvolutionRef.current.style.width = originalTargetWidth;
+        winsEvolutionRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
   const handleDownloadWinsEvolution = async () => {
     if (!winsEvolutionRef.current) return;
+    let restore = () => {};
+    let originalTargetWidth = "";
+    let originalTargetMinWidth = "";
     try {
+      const scrollWidth = winsEvolutionRef.current.scrollWidth;
+      const targetWidth = Math.max(scrollWidth, 800);
+      
+      originalTargetWidth = winsEvolutionRef.current.style.width;
+      originalTargetMinWidth = winsEvolutionRef.current.style.minWidth;
+      
+      winsEvolutionRef.current.style.setProperty("width", `${targetWidth}px`, "important");
+      winsEvolutionRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      restore = expandNodeForCapture(winsEvolutionRef.current);
+
       const dataUrl = await domToDataUrl(winsEvolutionRef.current, {
         scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         
         backgroundColor: '#ffffff',
-        
+        width: targetWidth,
+        style: { overflow: "visible" },
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -1220,6 +1388,12 @@ export default function App() {
       link.click();
     } catch (err) {
       console.error("Error downloading chart:", err);
+    } finally {
+      restore();
+      if (winsEvolutionRef.current) {
+        winsEvolutionRef.current.style.width = originalTargetWidth;
+        winsEvolutionRef.current.style.minWidth = originalTargetMinWidth;
+      }
     }
   };
 
@@ -6098,12 +6272,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             ref={chartRef}
                             className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm relative group"
                           >
-                            <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2 whitespace-nowrap">
-                                <BarChart3 className="w-5 h-5 text-blue-600" />
-                                Clasificación General
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2 w-full sm:w-auto min-w-0">
+                                <BarChart3 className="w-5 h-5 text-blue-600 shrink-0" />
+                                <span className="truncate">Clasificación General</span>
                               </h3>
-                              <div className="copy-button-ignore flex items-center gap-2">
+                              <div className="copy-button-ignore flex items-center gap-2 shrink-0">
                                 <button
                                   onClick={() => setIsChartExpanded(true)}
                                   className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
@@ -6622,13 +6796,13 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 ref={evolutionChartRef}
                                 className="mt-12 group relative"
                               >
-                                <div className="flex items-center justify-between border-b pb-3 mb-6">
-                                  <div className="flex items-center gap-4">
-                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 whitespace-nowrap">
-                                      <TrendingUp className="w-5 h-5 text-blue-600" />
-                                      Evolución Mensual
+                                <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-3 mb-6 gap-4">
+                                  <div className="flex items-center gap-4 min-w-0">
+                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 min-w-0">
+                                      <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
+                                      <span className="truncate">Evolución Mensual</span>
                                     </h3>
-                                    <div className="copy-button-ignore flex items-center gap-2">
+                                    <div className="copy-button-ignore flex items-center gap-2 shrink-0">
                                       <button
                                         onClick={() =>
                                           setIsEvolutionChartExpanded(true)
@@ -7346,18 +7520,18 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-12 group relative"
                               >
                                 <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                  <div className="flex items-center justify-between w-full">
-                                    <div>
-                                      <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
-                                        <LayoutGrid className="w-5 h-5 text-blue-600" />
-                                        Top Equipos por Puntuación
+                                  <div className="flex items-center justify-between w-full min-w-0">
+                                    <div className="min-w-0 pr-4">
+                                      <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+                                        <LayoutGrid className="w-5 h-5 text-blue-600 shrink-0" />
+                                        <span className="truncate">Top Equipos por Puntuación</span>
                                       </h3>
-                                      <p className="text-xs text-neutral-500 mt-0.5 whitespace-nowrap">
+                                      <p className="text-xs text-neutral-500 mt-0.5 truncate">
                                         Ranking de los equipos fantasy por
                                         puntuación total.
                                       </p>
                                     </div>
-                                    <div className="copy-button-ignore flex items-center gap-2">
+                                    <div className="copy-button-ignore flex shrink-0 items-center gap-2">
                                       <button
                                         onClick={() =>
                                           setIsTopTeamsTableExpanded(true)
@@ -8309,12 +8483,12 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                             ref={winsRankingRef}
                             className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm group relative"
                           >
-                            <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
-                                <Trophy className="w-5 h-5 text-yellow-500" />
-                                Ranking de Victorias por Equipo
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2 min-w-0">
+                                <Trophy className="w-5 h-5 text-yellow-500 shrink-0" />
+                                <span className="truncate">Ranking de Victorias por Equipo</span>
                               </h3>
-                              <div className="copy-button-ignore flex items-center gap-2">
+                              <div className="copy-button-ignore flex items-center gap-2 shrink-0">
                                 <button
                                   onClick={() => setIsWinsRankingExpanded(true)}
                                   className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
@@ -8639,13 +8813,13 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 ref={winsEvolutionRef}
                                 className="mt-12 group relative"
                               >
-                                <div className="flex items-center justify-between border-b pb-3 mb-6">
-                                  <div className="flex items-center gap-4">
-                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 whitespace-nowrap">
-                                      <TrendingUp className="w-5 h-5 text-blue-600" />
-                                      Evolución Mensual de Victorias
+                                <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-3 mb-6 gap-4">
+                                  <div className="flex items-center gap-4 min-w-0">
+                                    <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 min-w-0">
+                                      <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
+                                      <span className="truncate">Evolución Mensual de Victorias</span>
                                     </h3>
-                                    <div className="copy-button-ignore flex items-center gap-2">
+                                    <div className="copy-button-ignore flex items-center gap-2 shrink-0">
                                       <button
                                         onClick={() =>
                                           setIsWinsEvolutionExpanded(true)
