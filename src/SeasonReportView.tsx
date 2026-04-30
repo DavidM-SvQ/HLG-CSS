@@ -688,6 +688,13 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
     const panenkitaTeamPoints: Record<string, number> = {};
     const panenkitaCyclistsPoints: Record<string, number> = {};
 
+    Object.entries(cyclistRondaMap).forEach(([cyclist, roundStr]) => {
+      const roundNum = parseInt(roundStr, 10);
+      if (roundNum >= 20 && roundNum <= 25) {
+        panenkitaCyclistsPoints[cyclist] = 0;
+      }
+    });
+
     const raceTeamScores: Record<string, Record<string, number>> = {}; // [race][team] -> points
     const teamMonthlyPoints: Record<string, Record<number, number>> = {}; // [team][month] -> points
 
@@ -1041,11 +1048,20 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
       .sort((a, b) => b.pts - a.pts || a.draftRankNum - b.draftRankNum);
 
     const panenkitaTopCyclists = Object.entries(panenkitaCyclistsPoints)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => {
+        const ptsDiff = b[1] - a[1];
+        if (ptsDiff !== 0) return ptsDiff;
+        const roundA = parseInt(cyclistRondaMap[a[0]] || "99", 10);
+        const roundB = parseInt(cyclistRondaMap[b[0]] || "99", 10);
+        const roundDiff = roundA - roundB;
+        if (roundDiff !== 0) return roundDiff;
+        return a[0].localeCompare(b[0]);
+      })
       .slice(0, 50)
       .map(([cyclist, pts]) => {
         const round = cyclistRondaMap[cyclist] || "-";
-        return { cyclist, pts, round };
+        const teamInfo = cyclistTeamMap[cyclist] || "";
+        return { cyclist, pts, round, teamInfo };
       });
 
     const winningTeamObj = panenkitaTopTeams.length > 0 ? panenkitaTopTeams[0] : null;
@@ -3268,15 +3284,15 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
               <ExportToolbar targetRef={ref8} filename="premio-panenkita" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref9} >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm lg:col-span-3" ref={ref9} >
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4 className="font-bold text-pink-800 text-sm">
                     Mejores Equipos (R20-25)
                   </h4>
                   <ExportToolbar targetRef={ref9} filename="mejores-equipos-panenkita" />
                 </div>
-                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
+                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
                   <tbody>
                     {monthReportData.panenkitaTopTeams.map((t, idx) => (
                       <tr
@@ -3303,7 +3319,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                 </table></div>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref10}>
+              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm lg:col-span-5" ref={ref10}>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4 className="font-bold text-pink-800 text-sm">
                     Top 50 Panenkitas (Ciclistas)
@@ -3311,18 +3327,18 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                   <ExportToolbar targetRef={ref10} filename="top-50-panenkitas" />
                 </div>
                 <div className="">
-                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
                     <tbody>
                       {monthReportData.panenkitaTopCyclists.map((c, idx) => (
                         <tr
                           key={idx}
                           className="border-b border-pink-50 last:border-0"
                         >
-                          <td className="py-1.5 truncate max-w-[150px]">
+                          <td className="py-1.5 whitespace-nowrap">
                             <span className="text-pink-400 mr-2 text-xs">
                               {idx + 1}º
                             </span>
-                            {c.cyclist} <span className="opacity-60 text-[10px]">&lt;{c.round}&gt;</span>
+                            {c.cyclist} <span className="opacity-60 text-[10px]">&lt;{c.round}&gt; {c.teamInfo}</span>
                           </td>
                           <td className="py-1.5 text-right font-mono text-xs font-bold text-pink-600">
                             {c.pts}
@@ -3341,7 +3357,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm" ref={ref11}>
+              <div className="bg-white p-4 rounded-xl border border-pink-200 shadow-sm lg:col-span-4" ref={ref11}>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start border-b border-pink-100 pb-2 mb-3 gap-3">
                   <h4
                     className="font-bold text-pink-800 text-sm truncate"
@@ -3352,7 +3368,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                   <ExportToolbar targetRef={ref11} filename="elecciones-equipo-panenkita" />
                 </div>
                 <div className="overflow-auto max-h-[250px]">
-                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
                     <tbody>
                       {monthReportData.bestPanenkitaTeamPicks.map((c, idx) => (
                         <tr

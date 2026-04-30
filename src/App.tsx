@@ -217,6 +217,64 @@ const normalizeStr = (s: string) => {
   return res;
 };
 
+function MultiSelect({ options, value, onChange, placeholder }: { options: {value: string, label: string}[], value: string[], onChange: (v: string[]) => void, placeholder: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setIsOpen(!isOpen)} className="px-3 py-1.5 bg-white border border-neutral-200 rounded-md text-sm text-neutral-700 flex items-center justify-between min-w-[150px] shadow-sm hover:bg-neutral-50">
+        <span className="truncate">{value.length === 0 ? placeholder : `${placeholder} (${value.length})`}</span>
+        <ChevronDown className="w-4 h-4 ml-2 text-neutral-400" />
+      </button>
+      {isOpen && (
+        <div className="absolute z-50 top-full left-0 mt-1 w-full min-w-[200px] bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="p-2 flex flex-col gap-1">
+             <label className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded cursor-pointer">
+               <input type="checkbox" checked={value.length === 0} onChange={() => onChange([])} className="rounded text-blue-600 focus:ring-blue-500" />
+               <span className="text-sm font-medium">Todos</span>
+             </label>
+             <div className="h-px bg-neutral-100 my-1"></div>
+             {options.map(opt => (
+               <label key={opt.value} className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded cursor-pointer">
+                 <input type="checkbox" checked={value.includes(opt.value)} onChange={(e) => {
+                   if (e.target.checked) onChange([...value, opt.value]);
+                   else onChange(value.filter(v => v !== opt.value));
+                 }} className="rounded text-blue-600 focus:ring-blue-500" />
+                 <span className="text-sm truncate">{opt.label}</span>
+               </label>
+             ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const getCategoryColorStyle = (cat: string): React.CSSProperties => {
+  if (!cat) return { backgroundColor: "transparent" };
+  const c = cat.toUpperCase();
+  // Tonos pasteles con mucha transparencia (0.4)
+  if (c.includes('WT.A')) return { backgroundColor: "rgba(254, 226, 226, 0.4)" }; // red
+  if (c.includes('WT.B') || c.includes('WT.C')) return { backgroundColor: "rgba(255, 237, 213, 0.4)" }; // orange
+  if (c.includes('UWT') || c.includes('WT')) return { backgroundColor: "rgba(254, 226, 226, 0.4)" }; // red
+  if (c.includes('PRO.A') || c.includes('PR.A')) return { backgroundColor: "rgba(219, 234, 254, 0.4)" }; // blue
+  if (c.includes('PRO')) return { backgroundColor: "rgba(207, 250, 254, 0.4)" }; // cyan
+  if (c.includes('1.1') || c.includes('2.1')) return { backgroundColor: "rgba(209, 250, 229, 0.4)" }; // emerald
+  if (c.includes('1.2') || c.includes('2.2')) return { backgroundColor: "rgba(220, 252, 231, 0.4)" }; // green
+  if (c.includes('1.') || c.includes('2.')) return { backgroundColor: "rgba(209, 250, 229, 0.4)" }; 
+  if (c.includes('CC') || c.includes('NC') || c.includes('CN') || c.includes('NAT')) return { backgroundColor: "rgba(243, 232, 255, 0.4)" }; // purple
+  if (c.includes('JO') || c.includes('CM') || c.includes('OLY') || c.includes('WC')) return { backgroundColor: "rgba(252, 231, 243, 0.4)" }; // pink
+  return { backgroundColor: "rgba(248, 250, 252, 0.4)" }; // slate-50
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -298,9 +356,18 @@ export default function App() {
   const [seasonSubTab, setSeasonSubTab] = useState<
     "puntos" | "victorias" | "ciclistas"
   >("puntos");
-  const [cyclistsSubTab, setCyclistsSubTab] = useState<"draft" | "no-draft">(
+  const [cyclistsSubTab, setCyclistsSubTab] = useState<"draft" | "no-draft" | "detalle">(
     "draft",
   );
+  const [cyclistSearchTerm, setCyclistSearchTerm] = useState("");
+  const [selectedCyclistDetail, setSelectedCyclistDetail] = useState("");
+  const [cyclistDetailSortCol, setCyclistDetailSortCol] = useState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos">("fecha");
+  const [cyclistDetailSortDir, setCyclistDetailSortDir] = useState<"asc"|"desc">("asc");
+  const [cyclistDetailMonthFilter, setCyclistDetailMonthFilter] = useState<string[]>([]);
+  const [cyclistDetailCategoryFilter, setCyclistDetailCategoryFilter] = useState<string[]>([]);
+  const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useState<string[]>([]);
+  const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useState<{ op: string; val: string }>({ op: "<=", val: "" });
+  const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useState<{ op: string; val: string }>({ op: ">=", val: "" });
   const [winsChartType, setWinsChartType] = useState<"acumulado" | "mensual">(
     "acumulado",
   );
@@ -408,6 +475,7 @@ export default function App() {
   const draftTableRef = useRef<HTMLDivElement>(null);
   const draftDatosTableRef = useRef<HTMLDivElement>(null);
   const topCyclistsDraftRef = useRef<HTMLDivElement>(null);
+  const cyclistDetailRef = useRef<HTMLDivElement>(null);
   const unscoredTableRef = useRef<HTMLDivElement>(null);
   const undebutedTableRef = useRef<HTMLDivElement>(null);
   const noDraftCyclistsTableRef = useRef<HTMLDivElement>(null);
@@ -509,6 +577,8 @@ export default function App() {
   >(null);
   const [isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying] =
     useState(false);
+  const [isCyclistDetailCopying, setIsCyclistDetailCopying] = useState(false);
+  const [isCyclistDetailTextCopying, setIsCyclistDetailTextCopying] = useState(false);
 
   const [isChartExpanded, setIsChartExpanded] = useState(false);
   const [isTopTeamsTableExpanded, setIsTopTeamsTableExpanded] = useState(false);
@@ -535,6 +605,7 @@ export default function App() {
   }>({ keys: ["totalPoints"], order: "desc" });
   const [isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded] =
     useState(false);
+  const [isCyclistDetailExpanded, setIsCyclistDetailExpanded] = useState(false);
   const [isUnscoredExpanded, setIsUnscoredExpanded] = useState(false);
   const [isUndebutedExpanded, setIsUndebutedExpanded] = useState(false);
   const [isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded] =
@@ -894,6 +965,7 @@ export default function App() {
   
     const tables = Array.from(element.querySelectorAll<HTMLElement>('table'));
     const cells = Array.from(element.querySelectorAll<HTMLElement>('td, th'));
+    const ignoreElements = Array.from(element.querySelectorAll<HTMLElement>('.copy-button-ignore'));
   
     const originalStyles = targets.map((node) => ({
       node,
@@ -918,6 +990,12 @@ export default function App() {
       node,
       whiteSpace: node.style.whiteSpace,
     }));
+
+    const originalIgnoreStyles = ignoreElements.map((node) => ({
+      node,
+      display: node.style.display,
+      opacity: node.style.opacity,
+    }));
   
     targets.forEach((node) => {
       node.style.setProperty('max-height', 'none', 'important');
@@ -935,10 +1013,19 @@ export default function App() {
     cells.forEach((node) => {
       node.style.setProperty('white-space', 'nowrap', 'important');
     });
+
+    ignoreElements.forEach((node) => {
+      node.style.setProperty('display', 'none', 'important');
+      node.style.setProperty('opacity', '0', 'important');
+    });
+
+    // Also get the current scrollWidth before modifying display inline-block
+    const scrollWidth = element.scrollWidth;
+    const targetWidth = Math.max(scrollWidth, 800);
   
     element.style.setProperty('display', 'inline-block', 'important');
-    element.style.setProperty('width', 'max-content', 'important');
-    element.style.setProperty('min-width', 'max-content', 'important');
+    element.style.setProperty('width', `${targetWidth}px`, 'important');
+    element.style.setProperty('min-width', `${targetWidth}px`, 'important');
     element.style.setProperty('padding-bottom', '32px', 'important');
   
     return () => {
@@ -954,6 +1041,10 @@ export default function App() {
         const { node, ...styles } = styleObj;
         Object.assign(node.style, styles);
       });
+      originalIgnoreStyles.forEach((styleObj) => {
+        const { node, ...styles } = styleObj;
+        Object.assign(node.style, styles);
+      });
     };
   };
 
@@ -962,18 +1053,16 @@ export default function App() {
 
     setIsCopying(true);
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
+    
+    
     
     try {
-      const scrollWidth = chartRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = chartRef.current.style.width;
-      originalTargetMinWidth = chartRef.current.style.minWidth;
       
-      chartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      chartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
+      
+      
+      
+      
       
       restore = expandNodeForCapture(chartRef.current);
       
@@ -983,10 +1072,10 @@ export default function App() {
           "image/png": (async () => {
             // Use domToDataUrl first as it seems more reliable for Recharts labels
             const dataUrl = await domToDataUrl(chartRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
-              width: targetWidth,
+              
               style: { overflow: "visible" },
             });
 
@@ -1009,10 +1098,7 @@ export default function App() {
       /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      if (chartRef.current) {
-        chartRef.current.style.width = originalTargetWidth;
-        chartRef.current.style.minWidth = originalTargetMinWidth;
-      }
+      
     }
   };
 
@@ -1020,26 +1106,17 @@ export default function App() {
     if (!chartRef.current) return;
     
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     
     try {
-      const scrollWidth = chartRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = chartRef.current.style.width;
-      originalTargetMinWidth = chartRef.current.style.minWidth;
       
-      chartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      chartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(chartRef.current);
       
       const dataUrl = await domToDataUrl(chartRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
-        width: targetWidth,
         style: { overflow: "visible" },
       });
       const link = document.createElement("a");
@@ -1050,10 +1127,6 @@ export default function App() {
       console.error("Error downloading chart:", err);
     } finally {
       restore();
-      if (chartRef.current) {
-        chartRef.current.style.width = originalTargetWidth;
-        chartRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
@@ -1069,7 +1142,7 @@ export default function App() {
             restore = expandNodeForCapture(topTeamsTableRef.current!);
             try {
               const dataUrl = await domToDataUrl(topTeamsTableRef.current!, {
-                scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                scale: 3, 
         
         backgroundColor: '#ffffff',
                 
@@ -1103,7 +1176,7 @@ export default function App() {
     const restore = expandNodeForCapture(topTeamsTableRef.current);
     try {
       const dataUrl = await domToDataUrl(topTeamsTableRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -1126,18 +1199,10 @@ export default function App() {
 
     setIsEvolutionChartCopying(true);
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     
     try {
-      const scrollWidth = evolutionChartRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = evolutionChartRef.current.style.width;
-      originalTargetMinWidth = evolutionChartRef.current.style.minWidth;
       
-      evolutionChartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      evolutionChartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(evolutionChartRef.current);
       
@@ -1145,10 +1210,9 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
-              width: targetWidth,
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
@@ -1169,10 +1233,6 @@ export default function App() {
       /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      if (evolutionChartRef.current) {
-        evolutionChartRef.current.style.width = originalTargetWidth;
-        evolutionChartRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
@@ -1180,26 +1240,17 @@ export default function App() {
     if (!evolutionChartRef.current) return;
     
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     
     try {
-      const scrollWidth = evolutionChartRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = evolutionChartRef.current.style.width;
-      originalTargetMinWidth = evolutionChartRef.current.style.minWidth;
       
-      evolutionChartRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      evolutionChartRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(evolutionChartRef.current);
       
       const dataUrl = await domToDataUrl(evolutionChartRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
-        width: targetWidth,
         style: { overflow: "visible" },
       });
       const link = document.createElement("a");
@@ -1210,10 +1261,6 @@ export default function App() {
       console.error("Error downloading chart:", err);
     } finally {
       restore();
-      if (evolutionChartRef.current) {
-        evolutionChartRef.current.style.width = originalTargetWidth;
-        evolutionChartRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
@@ -1221,17 +1268,9 @@ export default function App() {
     if (!winsRankingRef.current || isWinsRankingCopying) return;
     setIsWinsRankingCopying(true);
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     try {
-      const scrollWidth = winsRankingRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = winsRankingRef.current.style.width;
-      originalTargetMinWidth = winsRankingRef.current.style.minWidth;
       
-      winsRankingRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      winsRankingRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(winsRankingRef.current);
       
@@ -1239,10 +1278,9 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsRankingRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
-              width: targetWidth,
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
@@ -1261,35 +1299,22 @@ export default function App() {
       /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      if (winsRankingRef.current) {
-        winsRankingRef.current.style.width = originalTargetWidth;
-        winsRankingRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
   const handleDownloadWinsRanking = async () => {
     if (!winsRankingRef.current) return;
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     try {
-      const scrollWidth = winsRankingRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = winsRankingRef.current.style.width;
-      originalTargetMinWidth = winsRankingRef.current.style.minWidth;
       
-      winsRankingRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      winsRankingRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(winsRankingRef.current);
       
       const dataUrl = await domToDataUrl(winsRankingRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
-        width: targetWidth,
         style: { overflow: "visible" },
       });
       const link = document.createElement("a");
@@ -1300,10 +1325,6 @@ export default function App() {
       console.error("Error downloading chart:", err);
     } finally {
       restore();
-      if (winsRankingRef.current) {
-        winsRankingRef.current.style.width = originalTargetWidth;
-        winsRankingRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
@@ -1311,17 +1332,9 @@ export default function App() {
     if (!winsEvolutionRef.current || isWinsEvolutionCopying) return;
     setIsWinsEvolutionCopying(true);
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     try {
-      const scrollWidth = winsEvolutionRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = winsEvolutionRef.current.style.width;
-      originalTargetMinWidth = winsEvolutionRef.current.style.minWidth;
       
-      winsEvolutionRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      winsEvolutionRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(winsEvolutionRef.current);
 
@@ -1329,10 +1342,9 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
-              width: targetWidth,
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
@@ -1351,35 +1363,22 @@ export default function App() {
       /* Alert suppressed to improve user experience in iframe */
     } finally {
       restore();
-      if (winsEvolutionRef.current) {
-        winsEvolutionRef.current.style.width = originalTargetWidth;
-        winsEvolutionRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
   const handleDownloadWinsEvolution = async () => {
     if (!winsEvolutionRef.current) return;
     let restore = () => {};
-    let originalTargetWidth = "";
-    let originalTargetMinWidth = "";
     try {
-      const scrollWidth = winsEvolutionRef.current.scrollWidth;
-      const targetWidth = Math.max(scrollWidth, 800);
       
-      originalTargetWidth = winsEvolutionRef.current.style.width;
-      originalTargetMinWidth = winsEvolutionRef.current.style.minWidth;
       
-      winsEvolutionRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-      winsEvolutionRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
       
       restore = expandNodeForCapture(winsEvolutionRef.current);
 
       const dataUrl = await domToDataUrl(winsEvolutionRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
-        width: targetWidth,
         style: { overflow: "visible" },
       });
       const link = document.createElement("a");
@@ -1390,10 +1389,6 @@ export default function App() {
       console.error("Error downloading chart:", err);
     } finally {
       restore();
-      if (winsEvolutionRef.current) {
-        winsEvolutionRef.current.style.width = originalTargetWidth;
-        winsEvolutionRef.current.style.minWidth = originalTargetMinWidth;
-      }
     }
   };
 
@@ -1455,7 +1450,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               
@@ -1518,7 +1513,7 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -1549,7 +1544,7 @@ export default function App() {
             const dataUrl = await domToDataUrl(
               raceClassificationTableRef.current!,
               {
-                scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                scale: 3, 
         
         backgroundColor: '#ffffff',
                 style: { overflow: "hidden" },
@@ -1580,7 +1575,7 @@ export default function App() {
     const restore = expandNodeForCapture(raceClassificationTableRef.current);
     try {
       const dataUrl = await domToDataUrl(raceClassificationTableRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
@@ -1657,7 +1652,7 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         
         
@@ -1726,7 +1721,7 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         
         
@@ -1779,7 +1774,7 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
+            const dataUrl = await domToDataUrl(tableContainer, { scale: 3,   backgroundColor: "#ffffff" });
       if (typeof ClipboardItem !== "undefined") {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -1808,7 +1803,7 @@ export default function App() {
     const tableContainer = unscoredTableRef.current;
     const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
+      const dataUrl = await domToDataUrl(tableContainer, { scale: 3,   backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       const suffix = subset && subset !== "full" ? `-${subset}` : "";
@@ -1850,7 +1845,7 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -1884,7 +1879,7 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -1923,7 +1918,7 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -1970,7 +1965,7 @@ export default function App() {
       }
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -2481,6 +2476,73 @@ export default function App() {
     }
   };
 
+  const handleCopyCyclistDetail = async () => {
+    if (!cyclistDetailRef.current || isCyclistDetailCopying) return;
+    setIsCyclistDetailCopying(true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const tableContainer = cyclistDetailRef.current;
+    if (!tableContainer) return;
+    const restore = expandNodeForCapture(tableContainer);
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 3, 
+        backgroundColor: '#ffffff',
+        style: { overflow: "visible", textRendering: "optimizeLegibility" },
+      });
+      if (typeof ClipboardItem !== "undefined") {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        try {
+          window.focus();
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+        } catch (e) {
+          throw e;
+        }
+        setTimeout(() => setIsCyclistDetailCopying(false), 2000);
+      } else throw new Error("ClipboardItem not supported");
+    } catch (err) {
+      setIsCyclistDetailCopying(false);
+      try {
+        const dataUrl = await domToDataUrl(tableContainer, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          style: { overflow: "visible", textRendering: "optimizeLegibility" },
+        });
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `detalle_${selectedCyclistDetail}.png`;
+        link.click();
+      } catch (fallbackErr) {}
+    } finally {
+      restore();
+    }
+  };
+
+  const handleCopyCyclistDetailText = async () => {
+    if (!cyclistDetailRef.current) return;
+    setIsCyclistDetailTextCopying(true);
+    try {
+      const table = cyclistDetailRef.current.querySelector("table");
+      if (!table) return;
+      const ths = Array.from(table.querySelectorAll("th")).map((th) => th.textContent?.trim() || "");
+      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      const lines = [ths.join("\t")];
+      rows.forEach((row) => {
+        if (row.classList.contains("hidden")) return;
+        const tds = Array.from(row.querySelectorAll("td")).map((td) => td.textContent?.trim() || "");
+        if (tds.length === 1) return;
+        lines.push(tds.join("\t"));
+      });
+      const text = lines.join("\n");
+      await navigator.clipboard.writeText(text);
+      setTimeout(() => setIsCyclistDetailTextCopying(false), 2000);
+    } catch (err) {
+      setIsCyclistDetailTextCopying(false);
+    }
+  };
+
   const handleCopyNoDraftCyclistsText = async () => {
     if (!leaderboard) return;
     setIsNoDraftCyclistsTextCopying(true);
@@ -2559,7 +2621,7 @@ export default function App() {
       if (typeof ClipboardItem !== "undefined") {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
-            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
+            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3,   backgroundColor: "#ffffff" });
             const response = await fetch(dataUrl);
             return await response.blob();
           })() as Promise<Blob>,
@@ -2583,7 +2645,7 @@ export default function App() {
     if (!cyclistsTableRef.current) return;
     const restore = expandNodeForCapture(cyclistsTableRef.current);
     try {
-      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
+      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3,   backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "clasificacion-ciclistas.png";
@@ -2604,7 +2666,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(stageTableRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
@@ -2634,7 +2696,7 @@ export default function App() {
     const restore = expandNodeForCapture(stageTableRef.current);
     try {
       const dataUrl = await domToDataUrl(stageTableRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
@@ -2669,7 +2731,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
               
               width: elWidth,
               height: elHeight,
@@ -2710,7 +2772,7 @@ export default function App() {
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         width: elWidth,
         height: elHeight,
@@ -2754,7 +2816,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(racesTableRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
@@ -2784,7 +2846,7 @@ export default function App() {
     const restore = expandNodeForCapture(racesTableRef.current);
     try {
       const dataUrl = await domToDataUrl(racesTableRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         style: { overflow: "hidden" },
@@ -2811,8 +2873,6 @@ export default function App() {
     const restore = expandNodeForCapture(teamGlobalRef.current);
 
     // Prevent flex/grid items from causing max-content to become a single unbounded row
-    teamGlobalRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-    teamGlobalRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
     teamGlobalRef.current.style.setProperty("display", "block", "important");
 
     try {
@@ -2821,10 +2881,9 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
-              width: targetWidth,
               style: { overflow: "visible" },
               
             });
@@ -2856,17 +2915,14 @@ export default function App() {
     const restore = expandNodeForCapture(teamGlobalRef.current);
 
     // Prevent flex/grid items from causing max-content to become a single unbounded row
-    teamGlobalRef.current.style.setProperty("width", `${targetWidth}px`, "important");
-    teamGlobalRef.current.style.setProperty("min-width", `${targetWidth}px`, "important");
     teamGlobalRef.current.style.setProperty("display", "block", "important");
 
     try {
       await new Promise(resolve => setTimeout(resolve, 50));
       const dataUrl = await domToDataUrl(teamGlobalRef.current, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
-        width: targetWidth,
         style: { overflow: "visible" },
         
       });
@@ -2893,7 +2949,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
@@ -2926,7 +2982,7 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         style: { overflow: "visible" },
@@ -2975,7 +3031,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(container, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  // Increased scale for better resolution
+              scale: 3,   // Increased scale for better resolution
               
               style: {
                 textRendering: "optimizeLegibility",
@@ -3036,7 +3092,7 @@ export default function App() {
       );
 
       const dataUrl = await domToDataUrl(container, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         
         
@@ -3169,7 +3225,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               
@@ -3232,7 +3288,7 @@ export default function App() {
         "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
 
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         
@@ -3264,7 +3320,7 @@ export default function App() {
         const clipboardItem = new ClipboardItem({
           "image/png": (async () => {
             const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              scale: 3, 
         
         backgroundColor: '#ffffff',
               width: tableContainer.scrollWidth,
@@ -3298,7 +3354,7 @@ export default function App() {
 
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        scale: 3, 
         
         backgroundColor: '#ffffff',
         width: tableContainer.scrollWidth,
@@ -3347,11 +3403,15 @@ export default function App() {
       string,
       {
         edad: string;
+        nacido: string;
         pais: string;
+        paisLetras: string;
         equipoBreve: string;
         ronda: string;
+        eleccion: number;
         carrerasDisputadas: number;
         diasCompeticion: number;
+        victorias: number;
         puntosTotales?: number;
         puntosPorCarrera?: Record<string, number>;
       }
@@ -3377,7 +3437,7 @@ export default function App() {
       if (full && breve) fullToBreve[full] = breve;
     });
 
-    const cyclistToInfo: Record<string, { pais: string; equipoBreve: string }> =
+    const cyclistToInfo: Record<string, { pais: string; equipoBreve: string; nacido: string; paisLetras: string }> =
       {};
     files.ciclistas.data?.forEach((row) => {
       const ciclista = getVal(row, "Ciclista")?.toString().trim();
@@ -3386,7 +3446,9 @@ export default function App() {
       if (ciclista) {
         cyclistToInfo[ciclista] = {
           pais: pais || "",
+          paisLetras: pais || "",
           equipoBreve: (full && fullToBreve[full]) || "",
+          nacido: "",
         };
       }
     });
@@ -3394,11 +3456,20 @@ export default function App() {
     files.resultados.data?.forEach((row) => {
       const ciclista = getVal(row, "Ciclista")?.toString().trim();
       const full = getVal(row, "Equipo")?.toString().trim().toLowerCase();
-      if (ciclista && full) {
+      const nacido = getVal(row, "Nacido")?.toString().trim();
+      const pais = getVal(row, "País")?.toString().trim();
+      if (ciclista) {
         if (!cyclistToInfo[ciclista])
-          cyclistToInfo[ciclista] = { pais: "", equipoBreve: "" };
-        if (fullToBreve[full]) {
+          cyclistToInfo[ciclista] = { pais: "", equipoBreve: "", nacido: "", paisLetras: "" };
+        if (full && fullToBreve[full]) {
           cyclistToInfo[ciclista].equipoBreve = fullToBreve[full];
+        }
+        if (nacido) {
+          cyclistToInfo[ciclista].nacido = nacido;
+        }
+        if (pais) {
+          cyclistToInfo[ciclista].pais = pais;
+          cyclistToInfo[ciclista].paisLetras = pais;
         }
       }
     });
@@ -3406,22 +3477,28 @@ export default function App() {
     // Pre-calculate cyclist stats from resultados
     const cyclistStats: Record<
       string,
-      { carreras: Set<string>; dias: number }
+      { carreras: Set<string>; dias: number; victorias: number }
     > = {};
     resultados.data?.forEach((row) => {
       const ciclista = getVal(row, "Ciclista")?.trim();
       const carrera = getVal(row, "Carrera")?.trim();
       const etapa = getVal(row, "Etapa")?.toString().trim();
+      const posicion = getVal(row, "Posición")?.toString().trim() || getVal(row, "Pos")?.toString().trim();
 
       if (ciclista && carrera) {
         if (!cyclistStats[ciclista]) {
-          cyclistStats[ciclista] = { carreras: new Set(), dias: 0 };
+          cyclistStats[ciclista] = { carreras: new Set(), dias: 0, victorias: 0 };
         }
         cyclistStats[ciclista].carreras.add(carrera);
 
         // Días: count all except Etapa = CP or CM
         if (etapa !== "CP" && etapa !== "CM") {
           cyclistStats[ciclista].dias += 1;
+        }
+
+        // Victorias: if pos == "1"
+        if (posicion === "1") {
+          cyclistStats[ciclista].victorias += 1;
         }
       }
     });
@@ -3432,11 +3509,15 @@ export default function App() {
       if (ciclista) {
         cyclistMetadata[ciclista] = {
           edad: "",
+          nacido: cyclistToInfo[ciclista]?.nacido || "",
           pais: getFlagEmoji(cyclistToInfo[ciclista]?.pais || ""),
+          paisLetras: cyclistToInfo[ciclista]?.paisLetras || "",
           equipoBreve: cyclistToInfo[ciclista]?.equipoBreve || "",
           ronda: "",
+          eleccion: 0,
           carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
           diasCompeticion: cyclistStats[ciclista]?.dias || 0,
+          victorias: cyclistStats[ciclista]?.victorias || 0,
         };
       }
     });
@@ -3471,13 +3552,17 @@ export default function App() {
 
         cyclistMetadata[ciclista] = {
           edad: edad || "",
+          nacido: cyclistToInfo[ciclista]?.nacido || "",
           pais: getFlagEmoji(
             paisElecciones || cyclistToInfo[ciclista]?.pais || "",
           ),
+          paisLetras: paisElecciones || cyclistToInfo[ciclista]?.paisLetras || "",
           equipoBreve: cyclistToInfo[ciclista]?.equipoBreve || "",
           ronda: ronda || "",
+          eleccion: idx + 1,
           carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
           diasCompeticion: cyclistStats[ciclista]?.dias || 0,
+          victorias: cyclistStats[ciclista]?.victorias || 0,
         };
       }
     });
@@ -9962,6 +10047,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   label: "No draft",
                                   icon: AlertCircle,
                                 },
+                                { id: "detalle", label: "Detalle ciclista", icon: Users },
                               ].map((tab) => (
                                 <button
                                   key={tab.id}
@@ -12741,7 +12827,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </div>
                               </div>
                             </>
-                          ) : (
+                          ) : cyclistsSubTab === "no-draft" ? (
                             <div className="space-y-8">
                               {/* Top Cyclists (No draft) */}
                               <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
@@ -13560,7 +13646,421 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                 </div>
                               </div>
                             </div>
-                          )}
+                          ) : null}
+                        </div>
+                      )}
+
+                      {seasonSubTab === "ciclistas" && cyclistsSubTab === "detalle" && (
+                        <div className="space-y-8">
+                          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
+                              <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
+                                <User className="w-5 h-5 text-blue-600" />
+                                Detalle de Ciclista
+                              </h3>
+                              <p className="text-sm text-neutral-500 whitespace-nowrap">
+                                Busca un ciclista para ver todo su detalle de puntos a lo largo de la temporada.
+                              </p>
+                            </div>
+
+                            <div className="p-6 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 items-center bg-neutral-50/20">
+                              <div className="relative w-full sm:w-96">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                <input 
+                                  type="text" 
+                                  placeholder="Buscar ciclista..." 
+                                  list="all-cyclists-list" 
+                                  className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                                  value={cyclistSearchTerm}
+                                  onChange={(e) => {
+                                    setCyclistSearchTerm(e.target.value);
+                                    const valid = cyclistMetadata[e.target.value];
+                                    if (valid) {
+                                      setSelectedCyclistDetail(e.target.value);
+                                      setCyclistDetailSortCol("fecha");
+                                      setCyclistDetailSortDir("asc");
+                                    }
+                                  }}
+                                />
+                                <datalist id="all-cyclists-list">
+                                  {Object.keys(cyclistMetadata).sort().map(c => <option key={c} value={c} />)}
+                                </datalist>
+                              </div>
+                            </div>
+
+                            {selectedCyclistDetail && cyclistMetadata[selectedCyclistDetail] && (() => {
+                              const ciclista = selectedCyclistDetail;
+                              const meta = cyclistMetadata[ciclista];
+                              const ronda = cyclistRoundMap[ciclista] || "-";
+                              const currentJugador = playerByCyclist[ciclista];
+                              let eqText = "No elegido";
+                              if (currentJugador && currentJugador !== "No draft") {
+                                const draftRank = playerOrderMap[currentJugador] || DRAFT_RANK_MAP[currentJugador] || "-";
+                                const equipoStr = playerTeamMap[currentJugador] || currentJugador;
+                                eqText = `${equipoStr} [#${draftRank}]`;
+                              }
+                              const ciclistaText = `${ciclista} <${ronda}>`;
+                              
+                              const raceTypeByName: Record<string, string> = {};
+                              files.carreras.data?.forEach(row => {
+                                const c = getVal(row, "Carrera")?.trim();
+                                const cat = getVal(row, "Categoría")?.trim();
+                                if (c && cat) raceTypeByName[c] = cat;
+                              });
+
+                              const pointsLookup: Record<string, number> = {};
+                              files.puntos.data?.forEach(row => {
+                                const cat = getVal(row, "Categoría")?.trim();
+                                const tip = getVal(row, "Tipo")?.trim();
+                                const pos = getVal(row, "Posición")?.toString().trim();
+                                const pt = getVal(row, "Puntos");
+                                if (cat && tip && pos && pt !== undefined) {
+                                  pointsLookup[`${cat}_${tip}_${pos}`] = Number(pt);
+                                }
+                              });
+
+                              const items = (files.resultados.data || []).map((r: any) => {
+                                if (getVal(r, "Ciclista")?.toString().trim() !== ciclista) return null;
+                                const carrera = getVal(r, "Carrera")?.toString().trim() || "";
+                                const categoria = getVal(r, "Categoría")?.toString().trim() || raceTypeByName[carrera] || "";
+                                const fecha = getVal(r, "Fecha")?.toString().trim() || "";
+                                const tipo = getVal(r, "Tipo")?.toString().trim() || "";
+                                const etapa = getVal(r, "Etapa")?.toString().trim() || "";
+                                const posicion = getVal(r, "Posición")?.toString().trim() || getVal(r, "Pos")?.toString().trim() || "";
+                                
+                                const pointsKey = `${categoria}_${tipo}_${posicion}`;
+                                const puntos = pointsLookup[pointsKey] || 0;
+                                return { ciclistaText, eqText, carrera, categoria, fecha, tipo, etapa, pos: posicion, puntos };
+                              }).filter(Boolean);
+
+                              const allItems = (items as NonNullable<typeof items[0]>[]);
+                              let filteredItems = allItems.filter(it => {
+                                // Month filter
+                                if (cyclistDetailMonthFilter.length > 0) {
+                                  const parts = it.fecha.split(/[-/]/);
+                                  if (parts.length >= 2) {
+                                    const m = parseInt(parts[1], 10).toString();
+                                    if (!cyclistDetailMonthFilter.includes(m)) return false;
+                                  } else return false;
+                                }
+                                // Category filter
+                                if (cyclistDetailCategoryFilter.length > 0 && !cyclistDetailCategoryFilter.includes(it.categoria)) return false;
+                                // Type filter
+                                if (cyclistDetailTypeFilter.length > 0 && !cyclistDetailTypeFilter.includes(it.tipo)) return false;
+                                // Pos filter
+                                if (cyclistDetailPosFilter.val !== "") {
+                                  const posVal = parseFloat(it.pos);
+                                  const filterVal = parseFloat(cyclistDetailPosFilter.val);
+                                  if (!isNaN(posVal) && !isNaN(filterVal)) {
+                                    if (cyclistDetailPosFilter.op === "=" && posVal !== filterVal) return false;
+                                    if (cyclistDetailPosFilter.op === "<" && posVal >= filterVal) return false;
+                                    if (cyclistDetailPosFilter.op === ">" && posVal <= filterVal) return false;
+                                    if (cyclistDetailPosFilter.op === "<=" && posVal > filterVal) return false;
+                                    if (cyclistDetailPosFilter.op === ">=" && posVal < filterVal) return false;
+                                  } else if (it.pos !== cyclistDetailPosFilter.val) return false;
+                                }
+                                // Points filter
+                                if (cyclistDetailPointsFilterAdv.val !== "") {
+                                  const filterVal = parseFloat(cyclistDetailPointsFilterAdv.val);
+                                  if (!isNaN(filterVal)) {
+                                    if (cyclistDetailPointsFilterAdv.op === "=" && it.puntos !== filterVal) return false;
+                                    if (cyclistDetailPointsFilterAdv.op === "<" && it.puntos >= filterVal) return false;
+                                    if (cyclistDetailPointsFilterAdv.op === ">" && it.puntos <= filterVal) return false;
+                                    if (cyclistDetailPointsFilterAdv.op === "<=" && it.puntos > filterVal) return false;
+                                    if (cyclistDetailPointsFilterAdv.op === ">=" && it.puntos < filterVal) return false;
+                                  }
+                                }
+                                return true;
+                              });
+
+                              const maxPointsInList = Math.max(1, ...filteredItems.map(i => i.puntos));
+
+                              const filterOptionsMonth = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+                                const d = new Date(2000, m - 1, 1);
+                                return { value: m.toString(), label: d.toLocaleString('es-ES', { month: 'long' }) };
+                              });
+                              const filterOptionsCat = Array.from(new Set(allItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: c, label: c}));
+                              const filterOptionsType = Array.from(new Set(allItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: t, label: t}));
+
+                              const sortDirNum = cyclistDetailSortDir === "asc" ? 1 : -1;
+                              filteredItems.sort((a, b) => {
+                                if (cyclistDetailSortCol === "fecha") {
+                                  const parseDate = (d: string) => {
+                                    if (!d) return 0;
+                                    const p = d.split(/[-/]/);
+                                    if (p.length !== 3) return 0;
+                                    return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
+                                  };
+                                  return (parseDate(a!.fecha) - parseDate(b!.fecha)) * sortDirNum;
+                                }
+                                if (cyclistDetailSortCol === "puntos") return (a!.puntos - b!.puntos) * sortDirNum;
+                                const valA = (a as any)[cyclistDetailSortCol] || "";
+                                const valB = (b as any)[cyclistDetailSortCol] || "";
+                                return valA.toString().localeCompare(valB.toString()) * sortDirNum;
+                              });
+
+                              const handleSort = (col: string) => {
+                                if (cyclistDetailSortCol === col) { setCyclistDetailSortDir(prev => prev === "asc" ? "desc" : "asc"); }
+                                else { setCyclistDetailSortCol(col as any); setCyclistDetailSortDir("asc"); }
+                              };
+
+                              return (
+                                <div 
+                                  className={cn(
+                                    "p-6 flex flex-col gap-6 relative",
+                                    isCyclistDetailExpanded && "fixed inset-4 z-50 overflow-y-auto max-h-none shadow-2xl p-6 bg-white border border-neutral-200 rounded-2xl"
+                                  )} 
+                                  ref={cyclistDetailRef}
+                                >
+                                  {isCyclistDetailExpanded && (
+                                    <button
+                                      onClick={() => setIsCyclistDetailExpanded(false)}
+                                      className="fixed top-8 right-8 p-3 bg-neutral-800 text-white rounded-full shadow-2xl z-[60] copy-button-ignore hover:bg-neutral-700 transition-all cursor-pointer"
+                                    >
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  )}
+                                  {!isCyclistDetailExpanded && (
+                                    <div className="absolute top-4 right-4 flex gap-2 z-10 copy-button-ignore">
+                                      <button
+                                        onClick={() =>
+                                          setIsCyclistDetailExpanded(
+                                            !isCyclistDetailExpanded,
+                                          )
+                                        }
+                                        className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+                                        title={
+                                          isCyclistDetailExpanded
+                                            ? "Contraer tabla"
+                                            : "Expandir tabla"
+                                        }
+                                      >
+                                        {isCyclistDetailExpanded ? (
+                                          <Minimize2 className="w-4 h-4" />
+                                        ) : (
+                                          <Maximize2 className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={handleCopyCyclistDetail}
+                                        disabled={!!isCyclistDetailCopying}
+                                        title="Copiar imagen"
+                                        className={cn(
+                                          "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+                                          isCyclistDetailCopying
+                                            ? "bg-green-50 text-green-700 border-green-200"
+                                            : "bg-white",
+                                        )}
+                                      >
+                                        {isCyclistDetailCopying ? (
+                                          <CheckCircle2 className="w-4 h-4" />
+                                        ) : (
+                                          <Copy className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={handleCopyCyclistDetailText}
+                                        disabled={isCyclistDetailTextCopying}
+                                        title="Copiar texto"
+                                        className={cn(
+                                          "px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
+                                          isCyclistDetailTextCopying
+                                            ? "bg-green-50 text-green-700 border-green-200"
+                                            : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50",
+                                        )}
+                                      >
+                                        {isCyclistDetailTextCopying ? (
+                                          <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                        ) : (
+                                          <FileText className="w-4 h-4 mr-1.5" />
+                                        )}
+                                        Texto
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm mt-6">
+                                    {/* Top Row: Basic Info */}
+                                    <div className="flex flex-wrap items-center justify-between gap-6 p-4 bg-neutral-50/50 border-b border-neutral-100">
+                                      <div className="flex flex-wrap items-center gap-8">
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Ciclista</span>
+                                          <span className="text-base font-black text-neutral-900 tracking-tight">{ciclista}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">País</span>
+                                          <span className="text-sm font-semibold text-neutral-900 flex items-center gap-1" title={meta.paisLetras}>{meta.pais} {meta.paisLetras}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Nacido</span>
+                                          <span className="text-sm font-semibold text-neutral-900">{meta.nacido || meta.edad}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Eq breve</span>
+                                          <span className="text-sm font-semibold text-neutral-900">{meta.equipoBreve}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Equipo</span>
+                                          <span className="text-sm font-semibold text-neutral-900">{eqText}</span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-4">
+                                        <div className="flex flex-col gap-0.5 text-right">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Ronda</span>
+                                          <span className="text-sm font-bold bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-yellow-800 self-end shadow-sm">{meta.ronda || "No draft"}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5 text-right">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Elección</span>
+                                          <span className="text-sm font-bold text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200 self-end">{meta.eleccion || "-"}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Bottom Row: Stats */}
+                                    <div className="flex flex-wrap p-4 gap-x-12 gap-y-4 bg-white">
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Puntos Totales</span>
+                                        <span className="text-2xl font-black text-blue-600 tracking-tighter leading-none">{meta.puntosTotales || 0}</span>
+                                      </div>
+                                      
+                                      <div className="h-10 w-px bg-neutral-200 hidden sm:block"></div>
+                                      
+                                      <div className="flex gap-10">
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Victorias</span>
+                                          <span className="text-lg font-bold text-neutral-800 leading-none">{meta.victorias || 0}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Carreras</span>
+                                          <span className="text-lg font-bold text-neutral-800 leading-none">{meta.carrerasDisputadas || 0}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider text-nowrap">Días Comp.</span>
+                                          <span className="text-lg font-bold text-neutral-800 leading-none">{meta.diasCompeticion || 0}</span>
+                                        </div>
+                                      </div>
+
+                                      <div className="h-10 w-px bg-neutral-200 hidden md:block"></div>
+
+                                      <div className="flex gap-10">
+                                        <div className="flex flex-col gap-1" title="Puntos por carrera">
+                                          <span className="text-[10px] border-b border-dashed border-neutral-400 text-neutral-500 uppercase font-bold tracking-wider cursor-help">P/C</span>
+                                          <span className="text-lg font-bold text-neutral-600 leading-none">{(meta.carrerasDisputadas > 0 ? ((meta.puntosTotales || 0) / meta.carrerasDisputadas).toFixed(1) : "0.0")}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1" title="Puntos por día de competición">
+                                          <span className="text-[10px] border-b border-dashed border-neutral-400 text-neutral-500 uppercase font-bold tracking-wider cursor-help">P/D</span>
+                                          <span className="text-lg font-bold text-neutral-600 leading-none">{(meta.diasCompeticion > 0 ? ((meta.puntosTotales || 0) / meta.diasCompeticion).toFixed(1) : "0.0")}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-4 items-end bg-neutral-50 p-4 rounded-xl border border-neutral-100 mt-6 mb-4">
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Mes</span>
+                                      <MultiSelect options={filterOptionsMonth} value={cyclistDetailMonthFilter} onChange={setCyclistDetailMonthFilter} placeholder="Meses" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Categoría</span>
+                                      <MultiSelect options={filterOptionsCat} value={cyclistDetailCategoryFilter} onChange={setCyclistDetailCategoryFilter} placeholder="Categorías" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Tipo</span>
+                                      <MultiSelect options={filterOptionsType} value={cyclistDetailTypeFilter} onChange={setCyclistDetailTypeFilter} placeholder="Tipos" />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Posición</span>
+                                      <div className="flex items-center shadow-sm rounded-md">
+                                        <select value={cyclistDetailPosFilter.op} onChange={(e) => setCyclistDetailPosFilter({ ...cyclistDetailPosFilter, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
+                                          <option value="=">=</option>
+                                          <option value="<">&lt;</option>
+                                          <option value=">">&gt;</option>
+                                          <option value="<=">&le;</option>
+                                          <option value=">=">&ge;</option>
+                                        </select>
+                                        <input type="text" value={cyclistDetailPosFilter.val} onChange={(e) => setCyclistDetailPosFilter({ ...cyclistDetailPosFilter, val: e.target.value })} placeholder="Ej: 1" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Puntos</span>
+                                      <div className="flex items-center shadow-sm rounded-md">
+                                        <select value={cyclistDetailPointsFilterAdv.op} onChange={(e) => setCyclistDetailPointsFilterAdv({ ...cyclistDetailPointsFilterAdv, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
+                                          <option value="=">=</option>
+                                          <option value="<">&lt;</option>
+                                          <option value=">">&gt;</option>
+                                          <option value="<=">&le;</option>
+                                          <option value=">=">&ge;</option>
+                                        </select>
+                                        <input type="number" value={cyclistDetailPointsFilterAdv.val} onChange={(e) => setCyclistDetailPointsFilterAdv({ ...cyclistDetailPointsFilterAdv, val: e.target.value })} placeholder="Ej: 10" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
+                                      </div>
+                                    </div>
+                                    <div className="ml-auto flex items-center">
+                                      <button onClick={() => {
+                                        setCyclistDetailMonthFilter([]);
+                                        setCyclistDetailCategoryFilter([]);
+                                        setCyclistDetailTypeFilter([]);
+                                        setCyclistDetailPosFilter({ op: "<=", val: "" });
+                                        setCyclistDetailPointsFilterAdv({ op: ">=", val: "" });
+                                      }} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 border border-neutral-200 bg-white px-4 py-1.5 rounded-md hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">Limpiar Filtros</button>
+                                    </div>
+                                  </div>
+
+                                  <div className="table-responsive-wrapper overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg">
+                                    <table className="w-full text-sm text-left table-fixed min-w-[900px]">
+                                      <thead className="text-xs text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200">
+                                        <tr>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-44" onClick={() => handleSort("ciclistaText")}>Ciclista {cyclistDetailSortCol === "ciclistaText" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-36" onClick={() => handleSort("eqText")}>Equipo {cyclistDetailSortCol === "eqText" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-24" onClick={() => handleSort("fecha")}>Fecha {cyclistDetailSortCol === "fecha" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-52" onClick={() => handleSort("carrera")}>Carrera {cyclistDetailSortCol === "carrera" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-24" onClick={() => handleSort("categoria")}>Categoría {cyclistDetailSortCol === "categoria" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-24" onClick={() => handleSort("tipo")}>Tipo {cyclistDetailSortCol === "tipo" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-20 text-center" onClick={() => handleSort("etapa")}>Etapa {cyclistDetailSortCol === "etapa" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-20 text-center" onClick={() => handleSort("pos")}>Posición {cyclistDetailSortCol === "pos" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                          <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-24 text-right" onClick={() => handleSort("puntos")}>Puntos {cyclistDetailSortCol === "puntos" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-neutral-100">
+                                        {filteredItems.length === 0 ? (
+                                          <tr><td colSpan={9} className="px-4 py-8 text-center text-neutral-400 italic">No hay resultados con estos filtros.</td></tr>
+                                        ) : filteredItems.map((it, idx) => {
+                                          const posNumber = parseInt(it!.pos);
+                                          let medal = "";
+                                          const isNumericPos = /^\d+$/.test(it!.pos);
+                                          if (posNumber === 1 && isNumericPos) medal = "🥇";
+                                          else if (posNumber === 2 && isNumericPos) medal = "🥈";
+                                          else if (posNumber === 3 && isNumericPos) medal = "🥉";
+
+                                          const pointsBg = `rgba(34, 197, 94, ${0.1 + ((it!.puntos) / maxPointsInList) * 0.4})`;
+
+                                          return (
+                                          <tr key={idx} className="transition-colors group text-neutral-800 hover:brightness-95" style={getCategoryColorStyle(it!.categoria)}>
+                                            <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
+                                            <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
+                                            <td className="px-4 py-2.5 font-mono text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
+                                            <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
+                                            <td className="px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
+                                            <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
+                                            <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
+                                            <td className="px-4 py-2.5 text-[11px] text-center font-mono font-bold">
+                                              <div className="flex items-center justify-center gap-1">
+                                                <span>{it!.pos}</span>
+                                                {medal && <span className="text-[12px] leading-none drop-shadow-sm">{medal}</span>}
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-2.5 text-[13px] text-right font-mono text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
+                                              {it!.puntos > 0 ? it!.puntos : "-"}
+                                            </td>
+                                          </tr>
+                                        )})}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
                       )}
                     </>
@@ -17813,17 +18313,17 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                         {/* Resumen de Rendimiento */}
                         <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                            <div>
-                              <h3 className="flex items-center gap-2 font-bold text-lg text-neutral-900">
-                                <Activity className="w-5 h-5 text-blue-600" />
-                                Resumen de Rendimiento del Draft
+                            <div className="min-w-0 pr-4">
+                              <h3 className="flex items-center gap-2 font-bold text-lg text-neutral-900 min-w-0">
+                                <Activity className="w-5 h-5 text-blue-600 shrink-0" />
+                                <span className="truncate">Resumen de Rendimiento del Draft</span>
                               </h3>
-                              <p className="text-xs text-neutral-500 mt-0.5">
+                              <p className="text-xs text-neutral-500 mt-0.5 truncate">
                                 Clasificación de selecciones por equipo según
                                 los puntos medios conseguidos por ronda.
                               </p>
                             </div>
-                            <div className="flex items-center gap-1.5 self-end md:self-start">
+                            <div className="flex items-center gap-1.5 self-end md:self-start shrink-0 copy-button-ignore">
                               <button
                                 onClick={() => setIsDraftSummaryExpanded(true)}
                                 className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
@@ -17834,30 +18334,39 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               <button
                                 onClick={async () => {
                                   if (draftSummaryTableRef.current) {
+                                    let restore = () => {};
                                     try {
+                                      
+                                      
+                                      
+                                      restore = expandNodeForCapture(draftSummaryTableRef.current);
                                       const dataUrl = await domToDataUrl(
                                         draftSummaryTableRef.current,
                                         {
-                                          
-                                          scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                                          scale: 3, 
         
         backgroundColor: '#ffffff',
+                                          style: { overflow: "visible" },
                                         },
                                       );
                                       const blob = await (
                                         await fetch(dataUrl)
                                       ).blob();
-                                      const clipboardItem = new ClipboardItem({
-                                        [blob.type]: blob,
-                                      });
-                                      await navigator.clipboard.write([
-                                        clipboardItem,
-                                      ]);
+                                      if (typeof ClipboardItem !== "undefined") {
+                                        const clipboardItem = new ClipboardItem({
+                                          [blob.type]: blob,
+                                        });
+                                        await navigator.clipboard.write([
+                                          clipboardItem,
+                                        ]);
+                                      }
                                     } catch (err) {
                                       console.error(
                                         "Error al copiar imagen:",
                                         err,
                                       );
+                                    } finally {
+                                      restore();
                                     }
                                   }
                                 }}
@@ -17900,14 +18409,19 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                               <button
                                 onClick={async () => {
                                   if (draftSummaryTableRef.current) {
+                                    let restore = () => {};
                                     try {
+                                      
+                                      
+                                      
+                                      restore = expandNodeForCapture(draftSummaryTableRef.current);
                                       const dataUrl = await domToDataUrl(
                                         draftSummaryTableRef.current,
                                         {
-                                          
-                                          scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                                          scale: 3, 
         
         backgroundColor: '#ffffff',
+                                          style: { overflow: "visible" },
                                         },
                                       );
                                       const link = document.createElement("a");
@@ -17919,6 +18433,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         "Error al descargar imagen:",
                                         err,
                                       );
+                                    } finally {
+                                      restore();
                                     }
                                   }
                                 }}
@@ -18703,17 +19219,17 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                   ref={draftChartRef}
                                 >
                                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                                    <div>
-                                      <h3 className="font-semibold text-lg text-neutral-900 flex items-center gap-2">
-                                        <BarChart3 className="w-5 h-5 text-blue-600" />
-                                        Rentabilidad de Picks por Equipo
+                                    <div className="min-w-0 pr-4">
+                                      <h3 className="font-semibold text-lg text-neutral-900 flex items-center gap-2 min-w-0">
+                                        <BarChart3 className="w-5 h-5 text-blue-600 shrink-0" />
+                                        <span className="truncate">Rentabilidad de Picks por Equipo</span>
                                       </h3>
-                                      <p className="text-xs text-neutral-500 mt-1">
+                                      <p className="text-xs text-neutral-500 mt-1 truncate">
                                         Eficiencia relativa según segmentación
                                         de rendimiento por ronda
                                       </p>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2 shrink-0 copy-button-ignore">
                                       <div className="flex items-center gap-1 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
                                         <span className="text-[10px] text-neutral-400 font-bold px-2 uppercase tracking-wider">
                                           Ordenar por:
@@ -18794,32 +19310,41 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         <button
                                           onClick={async () => {
                                             if (draftChartRef.current) {
+                                              let restore = () => {};
                                               try {
+                                                
+                                                
+                                                
+                                                restore = expandNodeForCapture(draftChartRef.current);
                                                 const dataUrl =
                                                   await domToDataUrl(
                                                     draftChartRef.current,
                                                     {
-                                                      
-                                                      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                                                      scale: 3, 
         
         backgroundColor: '#ffffff',
+                                                      style: { overflow: "visible" },
                                                     },
                                                   );
                                                 const blob = await (
                                                   await fetch(dataUrl)
                                                 ).blob();
-                                                const clipboardItem =
-                                                  new ClipboardItem({
-                                                    [blob.type]: blob,
-                                                  });
-                                                await navigator.clipboard.write(
-                                                  [clipboardItem],
-                                                );
+                                                if (typeof ClipboardItem !== "undefined") {
+                                                  const clipboardItem =
+                                                    new ClipboardItem({
+                                                      [blob.type]: blob,
+                                                    });
+                                                  await navigator.clipboard.write(
+                                                    [clipboardItem],
+                                                  );
+                                                }
                                               } catch (err) {
                                                 console.error(
                                                   "Error al copiar imagen:",
                                                   err,
                                                 );
+                                              } finally {
+                                                restore();
                                               }
                                             }
                                           }}
@@ -18831,15 +19356,20 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                         <button
                                           onClick={async () => {
                                             if (draftChartRef.current) {
+                                              let restore = () => {};
                                               try {
+                                                
+                                                
+                                                
+                                                restore = expandNodeForCapture(draftChartRef.current);
                                                 const dataUrl =
                                                   await domToDataUrl(
                                                     draftChartRef.current,
                                                     {
-                                                      
-                                                      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+                                                      scale: 3, 
         
         backgroundColor: '#ffffff',
+                                                      style: { overflow: "visible" },
                                                     },
                                                   );
                                                 const link =
@@ -18852,6 +19382,8 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                                   "Error al descargar gráfico:",
                                                   err,
                                                 );
+                                              } finally {
+                                                restore();
                                               }
                                             }
                                           }}
