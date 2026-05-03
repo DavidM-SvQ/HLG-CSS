@@ -1,4 +1,5 @@
 import { domToDataUrl } from "modern-screenshot";
+import { useCrosshair } from './hooks/useCrosshair';
 import React, { useState, useMemo } from "react";
 import {
   Trophy,
@@ -1057,11 +1058,11 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <ExportToolbar targetRef={ref1} filename="top-equipos" />
               </div>
               <div className="overflow-x-auto flex justify-center bg-neutral-50/20 pb-8 relative mt-2 text-sm">
-                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-auto min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
                   <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                     <tr>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Pos</th>
-                      <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Equipo</th>
+                      <th className="sticky top-0 left-0 z-40 bg-neutral-50 px-4 py-2 font-bold border-b border-neutral-100 shadow-[1px_0_0_0_#e5e5e5]">Equipo</th>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-center">Victorias eq.</th>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-center">Victorias parc.</th>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-right">Puntos</th>
@@ -1083,12 +1084,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                             </td>
                             <td className="px-4 py-1 font-bold text-neutral-900 border-l border-neutral-100/50">{team.team} [#{team.originalPos}]</td>
                             <td className="px-4 py-1 text-center font-mono border-l border-neutral-100/50">
-                              <span className={winsColor}>{formatNumberSpanish(team.wins)}</span>
+                              <span className={winsColor}><span className="font-mono tracking-tight">{formatNumberSpanish(team.wins)}</span></span>
                             </td>
                             <td className="px-4 py-1 text-center font-mono border-l border-neutral-100/50">
-                              <span className={stageWinsColor}>{formatNumberSpanish(team.stageWins)}</span>
+                              <span className={stageWinsColor}><span className="font-mono tracking-tight">{formatNumberSpanish(team.stageWins)}</span></span>
                             </td>
-                            <td className="px-4 py-1 text-right font-mono font-bold bg-blue-50/30 border-l border-neutral-100/50 text-[13px]" style={{ color: getTeamPuntosColor(team.pts) }}>{formatNumberSpanish(team.pts)}</td>
+                            <td className="px-4 py-1 text-right font-mono font-bold bg-blue-50/30 border-l border-neutral-100/50 text-[13px]" style={{ color: getTeamPuntosColor(team.pts) }}><span className="font-mono tracking-tight">{formatNumberSpanish(team.pts)}</span></td>
                           </tr>
                         );
                       });
@@ -1112,7 +1113,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <ExportToolbar targetRef={ref2} filename="historial-ganadores" />
               </div>
               <div className="overflow-x-auto bg-neutral-50/20 pb-8 rounded-b-2xl">
-                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left">
                   <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10 border-b border-neutral-200">
                     <tr>
                       <th className="px-6 py-3 font-semibold ">Fecha</th>
@@ -1166,8 +1167,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
               <ExportToolbar targetRef={ref3} filename="top-ciclistas" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
-                <thead className="text-[10px] text-neutral-500 uppercase z-20">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     {['pos', 'nombre', 'equipo', 'pais', 'victorias', 'carreras', 'dias', 'ppc', 'ppd', 'puntos'].map((col) => {
                       const labelMap: Record<string, string> = { pos: 'Pos', nombre: 'Ciclista', equipo: 'Equipo', pais: 'País', victorias: 'Victorias', carreras: 'Carreras', dias: 'Días', ppc: 'P/C', ppd: 'P/D', puntos: 'Puntos' };
@@ -1213,13 +1214,13 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                         </td>
                         <td className="px-3 py-1 text-base text-center" title={data.pais}>{getFlagEmoji(data.pais)}</td>
                         <td className={cn("px-3 py-1 text-center font-mono", getColorClass(data.victorias, maxVictorias, 0, true))}>
-                          {formatNumberSpanish(data.victorias)}
+                          <span className="font-mono tracking-tight">{formatNumberSpanish(data.victorias)}</span>
                         </td>
                         <td className={cn("px-3 py-1 text-center font-mono", getColorClass(numCarreras, maxCarreras, minCarreras))}>
-                          {formatNumberSpanish(numCarreras)}
+                          <span className="font-mono tracking-tight">{formatNumberSpanish(numCarreras)}</span>
                         </td>
                         <td className={cn("px-3 py-1 text-center font-mono", getColorClass(data.dias, maxDias, minDias))}>
-                          {formatNumberSpanish(data.dias)}
+                          <span className="font-mono tracking-tight">{formatNumberSpanish(data.dias)}</span>
                         </td>
                         <td className={cn("px-3 py-1 text-center font-mono", getColorClass(ppc, maxPpc, minPpc))}>
                           {formatNumberSpanish(ppc.toFixed(1))}
@@ -1228,7 +1229,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                           {formatNumberSpanish(ppd.toFixed(1))}
                         </td>
                         <td className="px-4 py-1 text-right font-black font-mono text-sm" style={{ color: getPuntosColor(data.puntos) }}>
-                          {formatNumberSpanish(data.puntos)}
+                          <span className="font-mono tracking-tight">{formatNumberSpanish(data.puntos)}</span>
                         </td>
                       </tr>
                     );
@@ -1253,11 +1254,11 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
               <ExportToolbar targetRef={ref4} filename="top-ciclistas-no-draft" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
-                <thead className="text-[10px] text-neutral-500 uppercase z-20">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-auto min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">Pos</th>
-                    <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200">Ciclista</th>
+                    <th className="sticky top-0 left-0 z-40 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 shadow-[1px_0_0_0_#e5e5e5]">Ciclista</th>
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200">EQ</th>
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">País</th>
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-right">Puntos</th>
@@ -1279,7 +1280,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                         {getFlagEmoji(s.pais)}
                       </td>
                       <td className="px-4 py-1 text-right font-black font-mono text-sm text-red-600">
-                        {formatNumberSpanish(s.pts)}
+                        <span className="font-mono tracking-tight">{formatNumberSpanish(s.pts)}</span>
                       </td>
                     </tr>
                   ))}
@@ -1297,7 +1298,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
               </h3>
               <ExportToolbar targetRef={ref5} filename="puntos-ronda-equipo" />
             </div>
-            <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
+            <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
               <thead>
                 <tr>
                   <th className="pb-2 sticky left-0 bg-neutral-50 z-20 border-r border-b border-neutral-200 pr-2 shadow-sm font-bold">
@@ -1389,8 +1390,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 </h3>
                 <ExportToolbar targetRef={ref6} filename="mejores-peores-equipo" />
               </div>
-              <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap">
-                <thead className="sticky top-0 bg-neutral-50">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap">
+                <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="border-b">
                     <th className="pb-2">Equipo</th>
                     <th className="pb-2 text-green-700">Mejor Ciclista</th>
@@ -1448,8 +1449,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <ExportToolbar targetRef={ref7} filename="mejores-peores-ronda" />
               </div>
               <div className="">
-                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full min-w-[600px] text-sm text-left">
-                  <thead className="sticky top-0 bg-neutral-50 shadow-sm">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left">
+                  <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
                     <tr className="border-b">
                       <th className="pb-2">Ronda</th>
                       <th className="pb-2 text-green-700">Mejor Ciclista</th>
@@ -1518,7 +1519,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   </h4>
                   <ExportToolbar targetRef={ref9} filename="mejores-equipos-panenkita" />
                 </div>
-                <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full text-sm text-left table-fixed">
                   <tbody>
                     {monthReportData.panenkitaTopTeams.map((t, idx) => (
                       <tr
@@ -1553,7 +1554,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   <ExportToolbar targetRef={ref10} filename="top-50-panenkitas" />
                 </div>
                 <div className="">
-                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full text-sm text-left table-fixed">
                     <tbody>
                       {monthReportData.panenkitaTopCyclists.map((c, idx) => (
                         <tr
@@ -1594,7 +1595,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   <ExportToolbar targetRef={ref11} filename="elecciones-equipo-panenkita" />
                 </div>
                 <div className="overflow-auto max-h-[250px]">
-                  <div className="table-responsive-wrapper overflow-x-auto w-full"><table className="w-full text-sm text-left table-fixed">
+                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full text-sm text-left table-fixed">
                     <tbody>
                       {monthReportData.bestPanenkitaTeamPicks.map((c, idx) => (
                         <tr

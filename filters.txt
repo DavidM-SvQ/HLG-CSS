@@ -1,0 +1,83 @@
+239:                   else onChange(value.filter(v => v !== opt.value));
+777:    FILE_TYPES.filter((ft) => ft.global).forEach((ft) => {
+867:        const missingCols = (expectedCols as string[]).filter(
+2457:        const details = player.detalles.filter(
+2471:      .filter(
+2499:        .filter(([_, data]) => data.total > 0)
+2758:          .filter(Boolean),
+3016:    .filter((t) => t > 0);
+3114:    ].filter(Boolean) as string[];
+3155:      .filter(Boolean) as string[];
+3176:          .filter((d) => d.carrera === race)
+3276:      const matchedRaces = files.carreras.data?.filter((r) =>
+3282:      filteredPoints = filteredPoints.filter((p) =>
+3286:      filteredPoints = filteredPoints.filter(
+3296:    const resultObj = files.carreras.data?.filter((r) => {
+3361:          .filter(Boolean),
+3497:      const newData = currentData.filter((d: any) => d.carrera !== carreraName);
+3538:                  const details = player.detalles.filter(
+3556:                .filter(
+3593:              const countInGroup = arr.filter(
+3625:              files.resultados.data?.filter(
+3700:            const finalColumns = Array.from(columnDefinitions.values()).filter(
+3731:                    .filter((d) => {
+3757:              .filter(
+3811:              .filter((c) => c.puntos > 0 || c.victorias > 0)
+3998:                            .filter(
+4529:                        .filter(
+4573:                                    .filter((c) => c.puntosObtenidos > 0)
+4761:                    {FILE_TYPES.filter((ft) => !(ft as any).hiddenInAdmin).map(
+5390:                    leaderboard?.filter((p) => p.nombreEquipo !== "No draft") ||
+5399:                  const leaders = filteredLeaderboard.filter(
+5424:                  const topWinnerTeams = Object.keys(teamWinsCount).filter(
+6104:                              return dataByMonth.filter((m, idx) => {
+6253:                                                    selectedEvolutionTeams.filter(
+6478:                                        return dataByMonth.filter((m, idx) => {
+6591:                                const filteredDetalles = team.detalles.filter(
+7236:                                          team.detalles.filter((d) => {
+8121:                              return dataByMonth.filter((m, idx) => {
+8261:                                                  selectedEvolutionTeams.filter(
+8528:                                        return dataByMonth.filter((m, idx) => {
+8652:                                    .filter((d) => d.carrera === race)
+8670:                            const filteredRaces = raceData.filter((item) => {
+8883:                                          {[...filteredLeaderboard]
+9193:                                                    .filter(
+9493:                                                  ?.filter(
+9501:                                              .filter(Boolean)
+9526:                                                          cyclistsTeamFilter.filter(
+9603:                                                  .filter(Boolean) as string[],
+9630:                                                          cyclistsCategoryFilter.filter(
+9705:                                              .filter(Boolean)
+9728:                                                          cyclistsRoundFilter.filter(
+10252:                                          .filter(([name, data]) => {
+10671:                                        .filter(Boolean) as any[];
+10674:                                      return unscored.filter((c) => {
+10773:                                            .filter(Boolean) as any[]) || [];
+10774:                                        const count = unscoredCount.filter(
+10926:                                              .filter(Boolean)
+10951:                                                          unscoredCyclistsRoundFilter.filter(
+11226:                                          .filter(Boolean) as any[];
+11229:                                        const filtered = unscored.filter(
+11301:                                          ...filtered.map((c) => c.carreras),
+11305:                                          ...filtered.map((c) => c.dias),
+11450:                                        .filter(Boolean) as any[];
+11452:                                      const filtered = undebuted.filter((c) => {
+11545:                                            .filter(Boolean) as any[]) || [];
+11546:                                        const count = undebutedCount.filter(
+11700:                                              .filter(Boolean)
+11725:                                                          undebutedCyclistsRoundFilter.filter(
+11919:                                          .filter(Boolean) as any[];
+11922:                                        const filtered = undebuted.filter(
+12180:                                          .filter(
+12931:                    const teamWins = Object.values(raceWinners).filter(
+12938:                      files.elecciones.data?.filter(
+12945:                      .filter((a) => !isNaN(a));
+12969:                          teamPlayer?.detalles.filter(
+12978:                        const victorias = details.filter((d) => {
+13142:                    const unscoredCount = cyclistStats.filter(
+13147:                      const nonZero = arr.filter((v) => v > 0);
+13359:                                    .filter(
+13366:                                          ?.filter((d) => d.carrera === race)
+13382:                                            ?.filter(
+14036:                            .filter(Boolean)
+14141:                          .filter(Boolean)

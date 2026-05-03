@@ -1,0 +1,201 @@
+return (
+              <div className="space-y-8">
+                {(() => {
+                  const filteredLeaderboard =
+                    leaderboard?.filter((p) => p.nombreEquipo !== "No draft") ||
+                    [];
+                  const top3 = filteredLeaderboard.slice(0, 3);
+
+                  // Handle ties for Leader
+                  const maxPoints =
+                    filteredLeaderboard.length > 0
+                      ? filteredLeaderboard[0].puntos
+                      : 0;
+                  const leaders = filteredLeaderboard.filter(
+                    (p) => p.puntos === maxPoints,
+                  );
+                  const leaderNames = leaders
+                    .map((l) => l.nombreEquipo)
+                    .join(" / ");
+
+                  // Calculate wins per team (excluding No draft)
+                  const teamWinsCount: Record<string, number> = {};
+                  filteredLeaderboard?.forEach((p) => {
+                    if (
+                      p.nombreEquipo !== "No draft" &&
+                      p.nombreEquipo !== "No draft [99]"
+                    ) {
+                      teamWinsCount[p.nombreEquipo] = 0;
+                    }
+                  });
+                  Object.values(raceWinners).forEach((teamName) => {
+                    const name = teamName as string;
+                    if (teamWinsCount[name] !== undefined) {
+                      teamWinsCount[name]++;
+                    }
+                  });
+
+                  const maxWins = Math.max(...Object.values(teamWinsCount), 0);
+                  const topWinnerTeams = Object.keys(teamWinsCount).filter(
+                    (name) => teamWinsCount[name] === maxWins,
+                  );
+                  const winnerNames = topWinnerTeams.join(" / ");
+
+                  return (
+                    <>
+                      {/* KPIs */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                            <Trophy className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                              Carreras Terminadas
+                            </p>
+                            <p className="text-2xl font-bold text-neutral-900">
+                              {uniqueRaces.length}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
+                            <Crown className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                              Líder Actual
+                            </p>
+                            <p className="text-xl font-bold text-neutral-900">
+                              {leaderNames || "-"}
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              {maxPoints || 0} puntos
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                          <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                            <Medal className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                              Más Victorias
+                            </p>
+                            <p className="text-xl font-bold text-neutral-900">
+                              {winnerNames || "-"}
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              {maxWins} victorias
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Virtual Podium */}
+                      {top3.length > 0 && (
+                        <div className="flex flex-col items-center justify-end pt-12 pb-8 bg-white border border-neutral-200 rounded-2xl shadow-sm">
+                          <h3 className="text-lg font-bold mb-8 text-neutral-800 uppercase tracking-widest">
+                            Podio Virtual
+                          </h3>
+                          <div className="flex items-end gap-2 md:gap-8">
+                            {/* 2nd Place */}
+                            {top3[1] && (
+                              <div className="flex flex-col items-center">
+                                <div className="mb-2 text-center">
+                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
+                                    {top3[1].nombreEquipo}
+                                  </p>
+                                  <p className="text-xs text-neutral-500">
+                                    {top3[1].puntos} pts
+                                  </p>
+                                </div>
+                                <div className="w-24 md:w-32 h-32 bg-slate-300 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                                  <span className="text-4xl font-black text-slate-400">
+                                    2
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 1st Place */}
+                            {top3[0] && (
+                              <div className="flex flex-col items-center">
+                                <Crown className="w-8 h-8 text-yellow-500 mb-2 animate-bounce" />
+                                <div className="mb-2 text-center">
+                                  <p className="text-base font-black text-neutral-900 truncate w-28 md:w-40">
+                                    {top3[0].nombreEquipo}
+                                  </p>
+                                  <p className="text-sm font-bold text-yellow-600">
+                                    {top3[0].puntos} pts
+                                  </p>
+                                </div>
+                                <div className="w-28 md:w-40 h-48 bg-yellow-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden border-x-4 border-t-4 border-yellow-300">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
+                                  <span className="text-6xl font-black text-yellow-600">
+                                    1
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 3rd Place */}
+                            {top3[2] && (
+                              <div className="flex flex-col items-center">
+                                <div className="mb-2 text-center">
+                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
+                                    {top3[2].nombreEquipo}
+                                  </p>
+                                  <p className="text-xs text-neutral-500">
+                                    {top3[2].puntos} pts
+                                  </p>
+                                </div>
+                                <div className="w-24 md:w-32 h-24 bg-orange-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                                  <span className="text-4xl font-black text-orange-600">
+                                    3
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Season Sub-Tabs */}
+                      <div className="flex justify-center mb-8">
+                        <div className="flex bg-neutral-100 p-1.5 rounded-xl shadow-inner">
+                          {[
+                            { id: "puntos", label: "Puntos", icon: BarChart3 },
+                            {
+                              id: "victorias",
+                              label: "Victorias",
+                              icon: Trophy,
+                            },
+                            {
+                              id: "ciclistas",
+                              label: "Ciclistas",
+                              icon: Users,
+                            },
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              onClick={() => setSeasonSubTab(tab.id as any)}
+                              className={cn(
+                                "flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200",
+                                seasonSubTab === tab.id
+                                  ? "bg-white text-blue-600 shadow-md transform scale-105"
+                                  : "text-neutral-500 hover:text-neutral-700 hover:bg-white/50",
+                              )}
+                            >
+                              <tab.icon className="w-4 h-4" />
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <TabPoints {...props} /><TabWins {...props} /><TabCyclists {...props} />};
