@@ -54,13 +54,6 @@ export const DraftView: React.FC<DraftViewProps> = ({
   const [draftSummarySort, setDraftSummarySort] = useState<{keys: string[]; order: "asc" | "desc";}>({ keys: ["totalPoints"], order: "desc" });
 
   
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: draftSortedData.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 5,
-  });
   const draftTableRef = useRef<HTMLDivElement>(null);
   const draftDatosTableRef = useRef<HTMLDivElement>(null);
   const draftSummaryTableRef = useRef<HTMLDivElement>(null);
@@ -158,7 +151,7 @@ export const DraftView: React.FC<DraftViewProps> = ({
 
     const maxPuntos = Math.max(
       1,
-      ...Object.values(draftCyclistStats).map((s) => s.puntos)
+      ...Object.values(draftCyclistStats as Record<string, any>).map((s) => s.puntos)
     );
 
     files?.elecciones?.data?.forEach((row: any) => {
@@ -285,6 +278,14 @@ export const DraftView: React.FC<DraftViewProps> = ({
         : String(valB).localeCompare(String(valA));
     });
   }, [draftFilteredData, draftSortColumn, draftSortDirection, draftCyclistStats, cyclistMetadata]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: draftSortedData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
 
   return (
     <>
@@ -3088,7 +3089,7 @@ const minPct=draftComputedData.minPct;
                         </div>
                       </div>
                       <div className="h-[500px]">
-                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                        <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                           <BarChart
                             data={chartData}
                             layout="vertical"

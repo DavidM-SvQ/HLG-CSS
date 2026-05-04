@@ -76,7 +76,7 @@ export function SeasonWinsTab() {
                                   chartData.length > 0 ? chartData[0].wins : 0;
 
                                 return (
-                                  <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                  <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                     <BarChart
                                       data={chartData}
                                       layout="vertical"
@@ -177,7 +177,7 @@ export function SeasonWinsTab() {
                                         .sort((a, b) => b.wins - a.wins);
 
                                       return (
-                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                        <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                           <BarChart
                                             data={chartData}
                                             layout="vertical"
@@ -506,7 +506,7 @@ export function SeasonWinsTab() {
 
                                   <div className="h-[400px] w-full">
                                     {monthlyWinsEvolutionData.length > 0 ? (
-                                      <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                      <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                         <LineChart
                                           data={monthlyWinsEvolutionData}
                                           margin={{
@@ -750,7 +750,7 @@ export function SeasonWinsTab() {
                                       })();
 
                                       return (
-                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                        <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                           <LineChart
                                             data={modalWinsEvolutionData}
                                             margin={{

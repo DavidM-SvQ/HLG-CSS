@@ -1,4 +1,5 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
+import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
@@ -7,6 +8,11 @@ import { SeasonViewContext } from "./SeasonViewContext";
 export function SeasonCyclistsTab() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
+  const topCyclistsDraftRefContainer = useRef<HTMLDivElement>(null);
+  const unscoredRefContainer = useRef<HTMLDivElement>(null);
+  const undebutedRefContainer = useRef<HTMLDivElement>(null);
+  const noDraftRefContainer = useRef<HTMLDivElement>(null);
+
   const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
 
   return (
@@ -560,7 +566,7 @@ export function SeasonCyclistsTab() {
                                 </div>
 
                                 <div className="overflow-x-auto overflow-y-auto max-h-[750px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
-                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={topCyclistsDraftRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -1740,7 +1746,7 @@ export function SeasonCyclistsTab() {
                                       : "h-[800px]",
                                   )}
                                 >
-                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={unscoredRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -2514,7 +2520,7 @@ export function SeasonCyclistsTab() {
                                       : "max-h-[750px]",
                                   )}
                                 >
-                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={undebutedRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -3076,7 +3082,7 @@ export function SeasonCyclistsTab() {
                                       : "h-[800px]",
                                   )}
                                 >
-                                  <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={noDraftRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="w-auto min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th

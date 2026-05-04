@@ -1,3 +1,4 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
 import React, { useState, useMemo, useRef } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, X, Flag } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -387,7 +388,7 @@ export const RaceView = (props: RaceViewProps) => {
     setTimeout(() => setIsDetailedBreakdownTextCopying(false), 2000);
   };
 
-    return (
+  return (
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
         <div className="max-w-md mb-8">
           <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -1019,7 +1020,8 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100">
-                          {raceCyclists.map((c, idx) => (
+                      {raceCyclists.map((c, idx) => {
+                        return (
                             <tr
                               key={c.ciclista}
                               className="hover:bg-blue-50/30 transition-colors"
@@ -1061,9 +1063,9 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                               >
                                 {c.puntos}
                               </td>
-                            </tr>
-                          ))}
-                        </tbody>
+                            </tr>);
+                      })}
+                    </tbody>
                       </table></div>
                     </div>
                   </div>

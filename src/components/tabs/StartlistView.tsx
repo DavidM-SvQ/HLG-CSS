@@ -297,19 +297,6 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
     }
   };
 
-  const rowVirtualizer = useVirtualizer({
-    count: filteredRows.length,
-    getScrollElement: () => startlistScrollRef.current,
-    estimateSize: () => 37, // Approximate height of a row
-    overscan: 10,
-  });
-
-  const virtualItems = rowVirtualizer.getVirtualItems();
-  const paddingTop = virtualItems.length > 0 ? virtualItems[0]?.start || 0 : 0;
-  const paddingBottom = virtualItems.length > 0 
-    ? rowVirtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1]?.end || 0)
-    : 0;
-
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 min-h-[600px]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b pb-4 gap-4">
@@ -552,7 +539,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {isStartlistCopying ? filteredRows.map((r, i) => (
+                        {filteredRows.map((r, i) => (
                           <tr
                             key={i}
                             className="group hover:bg-blue-50/50 transition-colors"
@@ -589,55 +576,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                                 : "-"}
                             </td>
                           </tr>
-                        )) : (
-                          <>
-                            {paddingTop > 0 && <tr><td colSpan={8} style={{ height: `${paddingTop}px` }}></td></tr>}
-                            {virtualItems.map((virtualRow) => {
-                              const r = filteredRows[virtualRow.index];
-                              return (
-                                <tr
-                                  key={virtualRow.key}
-                                  ref={rowVirtualizer.measureElement}
-                                  data-index={virtualRow.index}
-                                  className="group hover:bg-blue-50/50 transition-colors"
-                                >
-                                  <td className="px-3 py-2 font-medium text-neutral-800 truncate sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5] group-hover:bg-blue-50/50" title={r.jugador}>
-                                    {r.jugador}
-                                  </td>
-                                  <td className="px-3 py-2 text-center text-neutral-400 font-mono text-[11px]">
-                                    {r.dorsal}
-                                  </td>
-                                  <td className="px-3 py-2 font-semibold text-neutral-900 truncate" title={r.ciclista}>
-                                    {r.ciclista}{" "}
-                                    {r.debut && (
-                                      <span className="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1 font-bold uppercase tracking-wider relative -top-[1px]">
-                                        Debut
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 text-center truncate">
-                                    <span title={r.paisLetras}>{r.pais}</span>
-                                  </td>
-                                  <td className="px-3 py-2 text-center font-medium text-neutral-600 truncate" title={r.equipo}>
-                                    {r.equipo}
-                                  </td>
-                                  <td className="px-3 py-2 text-center font-mono text-[11px]">
-                                    {r.ronda}
-                                  </td>
-                                  <td className="px-3 py-2 text-center font-mono text-[11px]">
-                                    {r.dias}
-                                  </td>
-                                  <td className="px-3 py-2 text-right font-mono text-[11px] font-bold text-neutral-700">
-                                    {r.puntos > 0
-                                      ? formatNumberSpanish(r.puntos)
-                                      : "-"}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                            {paddingBottom > 0 && <tr><td colSpan={8} style={{ height: `${paddingBottom}px` }}></td></tr>}
-                          </>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -697,7 +636,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                       </button>
                     </div>
                   </div>
-                  <div className="table-responsive-wrapper overflow-auto border border-neutral-200 rounded-lg flex-1 crosshair-container">
+                  <div className="table-responsive-wrapper overflow-auto w-full max-h-[600px]">
                     <table className="w-full min-w-[400px] text-[13px] text-left">
                       <thead className="text-[11px] text-neutral-500 uppercase bg-neutral-50/80 sticky top-0 backdrop-blur-sm z-10">
                         <tr>
@@ -729,7 +668,8 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {teamRows.map((r, i) => (
+                      {teamRows.map((r, i) => {
+                        return (
                           <tr
                             key={i}
                             className="group hover:bg-blue-50/50 transition-colors"
@@ -772,9 +712,9 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                             >
                               <span className="font-mono tracking-tight">{formatNumberSpanish(r.puntosMedios)}</span>
                             </td>
-                          </tr>
-                        ))}
-                      </tbody>
+                          </tr>);
+                      })}
+                    </tbody>
                     </table></div>
                   </div>
               </div>

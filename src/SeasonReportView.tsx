@@ -1,4 +1,5 @@
 import { domToDataUrl } from "modern-screenshot";
+import { flushSync } from "react-dom";
 import { useCrosshair } from './hooks/useCrosshair';
 import React, { useState, useRef, useMemo } from "react";
 import {
@@ -441,12 +442,90 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
   const [isUndebutedCopying, setIsUndebutedCopying] = useState<string | null>(null);
   const [isUndebutedTextCopying, setIsUndebutedTextCopying] = useState(false);
 
+  const [isHistoryCopying, setIsHistoryCopying] = useState<string | null>(null);
+  const [isHistoryTextCopying, setIsHistoryTextCopying] = useState(false);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+
   const [isUnscoredExpanded, setIsUnscoredExpanded] = useState(false);
   const [isUndebutedExpanded, setIsUndebutedExpanded] = useState(false);
 
   const unscoredTableRef = useRef<HTMLDivElement>(null);
   const undebutedTableRef = useRef<HTMLDivElement>(null);
 
+  const handleCopyHistoryText = async () => {
+    if (!ref2.current || isHistoryTextCopying) return;
+    setIsHistoryTextCopying(true);
+    const table = ref2.current.querySelector("table");
+    if (!table) {
+      setIsHistoryTextCopying(false);
+      return;
+    }
+    const rows = Array.from(table.rows);
+    const text = rows
+      .map((row: any) =>
+        Array.from(row.cells)
+          .map((cell: any) => cell.innerText.trim())
+          .join("\t"),
+      )
+      .join("\n");
+    navigator.clipboard.writeText(text);
+    setTimeout(() => setIsHistoryTextCopying(false), 2000);
+  };
+
+  const handleCopyHistory = async (subset?: "full" | string) => {
+    if (!ref2.current || isHistoryCopying) return;
+    
+    flushSync(() => {
+      setIsHistoryCopying(subset || "full");
+    });
+    
+    const tableContainer = ref2.current;
+    const restore = expandNodeForCapture(tableContainer);
+
+    try {
+      if (typeof ClipboardItem !== "undefined") {
+        const clipboardItem = new ClipboardItem({
+          "image/png": (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              backgroundColor: '#ffffff',
+              style: { overflow: "visible", textRendering: "optimizeLegibility" },
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>,
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsHistoryCopying(null), 2000);
+      } else throw new Error("ClipboardItem not supported");
+    } catch (err) {
+      setIsHistoryCopying(null);
+      handleDownloadHistory(subset);
+    } finally {
+      restore();
+    }
+  };
+
+  const handleDownloadHistory = async (subset?: "full" | string) => {
+    if (!ref2.current) return;
+    const tableContainer = ref2.current;
+    const restore = expandNodeForCapture(tableContainer);
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: '#ffffff',
+        style: { overflow: "visible", textRendering: "optimizeLegibility" },
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      const suffix = subset && subset !== "full" ? `-${subset}` : "";
+      link.download = `historial-ganadores${suffix}.png`;
+      link.click();
+    } catch (err) {
+    } finally {
+      restore();
+    }
+  };
 
   const handleCopyUnscoredText = async () => {
     if (!unscoredTableRef.current || isUnscoredTextCopying) return;
@@ -472,25 +551,22 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
     subset?: "full" | "p1" | "p2" | "p3" | "p4",
   ) => {
     if (!unscoredTableRef.current || isUnscoredCopying) return;
-    setIsUnscoredCopying(subset || "full");
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    flushSync(() => {
+      setIsUnscoredCopying(subset || "full");
+    });
     const tableContainer = unscoredTableRef.current;
-    if (!tableContainer) return;
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
       if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
+        const clipboardItem = new ClipboardItem({
+          "image/png": (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>,
+        });
+        await navigator.clipboard.write([clipboardItem]);
         setTimeout(() => setIsUnscoredCopying(null), 2000);
       } else throw new Error("ClipboardItem not supported");
     } catch (err) {
@@ -542,32 +618,26 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
 
   const handleCopyUndebuted = async (subset?: "full" | "p1" | "p2") => {
     if (!undebutedTableRef.current || isUndebutedCopying) return;
-    setIsUndebutedCopying(subset || "full");
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    flushSync(() => {
+      setIsUndebutedCopying(subset || "full");
+    });
     const tableContainer = undebutedTableRef.current;
-    if (!tableContainer) return;
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-        
-        backgroundColor: '#ffffff',
-        
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        
-      });
       if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
+        const clipboardItem = new ClipboardItem({
+          "image/png": (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+              backgroundColor: '#ffffff',
+              style: { overflow: "visible", textRendering: "optimizeLegibility" },
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>,
+        });
+        await navigator.clipboard.write([clipboardItem]);
         setTimeout(() => setIsUndebutedCopying(null), 2000);
       } else throw new Error("ClipboardItem not supported");
     } catch (err) {
@@ -814,7 +884,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
       if (pb.length === 3) {
         numB = parseInt((pb[0].length === 4 ? pb[0] : pb[2]) + (pb[1].padStart(2, '0')) + (pb[0].length === 4 ? pb[2].padStart(2, '0') : pb[0].padStart(2, '0')));
       }
-      return numA - numB;
+      return numB - numA; // Descending
     });
 
     const maxWins = Math.max(0, ...raceWinners.map((rw) => rw.winnerTeam !== "-" ? 1 : 0));
@@ -1414,9 +1484,75 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                     Relación cronológica de las victorias obtenidas por los equipos en cada carrera.
                   </p>
                 </div>
-                <ExportToolbar targetRef={ref2} filename="historial-ganadores" />
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5 pr-3 copy-button-ignore">
+                    <button
+                      onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                      className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+                      title={isHistoryExpanded ? "Contraer tabla" : "Expandir tabla"}
+                    >
+                      {isHistoryExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleCopyHistory("full")}
+                      disabled={!!isHistoryCopying}
+                      title="Copiar imagen"
+                      className={cn(
+                        "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+                        isHistoryCopying === "full" ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
+                        isHistoryCopying && isHistoryCopying !== "full" && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {isHistoryCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                    
+                    {(() => {
+                      const count = monthReportData.raceWinners.length;
+                      if (count > 50) {
+                        return (
+                          <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
+                            {Array.from({ length: Math.ceil(count / 50) }).map((_, i) => {
+                              const s = "p" + (i + 1);
+                              const isCopyingThis = isHistoryCopying === s;
+                              return (
+                                <button
+                                  key={s}
+                                  onClick={() => handleCopyHistory(s)}
+                                  disabled={!!isHistoryCopying}
+                                  className={cn(
+                                    "px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                                    isCopyingThis ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
+                                    isHistoryCopying && !isCopyingThis && "opacity-50 cursor-not-allowed"
+                                  )}
+                                >
+                                  {isCopyingThis ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                  {i * 50 + 1}-{(i + 1) * 50}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    <button
+                      onClick={handleCopyHistoryText}
+                      disabled={isHistoryTextCopying}
+                      title="Copiar texto"
+                      className={cn(
+                        "ml-1 px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
+                        isHistoryTextCopying
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50",
+                      )}
+                    >
+                      {isHistoryTextCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <ClipboardList className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="overflow-x-auto bg-neutral-50/20 pb-8 rounded-b-2xl">
+              <div className={cn("overflow-x-auto overflow-y-auto bg-neutral-50/20 pb-8 rounded-b-2xl scrollbar-thin", isHistoryExpanded ? "max-h-none" : "h-[800px]")}>
                 <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left">
                   <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10 border-b border-neutral-200">
                     <tr>
@@ -1428,28 +1564,42 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-white">
-                    {monthReportData.raceWinners.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
-                        <td className="px-6 py-2.5  font-mono text-xs text-neutral-500">{r.fecha}</td>
-                        <td className="px-6 py-2.5 font-medium text-neutral-900 max-w-[200px] truncate" title={r.race}>{r.race}</td>
-                        <td className="px-6 py-2.5">
-                          {r.categoria ? <span className="px-2 py-1 text-[10px] font-bold rounded-md bg-neutral-100 text-neutral-600 tracking-wider uppercase">{r.categoria}</span> : null}
-                        </td>
-                        <td className="px-6 py-2.5">
-                          <div className="flex justify-center">
-                            {r.winnerTeam !== "-" ? (
-                              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-800 rounded-full font-bold text-xs ring-1 ring-yellow-600/20 shadow-sm">
-                                <Crown className="w-3 h-3 text-yellow-600" />
-                                {r.winnerTeam} [#{r.draftRank}]
-                              </div>
-                            ) : (
-                              <span className="text-neutral-400 font-mono">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-2.5 text-right font-mono font-bold text-blue-600">{r.winnerPts}</td>
-                      </tr>
-                    ))}
+                    {monthReportData.raceWinners.map((r, idx) => {
+                      let isHiddenVisual = false;
+                      if (isHistoryCopying) {
+                        if (isHistoryCopying === "full") isHiddenVisual = false;
+                        else {
+                          const pageNum = parseInt(isHistoryCopying.substring(1));
+                          const start = (pageNum - 1) * 50;
+                          const end = start + 50;
+                          isHiddenVisual = !(idx >= start && idx < end);
+                        }
+                      }
+                      if (isHiddenVisual && isHistoryCopying) return null;
+
+                      return (
+                        <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
+                          <td className="px-6 py-2.5  font-mono text-xs text-neutral-500">{r.fecha}</td>
+                          <td className="px-6 py-2.5 font-medium text-neutral-900 max-w-[200px] truncate" title={r.race}>{r.race}</td>
+                          <td className="px-6 py-2.5">
+                            {r.categoria ? <span className="px-2 py-1 text-[10px] font-bold rounded-md bg-neutral-100 text-neutral-600 tracking-wider uppercase">{r.categoria}</span> : null}
+                          </td>
+                          <td className="px-6 py-2.5">
+                            <div className="flex justify-center">
+                              {r.winnerTeam !== "-" ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-800 rounded-full font-bold text-xs ring-1 ring-yellow-600/20 shadow-sm">
+                                  <Crown className="w-3 h-3 text-yellow-600" />
+                                  {r.winnerTeam} [#{r.draftRank}]
+                                </div>
+                              ) : (
+                                <span className="text-neutral-400 font-mono">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-2.5 text-right font-mono font-bold text-blue-600">{r.winnerPts}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table></div>
               </div>

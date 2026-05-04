@@ -58,9 +58,26 @@ export const expandNodeForCapture = (element: HTMLElement) => {
     node.style.setProperty('opacity', '0', 'important');
   });
 
-  const scrollWidth = element.scrollWidth;
-  const targetWidth = Math.max(scrollWidth, 800);
+  const isChart = element.querySelector('.recharts-wrapper') !== null;
+  
+  // To avoid huge whitespace on table exports, we can shrink-wrap it to max-content
+  element.style.setProperty('display', 'inline-block', 'important');
+  element.style.setProperty('width', 'max-content', 'important');
+  element.style.setProperty('min-width', 'max-content', 'important');
+  
+  let targetWidth = element.scrollWidth;
 
+  // If it is a chart and it collapsed, or we just want charts to be wide:
+  if (isChart && targetWidth < 800) {
+    // Restore the block layout temporarily to measure its natural full width
+    element.style.setProperty('display', 'block', 'important');
+    element.style.setProperty('width', '100%', 'important');
+    element.style.setProperty('min-width', '100%', 'important');
+    const fullScrollWidth = element.scrollWidth;
+    targetWidth = Math.max(fullScrollWidth, 800);
+  }
+
+  // Now apply the final decided targetWidth
   element.style.setProperty('display', 'inline-block', 'important');
   element.style.setProperty('width', `${targetWidth}px`, 'important');
   element.style.setProperty('min-width', `${targetWidth}px`, 'important');

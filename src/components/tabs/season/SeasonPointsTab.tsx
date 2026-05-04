@@ -1,12 +1,12 @@
 import React, { useContext } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 
 export function SeasonPointsTab() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
-  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
+  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, evolutionTimeFilter, setEvolutionTimeFilter, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
 
   return (
     <>
@@ -69,7 +69,7 @@ export function SeasonPointsTab() {
                                 ),
                               }}
                             >
-                              <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                              <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                 <BarChart
                                   data={filteredLeaderboard.map((p, idx) => {
                                     const draftOrder = p.orden
@@ -264,7 +264,7 @@ export function SeasonPointsTab() {
                                       ),
                                     }}
                                   >
-                                    <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                    <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                       <BarChart
                                         data={filteredLeaderboard.map(
                                           (p, idx) => {
@@ -471,6 +471,9 @@ export function SeasonPointsTab() {
                               "Dic",
                             ];
                             const currentMonthIdx = new Date().getMonth(); // 0-indexed
+                            const currentDayStr = new Date().getDate();
+                            const currentWeekStr = currentDayStr > 21 ? 3 : currentDayStr > 14 ? 2 : currentDayStr > 7 ? 1 : 0;
+                            const currentWIdx = currentMonthIdx * 4 + currentWeekStr;
 
                             const teamColors: Record<string, string> = {};
                             filteredLeaderboard?.forEach((team, idx) => {
@@ -487,20 +490,75 @@ export function SeasonPointsTab() {
                             });
 
                             const monthlyEvolutionData = (() => {
+                              if (evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") {
+                                const weeks: string[] = [];
+                                for (let i = 0; i < 12; i++) {
+                                  for (let w = 1; w <= 4; w++) {
+                                    weeks.push(`${months[i]} S${w}`);
+                                  }
+                                }
+                                const dataByWeek: any[] = weeks.map((w) => ({ month: w }));
+                                filteredLeaderboard?.forEach((team) => {
+                                  const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                  
+                                  let accumulated = 0;
+                                  months.forEach((m, mIdx) => {
+                                    for (let w = 1; w <= 4; w++) {
+                                      const wIdx = mIdx * 4 + (w - 1);
+                                      const weekPoints = team.detalles.reduce((sum, d) => {
+                                        if (!d.fecha) return sum;
+                                        const parts = d.fecha.split("/");
+                                        if (parts.length < 2) return sum;
+                                        const monthIndex = parseInt(parts[1]) - 1;
+                                        const day = parseInt(parts[0]);
+                                        if (isNaN(monthIndex) || isNaN(day)) return sum;
+                                        
+                                        let weekIndex = 1;
+                                        if (day > 7 && day <= 14) weekIndex = 2;
+                                        else if (day > 14 && day <= 21) weekIndex = 3;
+                                        else if (day > 21) weekIndex = 4;
+                                        
+                                        if (monthIndex === mIdx && weekIndex === w) return sum + d.puntosObtenidos;
+                                        return sum;
+                                      }, 0);
+                                      if (evolutionMode === "acumulado_semanal") {
+                                        accumulated += weekPoints;
+                                        dataByWeek[wIdx][teamKey] = accumulated;
+                                      } else {
+                                        dataByWeek[wIdx][teamKey] = weekPoints;
+                                      }
+                                    }
+                                  });
+                                });
+
+                                // Find boundaries
+                                const firstWeekWithData = dataByWeek.findIndex((w) => Object.keys(w).some((key) => key !== "month" && w[key] > 0));
+
+                                return dataByWeek.filter((w, wIdx) => {
+                                  if (wIdx > currentWIdx) return false;
+                                  if (firstWeekWithData === -1) return false;
+                                  
+                                  if (evolutionTimeFilter !== "all") {
+                                    const mIdx = Math.floor(wIdx / 4);
+                                    if (evolutionTimeFilter.includes("-")) {
+                                      const [start, end] = evolutionTimeFilter.split("-").map(Number);
+                                      if (mIdx < start || mIdx > end) return false;
+                                    } else {
+                                      if (mIdx !== parseInt(evolutionTimeFilter)) return false;
+                                    }
+                                    return true;
+                                  }
+                                  
+                                  return wIdx >= firstWeekWithData;
+                                });
+                              }
+
                               const dataByMonth: any[] = months.map((m) => ({
                                 month: m,
                               }));
 
                               filteredLeaderboard?.forEach((team) => {
                                 const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
-
-                                // Skip if not selected (if any are selected)
-                                if (
-                                  selectedEvolutionTeams.length > 0 &&
-                                  !selectedEvolutionTeams.includes(teamKey)
-                                ) {
-                                  return;
-                                }
 
                                 let accumulated = 0;
 
@@ -545,7 +603,7 @@ export function SeasonPointsTab() {
                                   <div className="flex items-center gap-4 min-w-0">
                                     <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 min-w-0">
                                       <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
-                                      <span className="truncate">Evolución Mensual</span>
+                                      <span className="truncate">Evolución por fechas</span>
                                     </h3>
                                     <div className="copy-button-ignore flex items-center gap-2 shrink-0">
                                       <button
@@ -587,33 +645,86 @@ export function SeasonPointsTab() {
                                       </button>
                                     </div>
                                   </div>
-                                  <div className="flex bg-neutral-100 p-1 rounded-lg">
-                                    <button
-                                      onClick={() =>
-                                        setEvolutionMode("acumulado")
-                                      }
-                                      className={cn(
-                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                                        evolutionMode === "acumulado"
-                                          ? "bg-white text-blue-600 shadow-sm"
-                                          : "text-neutral-500 hover:text-neutral-700",
-                                      )}
-                                    >
-                                      Acumulado
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        setEvolutionMode("mensual")
-                                      }
-                                      className={cn(
-                                        "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                                        evolutionMode === "mensual"
-                                          ? "bg-white text-blue-600 shadow-sm"
-                                          : "text-neutral-500 hover:text-neutral-700",
-                                      )}
-                                    >
-                                      Mensual
-                                    </button>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex bg-neutral-100 p-1 rounded-lg">
+                                      <button
+                                        onClick={() =>
+                                          setEvolutionMode("acumulado")
+                                        }
+                                        className={cn(
+                                          "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                          evolutionMode === "acumulado"
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-neutral-500 hover:text-neutral-700",
+                                        )}
+                                      >
+                                        Acumulado mensual
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setEvolutionMode("mensual")
+                                        }
+                                        className={cn(
+                                          "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                          evolutionMode === "mensual"
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-neutral-500 hover:text-neutral-700",
+                                        )}
+                                      >
+                                        Mensual
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setEvolutionMode("acumulado_semanal")
+                                        }
+                                        className={cn(
+                                          "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                          evolutionMode === "acumulado_semanal"
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-neutral-500 hover:text-neutral-700",
+                                        )}
+                                      >
+                                        Acumulado semanal
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setEvolutionMode("semanal")
+                                        }
+                                        className={cn(
+                                          "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                                          evolutionMode === "semanal"
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-neutral-500 hover:text-neutral-700",
+                                        )}
+                                      >
+                                        Semanal
+                                      </button>
+                                    </div>
+                                    {(evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") && (
+                                      <select
+                                        value={evolutionTimeFilter}
+                                        onChange={(e) => setEvolutionTimeFilter(e.target.value)}
+                                        className="px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                      >
+                                        <option value="all">Todas las semanas</option>
+                                        <option value="0-2">T1 (Ene-Mar)</option>
+                                        <option value="3-5">T2 (Abr-Jun)</option>
+                                        <option value="6-8">T3 (Jul-Sep)</option>
+                                        <option value="9-11">T4 (Oct-Dic)</option>
+                                        <option value="0">Enero</option>
+                                        <option value="1">Febrero</option>
+                                        <option value="2">Marzo</option>
+                                        <option value="3">Abril</option>
+                                        <option value="4">Mayo</option>
+                                        <option value="5">Junio</option>
+                                        <option value="6">Julio</option>
+                                        <option value="7">Agosto</option>
+                                        <option value="8">Septiembre</option>
+                                        <option value="9">Octubre</option>
+                                        <option value="10">Noviembre</option>
+                                        <option value="11">Diciembre</option>
+                                      </select>
+                                    )}
                                   </div>
                                 </div>
 
@@ -718,7 +829,7 @@ export function SeasonPointsTab() {
                                   </div>
 
                                   <div className="h-[600px] w-full">
-                                    <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                    <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                       <LineChart
                                         data={monthlyEvolutionData}
                                         margin={{
@@ -755,40 +866,40 @@ export function SeasonPointsTab() {
                                           height={80}
                                           iconType="circle"
                                           wrapperStyle={{
-                                            paddingTop: "40px",
+                                            paddingTop: "20px",
                                             paddingBottom: "0px",
                                             fontSize: "12px",
                                           }}
                                         />
-                                        {Object.keys(teamColors).map(
-                                          (teamKey) => {
-                                            // Only render line if selected
-                                            if (
-                                              selectedEvolutionTeams.length >
-                                                0 &&
-                                              !selectedEvolutionTeams.includes(
-                                                teamKey,
-                                              )
-                                            ) {
-                                              return null;
-                                            }
+                                        {(evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") && (
+                                          <Brush dataKey="month" height={30} stroke="#3b82f6" fill="#eff6ff" tickFormatter={(value) => value} />
+                                        )}
+                                        {Object.keys(teamColors)
+                                          .sort((a, b) => {
+                                            const aSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(a);
+                                            const bSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(b);
+                                            return aSelected === bSelected ? 0 : aSelected ? 1 : -1;
+                                          })
+                                          .map((teamKey) => {
+                                            const isSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(teamKey);
+                                            const opacity = isSelected ? 1 : 0.15;
                                             return (
                                               <Line
                                                 key={teamKey}
                                                 type="monotone"
                                                 dataKey={teamKey}
                                                 stroke={teamColors[teamKey]}
-                                                strokeWidth={3}
-                                                dot={{ r: 4, strokeWidth: 2 }}
-                                                activeDot={{
+                                                strokeWidth={isSelected ? 3 : 1}
+                                                strokeOpacity={opacity}
+                                                dot={isSelected ? { r: 4, strokeWidth: 2 } : false}
+                                                activeDot={isSelected ? {
                                                   r: 6,
                                                   strokeWidth: 0,
-                                                }}
+                                                } : false}
                                                 connectNulls
                                               />
                                             );
-                                          },
-                                        )}
+                                          })}
                                       </LineChart>
                                     </ResponsiveContainer></div></div>
                                   </div>
@@ -804,10 +915,14 @@ export function SeasonPointsTab() {
                                 <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
                                   <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
                                     <TrendingUp className="w-6 h-6 text-blue-600" />
-                                    Evolución Mensual (
+                                    Evolución por fechas (
                                     {evolutionMode === "acumulado"
-                                      ? "Acumulado"
-                                      : "Mensual"}
+                                      ? "Acumulado mensual"
+                                      : evolutionMode === "acumulado_semanal"
+                                        ? "Acumulado semanal"
+                                        : evolutionMode === "semanal"
+                                          ? "Semanal"
+                                          : "Mensual"}
                                     )
                                   </h3>
                                   <button
@@ -838,6 +953,9 @@ export function SeasonPointsTab() {
                                       ];
                                       const currentMonthIdx =
                                         new Date().getMonth();
+                                      const currentDayStr = new Date().getDate();
+                                      const currentWeekStr = currentDayStr > 21 ? 3 : currentDayStr > 14 ? 2 : currentDayStr > 7 ? 1 : 0;
+                                      const currentWIdx = currentMonthIdx * 4 + currentWeekStr;
 
                                       const teamColors: Record<string, string> =
                                         {};
@@ -859,19 +977,74 @@ export function SeasonPointsTab() {
                                       );
 
                                       const modalEvolutionData = (() => {
+                                        if (evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") {
+                                          const weeks: string[] = [];
+                                          for (let i = 0; i < 12; i++) {
+                                            for (let w = 1; w <= 4; w++) {
+                                              weeks.push(`${months[i]} S${w}`);
+                                            }
+                                          }
+                                          const dataByWeek: any[] = weeks.map((w) => ({ month: w }));
+                                          filteredLeaderboard?.forEach((team) => {
+                                            const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+                                            
+                                            let accumulated = 0;
+                                            months.forEach((m, mIdx) => {
+                                              for (let w = 1; w <= 4; w++) {
+                                                const wIdx = mIdx * 4 + (w - 1);
+                                                const weekPoints = team.detalles.reduce((sum, d) => {
+                                                  if (!d.fecha) return sum;
+                                                  const parts = d.fecha.split("/");
+                                                  if (parts.length < 2) return sum;
+                                                  const monthIndex = parseInt(parts[1]) - 1;
+                                                  const day = parseInt(parts[0]);
+                                                  if (isNaN(monthIndex) || isNaN(day)) return sum;
+                                                  
+                                                  let weekIndex = 1;
+                                                  if (day > 7 && day <= 14) weekIndex = 2;
+                                                  else if (day > 14 && day <= 21) weekIndex = 3;
+                                                  else if (day > 21) weekIndex = 4;
+                                                  
+                                                  if (monthIndex === mIdx && weekIndex === w) return sum + d.puntosObtenidos;
+                                                  return sum;
+                                                }, 0);
+                                                
+                                                if (evolutionMode === "acumulado_semanal") {
+                                                  accumulated += weekPoints;
+                                                  dataByWeek[wIdx][teamKey] = accumulated;
+                                                } else {
+                                                  dataByWeek[wIdx][teamKey] = weekPoints;
+                                                }
+                                              }
+                                            });
+                                          });
+                                          const firstWeekWithData = dataByWeek.findIndex((w) => Object.keys(w).some((key) => key !== "month" && w[key] > 0));
+                                          
+                                          return dataByWeek.filter((w, wIdx) => {
+                                            if (wIdx > currentWIdx) return false;
+                                            if (firstWeekWithData === -1) return false;
+                                            
+                                            if (evolutionTimeFilter !== "all") {
+                                              const mIdx = Math.floor(wIdx / 4);
+                                              if (evolutionTimeFilter.includes("-")) {
+                                                const [start, end] = evolutionTimeFilter.split("-").map(Number);
+                                                if (mIdx < start || mIdx > end) return false;
+                                              } else {
+                                                if (mIdx !== parseInt(evolutionTimeFilter)) return false;
+                                              }
+                                              return true;
+                                            }
+                                            
+                                            return wIdx >= firstWeekWithData;
+                                          });
+                                        }
+
                                         const dataByMonth: any[] = months.map(
                                           (m) => ({ month: m }),
                                         );
 
                                         filteredLeaderboard?.forEach((team) => {
                                           const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
-                                          if (
-                                            selectedEvolutionTeams.length > 0 &&
-                                            !selectedEvolutionTeams.includes(
-                                              teamKey,
-                                            )
-                                          )
-                                            return;
 
                                           let accumulated = 0;
                                           months.forEach((m, mIdx) => {
@@ -914,7 +1087,7 @@ export function SeasonPointsTab() {
                                       })();
 
                                       return (
-                                        <div className="w-full overflow-x-auto pb-4 h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="100%">
+                                        <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                                           <LineChart
                                             data={modalEvolutionData}
                                             margin={{
@@ -952,41 +1125,43 @@ export function SeasonPointsTab() {
                                               height={100}
                                               iconType="circle"
                                               wrapperStyle={{
-                                                paddingTop: "40px",
+                                                paddingTop: "20px",
                                                 paddingBottom: "0px",
                                                 fontSize: "14px",
                                               }}
                                             />
-                                            {Object.keys(teamColors).map(
-                                              (teamKey) => {
-                                                if (
-                                                  selectedEvolutionTeams.length >
-                                                    0 &&
-                                                  !selectedEvolutionTeams.includes(
-                                                    teamKey,
-                                                  )
-                                                )
-                                                  return null;
+                                            {(evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") && (
+                                              <Brush dataKey="month" height={30} stroke="#3b82f6" fill="#eff6ff" tickFormatter={(value) => value} />
+                                            )}
+                                            {Object.keys(teamColors)
+                                              .sort((a, b) => {
+                                                const aSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(a);
+                                                const bSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(b);
+                                                return aSelected === bSelected ? 0 : aSelected ? 1 : -1;
+                                              })
+                                              .map((teamKey) => {
+                                                const isSelected = selectedEvolutionTeams.length === 0 || selectedEvolutionTeams.includes(teamKey);
+                                                const opacity = isSelected ? 1 : 0.15;
                                                 return (
                                                   <Line
                                                     key={teamKey}
                                                     type="monotone"
                                                     dataKey={teamKey}
                                                     stroke={teamColors[teamKey]}
-                                                    strokeWidth={4}
-                                                    dot={{
+                                                    strokeWidth={isSelected ? 4 : 1}
+                                                    strokeOpacity={opacity}
+                                                    dot={isSelected ? {
                                                       r: 5,
                                                       strokeWidth: 2,
-                                                    }}
-                                                    activeDot={{
+                                                    } : false}
+                                                    activeDot={isSelected ? {
                                                       r: 8,
                                                       strokeWidth: 0,
-                                                    }}
+                                                    } : false}
                                                     connectNulls
                                                   />
                                                 );
-                                              },
-                                            )}
+                                              })}
                                           </LineChart>
                                         </ResponsiveContainer></div></div>
                                       );
