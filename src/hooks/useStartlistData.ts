@@ -10,6 +10,16 @@ export interface StartlistTeamRow {
   puntosMedios: number;
 }
 
+export interface StartlistFilters {
+  team: string;
+  rondas: string[];
+  diasMin: number | '';
+  diasMax: number | '';
+  debut: string; // 'Todos' | 'Sí' | 'No'
+  puntosMin: number | '';
+  puntosMax: number | '';
+}
+
 export function useStartlistData(
   files: any,
   publicStartlistRace: string,
@@ -18,7 +28,7 @@ export function useStartlistData(
   cyclistRoundMap: Record<string, string>,
   playerTeamMap: Record<string, string>,
   playerOrderMap: Record<string, string>,
-  startlistFilterTeam: string,
+  filters: StartlistFilters,
   startlistSortCol: string,
   startlistSortDir: string
 ) {
@@ -92,9 +102,25 @@ export function useStartlistData(
       new Set(rows.map((r) => r.jugador)),
     ).sort() as string[];
 
-    const filteredRows = rows.filter((r) =>
-      startlistFilterTeam === "All" ? true : r.jugador === startlistFilterTeam,
-    );
+    const uniqueRondas = Array.from(
+      new Set(rows.map((r) => r.ronda).filter(Boolean)),
+    ).sort() as string[];
+
+    const filteredRows = rows.filter((r) => {
+      if (filters.team !== "All" && r.jugador !== filters.team) return false;
+      if (filters.rondas.length > 0 && !filters.rondas.includes(r.ronda)) return false;
+      
+      if (filters.diasMin !== '' && r.dias < filters.diasMin) return false;
+      if (filters.diasMax !== '' && r.dias > filters.diasMax) return false;
+      
+      if (filters.puntosMin !== '' && r.puntos < filters.puntosMin) return false;
+      if (filters.puntosMax !== '' && r.puntos > filters.puntosMax) return false;
+      
+      if (filters.debut === 'Sí' && r.debut !== 'Sí') return false;
+      if (filters.debut === 'No' && r.debut === 'Sí') return false;
+      
+      return true;
+    });
 
     const sortDirNum = startlistSortDir === "asc" ? 1 : -1;
     filteredRows.sort((a, b) => {
@@ -111,6 +137,10 @@ export function useStartlistData(
       const valB = String(b[startlistSortCol] || "");
       return valA.localeCompare(valB) * sortDirNum;
     });
+
+    const maxDias = Math.max(0, ...filteredRows.map((r) => r.dias));
+    const nonZeroDias = filteredRows.map((r) => r.dias).filter(d => d > 0);
+    const minDias = nonZeroDias.length > 0 ? Math.min(...nonZeroDias) : 0;
 
     const teamRows: StartlistTeamRow[] = [];
     let maxCiclistas = 0;
@@ -136,26 +166,30 @@ export function useStartlistData(
       });
     });
 
-    teamRows.sort((a, b) => {
-      if (b.numCiclistas !== a.numCiclistas) return b.numCiclistas - a.numCiclistas;
-      return b.puntos - a.puntos;
-    });
+    teamRows.sort((a, b) => b.puntosMedios - a.puntosMedios);
 
     const maxTeamPoints = Math.max(1, ...teamRows.map((r) => r.puntos));
     const minTeamPoints = Math.min(...teamRows.map((r) => r.puntos));
     const maxTeamPointsMedios = Math.max(1, ...teamRows.map((r) => r.puntosMedios));
     const minTeamPointsMedios = Math.min(...teamRows.map((r) => r.puntosMedios));
+    const maxCyclistPoints = Math.max(1, ...filteredRows.map((r) => r.puntos));
+    const minCyclistPoints = Math.min(...filteredRows.map((r) => r.puntos));
 
     return {
       filteredRows,
       teamRows,
       uniqueTeams,
+      uniqueRondas,
       maxCiclistas,
       minCiclistas,
       minTeamPoints,
       maxTeamPoints,
       minTeamPointsMedios,
       maxTeamPointsMedios,
+      maxCyclistPoints,
+      minCyclistPoints,
+      maxDias,
+      minDias,
     };
   }, [
     startlistArray,
@@ -164,7 +198,7 @@ export function useStartlistData(
     cyclistRoundMap,
     playerTeamMap,
     playerOrderMap,
-    startlistFilterTeam,
+    filters,
     startlistSortCol,
     startlistSortDir,
   ]);

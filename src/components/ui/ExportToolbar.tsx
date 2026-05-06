@@ -11,10 +11,11 @@ interface ExportToolbarProps {
   textCopyLabel?: string;
   useClipboardIconForText?: boolean;
   
-  onCopyImage?: () => void;
-  isImageCopying?: boolean;
+  onCopyImage?: (range?: string) => void;
+  isImageCopying?: boolean | string | null;
+  imagePageCount?: number;
   
-  onDownloadImage?: () => void;
+  onDownloadImage?: (range?: string) => void;
 }
 
 export const ExportToolbar: React.FC<ExportToolbarProps> = ({
@@ -26,8 +27,52 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   useClipboardIconForText = false,
   onCopyImage,
   isImageCopying,
+  imagePageCount = 1,
   onDownloadImage,
 }) => {
+  const renderImageButtons = () => {
+    return (
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onCopyImage?.(imagePageCount > 1 ? 'full' : undefined)}
+          disabled={!!isImageCopying}
+          className={cn(
+            "p-1.5 rounded-md transition-colors border shadow-sm",
+            isImageCopying === 'full' || isImageCopying === true
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+          )}
+          title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
+        >
+          {isImageCopying === 'full' || isImageCopying === true ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </button>
+
+        {imagePageCount > 1 && (
+          <div className="flex border-l border-neutral-200 pl-1.5 gap-1 ml-1">
+            {Array.from({ length: imagePageCount }, (_, i) => `p${i + 1}`).map((p) => (
+              <button
+                key={p}
+                onClick={() => onCopyImage?.(p)}
+                disabled={!!isImageCopying}
+                className={cn(
+                  "px-2 py-1 text-[10px] font-bold rounded-md border shadow-sm flex items-center gap-1 transition-colors uppercase tracking-wider",
+                  isImageCopying === p
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50",
+                  isImageCopying && isImageCopying !== p && "opacity-50 cursor-not-allowed"
+                )}
+                title={`Copiar ${p}`}
+              >
+                {isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex items-center gap-1.5 copy-button-ignore">
       {onCopyText && (
@@ -63,25 +108,11 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         </button>
       )}
 
-      {onCopyImage && (
-        <button
-          onClick={onCopyImage}
-          disabled={isImageCopying}
-          className={cn(
-            "p-1.5 rounded-md transition-colors border shadow-sm",
-            isImageCopying
-              ? "bg-green-50 text-green-700 border-green-200"
-              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-          )}
-          title="Copiar imagen"
-        >
-          {isImageCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        </button>
-      )}
+      {onCopyImage && renderImageButtons()}
 
       {onDownloadImage && (
         <button
-          onClick={onDownloadImage}
+          onClick={() => onDownloadImage()}
           className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
           title="Descargar imagen"
         >
@@ -91,3 +122,4 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
     </div>
   );
 };
+
