@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { ExportToolbar } from "../ui/ExportToolbar";
 import { getVal, formatNumberSpanish } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -261,43 +262,15 @@ export const InfoView = (props: InfoViewProps) => {
                         </h3>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setIsPointsExpanded(!isPointsExpanded)}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Ampliar"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCopyPoints}
-                          className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors copy-button-ignore"
-                          title="Copiar texto"
-                        >
-                          {isPointsTextCopying ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                          Copiar (Texto)
-                        </button>
-                        <button
-                          onClick={handleCopyPointsImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Copiar imagen"
-                        >
-                          {isPointsImageCopying ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleDownloadPointsImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Descargar"
-                        >
-                          <UploadCloud className="w-4 h-4" />
-                        </button>
+                        <ExportToolbar 
+                          isExpanded={isPointsExpanded} 
+                          onExpand={() => setIsPointsExpanded(!isPointsExpanded)} 
+                          onCopyText={handleCopyPoints} 
+                          isTextCopying={isPointsTextCopying} 
+                          onCopyImage={handleCopyPointsImage} 
+                          isImageCopying={isPointsImageCopying} 
+                          onDownloadImage={handleDownloadPointsImage} 
+                        />
                         <input
                           type="text"
                           placeholder="Buscar carrera..."
@@ -459,43 +432,15 @@ export const InfoView = (props: InfoViewProps) => {
                         ))}
                       </select>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setIsRacesExpanded(!isRacesExpanded)}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Ampliar"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCopyRaces}
-                          className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors copy-button-ignore"
-                          title="Copiar texto"
-                        >
-                          {isRacesTextCopying ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                          Copiar (Texto)
-                        </button>
-                        <button
-                          onClick={handleCopyRacesImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Copiar imagen"
-                        >
-                          {isRacesImageCopying ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleDownloadRacesImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                          title="Descargar"
-                        >
-                          <UploadCloud className="w-4 h-4" />
-                        </button>
+                        <ExportToolbar 
+                          isExpanded={isRacesExpanded} 
+                          onExpand={() => setIsRacesExpanded(!isRacesExpanded)} 
+                          onCopyText={handleCopyRaces} 
+                          isTextCopying={isRacesTextCopying} 
+                          onCopyImage={handleCopyRacesImage} 
+                          isImageCopying={isRacesImageCopying} 
+                          onDownloadImage={handleDownloadRacesImage} 
+                        />
                       </div>
                     </div>
                     <div

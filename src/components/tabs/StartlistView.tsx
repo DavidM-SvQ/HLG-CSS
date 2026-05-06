@@ -1,12 +1,14 @@
-import React, { useState, useRef, useMemo, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCrosshair } from '../../hooks/useCrosshair';
-import { List, Minimize2, Maximize2, Copy, CheckCircle2 } from "lucide-react";
+import { List, Minimize2, Maximize2, Copy, CheckCircle2, UploadCloud } from "lucide-react";
 import { domToDataUrl } from "modern-screenshot";
 import { cn } from "../../lib/utils";
-import { formatNumberSpanish, getCategoryColorStyle } from "../../lib/data-processing";
+import { formatNumberSpanish, getCategoryColorStyle, getVal } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
+import { useStartlistData } from "../../hooks/useStartlistData";
+import { ExportToolbar } from "../ui/ExportToolbar";
 
 export interface StartlistTeamRow {
   orden: string;
@@ -29,7 +31,7 @@ export interface StartlistViewProps {
 const colorScale = (val: number, max: number, inverted?: boolean) => {
   const t = max === 0 ? 0 : Math.max(0, Math.min(1, val / max));
   const hue = inverted ? 120 - t * 120 : t * 120; // 0=red, 120=green
-  return `rgb($<span className="font-mono tracking-tight">{Math.round(255 - t * 100)}</span>, $<span className="font-mono tracking-tight">{Math.round(t * 200)}</span>, 100)`;
+  return `rgb(${Math.round(255 - t * 100)}, ${Math.round(t * 200)}, 100)`;
 };
 
 export const StartlistView: React.FC<StartlistViewProps> = ({
@@ -50,146 +52,28 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
   const [isStartlistCopying, setIsStartlistCopying] = useState(false);
   const [isStartlistTeamsCopying, setIsStartlistTeamsCopying] = useState(false);
 
+  const [isPointsExpanded, setIsPointsExpanded] = useState(false);
+  const [isPointsTextCopying, setIsPointsTextCopying] = useState(false);
+  const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
+
   const startlistTableRef = useRef<HTMLDivElement>(null);
   const startlistScrollRef = useRef<HTMLDivElement>(null);
   const startlistTeamsTableRef = useRef<HTMLDivElement>(null);
+  const pointsTableRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const startlistArray = useMemo(() => {
-    if (!files?.startlist?.data) return [];
-    if (Array.isArray(files.startlist.data)) return files.startlist.data;
-    return [files.startlist.data];
-  }, [files]);
-  
-  useEffect(() => {
-    if (!publicStartlistRace && startlistArray.length > 0) {
-      const firstValidRace = startlistArray.find((sl: any) => sl && sl.carrera);
-      if (firstValidRace) {
-        setPublicStartlistRace(firstValidRace.carrera);
-      }
-    }
-  }, [publicStartlistRace, startlistArray, setPublicStartlistRace]);
-
-  const memoizedData = useMemo(() => {
-    const selectedData = startlistArray.find(
-      (d: any) => d.carrera === publicStartlistRace,
-    );
-    if (!selectedData) return { filteredRows: [], teamRows: [], uniqueTeams: [], maxCiclistas: 0, minCiclistas: 0, minTeamPoints: 0, maxTeamPoints: 0, minTeamPointsMedios: 0, maxTeamPointsMedios: 0 };
-
-    let rows: any[] = [];
-    selectedData.resultados?.forEach((res: any) => {
-      res.ciclistas?.forEach((c: any) => {
-        const nombre = typeof c === "string" ? c : c.nombre;
-        const dorsal = typeof c === "string" ? "" : c.dorsal;
-
-        const jugador = res.jugador;
-        const equipoManger = playerTeamMap[jugador] || jugador;
-        const order = playerOrderMap[jugador] || DRAFT_RANK_MAP[jugador] || "99";
-        const equipoOrdered = `${equipoManger} [#${order}]`;
-        const ronda = cyclistRoundMap[nombre] || "";
-        const meta = cyclistMetadata[nombre] || {};
-
-        const totalPuntos = meta.puntosTotales || 0;
-        const carreraPuntos = meta.puntosPorCarrera?.[publicStartlistRace] || 0;
-        const displayPuntos = totalPuntos - carreraPuntos;
-        const dias = meta.diasCompeticion || 0;
-        const debut = dias === 0 ? "Sí" : "";
-
-        rows.push({
-          jugador: equipoOrdered,
-          jugadorName: jugador,
-          dorsal: dorsal || "",
-          ciclista: nombre,
-          ronda: ronda,
-          pais: meta.pais || "",
-          equipo: meta.equipoBreve || "",
-          dias,
-          puntos: displayPuntos,
-          debut,
-        });
-      });
-    });
-
-    const uniqueTeams = Array.from(
-      new Set(rows.map((r) => r.jugador)),
-    ).sort() as string[];
-
-    const filteredRows = rows.filter((r) =>
-      startlistFilterTeam === "All" ? true : r.jugador === startlistFilterTeam,
-    );
-
-    const sortDirNum = startlistSortDir === "asc" ? 1 : -1;
-    filteredRows.sort((a, b) => {
-      if (startlistSortCol === "puntos") return (a.puntos - b.puntos) * sortDirNum;
-      if (startlistSortCol === "dias") return (a.dias - b.dias) * sortDirNum;
-      if (startlistSortCol === "ronda") {
-        const getRondaNum = (r: string) => {
-          const num = parseInt(r);
-          return isNaN(num) ? 99 : num;
-        };
-        return ((getRondaNum(a.ronda) - getRondaNum(b.ronda)) * sortDirNum);
-      }
-      const valA = String(a[startlistSortCol] || "");
-      const valB = String(b[startlistSortCol] || "");
-      return valA.localeCompare(valB) * sortDirNum;
-    });
-
-    const teamRows: StartlistTeamRow[] = [];
-    let maxCiclistas = 0;
-    let minCiclistas = 999;
-
-    const mapToUse = Object.keys(playerOrderMap).length > 0 ? playerOrderMap : DRAFT_RANK_MAP;
-
-    Object.entries(mapToUse).forEach(([jugador, orden]) => {
-      if (jugador === "No draft") return;
-      const teamMembers = rows.filter((r) => r.jugadorName === jugador);
-      const numCiclistas = teamMembers.length;
-      if (numCiclistas > 0) {
-        if (numCiclistas > maxCiclistas) maxCiclistas = numCiclistas;
-        if (numCiclistas < minCiclistas) minCiclistas = numCiclistas;
-      }
-      const puntos = teamMembers.reduce((sum, r) => sum + r.puntos, 0);
-      teamRows.push({
-        orden: orden as string,
-        equipo: `${playerTeamMap[jugador] || jugador} [#${orden}]`,
-        numCiclistas,
-        puntos,
-        puntosMedios: numCiclistas ? Number((puntos / numCiclistas).toFixed(1)) : 0,
-      });
-    });
-
-    teamRows.sort((a, b) => {
-      if (b.numCiclistas !== a.numCiclistas) return b.numCiclistas - a.numCiclistas;
-      return b.puntos - a.puntos;
-    });
-
-    const maxTeamPoints = Math.max(1, ...teamRows.map((r) => r.puntos));
-    const minTeamPoints = Math.min(...teamRows.map((r) => r.puntos));
-    const maxTeamPointsMedios = Math.max(1, ...teamRows.map((r) => r.puntosMedios));
-    const minTeamPointsMedios = Math.min(...teamRows.map((r) => r.puntosMedios));
-
-    return {
-      filteredRows,
-      teamRows,
-      uniqueTeams,
-      maxCiclistas,
-      minCiclistas,
-      minTeamPoints,
-      maxTeamPoints,
-      minTeamPointsMedios,
-      maxTeamPointsMedios,
-    };
-  }, [
+  const { startlistArray, raceCategory, racePoints, memoizedData } = useStartlistData(
     files,
     publicStartlistRace,
+    setPublicStartlistRace,
     cyclistMetadata,
     cyclistRoundMap,
     playerTeamMap,
     playerOrderMap,
     startlistFilterTeam,
     startlistSortCol,
-    startlistSortDir,
-  ]);
+    startlistSortDir
+  );
 
   const handleCopyStartlist = async () => {
     if (!startlistTableRef.current || isStartlistCopying) return;
@@ -294,6 +178,82 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
       } catch (fallbackErr) {}
     } finally {
       restore();
+    }
+  };
+
+  const handleCopyPoints = async () => {
+    if (!pointsTableRef.current || isPointsTextCopying) return;
+    setIsPointsTextCopying(true);
+    const table = pointsTableRef.current.querySelector("table");
+    if (table) {
+      const rows = Array.from(table.rows as HTMLCollectionOf<HTMLTableRowElement>);
+      const text = rows
+        .map((row) =>
+          Array.from(row.cells as HTMLCollectionOf<HTMLTableCellElement>)
+            .map((cell) => cell.innerText.trim())
+            .join("\\t"),
+        )
+        .join("\\n");
+      navigator.clipboard.writeText(text);
+    }
+    setTimeout(() => setIsPointsTextCopying(false), 2000);
+  };
+
+  const handleCopyPointsImage = async () => {
+    if (!pointsTableRef.current || isPointsImageCopying) return;
+    setIsPointsImageCopying(true);
+    const tableContainer = pointsTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass.replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      if (typeof ClipboardItem !== "undefined") {
+        const clipboardItem = new ClipboardItem({
+          "image/png": (async () => {
+            const dataUrl = await domToDataUrl(tableContainer, {
+              scale: 3, 
+              backgroundColor: '#ffffff',
+            });
+            const response = await fetch(dataUrl);
+            return await response.blob();
+          })() as Promise<Blob>,
+        });
+        await navigator.clipboard.write([clipboardItem]);
+        setTimeout(() => setIsPointsImageCopying(false), 2000);
+      } else {
+        throw new Error("ClipboardItem not supported");
+      }
+    } catch (err) {
+       console.error(err);
+       setIsPointsImageCopying(false);
+    } finally {
+      restore();
+      tableContainer.className = originalClass;
+    }
+  };
+
+  const handleDownloadPointsImage = async () => {
+    if (!pointsTableRef.current) return;
+    const tableContainer = pointsTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass.replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 3, 
+        backgroundColor: '#ffffff',
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `puntos_${publicStartlistRace}.png`;
+      link.click();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      restore();
+      tableContainer.className = originalClass;
     }
   };
 
@@ -422,42 +382,12 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                           ))}
 
                         </select>
-                        <button
-                          onClick={() =>
-                            setIsStartlistTableExpanded(
-                              !isStartlistTableExpanded,
-                            )
-                          }
-                          className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
-                          title={
-                            isStartlistTableExpanded
-                              ? "Contraer tabla"
-                              : "Expandir tabla"
-                          }
-                        >
-                          {isStartlistTableExpanded ? (
-                            <Minimize2 className="w-4 h-4" />
-                          ) : (
-                            <Maximize2 className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleCopyStartlist}
-                          disabled={!!isStartlistCopying}
-                          title="Copiar imagen"
-                          className={cn(
-                            "w-8 h-8 rounded-md border flex items-center justify-center transition-all shadow-sm",
-                            isStartlistCopying
-                              ? "bg-green-50 border-green-200 text-green-600"
-                              : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50",
-                          )}
-                        >
-                          {isStartlistCopying ? (
-                            <CheckCircle2 className="w-4 h-4" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
+                        <ExportToolbar 
+                          isExpanded={isStartlistTableExpanded} 
+                          onExpand={() => setIsStartlistTableExpanded(!isStartlistTableExpanded)} 
+                          onCopyImage={handleCopyStartlist} 
+                          isImageCopying={isStartlistCopying} 
+                        />
                       </div>
                     )}
                     {isStartlistTableExpanded && (
@@ -598,42 +528,12 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                       Resumen Equipos
                     </h3>
                     <div className="flex gap-2 relative copy-button-ignore">
-                      <button
-                        onClick={() =>
-                          setIsStartlistTeamsTableExpanded(
-                            !isStartlistTeamsTableExpanded,
-                          )
-                        }
-                        className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
-                        title={
-                          isStartlistTeamsTableExpanded
-                            ? "Contraer tabla"
-                            : "Expandir tabla"
-                        }
-                      >
-                        {isStartlistTeamsTableExpanded ? (
-                          <Minimize2 className="w-4 h-4" />
-                        ) : (
-                          <Maximize2 className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={handleCopyStartlistTeams}
-                        disabled={!!isStartlistTeamsCopying}
-                        title="Copiar imagen resumen de equipos"
-                        className={cn(
-                          "w-8 h-8 rounded-md border flex items-center justify-center transition-all shadow-sm",
-                          isStartlistTeamsCopying
-                            ? "bg-green-50 border-green-200 text-green-600"
-                            : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50",
-                        )}
-                      >
-                        {isStartlistTeamsCopying ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
+                      <ExportToolbar 
+                        isExpanded={isStartlistTeamsTableExpanded} 
+                        onExpand={() => setIsStartlistTeamsTableExpanded(!isStartlistTeamsTableExpanded)} 
+                        onCopyImage={handleCopyStartlistTeams} 
+                        isImageCopying={isStartlistTeamsCopying} 
+                      />
                     </div>
                   </div>
                   <div className="table-responsive-wrapper overflow-auto w-full max-h-[600px]">
@@ -720,6 +620,74 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
               </div>
             );
           })()}
+          
+          {racePoints.length > 0 && (
+            <div className="mt-8 border-t border-neutral-200 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-neutral-900 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Puntuaciones ({raceCategory})</h3>
+                <div className="flex items-center gap-2 copy-button-ignore">
+                  <ExportToolbar 
+                    isExpanded={isPointsExpanded} 
+                    onExpand={() => setIsPointsExpanded(!isPointsExpanded)} 
+                    onCopyText={handleCopyPoints} 
+                    isTextCopying={isPointsTextCopying} 
+                    onCopyImage={handleCopyPointsImage} 
+                    isImageCopying={isPointsImageCopying} 
+                    onDownloadImage={handleDownloadPointsImage} 
+                  />
+                </div>
+              </div>
+              <div 
+                ref={pointsTableRef}
+                className={cn(
+                  "bg-white flex flex-col",
+                  isPointsExpanded
+                    ? "fixed inset-8 z-[100] p-6 shadow-2xl rounded-2xl overflow-y-auto border border-neutral-200"
+                    : "overflow-x-auto rounded-xl border border-neutral-200 shadow-sm"
+                )}
+              >
+                {isPointsExpanded && (
+                  <div className="flex items-center justify-between mb-6 copy-button-ignore">
+                     <h3 className="text-xl font-bold text-neutral-900">Puntuaciones ({raceCategory})</h3>
+                    <button
+                      onClick={() => setIsPointsExpanded(false)}
+                      className="p-2 bg-neutral-100 rounded-full hover:bg-neutral-200 text-neutral-600 transition-colors"
+                      title="Contraer"
+                    >
+                      <Minimize2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-50/80 sticky top-0 backdrop-blur-sm">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold w-1/4">Tipo</th>
+                      <th className="px-4 py-3 font-semibold text-center w-1/4">Posición</th>
+                      <th className="px-4 py-3 font-semibold text-right w-1/4">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {racePoints.map((p: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
+                        <td className="px-4 py-2 bg-neutral-50/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-neutral-100 text-neutral-600">
+                            {getVal(p, "Tipo")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-center text-neutral-700 font-medium font-mono text-[11px]">
+                          {getVal(p, "Posición")}
+                        </td>
+                        <td className="px-4 py-2 text-right font-mono font-bold text-blue-600">
+                          {getVal(p, "Puntos")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

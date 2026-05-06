@@ -1,3 +1,6 @@
+import { useRaceData } from "../../hooks/useRaceData";
+import { ExportToolbar } from "../ui/ExportToolbar";
+import { RaceAdminReport } from "./race/RaceAdminReport";
 import { useVirtualizer } from '@tanstack/react-virtual';
 import React, { useState, useMemo, useRef } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, X, Flag } from "lucide-react";
@@ -37,6 +40,15 @@ export const RaceView = (props: RaceViewProps) => {
   const raceBreakdownTableRef = useRef<HTMLDivElement>(null);
   const detailedBreakdownRef = useRef<HTMLDivElement>(null);
   const cyclistsTableRef = useRef<HTMLDivElement>(null);
+
+  const raceDataObj = useRaceData(
+    selectedRace, 
+    leaderboard, 
+    globalTeamPartialWinsCount, 
+    globalTeamWinsCount, 
+    raceWinners, 
+    files
+  );
 
   const handleCopyRaceClassification = async () => {
     if (!raceClassificationTableRef.current || isRaceClassificationCopying)
@@ -410,394 +422,35 @@ export const RaceView = (props: RaceViewProps) => {
 
         {selectedRace ? (
           (() => {
-            const raceTeams =
-              leaderboard
-                ?.map((player) => {
-                  const details = player.detalles.filter(
-                    (d) => d.carrera === selectedRace,
-                  );
-                  const totalPoints = details.reduce(
-                    (sum, d) => sum + d.puntosObtenidos,
-                    0,
-                  );
-                  const uniqueCyclists = new Set(details.map((d) => d.ciclista))
-                    .size;
-                  return {
-                    jugador: player.jugador,
-                    nombreEquipo: player.nombreEquipo,
-                    orden: player.orden,
-                    totalPoints,
-                    uniqueCyclists,
-                    details,
-                  };
-                })
-                .filter(
-                  (t) =>
-                    t.nombreEquipo !== "No draft" &&
-                    t.nombreEquipo !== "No draft [99]",
-                ) || [];
-
-            // Calculate partial wins in this race
-            raceTeams.forEach((team) => {
-              let partials = 0;
-              const raceEvents =
-                globalTeamPartialWinsCount.byRace[selectedRace] || {};
-              Object.values(raceEvents).forEach((winnerTeams) => {
-                if ((winnerTeams as string[]).includes(team.nombreEquipo)) {
-                  partials++;
-                }
-              });
-              (team as any).racePartialWins = partials;
-            });
-
-            // Sort: 0 cyclists at bottom, then points desc, then cyclists asc
-            raceTeams.sort((a, b) => {
-              if (a.uniqueCyclists === 0 && b.uniqueCyclists !== 0) return 1;
-              if (a.uniqueCyclists !== 0 && b.uniqueCyclists === 0) return -1;
-              if (b.totalPoints !== a.totalPoints)
-                return b.totalPoints - a.totalPoints;
-              return a.uniqueCyclists - b.uniqueCyclists;
-            });
-
-            // Pre-calculate positions
-            const rankedTeams = raceTeams.map((team, idx, arr) => {
-              // Find the first team with the same points to determine position
-              const firstInGroup = arr.findIndex(
-                (t) => t.totalPoints === team.totalPoints,
-              );
-              const pos = firstInGroup + 1;
-
-              // Check if this position is tied by counting how many have the same points
-              const countInGroup = arr.filter(
-                (t) => t.totalPoints === team.totalPoints,
-              ).length;
-
-              return { ...team, pos, isTied: countInGroup > 1 };
-            });
-            const maxUniqueCyclists = Math.max(
-              ...rankedTeams.map((t) => t.uniqueCyclists),
-              0,
-            );
-            const minUniqueCyclists = Math.min(
-              ...rankedTeams.map((t) => t.uniqueCyclists),
-              0,
-            );
-            const maxRacePoints = Math.max(
-              ...rankedTeams.map((t) => t.totalPoints),
-              0,
-            );
-            const minRacePoints = Math.min(
-              ...rankedTeams.map((t) => t.totalPoints),
-              0,
-            );
-            const maxRacePartialWins = Math.max(
-              ...rankedTeams.map((t) => (t as any).racePartialWins || 0),
-              0,
-            );
-            const minRacePartialWins = Math.min(
-              ...rankedTeams.map((t) => (t as any).racePartialWins || 0),
-              0,
-            );
-
-            const allRaceResults =
-              files.resultados.data?.filter(
-                (r) => getVal(r, "Carrera")?.toString().trim() === selectedRace,
-              ) || [];
-
-            const formatTipoResultado = (tipo: string) => {
-              const etapaMatch = tipo.match(/Etapa\s+(\d+[a-zA-Z]?)/i);
-              if (etapaMatch) return etapaMatch[1];
-              if (tipo.match(/Clasificación General|CG|Clasificación final/i))
-                return "CG";
-              if (tipo.match(/Clasificación.*Montaña|CM|Montaña final/i))
-                return "CM";
-              if (tipo.match(/Clasificación.*Puntos|CP|Regularidad final/i))
-                return "CP";
-              if (tipo.match(/Clasificación.*Jóvenes|CJ/i)) return "CJ";
-              return tipo;
-            };
-
-            const columnDefinitions = new Map<
-              string,
-              {
-                originalTipo: string;
-                originalEtapa?: string;
-                formatted: string;
-              }
-            >();
-
-            allRaceResults.forEach((r) => {
-              const tipo = getVal(r, "Tipo")?.trim();
-              const etapa = getVal(r, "Etapa")?.toString().trim();
-
-              if (!tipo) return;
-
-              const formatted = formatTipoResultado(tipo);
-              const isStage =
-                /^\d+[a-zA-Z]?$/.test(formatted) ||
-                tipo.toLowerCase() === "etapa";
-
-              if (isStage) {
-                const stageNum = etapa || formatted;
-                const key = `Stage_${stageNum}`;
-                if (!columnDefinitions.has(key)) {
-                  columnDefinitions.set(key, {
-                    originalTipo: tipo,
-                    originalEtapa: etapa,
-                    formatted: stageNum,
-                  });
-                }
-              } else {
-                if (!columnDefinitions.has(formatted)) {
-                  columnDefinitions.set(formatted, {
-                    originalTipo: tipo,
-                    formatted: formatted,
-                  });
-                }
-              }
-            });
-
-            const typesWithPoints = new Set<string>();
-            raceTeams.forEach((team) =>
-              team?.details?.forEach((d) => {
-                if (d.puntosObtenidos > 0) {
-                  const dFormatted = formatTipoResultado(d.tipoResultado);
-                  const isDStage =
-                    /^\d+[a-zA-Z]?$/.test(dFormatted) ||
-                    d.tipoResultado.toLowerCase() === "etapa";
-                  if (isDStage) {
-                    typesWithPoints.add(d.etapa || dFormatted);
-                  } else {
-                    typesWithPoints.add(dFormatted);
-                  }
-                }
-              }),
-            );
-
-            // Filter out CM/CP if no points
-            const finalColumns = Array.from(columnDefinitions.values()).filter(
-              (col) => {
-                if (col.formatted === "CM" || col.formatted === "CP") {
-                  return typesWithPoints.has(col.formatted);
-                }
-                return true;
-              },
-            );
-
-            finalColumns.sort((a, b) => {
-              const isNumA = /^\d+[a-zA-Z]?$/.test(a.formatted);
-              const isNumB = /^\d+[a-zA-Z]?$/.test(b.formatted);
-              if (isNumA && isNumB)
-                return parseInt(a.formatted) - parseInt(b.formatted);
-              if (isNumA) return -1;
-              if (isNumB) return 1;
-
-              const order = ["CG", "CP", "CM", "CJ"];
-              const idxA = order.indexOf(a.formatted);
-              const idxB = order.indexOf(b.formatted);
-              if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-              if (idxA !== -1) return -1;
-              if (idxB !== -1) return 1;
-              return a.formatted.localeCompare(b.formatted);
-            });
-
-            const teamStagePoints = rankedTeams
-              .map((team) => {
-                const pointsByCol: Record<string, number> = {};
-                finalColumns.forEach((col) => {
-                  pointsByCol[col.formatted] = team.details
-                    .filter((d) => {
-                      const dFormatted = formatTipoResultado(d.tipoResultado);
-                      const dStageNum = d.etapa || dFormatted;
-                      
-                      const colIsStage = /^\d+[a-zA-Z]?$/.test(col.formatted);
-                      const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa";
-
-                      if (colIsStage && dIsStage) {
-                        return dStageNum.toString().trim() === col.formatted.toString().trim();
-                      }
-                      
-                      return dFormatted.toString().trim() === col.formatted.toString().trim() || 
-                             d.tipoResultado.toString().trim() === col.originalTipo?.toString().trim();
-                    })
-                    .reduce((sum, d) => sum + d.puntosObtenidos, 0);
-                });
-                return {
-                  jugador: team.jugador,
-                  nombreEquipo: team.nombreEquipo,
-                  orden: team.orden,
-                  total: team.totalPoints,
-                  pos: team.pos,
-                  isTied: team.isTied,
-                  pointsByCol,
-                };
-              })
-              .filter(
-                (t) =>
-                  t.nombreEquipo !== "No draft" &&
-                  t.nombreEquipo !== "No draft [99]",
-              );
-
-            const maxPointsByCol: Record<string, number> = {};
-            finalColumns.forEach((col) => {
-              maxPointsByCol[col.formatted] = Math.max(
-                ...teamStagePoints.map(
-                  (t) => t.pointsByCol[col.formatted] || 0,
-                ),
-              );
-            });
-
-            const raceCyclistsMap = new Map<
-              string,
-              {
-                ciclista: string;
-                ronda: string;
-                jugador: string;
-                orden: string;
-                puntos: number;
-                victorias: number;
-              }
-            >();
-
-            raceTeams.forEach((team) => {
-              team?.details?.forEach((d) => {
-                if (!raceCyclistsMap.has(d.ciclista)) {
-                  raceCyclistsMap.set(d.ciclista, {
-                    ciclista: d.ciclista,
-                    ronda: d.ronda,
-                    jugador: team.nombreEquipo,
-                    orden: team.orden,
-                    puntos: 0,
-                    victorias: 0,
-                  });
-                }
-                const c = raceCyclistsMap.get(d.ciclista)!;
-                c.jugador = team.nombreEquipo; // Ensure it uses the team name if updated
-                c.puntos += d.puntosObtenidos;
-
-                const isVictory =
-                  (d.posicion === "1" || d.posicion === "01") &&
-                  d.tipoResultado !== "Montaña final" &&
-                  d.tipoResultado !== "Regularidad final";
-                if (isVictory) {
-                  c.victorias += 1;
-                }
-              });
-            });
-
-            const raceCyclists = Array.from(raceCyclistsMap.values())
-              .filter((c) => c.puntos > 0 || c.victorias > 0)
-              .sort((a, b) => b.puntos - a.puntos);
-
-            const maxCyclistRacePoints = Math.max(
-              ...raceCyclists.map((c) => c.puntos),
-              0,
-            );
-            const minCyclistRacePoints = Math.min(
-              ...raceCyclists.map((c) => c.puntos),
-              0,
-            );
-
-            const __raceWinnerTeam = raceWinners?.[selectedRace];
-            const __winnerPlayer = __raceWinnerTeam
-              ? leaderboard?.find((p) => p.nombreEquipo === __raceWinnerTeam)
-              : null;
-            const __winnerNombreTG = __winnerPlayer
-              ? __winnerPlayer.nombreEquipo
-              : "...";
-            const __winnerWins =
-              __raceWinnerTeam && globalTeamWinsCount
-                ? globalTeamWinsCount[__raceWinnerTeam] || 1
-                : 1;
-
-            const __bestCyclist =
-              raceCyclists.length > 0 ? raceCyclists[0] : null;
-            const __bestCyclistName = __bestCyclist
-              ? __bestCyclist.ciclista
-              : "...";
-            const __bestCyclistPoints = __bestCyclist
-              ? __bestCyclist.puntos
-              : 0;
-
-            const __eventsInfo =
-              globalTeamPartialWinsCount?.byRace?.[selectedRace] || {};
-            const __stageWinsByUser: Record<string, number> = {};
-            let __generalWinners: string[] = [];
-            let __hasEtapas = false;
-
-            Object.entries(__eventsInfo).forEach(([eventKey, _teams]) => {
-              const teams = _teams as string[];
-              if (eventKey.startsWith("Etapa")) {
-                __hasEtapas = true;
-                teams.forEach((t) => {
-                  const p = leaderboard?.find((p) => p.nombreEquipo === t);
-                  const tName = p ? p.nombreEquipo : t;
-                  __stageWinsByUser[tName] =
-                    (__stageWinsByUser[tName] || 0) + 1;
-                });
-              }
-              if (eventKey.startsWith("Clasificación final")) {
-                teams.forEach((t) => {
-                  const p = leaderboard?.find((p) => p.nombreEquipo === t);
-                  const tName = p ? p.nombreEquipo : t;
-                  if (!__generalWinners.includes(tName)) {
-                    __generalWinners.push(tName);
-                  }
-                });
-              }
-            });
-
-            const __etapasItems = Object.entries(__stageWinsByUser);
-            const __etapasStr =
-              __etapasItems.length > 0
-                ? __etapasItems
-                    .map(
-                      ([user, count]) =>
-                        `🏆 ${user} se lleva ${count} etapa${count !== 1 ? "s" : ""}`,
-                    )
-                    .join("\n")
-                : "";
-            const __generalWinner =
-              __generalWinners.length > 0 ? __generalWinners.join(", ") : "...";
-
-            const __textValue =
-              `🏁 **CARRERA FINALIZADA: ${selectedRace}** 🏁
-Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
-
-🚴‍♂️ ${__bestCyclistName} con ${__bestCyclistPoints} es el ciclista con más puntos.` +
-              (__hasEtapas
-                ? `\n\nClasificación por Etapas / Conceptos:\n${__etapasStr}\n🏆 ${__generalWinner} se lleva la clasificación general`
-                : "");
+            if (!raceDataObj) return null;
+            const {
+              raceTeams,
+              rankedTeams,
+              maxUniqueCyclists,
+              minUniqueCyclists,
+              maxRacePoints,
+              minRacePoints,
+              maxRacePartialWins,
+              minRacePartialWins,
+              allRaceResults,
+              finalColumns,
+              teamStagePoints,
+              maxPointsByCol,
+              raceCyclistsMap,
+              raceCyclists,
+              maxCyclistRacePoints,
+              minCyclistRacePoints,
+              __textValue
+            } = raceDataObj;
 
             return (
               <div className="space-y-10">
-                {isAdminReport && rankedTeams && raceCyclists && (
-                  <div className="bg-neutral-50 rounded-xl p-6 border border-neutral-200 mt-8 mb-12">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <ClipboardList className="w-5 h-5 text-blue-500" />
-                      Reporte Telegram
-                    </h3>
-                    <textarea
-                      readOnly
-                      value={__textValue}
-                      className="w-full h-48 text-sm font-mono p-4 border rounded-lg mb-4 bg-white"
-                    />
-                    <div className="flex gap-4">
-                      <button
-                        onClick={(e) => {
-                          // @ts-ignore
-                          navigator.clipboard.writeText(
-                            e.target.parentElement.previousElementSibling.value,
-                          );
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium transition-colors"
-                      >
-                        <ClipboardList className="w-4 h-4" /> Copiar para
-                        Telegram
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <RaceAdminReport 
+                  isAdminReport={isAdminReport} 
+                  rankedTeams={rankedTeams} 
+                  raceCyclists={raceCyclists} 
+                  textValue={__textValue} 
+                />
 
                 {/* Clean Leaderboard */}
                 <div>
@@ -806,30 +459,13 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                       <Trophy className="w-5 h-5 text-blue-600" />
                       Clasificación de la Carrera
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          setIsRaceClassificationExpanded(
-                            !isRaceClassificationExpanded,
-                          )
-                        }
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleCopyRaceClassification}
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleDownloadRaceClassification}
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <UploadCloud className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ExportToolbar
+                      isExpanded={isRaceClassificationExpanded}
+                      onExpand={() => setIsRaceClassificationExpanded(!isRaceClassificationExpanded)}
+                      onCopyImage={handleCopyRaceClassification}
+                      isImageCopying={false} // Using generic generic Copy for now based on previous code
+                      onDownloadImage={handleDownloadRaceClassification}
+                    />
                   </div>
                   <div className="flex justify-center w-full">
                     <div
@@ -964,28 +600,13 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                       <Users className="w-5 h-5 text-blue-600" />
                       Clasificación de Ciclistas
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          setIsCyclistsExpanded(!isCyclistsExpanded)
-                        }
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleCopyCyclists}
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleDownloadCyclists}
-                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                      >
-                        <UploadCloud className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ExportToolbar
+                      isExpanded={isCyclistsExpanded}
+                      onExpand={() => setIsCyclistsExpanded(!isCyclistsExpanded)}
+                      onCopyImage={handleCopyCyclists}
+                      isImageCopying={false} 
+                      onDownloadImage={handleDownloadCyclists}
+                    />
                   </div>
                   <div className="flex justify-center w-full">
                     <div
@@ -1080,30 +701,13 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                         <Flag className="w-5 h-5 text-blue-600" />
                         Clasificación por Etapas / Conceptos
                       </h3>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setIsStageExpanded(!isStageExpanded)}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCopyRaceBreakdownImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                        >
-                          {isRaceBreakdownCopying ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleDownloadRaceBreakdownImage}
-                          className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                        >
-                          <UploadCloud className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <ExportToolbar
+                        isExpanded={isStageExpanded}
+                        onExpand={() => setIsStageExpanded(!isStageExpanded)}
+                        onCopyImage={handleCopyRaceBreakdownImage}
+                        isImageCopying={isRaceBreakdownCopying} 
+                        onDownloadImage={handleDownloadRaceBreakdownImage}
+                      />
                     </div>
                     <div className="flex justify-center w-full">
                       <div
@@ -1234,59 +838,17 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                       Desglose por Equipo
                     </h3>
                     <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={handleCopyDetailedBreakdownText}
-                        disabled={isDetailedBreakdownTextCopying}
-                        className={cn(
-                          "px-2 py-1.5 text-xs font-semibold rounded-lg border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                          isDetailedBreakdownTextCopying
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
-                        )}
-                        title="Copiar como texto"
-                      >
-                        {isDetailedBreakdownTextCopying ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <ClipboardList className="w-4 h-4" />
-                        )}
-                        <span className="sr-only sm:not-sr-only">Texto</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setIsDetailedBreakdownExpanded(
-                            !isDetailedBreakdownExpanded,
-                          )
-                        }
-                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
-                        title="Ampliar"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleCopyDetailedBreakdownImage("full")}
-                        disabled={!!isDetailedBreakdownCopying}
-                        className={cn(
-                          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border copy-button-ignore",
-                          isDetailedBreakdownCopying === "full"
-                            ? "bg-green-50 text-green-600 border-green-200"
-                            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100",
-                        )}
-                        title="Copiar como imagen completa"
-                      >
-                        {isDetailedBreakdownCopying === "full" ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadDetailedBreakdownImage()}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm copy-button-ignore"
-                        title="Descargar imagen completa"
-                      >
-                        <UploadCloud className="w-4 h-4 rotate-180" />
-                      </button>
+                      <ExportToolbar 
+                        isExpanded={isDetailedBreakdownExpanded} 
+                        onExpand={() => setIsDetailedBreakdownExpanded(!isDetailedBreakdownExpanded)} 
+                        onCopyText={handleCopyDetailedBreakdownText} 
+                        isTextCopying={isDetailedBreakdownTextCopying} 
+                        useClipboardIconForText={true} 
+                        textCopyLabel="" 
+                        onCopyImage={() => handleCopyDetailedBreakdownImage("full")} 
+                        isImageCopying={isDetailedBreakdownCopying === "full"} 
+                        onDownloadImage={handleDownloadDetailedBreakdownImage} 
+                      />
                       {raceTeams.length > 12 && (
                         <div className="flex border-l border-neutral-200 pl-2 gap-1.5 ml-1">
                           <button

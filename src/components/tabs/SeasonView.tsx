@@ -31,7 +31,7 @@ export const SeasonView = (props: SeasonViewProps) => {
 
   const [seasonSubTab, setSeasonSubTab] = useState("puntos");
   const [isChartExpanded, setIsChartExpanded] = useState(false);
-  const [evolutionMode, setEvolutionMode] = useState("mensual");
+  const [evolutionMode, setEvolutionMode] = useState("acumulado");
   const [evolutionTimeFilter, setEvolutionTimeFilter] = useState("all");
   const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = useState(false);
   const [teamsSortColumn, setTeamsSortColumn] = useState("totalPoints");
