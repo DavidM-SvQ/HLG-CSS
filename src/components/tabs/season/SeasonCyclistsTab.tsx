@@ -1,6 +1,7 @@
 import { TopDraftCyclists } from "./TopDraftCyclists";
 import { UnscoredCyclists } from "./UnscoredCyclists";
 import { UndebutedCyclists } from "./UndebutedCyclists";
+import { HotStreakCyclists } from "./HotStreakCyclists";
 import { NoDraftCyclists } from "./NoDraftCyclists";
 import React, { useContext, useRef } from "react";
 import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
@@ -59,6 +60,7 @@ export function SeasonCyclistsTab() {
                               <TopDraftCyclists />
                               <UnscoredCyclists />
                               <UndebutedCyclists />
+                              <HotStreakCyclists />
                             </>
                           ) : cyclistsSubTab === "no-draft" ? (
                             <NoDraftCyclists />

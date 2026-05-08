@@ -1,6 +1,6 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect } from "react";
-import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle } from "lucide-react";
+import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download } from "lucide-react";
 import { domToDataUrl } from "modern-screenshot";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
@@ -86,6 +86,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useState<{ op: string; val: string }>({ op: "<=", val: "" });
   const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useState<{ op: string; val: string }>({ op: ">=", val: "" });
   const [isCyclistDetailCopying, setIsCyclistDetailCopying] = useState(false);
+  const [isCyclistDetailDownloading, setIsCyclistDetailDownloading] = useState(false);
   const [isCyclistDetailTextCopying, setIsCyclistDetailTextCopying] = useState(false);
   const cyclistDetailRef = useRef<HTMLDivElement>(null);
 
@@ -147,6 +148,34 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
       setTimeout(() => setIsCyclistDetailTextCopying(false), 2000);
     } catch (err) {
       setIsCyclistDetailTextCopying(false);
+    }
+  };
+
+  const handleDownloadCyclistDetailImage = async () => {
+    if (!cyclistDetailRef.current || isCyclistDetailDownloading) return;
+    setIsCyclistDetailDownloading(true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const tableContainer = cyclistDetailRef.current;
+    if (!tableContainer) return;
+    const restore = expandNodeForCapture(tableContainer);
+    try {
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        style: { overflow: "visible", textRendering: "optimizeLegibility" },
+      });
+      const link = document.createElement("a");
+      link.download = `detalle_${selectedCyclistDetail}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => setIsCyclistDetailDownloading(false), 2000);
+    } catch (err) {
+      console.error(err);
+      setIsCyclistDetailDownloading(false);
+    } finally {
+      restore();
     }
   };
 
@@ -386,6 +415,23 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
                       <Copy className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadCyclistDetailImage}
+                    disabled={isCyclistDetailDownloading}
+                    title="Descargar imagen"
+                    className={cn(
+                      "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+                      isCyclistDetailDownloading
+                        ? "bg-green-50 text-green-700 border-green-200"
+                        : "bg-white",
+                    )}
+                  >
+                    {isCyclistDetailDownloading ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <Download className="w-4 h-4" />
                     )}
                   </button>
                   <button
