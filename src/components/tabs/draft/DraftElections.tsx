@@ -355,7 +355,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
             </button>
           )}
           <div ref={parentRef} className="table-responsive-wrapper overflow-auto w-full max-h-[600px] crosshair-container">
-            <table className="w-auto text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
+            <table className="w-full min-w-[1000px] text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
               <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10">
                 <tr>
                   {["Elección", "Nombre_Equipo", "Orden_Draft", "Ronda", "Ciclista", "Edad", "País", "Eq_Comp", "Puntos", "V", "C", "DC", "P/C", "P/D", "%"].map((col) => {

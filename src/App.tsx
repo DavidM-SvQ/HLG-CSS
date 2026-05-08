@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import { copyImageToClipboard, copyTextToClipboard } from "./lib/clipboard";
+import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { Toaster, toast } from "sonner";
 import Papa from "papaparse";
 import localforage from "localforage";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
@@ -43,8 +45,10 @@ import {
 } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
 import { AdminNav } from "./components/AdminNav";
-import { MonthlyReportView } from "./MonthlyReportView";
-import { SeasonReportView } from "./SeasonReportView";
+
+const MonthlyReportView = lazy(() => import("./components/tabs/MonthlyReportView").then(m => ({ default: m.MonthlyReportView })));
+const SeasonReportView = lazy(() => import("./components/tabs/SeasonReportView").then(m => ({ default: m.SeasonReportView })));
+
 import {
   BarChart,
   Bar,
@@ -103,13 +107,15 @@ interface AppState {
 
 import { formatNumberSpanish, normalizeStr, getVal, getCategoryColorStyle } from "./lib/data-processing";
 import { expandNodeForCapture } from "./lib/dom-utils";
-import { CyclistDetailView } from "./components/modals/CyclistDetailView";
-import { StartlistView } from "./components/tabs/StartlistView";
-import { RaceView } from "./components/tabs/RaceView";
-import { TeamView } from "./components/tabs/TeamView";
-import { SeasonView } from "./components/tabs/SeasonView";
-import { InfoView } from "./components/tabs/InfoView";
-import { DraftView } from "./components/tabs/DraftView";
+
+const CyclistDetailView = lazy(() => import("./components/modals/CyclistDetailView").then(m => ({ default: m.CyclistDetailView })));
+const StartlistView = lazy(() => import("./components/tabs/StartlistView").then(m => ({ default: m.StartlistView })));
+const RaceView = lazy(() => import("./components/tabs/RaceView").then(m => ({ default: m.RaceView })));
+const TeamView = lazy(() => import("./components/tabs/TeamView").then(m => ({ default: m.TeamView })));
+const SeasonView = lazy(() => import("./components/tabs/SeasonView").then(m => ({ default: m.SeasonView })));
+const InfoView = lazy(() => import("./components/tabs/InfoView").then(m => ({ default: m.InfoView })));
+const DraftView = lazy(() => import("./components/tabs/DraftView").then(m => ({ default: m.DraftView })));
+const TestsView = lazy(() => import("./components/tabs/TestsView").then(m => ({ default: m.TestsView })));
 
 interface PlayerScore {
   jugador: string;
@@ -253,6 +259,12 @@ function MultiSelect({ options, value, onChange, placeholder }: { options: {valu
 }
 
 export default function App() {
+  const initParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const initTab = (initParams.get("tab") as any) || "season";
+  const initRace = initParams.get("race") || "";
+  const initStartlistRace = initParams.get("startlist_race") || "";
+  const initTeam = initParams.get("selected_team") || "";
+
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -263,10 +275,11 @@ export default function App() {
     | "reporte-carrera"
     | "reporte-mes"
     | "reporte-temporada"
+    | "pruebas"
   >("datos");
   const [publicTab, setPublicTab] = useState<
     "season" | "race" | "startlist" | "team" | "draft" | "info" | "pruebas"
-  >("season");
+  >(initTab);
   const [draftSubTab, setDraftSubTab] = useState<"elecciones" | "datos">(
     "elecciones",
   );
@@ -320,9 +333,9 @@ export default function App() {
   const [draftDatosSortDirection, setDraftDatosSortDirection] = useState<
     "asc" | "desc"
   >("asc");
-  const [selectedRace, setSelectedRace] = useState<string>("");
-  const [publicStartlistRace, setPublicStartlistRace] = useState<string>("");
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [selectedRace, setSelectedRace] = useState<string>(initRace);
+  const [publicStartlistRace, setPublicStartlistRace] = useState<string>(initStartlistRace);
+  const [selectedTeam, setSelectedTeam] = useState<string>(initTeam);
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   const [evolutionMode, setEvolutionMode] = useState<"acumulado" | "mensual">(
     "acumulado",
@@ -577,6 +590,19 @@ export default function App() {
     resultados: { file: null, data: null, error: null, loading: true },
     startlist: { file: null, data: null, error: null, loading: true },
   });
+
+  useEffect(() => {
+    if (view === "admin") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (publicTab !== "season") urlParams.set("tab", publicTab); else urlParams.delete("tab");
+    if (publicTab === "race" && selectedRace) urlParams.set("race", selectedRace); else urlParams.delete("race");
+    if (publicTab === "startlist" && publicStartlistRace) urlParams.set("startlist_race", publicStartlistRace); else urlParams.delete("startlist_race");
+    if (publicTab === "team" && selectedTeam) urlParams.set("selected_team", selectedTeam); else urlParams.delete("selected_team");
+
+    const query = urlParams.toString();
+    const newUrl = query ? `?${query}` : window.location.pathname;
+    window.history.replaceState(null, "", newUrl);
+  }, [publicTab, selectedRace, publicStartlistRace, selectedTeam, view]);
 
   const isAdmin = user?.email === "davidmv1985@gmail.com";
   const isSupabaseConfigured =
@@ -983,31 +1009,26 @@ export default function App() {
     setIsStageCopying(true);
     const restore = expandNodeForCapture(stageTableRef.current);
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(stageTableRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(stageTableRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
               
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsStageCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsStageCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsStageCopying(false);
-      handleDownloadStage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -1084,12 +1105,12 @@ export default function App() {
       tableContainer.className =
         "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
 
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(tableContainer, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               
               style: { overflow: "visible" },
@@ -1097,19 +1118,14 @@ export default function App() {
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsDraftTableCopying(null), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsDraftTableCopying(null), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsDraftTableCopying(null);
-      handleDownloadDraftTableImage(subset);
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       tableContainer.className = originalClass;
       rows.forEach((row) => row.classList.remove("hidden"));
     }
@@ -1179,12 +1195,12 @@ export default function App() {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(tableContainer, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               width: tableContainer.scrollWidth,
               style: { overflow: "visible" },
@@ -1192,19 +1208,14 @@ export default function App() {
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsDraftDatosTableCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsDraftDatosTableCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsDraftDatosTableCopying(false);
-      handleDownloadDraftDatosTableImage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -2026,6 +2037,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200">
+      <Toaster position="top-center" richColors />
       <AppHeader 
         view={view}
         setView={setView}
@@ -2708,14 +2720,28 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
               </div>
             )}
 
-            {adminTab === "reporte-carrera" && <RaceView isAdminReport={true} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
+            {adminTab === "reporte-carrera" && (
+              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte de carrera...</div>}>
+                <RaceView isAdminReport={true} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />
+              </Suspense>
+            )}
 
             {adminTab === "reporte-mes" && (
-              <MonthlyReportView files={files} leaderboard={leaderboard} />
+              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte del mes...</div>}>
+                <MonthlyReportView files={files} leaderboard={leaderboard} />
+              </Suspense>
             )}
 
             {adminTab === "reporte-temporada" && (
-              <SeasonReportView files={files} leaderboard={leaderboard} cyclistRoundMap={cyclistRoundMap} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} />
+              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte de temporada...</div>}>
+                <SeasonReportView files={files} leaderboard={leaderboard} cyclistRoundMap={cyclistRoundMap} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} />
+              </Suspense>
+            )}
+
+            {adminTab === "pruebas" && (
+              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pruebas...</div>}>
+                <TestsView cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} cyclistRoundMap={cyclistRoundMap} files={files} />
+              </Suspense>
             )}
           </div>
         ) : (
@@ -2797,37 +2823,34 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
             </div>
 
             {/* Tab Content */}
-{publicTab === "season" && <SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />}
-
-            {publicTab === "race" && <RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
-
-{publicTab === "team" && <TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />}
-
-                        {publicTab === "startlist" && (
-              <StartlistView
-                files={files}
-                publicStartlistRace={publicStartlistRace}
-                setPublicStartlistRace={setPublicStartlistRace}
-                cyclistMetadata={cyclistMetadata}
-                cyclistRoundMap={cyclistRoundMap}
-                playerTeamMap={playerTeamMap}
-                playerOrderMap={playerOrderMap}
-              />
-            )}
-
-            {publicTab === "draft" && (
-              <DraftView
-                files={files}
-                                cyclistMetadata={cyclistMetadata}
-                playerTeamMap={playerTeamMap}
-                                                                                leaderboard={leaderboard}
-                getFlagEmoji={getFlagEmoji}
-                teamToPlayerMap={teamToPlayerMap}
-                playerOrderMap={playerOrderMap}
-              />
-            )}
-
-{publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} memoizedPointsData={memoizedPointsData} memoizedRacesData={memoizedRacesData} raceWinners={raceWinners} />}
+            <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pestaña...</div>}>
+              {publicTab === "season" && <SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />}
+              {publicTab === "race" && <RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
+              {publicTab === "team" && <TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />}
+              {publicTab === "startlist" && (
+                <StartlistView
+                  files={files}
+                  publicStartlistRace={publicStartlistRace}
+                  setPublicStartlistRace={setPublicStartlistRace}
+                  cyclistMetadata={cyclistMetadata}
+                  cyclistRoundMap={cyclistRoundMap}
+                  playerTeamMap={playerTeamMap}
+                  playerOrderMap={playerOrderMap}
+                />
+              )}
+              {publicTab === "draft" && (
+                <DraftView
+                  files={files}
+                  cyclistMetadata={cyclistMetadata}
+                  playerTeamMap={playerTeamMap}
+                  leaderboard={leaderboard}
+                  getFlagEmoji={getFlagEmoji}
+                  teamToPlayerMap={teamToPlayerMap}
+                  playerOrderMap={playerOrderMap}
+                />
+              )}
+              {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} memoizedPointsData={memoizedPointsData} memoizedRacesData={memoizedRacesData} raceWinners={raceWinners} />}
+            </Suspense>
           </div>
         )}
       </main>

@@ -1,3 +1,4 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import { useRaceData } from "../../hooks/useRaceData";
 import { ExportToolbar } from "../ui/ExportToolbar";
 import { RaceAdminReport } from "./race/RaceAdminReport";
@@ -56,14 +57,14 @@ export const RaceView = (props: RaceViewProps) => {
     setIsRaceClassificationCopying(true);
     const restore = expandNodeForCapture(raceClassificationTableRef.current);
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(
               raceClassificationTableRef.current!,
               {
                 scale: 3, 
-        
+
         backgroundColor: '#ffffff',
                 style: { overflow: "hidden" },
                 
@@ -71,19 +72,14 @@ export const RaceView = (props: RaceViewProps) => {
             );
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsRaceClassificationCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsRaceClassificationCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsRaceClassificationCopying(false);
-      handleDownloadRaceClassification();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -115,25 +111,20 @@ export const RaceView = (props: RaceViewProps) => {
     setIsCyclistsCopying(true);
     const restore = expandNodeForCapture(cyclistsTableRef.current);
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3,   backgroundColor: "#ffffff" });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsCyclistsCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3,   backgroundColor: "#ffffff" });
+        const response = await fetch(dataUrl);
+        return await response.blob();
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsCyclistsCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsCyclistsCopying(false);
-      handleDownloadCyclists();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -162,31 +153,26 @@ export const RaceView = (props: RaceViewProps) => {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(tableContainer, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
               
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsRaceBreakdownCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsRaceBreakdownCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsRaceBreakdownCopying(false);
-      handleDownloadRaceBreakdownImage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -244,39 +230,27 @@ export const RaceView = (props: RaceViewProps) => {
         subset ? "" : "grid-cols-3",
       );
 
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(container, {
-              scale: 3,   // Increased scale for better resolution
-              
-              style: {
-                textRendering: "optimizeLegibility",
-              },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-          })() as Promise<Blob>,
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(container, {
+          scale: 3,   // Increased scale for better resolution
+          
+          style: {
+            textRendering: "optimizeLegibility",
+          },
+          
         });
-
-        try {
-          window.focus();
-          await navigator.clipboard.write([clipboardItem]);
-        } catch (copyErr) {
-          /* console.error suppressed */
-          throw copyErr;
-        }
-        setTimeout(() => setIsDetailedBreakdownCopying(null), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+        const response = await fetch(dataUrl);
+        return await response.blob();
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsDetailedBreakdownCopying(null), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsDetailedBreakdownCopying(null);
-      handleDownloadDetailedBreakdownImage(subset);
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       container.className = originalClass;
       cards.forEach((card) => card.classList.remove("hidden"));
     }
@@ -331,7 +305,7 @@ export const RaceView = (props: RaceViewProps) => {
     }
   };
 
-  const handleCopyDetailedBreakdownText = () => {
+  const handleCopyDetailedBreakdownText = async () => {
     if (!selectedRace || !leaderboard) return;
     setIsDetailedBreakdownTextCopying(true);
 
@@ -396,7 +370,7 @@ export const RaceView = (props: RaceViewProps) => {
 `;
     });
 
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsDetailedBreakdownTextCopying(false), 2000);
   };
 

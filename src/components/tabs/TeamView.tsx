@@ -1,3 +1,4 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useMemo, useRef } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, Medal, UserMinus, LayoutGrid } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -39,31 +40,26 @@ export const TeamView = (props: TeamViewProps) => {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 50));
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(teamGlobalRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
               
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsTeamGlobalCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsTeamGlobalCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsTeamGlobalCopying(false);
-      handleDownloadTeamGlobalImage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -768,7 +764,7 @@ export const TeamView = (props: TeamViewProps) => {
                               Plantilla del Equipo
                             </h3>
                             <div className="table-container-for-capture bg-white border border-neutral-200 rounded-xl overflow-x-auto overflow-y-auto shadow-sm flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-auto text-xs text-left whitespace-nowrap border-collapse mx-auto">
+                              <div className="table-responsive-wrapper overflow-auto w-full h-full"><table className="w-full text-xs text-left whitespace-nowrap border-collapse mx-auto">
                                 <thead className="bg-[#1e293b] text-white border-b border-neutral-100 text-[9px] tracking-tight uppercase font-bold sticky top-0 z-10">
                                   <tr>
                                     <th

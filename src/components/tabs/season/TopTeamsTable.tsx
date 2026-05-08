@@ -162,11 +162,17 @@ export function TopTeamsTable() {
     return topTeamsSortDirection === "asc" ? res : -res;
   });
 
+  const maxPoints = Math.max(...sortedTeams.map((t) => t.puntos), 1);
+  const minPoints = Math.min(...sortedTeams.map((t) => t.puntos), 0);
+
   const getPuntosColor = (puntos: number) => {
-    if (puntos >= 900) return "#fbbf24";
-    if (puntos >= 600) return "#94a3b8";
-    if (puntos >= 400) return "#fb923c";
-    return "#3b82f6";
+    if (maxPoints === minPoints) return "#3b82f6";
+    // Normalize points between 0 and 1
+    const normalized = (puntos - minPoints) / (maxPoints - minPoints);
+    // Hue from 0 (red) to 120 (green)
+    const hue = normalized * 120;
+    // Adjust lightness and saturation for good readability on white
+    return `hsl(${hue}, 85%, 45%)`;
   };
 
   const maxWins = Math.max(...sortedTeams.map((t) => t.wins));
@@ -336,7 +342,7 @@ export function TopTeamsTable() {
               const pointsDiff = prevTeam
                 ? prevTeam.puntos - team.puntos
                 : 0;
-              const isClose = pointsDiff > 0 && pointsDiff <= 50;
+              const isClose = pointsDiff > 0;
 
               const draftOrder = team.orden
                 ? parseInt(team.orden)
@@ -436,8 +442,13 @@ export function TopTeamsTable() {
                     style={{ color: getPuntosColor(team.puntos) }}
                   >
                     {isClose && (
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-sans opacity-0 group-hover/row:opacity-100 transition-opacity whitespace-nowrap z-10 hidden md:block">
-                        ¡A {formatNumberSpanish(pointsDiff)} pts!
+                      <span
+                        className={cn(
+                          "absolute left-6 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded-full font-sans opacity-0 group-hover/row:opacity-100 transition-opacity whitespace-nowrap z-10 hidden md:block",
+                          pointsDiff <= 50 ? "bg-red-100 text-red-600 font-bold" : "bg-neutral-100 text-neutral-500 font-medium"
+                        )}
+                      >
+                        {pointsDiff <= 50 ? "¡A" : "A"} {formatNumberSpanish(Math.round(pointsDiff))} pts{pointsDiff <= 50 ? "!" : ""}
                       </span>
                     )}
                     <span className="font-mono tracking-tight">{formatNumberSpanish(Math.round(team.puntos))}</span>

@@ -38,13 +38,13 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           disabled={!!isImageCopying}
           className={cn(
             "p-1.5 rounded-md transition-colors border shadow-sm",
-            isImageCopying === 'full' || isImageCopying === true
+            isImageCopying === 'full' || isImageCopying === true || (imagePageCount <= 1 && !!isImageCopying)
               ? "bg-green-50 text-green-700 border-green-200"
               : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
           )}
           title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
         >
-          {isImageCopying === 'full' || isImageCopying === true ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {isImageCopying === 'full' || isImageCopying === true || (imagePageCount <= 1 && !!isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
 
         {imagePageCount > 1 && (

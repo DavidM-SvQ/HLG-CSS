@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCrosshair } from '../../hooks/useCrosshair';
-import { List, Minimize2, Maximize2, Copy, CheckCircle2, UploadCloud } from "lucide-react";
+import { List, Minimize2, Maximize2, Copy, CheckCircle2, UploadCloud, Search } from "lucide-react";
 import { domToDataUrl } from "modern-screenshot";
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import { cn } from "../../lib/utils";
 import { formatNumberSpanish, getCategoryColorStyle, getVal } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -43,15 +44,27 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
   playerTeamMap,
   playerOrderMap,
 }) => {
-  const [startlistSortCol, setStartlistSortCol] = useState<"jugador" | "ronda" | "puntos" | "dias">("jugador");
-  const [startlistSortDir, setStartlistSortDir] = useState<"asc" | "desc">("asc");
-  const [startlistFilterTeam, setStartlistFilterTeam] = useState<string>("All");
-  const [startlistFilterRondas, setStartlistFilterRondas] = useState<string[]>([]);
-  const [startlistFilterDiasMin, setStartlistFilterDiasMin] = useState<number | ''>('');
-  const [startlistFilterDiasMax, setStartlistFilterDiasMax] = useState<number | ''>('');
-  const [startlistFilterDebut, setStartlistFilterDebut] = useState<string>('Todos');
-  const [startlistFilterPuntosMin, setStartlistFilterPuntosMin] = useState<number | ''>('');
-  const [startlistFilterPuntosMax, setStartlistFilterPuntosMax] = useState<number | ''>('');
+  const initParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const initSortCol = (initParams.get("sort_col") as "jugador" | "ronda" | "puntos" | "dias") || "jugador";
+  const initSortDir = (initParams.get("sort_dir") as "asc" | "desc") || "asc";
+  const initTeam = initParams.get("team") || "All";
+  const initRondasStr = initParams.get("rondas");
+  const initRondas = initRondasStr ? initRondasStr.split(",") : [];
+  const initDiasMin = initParams.get("dias_min") ? Number(initParams.get("dias_min")) : '';
+  const initDiasMax = initParams.get("dias_max") ? Number(initParams.get("dias_max")) : '';
+  const initDebut = initParams.get("debut") || 'Todos';
+  const initPuntosMin = initParams.get("puntos_min") ? Number(initParams.get("puntos_min")) : '';
+  const initPuntosMax = initParams.get("puntos_max") ? Number(initParams.get("puntos_max")) : '';
+
+  const [startlistSortCol, setStartlistSortCol] = useState<"jugador" | "ronda" | "puntos" | "dias">(initSortCol);
+  const [startlistSortDir, setStartlistSortDir] = useState<"asc" | "desc">(initSortDir);
+  const [startlistFilterTeam, setStartlistFilterTeam] = useState<string>(initTeam);
+  const [startlistFilterRondas, setStartlistFilterRondas] = useState<string[]>(initRondas);
+  const [startlistFilterDiasMin, setStartlistFilterDiasMin] = useState<number | ''>(initDiasMin);
+  const [startlistFilterDiasMax, setStartlistFilterDiasMax] = useState<number | ''>(initDiasMax);
+  const [startlistFilterDebut, setStartlistFilterDebut] = useState<string>(initDebut);
+  const [startlistFilterPuntosMin, setStartlistFilterPuntosMin] = useState<number | ''>(initPuntosMin);
+  const [startlistFilterPuntosMax, setStartlistFilterPuntosMax] = useState<number | ''>(initPuntosMax);
 
   const [isStartlistTableExpanded, setIsStartlistTableExpanded] = useState(false);
   const [isStartlistTeamsTableExpanded, setIsStartlistTeamsTableExpanded] = useState(false);
@@ -69,6 +82,23 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
   const startlistTeamsTableRef = useRef<HTMLDivElement>(null);
   const pointsTableRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (startlistSortCol !== "jugador") searchParams.set("sort_col", startlistSortCol); else searchParams.delete("sort_col");
+    if (startlistSortDir !== "asc") searchParams.set("sort_dir", startlistSortDir); else searchParams.delete("sort_dir");
+    if (startlistFilterTeam !== "All") searchParams.set("team", startlistFilterTeam); else searchParams.delete("team");
+    if (startlistFilterRondas.length > 0) searchParams.set("rondas", startlistFilterRondas.join(",")); else searchParams.delete("rondas");
+    if (startlistFilterDiasMin !== '') searchParams.set("dias_min", String(startlistFilterDiasMin)); else searchParams.delete("dias_min");
+    if (startlistFilterDiasMax !== '') searchParams.set("dias_max", String(startlistFilterDiasMax)); else searchParams.delete("dias_max");
+    if (startlistFilterDebut !== 'Todos') searchParams.set("debut", startlistFilterDebut); else searchParams.delete("debut");
+    if (startlistFilterPuntosMin !== '') searchParams.set("puntos_min", String(startlistFilterPuntosMin)); else searchParams.delete("puntos_min");
+    if (startlistFilterPuntosMax !== '') searchParams.set("puntos_max", String(startlistFilterPuntosMax)); else searchParams.delete("puntos_max");
+    
+    const query = searchParams.toString();
+    const newUrl = query ? `?${query}` : window.location.pathname;
+    window.history.replaceState(null, "", newUrl);
+  }, [startlistSortCol, startlistSortDir, startlistFilterTeam, startlistFilterRondas, startlistFilterDiasMin, startlistFilterDiasMax, startlistFilterDebut, startlistFilterPuntosMin, startlistFilterPuntosMax]);
 
   const { startlistArray, raceCategory, racePoints, memoizedData } = useStartlistData(
     files,
@@ -110,36 +140,9 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
       }
     };
 
-    if (typeof ClipboardItem !== "undefined") {
-      try {
-        const blob = await processCopy();
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob })
-        ]);
-        setTimeout(() => setIsStartlistCopying(null), 2000);
-        return;
-      } catch (err) {
-        console.warn("Clipboard failed, falling back to download", err);
-      }
-    }
-    
-    // Fallback: wait for state to update, then download
-    setTimeout(async () => {
-      try {
-        const restore = expandNodeForCapture(startlistTableRef.current!);
-        const dataUrl = await domToDataUrl(startlistTableRef.current!, {
-          scale: 3, backgroundColor: '#ffffff', style: { overflow: "visible", textRendering: "optimizeLegibility" }
-        });
-        restore();
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        const suffix = subset ? `_${subset}` : '';
-        link.download = `startlist_${publicStartlistRace}${suffix}.png`;
-        link.click();
-      } finally {
-        setIsStartlistCopying(null);
-      }
-    }, 150);
+    const suffix = subset ? `_${subset}` : '';
+    await copyImageToClipboard(processCopy(), `startlist_${publicStartlistRace || 'export'}${suffix}.png`);
+    setTimeout(() => setIsStartlistCopying(null), 2000);
   };
 
   const handleDownloadStartlist = async (subset?: string) => {
@@ -176,7 +179,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
             .join("\t"),
         )
         .join("\n");
-      navigator.clipboard.writeText(text);
+      await copyTextToClipboard(text, `startlist_${publicStartlistRace || 'export'}.txt`);
     }
     setTimeout(() => setIsStartlistTextCopying(false), 2000);
   };
@@ -200,53 +203,32 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
       }
     };
 
-    if (typeof ClipboardItem !== "undefined") {
-      try {
-        const blob = await processCopy();
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob })
-        ]);
-        setTimeout(() => setIsStartlistTeamsCopying(null), 2000);
-        return;
-      } catch (err) {
-        console.warn("Clipboard failed, falling back to download", err);
-      }
-    }
-
-    setTimeout(async () => {
-      try {
-        const restore = expandNodeForCapture(startlistTeamsTableRef.current!);
-        const dataUrl = await domToDataUrl(startlistTeamsTableRef.current!, {
-          scale: 3, backgroundColor: '#ffffff', style: { overflow: "visible", textRendering: "optimizeLegibility" }
-        });
-        restore();
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        const suffix = subset ? `_${subset}` : '';
-        link.download = `startlist_teams_${publicStartlistRace}${suffix}.png`;
-        link.click();
-      } finally {
-        setIsStartlistTeamsCopying(null);
-      }
-    }, 150);
+    const suffix = subset ? `_${subset}` : '';
+    await copyImageToClipboard(processCopy(), `startlist_teams_${publicStartlistRace || 'export'}${suffix}.png`);
+    setTimeout(() => setIsStartlistTeamsCopying(null), 2000);
   };
 
   const handleDownloadStartlistTeams = async (subset?: string) => {
     if (!startlistTeamsTableRef.current) return;
     setIsStartlistTeamsCopying(subset || 'p1');
     setTimeout(async () => {
+      let restore = () => {};
       try {
-        const restore = expandNodeForCapture(startlistTeamsTableRef.current!);
-        const dataUrl = await domToDataUrl(startlistTeamsTableRef.current!, {
-          scale: 3, backgroundColor: '#ffffff', style: { overflow: "visible", textRendering: "optimizeLegibility" }
-        });
-        restore();
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        const suffix = subset ? `_${subset}` : '';
-        link.download = `startlist_teams_${publicStartlistRace}${suffix}.png`;
-        link.click();
+        if (startlistTeamsTableRef.current) {
+          restore = expandNodeForCapture(startlistTeamsTableRef.current);
+          const dataUrl = await domToDataUrl(startlistTeamsTableRef.current, {
+            scale: 3, backgroundColor: '#ffffff', style: { overflow: "visible", textRendering: "optimizeLegibility" }
+          });
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          const suffix = subset ? `_${subset}` : '';
+          link.download = `startlist_teams_${publicStartlistRace || 'export'}${suffix}.png`;
+          link.click();
+        }
+      } catch (err) {
+        console.error("Download failed", err);
       } finally {
+        restore();
         setIsStartlistTeamsCopying(null);
       }
     }, 150);
@@ -265,7 +247,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
             .join("\t"),
         )
         .join("\n");
-      navigator.clipboard.writeText(text);
+      await copyTextToClipboard(text, `startlist_teams_${publicStartlistRace || 'export'}.txt`);
     }
     setTimeout(() => setIsStartlistTeamsTextCopying(false), 2000);
   };
@@ -280,10 +262,10 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
         .map((row) =>
           Array.from(row.cells as HTMLCollectionOf<HTMLTableCellElement>)
             .map((cell) => cell.innerText.trim())
-            .join("\\t"),
+            .join("\t"),
         )
-        .join("\\n");
-      navigator.clipboard.writeText(text);
+        .join("\n");
+      await copyTextToClipboard(text, `points_${publicStartlistRace || 'export'}.txt`);
     }
     setTimeout(() => setIsPointsTextCopying(false), 2000);
   };
@@ -310,41 +292,9 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
       }
     };
 
-    if (typeof ClipboardItem !== "undefined") {
-      try {
-        const blob = await processCopy();
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob })
-        ]);
-        setTimeout(() => setIsPointsImageCopying(null), 2000);
-        return;
-      } catch (err) {
-        console.warn("Clipboard failed, falling back to download", err);
-      }
-    }
-
-    setTimeout(async () => {
-      try {
-        const originalClass = tableContainer.className;
-        tableContainer.className = originalClass.replace("overflow-x-auto", "");
-        const restore = expandNodeForCapture(tableContainer);
-        try {
-          const dataUrl = await domToDataUrl(tableContainer, {
-            scale: 3, backgroundColor: '#ffffff', style: { overflow: "visible" }
-          });
-          const link = document.createElement("a");
-          link.href = dataUrl;
-          const suffix = subset ? `_${subset}` : '';
-          link.download = `puntos_${publicStartlistRace}${suffix}.png`;
-          link.click();
-        } finally {
-          restore();
-          tableContainer.className = originalClass;
-        }
-      } finally {
-        setIsPointsImageCopying(null);
-      }
-    }, 150);
+    const suffix = subset ? `_${subset}` : '';
+    await copyImageToClipboard(processCopy(), `puntos_${publicStartlistRace || 'export'}${suffix}.png`);
+    setTimeout(() => setIsPointsImageCopying(null), 2000);
   };
 
   const handleDownloadPointsImage = async (subset?: string) => {
@@ -397,7 +347,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
     return { pages, totalPages: Math.max(1, currentPage) };
   };
 
-  const pointsPagination = calculatePages(racePoints, 30);
+  const pointsPagination = calculatePages(racePoints, 50);
 
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 min-h-[600px]">
@@ -490,8 +440,8 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
               }
             };
 
-            const filteredRowPagination = calculatePages(filteredRows, 30, "jugador");
-            const teamRowPagination = calculatePages(teamRows, 15);
+            const filteredRowPagination = calculatePages(filteredRows, 50, "jugador");
+            const teamRowPagination = calculatePages(teamRows, 30);
 
             const toggleRonda = (ronda: string) => {
               setStartlistFilterRondas((prev) => 
@@ -652,10 +602,10 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
 
                   <div ref={startlistScrollRef} className="table-responsive-wrapper overflow-auto border border-neutral-200 rounded-lg flex-1 crosshair-container max-h-[800px]">
                     <table className="w-full min-w-[750px] text-[13px] text-left table-fixed">
-                      <thead className="text-[11px] text-neutral-500 uppercase bg-neutral-50/80 sticky top-0 backdrop-blur-sm z-10">
+                      <thead className="text-[11px] text-neutral-500 uppercase sticky top-0 z-10 bg-neutral-50 shadow-[0_1px_0_0_#e5e5e5]">
                         <tr>
                           <th
-                            className="px-3 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-[35%] sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5]"
+                            className="px-3 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-[35%] sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]"
                             onClick={() => toggleSort("jugador")}
                           >
                             <span className="flex items-center gap-1">
@@ -722,7 +672,35 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {filteredRows.map((r, i) => {
+                        {filteredRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="py-12 border-none">
+                              <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
+                                  <Search className="w-8 h-8 text-neutral-400" />
+                                </div>
+                                <h4 className="text-lg font-semibold text-neutral-900 mb-1">No hay resultados</h4>
+                                <p className="text-sm text-neutral-500 max-w-sm mb-4">
+                                  No se han encontrado ciclistas que coincidan con los filtros actuales.
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    setStartlistFilterTeam("All");
+                                    setStartlistFilterRondas([]);
+                                    setStartlistFilterDiasMin('');
+                                    setStartlistFilterDiasMax('');
+                                    setStartlistFilterDebut("Todos");
+                                    setStartlistFilterPuntosMin('');
+                                    setStartlistFilterPuntosMax('');
+                                  }}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                  Limpiar filtros
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : filteredRows.map((r, i) => {
                           const page = filteredRowPagination.pages[i];
                           let isHiddenVisual = false;
                           if (isStartlistCopying) {
@@ -752,7 +730,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                               isHiddenVisual && "hidden"
                             )}
                           >
-                            <td className="px-3 py-2 font-medium text-neutral-800 truncate sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5] group-hover:bg-blue-50/50" title={r.jugador}>
+                            <td className="px-3 py-2 font-medium text-neutral-800 truncate sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50" title={r.jugador}>
                               {r.jugador}
                             </td>
                             <td className="px-3 py-2 text-center text-neutral-400 font-mono text-[11px]">
@@ -833,9 +811,9 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                   </div>
                   <div className="table-responsive-wrapper overflow-auto w-full max-h-[600px]">
                     <table className="w-full min-w-[400px] text-[13px] text-left">
-                      <thead className="text-[11px] text-neutral-500 uppercase bg-neutral-50/80 sticky top-0 backdrop-blur-sm z-10">
+                      <thead className="text-[11px] text-neutral-500 uppercase sticky top-0 z-10 bg-neutral-50 shadow-[0_1px_0_0_#e5e5e5]">
                         <tr>
-                          <th className="px-2 py-1 sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5]">Equipo</th>
+                          <th className="px-2 py-1 sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]">Equipo</th>
                           <th
                             className="px-2 py-1 text-center w-px whitespace-nowrap"
                             title="Desviación respecto a la media"
@@ -863,7 +841,13 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                      {teamRows.map((r, i) => {
+                      {teamRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-neutral-500 font-medium italic bg-neutral-50/50">
+                            No hay datos de equipos con estos filtros.
+                          </td>
+                        </tr>
+                      ) : teamRows.map((r, i) => {
                         const page = teamRowPagination.pages[i];
                         let isHiddenVisual = false;
                         if (isStartlistTeamsCopying) {
@@ -872,52 +856,59 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                           }
                         }
                         return (
-                          <tr
-                            key={i}
-                            className={cn(
-                              "group hover:bg-blue-50/50 transition-colors",
-                              isHiddenVisual && "hidden"
+                          <React.Fragment key={i}>
+                            {r.numCiclistas === 0 && i > 0 && teamRows[i-1].numCiclistas > 0 && (
+                              <tr className={cn(isHiddenVisual && "hidden")}>
+                                <td colSpan={4} className="h-6 bg-neutral-100/80 border-y border-neutral-200" />
+                              </tr>
                             )}
-                          >
-                            <td className="px-2 py-0.5 font-medium text-xs whitespace-nowrap sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5] group-hover:bg-blue-50/50">
-                              {r.equipo}
-                            </td>
-                            <td
+                            <tr
                               className={cn(
-                                "px-2 py-0.5 text-center font-mono text-[11px] w-px",
-                                r.numCiclistas === 0
-                                  ? "text-red-600 font-bold"
-                                  : "",
-                                r.numCiclistas !== 0 &&
-                                  r.numCiclistas === maxCiclistas
-                                  ? "bg-green-100 font-bold"
-                                  : "",
-                                r.numCiclistas !== 0 &&
-                                  r.numCiclistas !== maxCiclistas &&
-                                  r.numCiclistas === minCiclistas
-                                  ? "bg-yellow-100 font-bold"
-                                  : "",
+                                "group hover:bg-blue-50/50 transition-colors",
+                                isHiddenVisual && "hidden"
                               )}
                             >
-                              {r.numCiclistas}
-                            </td>
-                            <td
-                              className="px-2 py-0.5 text-center font-mono text-[11px] font-bold text-neutral-700 w-px"
-                              style={getTeamPointsColorStyle(
-                                r.puntos,
-                              )}
-                            >
-                              <span className="font-mono tracking-tight">{formatNumberSpanish(r.puntos)}</span>
-                            </td>
-                            <td
-                              className="px-2 py-0.5 text-center font-mono text-[11px] font-bold text-blue-800 w-px"
-                              style={getTeamPointsMediosColorStyle(
-                                r.puntosMedios,
-                              )}
-                            >
-                              <span className="font-mono tracking-tight">{formatNumberSpanish(r.puntosMedios)}</span>
-                            </td>
-                          </tr>);
+                              <td className="px-2 py-0.5 font-medium text-xs whitespace-nowrap sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50">
+                                {r.equipo}
+                              </td>
+                              <td
+                                className={cn(
+                                  "px-2 py-0.5 text-center font-mono text-[11px] w-px",
+                                  r.numCiclistas === 0
+                                    ? "text-red-600 font-bold"
+                                    : "",
+                                  r.numCiclistas !== 0 &&
+                                    r.numCiclistas === maxCiclistas
+                                    ? "bg-green-100 font-bold"
+                                    : "",
+                                  r.numCiclistas !== 0 &&
+                                    r.numCiclistas !== maxCiclistas &&
+                                    r.numCiclistas === minCiclistas
+                                    ? "bg-yellow-100 font-bold"
+                                    : "",
+                                )}
+                              >
+                                {r.numCiclistas}
+                              </td>
+                              <td
+                                className="px-2 py-0.5 text-center font-mono text-[11px] font-bold text-neutral-700 w-px"
+                                style={getTeamPointsColorStyle(
+                                  r.puntos,
+                                )}
+                              >
+                                <span className="font-mono tracking-tight">{formatNumberSpanish(r.puntos)}</span>
+                              </td>
+                              <td
+                                className="px-2 py-0.5 text-center font-mono text-[11px] font-bold text-blue-800 w-px"
+                                style={getTeamPointsMediosColorStyle(
+                                  r.puntosMedios,
+                                )}
+                              >
+                                <span className="font-mono tracking-tight">{formatNumberSpanish(r.puntosMedios)}</span>
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
                       })}
                     </tbody>
                     </table></div>
@@ -965,7 +956,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                   </div>
                 )}
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-50/80 sticky top-0 backdrop-blur-sm">
+                  <thead className="text-xs text-neutral-500 uppercase sticky top-0 z-10 bg-neutral-50 shadow-[0_1px_0_0_#e5e5e5]">
                     <tr>
                       <th className="px-4 py-3 font-semibold w-1/4">Tipo</th>
                       <th className="px-4 py-3 font-semibold text-center w-1/4">Posición</th>

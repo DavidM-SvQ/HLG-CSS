@@ -1,3 +1,4 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import React from "react";
 import { ClipboardList } from "lucide-react";
 
@@ -29,10 +30,10 @@ export const RaceAdminReport: React.FC<AdminReportProps> = ({
       />
       <div className="flex gap-4">
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             const textarea = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement);
             if (textarea) {
-              navigator.clipboard.writeText(textarea.value);
+              await copyTextToClipboard(textarea.value, 'export.txt');
             }
           }}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium transition-colors"

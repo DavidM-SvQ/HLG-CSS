@@ -1,15 +1,17 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import { SeasonViewContext } from "./season/SeasonViewContext";
 import { SeasonCyclistsTab } from "./season/SeasonCyclistsTab";
 import { SeasonWinsTab } from "./season/SeasonWinsTab";
 import { SeasonPointsTab } from "./season/SeasonPointsTab";
-import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getVal, formatNumberSpanish } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
-import { CyclistDetailView } from "../modals/CyclistDetailView";
+import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
+
+const CyclistDetailView = lazy(() => import("../modals/CyclistDetailView").then(m => ({ default: m.CyclistDetailView })));
 
 
 export interface SeasonViewProps {
@@ -161,13 +163,13 @@ export const SeasonView = (props: SeasonViewProps) => {
       restore = expandNodeForCapture(chartRef.current);
       
       // Check if ClipboardItem is supported
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            // Use domToDataUrl first as it seems more reliable for Recharts labels
+      
+              {
+                const processCopy = async () => {
+                  // Use domToDataUrl first as it seems more reliable for Recharts labels
             const dataUrl = await domToDataUrl(chartRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               
               style: { overflow: "visible" },
@@ -176,21 +178,14 @@ export const SeasonView = (props: SeasonViewProps) => {
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             return blob;
-          })() as Promise<Blob>,
-        });
-
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsCopying(false);
-      // Fallback: Download
-      handleDownloadChart();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
       
     }
@@ -236,32 +231,26 @@ export const SeasonView = (props: SeasonViewProps) => {
       
       restore = expandNodeForCapture(evolutionChartRef.current);
       
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(evolutionChartRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             return blob;
-          })() as Promise<Blob>,
-        });
-
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsEvolutionChartCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsEvolutionChartCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsEvolutionChartCopying(false);
-      handleDownloadEvolutionChart();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -300,14 +289,14 @@ export const SeasonView = (props: SeasonViewProps) => {
     setIsTopTeamsTableCopying(true);
     let restore = () => {};
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            restore = expandNodeForCapture(topTeamsTableRef.current!);
+      
+              {
+                const processCopy = async () => {
+                  restore = expandNodeForCapture(topTeamsTableRef.current!);
             try {
               const dataUrl = await domToDataUrl(topTeamsTableRef.current!, {
                 scale: 3, 
-        
+
         backgroundColor: '#ffffff',
                 
                 style: { overflow: "visible" },
@@ -319,20 +308,14 @@ export const SeasonView = (props: SeasonViewProps) => {
             } finally {
               restore();
             }
-          })() as Promise<Blob>,
-        });
-
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsTopTeamsTableCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsTopTeamsTableCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsTopTeamsTableCopying(false);
-      handleDownloadTopTeamsTable();
-      /* Alert suppressed to improve user experience in iframe */
-    }
+    console.warn("Error during copy fallback", err);
+  }
   };
 
   const handleDownloadTopTeamsTable = async () => {
@@ -368,30 +351,25 @@ export const SeasonView = (props: SeasonViewProps) => {
       
       restore = expandNodeForCapture(winsRankingRef.current);
       
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(winsRankingRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(winsRankingRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsWinsRankingCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsWinsRankingCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsWinsRankingCopying(false);
-      handleDownloadWinsRanking();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -432,30 +410,25 @@ export const SeasonView = (props: SeasonViewProps) => {
       
       restore = expandNodeForCapture(winsEvolutionRef.current);
 
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(winsEvolutionRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "visible" },
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsWinsEvolutionCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsWinsEvolutionCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsWinsEvolutionCopying(false);
-      handleDownloadWinsEvolution();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -516,12 +489,12 @@ export const SeasonView = (props: SeasonViewProps) => {
         const end = start + 50;
       }
 
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(tableContainer, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(tableContainer, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               
               style: { overflow: "visible" },
@@ -529,26 +502,14 @@ export const SeasonView = (props: SeasonViewProps) => {
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-
-        try {
-          window.focus();
-          await navigator.clipboard.write([clipboardItem]);
-        } catch (copyErr) {
-          /* console.error suppressed */
-          throw copyErr;
-        }
-        setTimeout(() => setIsWinsHistoryCopying(null), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsWinsHistoryCopying(null), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsWinsHistoryCopying(null);
-      handleDownloadWinsHistory(subset);
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -573,7 +534,7 @@ export const SeasonView = (props: SeasonViewProps) => {
       )
       .join("\n");
 
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsWinsHistoryTextCopying(false), 2000);
   };
 
@@ -662,39 +623,22 @@ export const SeasonView = (props: SeasonViewProps) => {
     const restore = expandNodeForCapture(tableContainer);
 
     try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
-        
-        
-        style: {
-          overflow: "visible",
-          textRendering: "optimizeLegibility",
-        },
-        
-      });
-
-      if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        const clipboardItem = new ClipboardItem({ "image/png": blob });
-        try {
-          window.focus();
-          await navigator.clipboard.write([clipboardItem]);
-        } catch (copyErr) {
-          /* console.error suppressed */
-          // If write fails, it will fall through to the catch block and trigger download
-          throw copyErr;
-        }
-        setTimeout(() => setIsTopCyclistsDraftCopying(null), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+      const processCopy = async () => {
+        const dataUrl = await domToDataUrl(tableContainer, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          style: {
+            overflow: "visible",
+            textRendering: "optimizeLegibility",
+          },
+        });
+        return await (await fetch(dataUrl)).blob();
+      };
+      const suffix = subset && subset !== 'full' ? `_${subset}` : '';
+      await copyImageToClipboard(processCopy(), `top_cyclists_draft${suffix}.png`);
+      setTimeout(() => setIsTopCyclistsDraftCopying(null), 2000);
     } catch (err) {
-      /* console.error suppressed */
-      setIsTopCyclistsDraftCopying(null);
-      handleDownloadTopCyclistsDraft(subset);
-      /* Alert suppressed to improve user experience in iframe */
+      console.warn("Error during copy fallback", err);
     } finally {
       restore();
     }
@@ -719,7 +663,7 @@ export const SeasonView = (props: SeasonViewProps) => {
       )
       .join("\n");
 
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsTopCyclistsDraftTextCopying(false), 2000);
   };
 
@@ -787,25 +731,18 @@ export const SeasonView = (props: SeasonViewProps) => {
     if (!tableContainer) return;
     const restore = expandNodeForCapture(tableContainer);
 
-    try {
-            const dataUrl = await domToDataUrl(tableContainer, { scale: 3,   backgroundColor: "#ffffff" });
-      if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
-        setTimeout(() => setIsUnscoredCopying(null), 2000);
-      } else throw new Error("ClipboardItem not supported");
-    } catch (err) {
-      setIsUnscoredCopying(null);
-      handleDownloadUnscored(subset);
-    } finally {
+    try 
+  {
+    const processCopy = async () => {
+      const dataUrl = await domToDataUrl(tableContainer, { scale: 3,   backgroundColor: "#ffffff" });
+      return await (await fetch(dataUrl)).blob();
+    };
+    await copyImageToClipboard(processCopy(), "export.png");
+    setTimeout(() => setIsUnscoredCopying(null), 2000);
+  }
+                           catch (err) {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -826,7 +763,7 @@ export const SeasonView = (props: SeasonViewProps) => {
           .join("\t"),
       )
       .join("\n");
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsUnscoredTextCopying(false), 2000);
   };
 
@@ -857,32 +794,25 @@ export const SeasonView = (props: SeasonViewProps) => {
     if (!tableContainer) return;
     const restore = expandNodeForCapture(tableContainer);
 
-    try {
+    try 
+  {
+    const processCopy = async () => {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
-        backgroundColor: '#ffffff',
-        
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        
-      });
-      if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
-        setTimeout(() => setIsUndebutedCopying(null), 2000);
-      } else throw new Error("ClipboardItem not supported");
-    } catch (err) {
-      setIsUndebutedCopying(null);
-      handleDownloadUndebuted(subset);
-    } finally {
+          scale: 3, 
+          
+          backgroundColor: '#ffffff',
+          
+          style: { overflow: "visible", textRendering: "optimizeLegibility" },
+          
+        });
+      return await (await fetch(dataUrl)).blob();
+    };
+    await copyImageToClipboard(processCopy(), "export.png");
+    setTimeout(() => setIsUndebutedCopying(null), 2000);
+  }
+                           catch (err) {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };
@@ -903,7 +833,7 @@ export const SeasonView = (props: SeasonViewProps) => {
           .join("\t"),
       )
       .join("\n");
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsUndebutedTextCopying(false), 2000);
   };
 
@@ -941,41 +871,25 @@ export const SeasonView = (props: SeasonViewProps) => {
     const rows = tableContainer.querySelectorAll(".no-draft-row");
     const restore = expandNodeForCapture(tableContainer);
 
-    try {
-      if (subset && subset !== "full") {
-        const page = parseInt(subset.slice(1)) - 1;
-        const start = page * 50;
-        const end = start + 50;
-        rows.forEach((row, idx) => {
-          if (idx < start || idx >= end) row.classList.add("hidden");
-        });
-      }
-
+    try 
+  {
+    const processCopy = async () => {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
-        backgroundColor: '#ffffff',
-        
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        
-      });
-      if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
-        setTimeout(() => setIsNoDraftCyclistsCopying(null), 2000);
-      } else throw new Error("ClipboardItem not supported");
-    } catch (err) {
-      setIsNoDraftCyclistsCopying(null);
-      handleDownloadNoDraftCyclists(subset);
-    } finally {
+          scale: 3, 
+          
+          backgroundColor: '#ffffff',
+          
+          style: { overflow: "visible", textRendering: "optimizeLegibility" },
+          
+        });
+      return await (await fetch(dataUrl)).blob();
+    };
+    await copyImageToClipboard(processCopy(), "export.png");
+    setTimeout(() => setIsNoDraftCyclistsCopying(null), 2000);
+  }
+                           catch (err) {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
       rows.forEach((row) => row.classList.remove("hidden"));
     }
@@ -1044,7 +958,7 @@ export const SeasonView = (props: SeasonViewProps) => {
         text += `${i + 1}. ${s.name} (${s.data.equipo}) - ${s.data.puntos} pts\n`;
       });
 
-      await navigator.clipboard.writeText(text);
+      await await copyTextToClipboard(text, 'export.txt');
       setTimeout(() => setIsNoDraftCyclistsTextCopying(false), 2000);
     } catch (err) {
       setIsNoDraftCyclistsTextCopying(false);

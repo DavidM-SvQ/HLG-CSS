@@ -1,3 +1,4 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useMemo, useRef } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -53,7 +54,7 @@ export const InfoView = (props: InfoViewProps) => {
           .join("\t"),
       )
       .join("\n");
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsPointsTextCopying(false), 2000);
   };
 
@@ -71,32 +72,27 @@ export const InfoView = (props: InfoViewProps) => {
       await new Promise((resolve) => setTimeout(resolve, 150));
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, 
-              
-              width: elWidth,
-              height: elHeight,
-              style: { overflow: "visible", margin: "0" },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-          })() as Promise<Blob>,
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(tableContainer, {
+          scale: 3, 
+          
+          width: elWidth,
+          height: elHeight,
+          style: { overflow: "visible", margin: "0" },
+          
         });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsPointsImageCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+        const response = await fetch(dataUrl);
+        return await response.blob();
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsPointsImageCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsPointsImageCopying(false);
-      handleDownloadPointsImage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
       tableContainer.className = originalClass;
     }
@@ -147,7 +143,7 @@ export const InfoView = (props: InfoViewProps) => {
           .join("\t"),
       )
       .join("\n");
-    navigator.clipboard.writeText(text);
+    await copyTextToClipboard(text, 'export.txt');
     setTimeout(() => setIsRacesTextCopying(false), 2000);
   };
 
@@ -156,31 +152,26 @@ export const InfoView = (props: InfoViewProps) => {
     setIsRacesImageCopying(true);
     const restore = expandNodeForCapture(racesTableRef.current);
     try {
-      if (typeof ClipboardItem !== "undefined") {
-        const clipboardItem = new ClipboardItem({
-          "image/png": (async () => {
-            const dataUrl = await domToDataUrl(racesTableRef.current!, {
+      
+              {
+                const processCopy = async () => {
+                  const dataUrl = await domToDataUrl(racesTableRef.current!, {
               scale: 3, 
-        
+
         backgroundColor: '#ffffff',
               style: { overflow: "hidden" },
               
             });
             const response = await fetch(dataUrl);
             return await response.blob();
-          })() as Promise<Blob>,
-        });
-        await navigator.clipboard.write([clipboardItem]);
-        setTimeout(() => setIsRacesImageCopying(false), 2000);
-      } else {
-        throw new Error("ClipboardItem not supported");
-      }
+                };
+                await copyImageToClipboard(processCopy(), "export.png");
+                setTimeout(() => setIsRacesImageCopying(false), 2000);
+              }
+              
     } catch (err) {
-      /* console.error suppressed */
-      setIsRacesImageCopying(false);
-      handleDownloadRacesImage();
-      /* Alert suppressed to improve user experience in iframe */
-    } finally {
+    console.warn("Error during copy fallback", err);
+  } finally {
       restore();
     }
   };

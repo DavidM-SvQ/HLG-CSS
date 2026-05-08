@@ -1,3 +1,4 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import React, { useState, useRef, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar, LabelList } from 'recharts';
@@ -923,35 +924,21 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                   if (draftSummaryTableRef.current) {
                                     let restore = () => {};
                                     try {
-                                      
-                                      
-                                      
                                       restore = expandNodeForCapture(draftSummaryTableRef.current);
-                                      const dataUrl = await domToDataUrl(
-                                        draftSummaryTableRef.current,
-                                        {
-                                          scale: 3, 
-        
-        backgroundColor: '#ffffff',
-                                          style: { overflow: "visible" },
-                                        },
-                                      );
-                                      const blob = await (
-                                        await fetch(dataUrl)
-                                      ).blob();
-                                      if (typeof ClipboardItem !== "undefined") {
-                                        const clipboardItem = new ClipboardItem({
-                                          [blob.type]: blob,
-                                        });
-                                        await navigator.clipboard.write([
-                                          clipboardItem,
-                                        ]);
-                                      }
+                                      const processCopy = async () => {
+                                        const dataUrl = await domToDataUrl(
+                                          draftSummaryTableRef.current!,
+                                          {
+                                            scale: 3,
+                                            backgroundColor: '#ffffff',
+                                            style: { overflow: "visible" },
+                                          },
+                                        );
+                                        return await (await fetch(dataUrl)).blob();
+                                      };
+                                      await copyImageToClipboard(processCopy(), "resumen_draft.png");
                                     } catch (err) {
-                                      console.error(
-                                        "Error al copiar imagen:",
-                                        err,
-                                      );
+                                      console.error("Error al copiar imagen:", err);
                                     } finally {
                                       restore();
                                     }
@@ -963,7 +950,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                 <Copy className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   // Logic to copy table as text
                                   const table =
                                     draftSummaryTableRef.current?.querySelector(
@@ -985,7 +972,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                         .join("\t");
                                       text += rowData + "\n";
                                     });
-                                    navigator.clipboard.writeText(text);
+                                    await copyTextToClipboard(text, "resumen_draft.txt");
                                   }
                                 }}
                                 className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
@@ -1899,37 +1886,21 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                             if (draftChartRef.current) {
                                               let restore = () => {};
                                               try {
-                                                
-                                                
-                                                
                                                 restore = expandNodeForCapture(draftChartRef.current);
-                                                const dataUrl =
-                                                  await domToDataUrl(
-                                                    draftChartRef.current,
+                                                const processCopy = async () => {
+                                                  const dataUrl = await domToDataUrl(
+                                                    draftChartRef.current!,
                                                     {
-                                                      scale: 3, 
-        
-        backgroundColor: '#ffffff',
+                                                      scale: 3,
+                                                      backgroundColor: '#ffffff',
                                                       style: { overflow: "visible" },
                                                     },
                                                   );
-                                                const blob = await (
-                                                  await fetch(dataUrl)
-                                                ).blob();
-                                                if (typeof ClipboardItem !== "undefined") {
-                                                  const clipboardItem =
-                                                    new ClipboardItem({
-                                                      [blob.type]: blob,
-                                                    });
-                                                  await navigator.clipboard.write(
-                                                    [clipboardItem],
-                                                  );
-                                                }
+                                                  return await (await fetch(dataUrl)).blob();
+                                                };
+                                                await copyImageToClipboard(processCopy(), "grafico_draft.png");
                                               } catch (err) {
-                                                console.error(
-                                                  "Error al copiar imagen:",
-                                                  err,
-                                                );
+                                                console.error("Error al copiar imagen:", err);
                                               } finally {
                                                 restore();
                                               }

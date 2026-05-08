@@ -166,7 +166,12 @@ export function useStartlistData(
       });
     });
 
-    teamRows.sort((a, b) => b.puntosMedios - a.puntosMedios);
+    teamRows.sort((a, b) => {
+      if (b.puntosMedios !== a.puntosMedios) {
+        return b.puntosMedios - a.puntosMedios;
+      }
+      return b.numCiclistas - a.numCiclistas;
+    });
 
     const maxTeamPoints = Math.max(1, ...teamRows.map((r) => r.puntos));
     const minTeamPoints = Math.min(...teamRows.map((r) => r.puntos));

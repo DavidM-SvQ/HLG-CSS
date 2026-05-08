@@ -1,5 +1,6 @@
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect } from "react";
-import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown } from "lucide-react";
+import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle } from "lucide-react";
 import { domToDataUrl } from "modern-screenshot";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
@@ -95,26 +96,20 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
     const tableContainer = cyclistDetailRef.current;
     if (!tableContainer) return;
     const restore = expandNodeForCapture(tableContainer);
-    try {
+    try 
+  {
+    const processCopy = async () => {
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-      if (typeof ClipboardItem !== "undefined") {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        try {
-          window.focus();
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-        } catch (e) {
-          throw e;
-        }
-        setTimeout(() => setIsCyclistDetailCopying(false), 2000);
-      } else throw new Error("ClipboardItem not supported");
-    } catch (err) {
+          scale: 3, 
+          backgroundColor: '#ffffff',
+          style: { overflow: "visible", textRendering: "optimizeLegibility" },
+        });
+      return await (await fetch(dataUrl)).blob();
+    };
+    await copyImageToClipboard(processCopy(), "export.png");
+    setTimeout(() => setIsCyclistDetailCopying(false), 2000);
+  }
+                           catch (err) {
       setIsCyclistDetailCopying(false);
       try {
         const dataUrl = await domToDataUrl(tableContainer, {
@@ -148,7 +143,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
         lines.push(tds.join("\t"));
       });
       const text = lines.join("\n");
-      await navigator.clipboard.writeText(text);
+      await await copyTextToClipboard(text, 'export.txt');
       setTimeout(() => setIsCyclistDetailTextCopying(false), 2000);
     } catch (err) {
       setIsCyclistDetailTextCopying(false);
@@ -205,6 +200,41 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
             eqText = `${equipoStr} [#${draftRank}]`;
           }
           const ciclistaText = `${ciclista} <${ronda}>`;
+          
+          let roundRankText = "-";
+          let roundRankColor = "text-neutral-800";
+          let roundRankIcon = null;
+          if (ronda !== "-") {
+            const cyclistsInRound = Object.keys(cyclistRoundMap).filter(c => cyclistRoundMap[c] === ronda);
+            if (cyclistsInRound.length > 0) {
+              const sortedByPoints = cyclistsInRound.sort((a, b) => {
+                const ptsA = (cyclistMetadata[a]?.puntosTotales) || 0;
+                const ptsB = (cyclistMetadata[b]?.puntosTotales) || 0;
+                return ptsB - ptsA;
+              });
+              const idx = sortedByPoints.indexOf(ciclista);
+              if (idx !== -1) {
+                const rank = idx + 1;
+                roundRankText = `${rank} de ${cyclistsInRound.length}`;
+                if (rank === 1) {
+                  roundRankColor = "text-yellow-500";
+                  roundRankIcon = <Trophy className="w-5 h-5 fill-yellow-500" />;
+                } else if (rank >= 2 && rank <= 5) {
+                  roundRankColor = "text-emerald-500";
+                  roundRankIcon = <ChevronsUp className="w-5 h-5" />;
+                } else if (rank >= 6 && rank <= 14) {
+                  roundRankColor = "text-neutral-400";
+                  roundRankIcon = <Minus className="w-5 h-5" />;
+                } else if (rank >= 15 && rank <= 19) {
+                  roundRankColor = "text-orange-500";
+                  roundRankIcon = <ChevronsDown className="w-5 h-5" />;
+                } else {
+                  roundRankColor = "text-red-500";
+                  roundRankIcon = <AlertTriangle className="w-5 h-5" />;
+                }
+              }
+            }
+          }
           
           const raceTypeByName: Record<string, string> = {};
           files.carreras.data?.forEach((row: any) => {
@@ -435,6 +465,13 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider text-nowrap">Días Comp.</span>
                       <span className="text-lg font-bold text-neutral-800 leading-none">{meta.diasCompeticion || 0}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider text-nowrap">Ranking Ronda</span>
+                      <div className="flex items-center gap-1">
+                        {roundRankIcon}
+                        <span className={cn("text-lg font-bold leading-none", roundRankColor)}>{roundRankText}</span>
+                      </div>
                     </div>
                   </div>
 
