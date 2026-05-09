@@ -1,11 +1,12 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ExportToolbar } from "../ui/ExportToolbar";
 import { getVal, formatNumberSpanish } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
+import { useDebounce } from "../../lib/hooks/useDebounce";
 
 export interface InfoViewProps {
   raceWinners: Record<string, string>;
@@ -28,6 +29,20 @@ export const InfoView = (props: InfoViewProps) => {
 
   const [pointsCategoryFilter, setPointsCategoryFilter] = useState<string>("");
   const [pointsRaceSearch, setPointsRaceSearch] = useState<string>("");
+  const [localRaceSearch, setLocalRaceSearch] = useState<string>("");
+  
+  useEffect(() => {
+    setLocalRaceSearch(pointsRaceSearch);
+  }, [pointsRaceSearch]);
+  
+  const debouncedRaceSearch = useDebounce(localRaceSearch, 300);
+  
+  useEffect(() => {
+    if (debouncedRaceSearch !== pointsRaceSearch) {
+      setPointsRaceSearch(debouncedRaceSearch);
+    }
+  }, [debouncedRaceSearch, pointsRaceSearch]);
+  
   const [isPointsCopying, setIsPointsCopying] = useState(false);
   const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
 
@@ -265,8 +280,8 @@ export const InfoView = (props: InfoViewProps) => {
                         <input
                           type="text"
                           placeholder="Buscar carrera..."
-                          value={pointsRaceSearch}
-                          onChange={(e) => setPointsRaceSearch(e.target.value)}
+                          value={localRaceSearch}
+                          onChange={(e) => setLocalRaceSearch(e.target.value)}
                           className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                         <select

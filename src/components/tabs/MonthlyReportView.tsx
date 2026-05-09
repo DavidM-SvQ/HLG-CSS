@@ -1060,7 +1060,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <ExportToolbar targetRef={ref1} filename="top-equipos" />
               </div>
               <div className="overflow-x-auto flex justify-center bg-neutral-50/20 pb-8 relative mt-2 text-sm">
-                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                   <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                     <tr>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Pos</th>
@@ -1070,7 +1070,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-right">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                     {(() => {
                       const maxWins = monthReportData.topTeams.length > 0 ? Math.max(...monthReportData.topTeams.map(t => t.wins)) : 0;
                       const minWins = monthReportData.topTeams.length > 0 ? Math.min(...monthReportData.topTeams.map(t => t.wins)) : 0;
@@ -1125,7 +1125,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       <th className="px-6 py-3 font-semibold  text-right">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100 bg-white">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                     {monthReportData.raceWinners.map((r, idx) => (
                       <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
                         <td className="px-6 py-2.5  font-mono text-xs text-neutral-500">{r.fecha}</td>
@@ -1169,7 +1169,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
               <ExportToolbar targetRef={ref3} filename="top-ciclistas" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     {['pos', 'nombre', 'equipo', 'pais', 'victorias', 'carreras', 'dias', 'ppc', 'ppd', 'puntos'].map((col) => {
@@ -1198,7 +1198,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     })}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 bg-white">
+                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                   {sortedStats.map((s) => {
                     const { name, data, numCarreras, ppc, ppd, originalPos } = s;
                     return (
@@ -1256,7 +1256,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
               <ExportToolbar targetRef={ref4} filename="top-ciclistas-no-draft" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">Pos</th>
@@ -1266,7 +1266,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-right">Puntos</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 bg-white">
+                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                   {monthReportData.topNoDraftCyclists.map((s) => (
                     <tr key={s.cyclist} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
                       <td className="px-3 py-1 text-center font-bold text-neutral-400">
@@ -1319,7 +1319,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white">
+              <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                 {monthReportData.allTeams.map((team) => {
                   let teamTotal = 0;
                   return (

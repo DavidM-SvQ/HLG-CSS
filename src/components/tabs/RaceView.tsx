@@ -481,7 +481,7 @@ export const RaceView = (props: RaceViewProps) => {
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-100">
+                        <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                           {rankedTeams
                             .filter(
                               (t) =>
@@ -614,7 +614,7 @@ export const RaceView = (props: RaceViewProps) => {
                             <th className="px-3 py-1.5 text-center">Puntos</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-100">
+                        <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                       {raceCyclists.map((c, idx) => {
                         return (
                             <tr
@@ -728,7 +728,7 @@ export const RaceView = (props: RaceViewProps) => {
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-neutral-100 italic md:not-italic">
+                          <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 italic md:not-italic">
                             {teamStagePoints.map((team, idx) => {
                               const maxTotal = Math.max(
                                 ...teamStagePoints.map((t) => t.total),

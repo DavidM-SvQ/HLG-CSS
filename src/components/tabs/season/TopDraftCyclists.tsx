@@ -3,6 +3,7 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { useTopDraft } from "../../../lib/hooks/useTopDraft";
 
 
 export function TopDraftCyclists() {
@@ -14,6 +15,14 @@ export function TopDraftCyclists() {
   const noDraftRefContainer = useRef<HTMLDivElement>(null);
 
   const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
+
+  const { allStats } = useTopDraft(
+    cyclistsMonthFilter,
+    cyclistsCategoryFilter,
+    cyclistsTeamFilter,
+    cyclistsRoundFilter,
+    topCyclistsLimit
+  );
 
   return (
     <>
@@ -531,7 +540,7 @@ export function TopDraftCyclists() {
                                 </div>
 
                                 <div className="overflow-x-auto overflow-y-auto max-h-[750px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
-                                  <div ref={topCyclistsDraftRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="w-full min-w-[700px] text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={topCyclistsDraftRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="w-full min-w-[700px] text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -793,311 +802,39 @@ export function TopDraftCyclists() {
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {(() => {
-                                        const cyclistStats: Record<
-                                          string,
-                                          {
-                                            puntos: number;
-                                            jugador: string;
-                                            nombreEquipo: string;
-                                            orden: string;
-                                            ronda: string;
-                                            pais: string;
-                                            victorias: number;
-                                            carreras: Set<string>;
-                                            dias: number;
-                                          }
-                                        > = {};
-
-                                        // Initialize all drafted players
-                                        Object.entries(playerByCyclist).forEach(
-                                          ([ciclista, jugador]) => {
-                                            if (jugador !== "No draft") {
-                                              cyclistStats[ciclista] = {
-                                                puntos: 0,
-                                                jugador: jugador as string,
-                                                nombreEquipo:
-                                                  playerTeamMap[
-                                                    jugador as string
-                                                  ] || "",
-                                                orden:
-                                                  playerOrderMap[
-                                                    jugador as string
-                                                  ] || "",
-                                                ronda:
-                                                  cyclistRoundMap[ciclista] ||
-                                                  "",
-                                                pais:
-                                                  cyclistMetadata[ciclista]
-                                                    ?.pais || "",
-                                                victorias: 0,
-                                                carreras: new Set<string>(),
-                                                dias: 0,
-                                              };
-                                            }
-                                          },
-                                        );
-
-                                        // First, map races to months and categories
-                                        const raceMonths: Record<
-                                          string,
-                                          number
-                                        > = {};
-                                        const raceCats: Record<string, string> =
-                                          {};
-                                        files.carreras.data?.forEach((r) => {
-                                          const carreraName = getVal(
-                                            r,
-                                            "Carrera",
-                                          )?.trim();
-                                          const fechaFin = getVal(r, "Fecha");
-                                          const cat = getVal(
-                                            r,
-                                            "Categoría",
-                                          )?.trim();
-                                          if (carreraName) {
-                                            if (cat)
-                                              raceCats[carreraName] = cat;
-                                            if (fechaFin) {
-                                              const parts =
-                                                fechaFin.split(/[-/]/);
-                                              if (parts.length >= 2) {
-                                                const monthIndex =
-                                                  parseInt(parts[1]) - 1;
-                                                raceMonths[carreraName] =
-                                                  monthIndex;
-                                              }
-                                            }
-                                          }
-                                        });
-
-                                        leaderboard?.forEach((player) => {
-                                          player?.detalles?.forEach((d) => {
-                                            // Apply month filter
-                                            if (
-                                              cyclistsMonthFilter !== "all" &&
-                                              raceMonths[d.carrera] !==
-                                                parseInt(cyclistsMonthFilter)
-                                            ) {
-                                              return;
-                                            }
-                                            // Apply category filter
-                                            if (
-                                              cyclistsCategoryFilter.length > 0
-                                            ) {
-                                              const cat = raceCats[d.carrera];
-                                              if (
-                                                !cat ||
-                                                !cyclistsCategoryFilter.includes(
-                                                  cat,
-                                                )
-                                              )
-                                                return;
-                                            }
-
-                                            if (!cyclistStats[d.ciclista]) {
-                                              cyclistStats[d.ciclista] = {
-                                                puntos: 0,
-                                                jugador: player.jugador,
-                                                nombreEquipo:
-                                                  player.nombreEquipo,
-                                                orden: player.orden,
-                                                ronda: d.ronda,
-                                                pais:
-                                                  cyclistMetadata[d.ciclista]
-                                                    ?.pais || "",
-                                                victorias: 0,
-                                                carreras: new Set(),
-                                                dias: 0,
-                                              };
-                                            }
-
-                                            const stats =
-                                              cyclistStats[d.ciclista];
-                                            stats.puntos += d.puntosObtenidos;
-                                            stats.carreras.add(d.carrera);
-
-                                            // Check if this result is a win (1st place)
-                                            const isPos01 =
-                                              d.posicion === "01" ||
-                                              d.posicion === "1";
-                                            const isValidType = [
-                                              "Etapa",
-                                              "Etapa (Crono equipos)",
-                                              "Clasificación final",
-                                              "Clasificación final (Crono equipos)",
-                                              "Clásica",
-                                            ].includes(d.tipoResultado);
-
-                                            if (isPos01 && isValidType) {
-                                              stats.victorias += 1;
-                                            }
-
-                                            // Get race days from carreras data
-                                            const raceData =
-                                              files.carreras.data?.find(
-                                                (r) =>
-                                                  getVal(
-                                                    r,
-                                                    "Carrera",
-                                                  )?.trim() === d.carrera,
-                                              );
-                                            if (raceData) {
-                                              const diasStr = getVal(
-                                                raceData,
-                                                "Días",
-                                              );
-                                              if (diasStr) {
-                                                stats.dias +=
-                                                  parseInt(diasStr) || 1;
-                                              } else {
-                                                stats.dias += 1; // Default to 1 day if not specified
-                                              }
-                                            } else {
-                                              stats.dias += 1;
-                                            }
-                                          });
-                                        });
-
-                                        const allStats = Object.entries(
-                                          cyclistStats,
-                                        )
-                                          .filter(([name, data]) => {
-                                            if (
-                                              data.nombreEquipo === "No draft"
-                                            )
-                                              return false;
-                                            if (
-                                              cyclistsTeamFilter.length > 0 &&
-                                              !cyclistsTeamFilter.includes(
-                                                data.nombreEquipo,
-                                              )
-                                            )
-                                              return false;
-                                            if (
-                                              cyclistsRoundFilter.length > 0 &&
-                                              !cyclistsRoundFilter.includes(
-                                                data.ronda,
-                                              )
-                                            )
-                                              return false;
-                                            return true;
-                                          })
-                                          .sort(
-                                            (a, b) => b[1].puntos - a[1].puntos,
-                                          )
-                                          .map(([name, data], index) => {
-                                            const numCarreras =
-                                              data.carreras.size;
-                                            const ppc =
-                                              numCarreras > 0
-                                                ? parseFloat(
-                                                    (
-                                                      data.puntos / numCarreras
-                                                    ).toFixed(1),
-                                                  )
-                                                : 0;
-                                            const ppd =
-                                              data.dias > 0
-                                                ? parseFloat(
-                                                    (
-                                                      data.puntos / data.dias
-                                                    ).toFixed(1),
-                                                  )
-                                                : 0;
-                                            return {
-                                              name,
-                                              data,
-                                              numCarreras,
-                                              ppc,
-                                              ppd,
-                                              originalPos: index + 1,
-                                            };
-                                          });
-
                                         // Tomamos el top N primero para mantener siempre los corredores con más puntos
-                                        const topScorers =
-                                          topCyclistsLimit === 9999
-                                            ? allStats
-                                            : allStats.slice(
-                                                0,
-                                                topCyclistsLimit,
-                                              );
+                                        const topScorers = topCyclistsLimit === 9999 ? [...allStats] : allStats.slice(0, topCyclistsLimit);
 
                                         // Sort the array by column AFTER slicing
                                         topScorers.sort((a, b) => {
-                                          let valA: any, valB: any;
-                                          switch (cyclistsSortColumn) {
-                                            case "pos":
-                                              valA = a.originalPos;
-                                              valB = b.originalPos;
-                                              break;
-                                            case "nombre":
-                                              valA = a.name;
-                                              valB = b.name;
-                                              break;
-                                            case "equipo":
-                                              valA = a.data.nombreEquipo;
-                                              valB = b.data.nombreEquipo;
-                                              break;
-                                            case "pais":
-                                              valA = a.data.pais;
-                                              valB = b.data.pais;
-                                              break;
-                                            case "victorias":
-                                              valA = a.data.victorias;
-                                              valB = b.data.victorias;
-                                              break;
-                                            case "carreras":
-                                              valA = a.numCarreras;
-                                              valB = b.numCarreras;
-                                              break;
-                                            case "dias":
-                                              valA = a.data.dias;
-                                              valB = b.data.dias;
-                                              break;
-                                            case "ppc":
-                                              valA = a.ppc;
-                                              valB = b.ppc;
-                                              break;
-                                            case "ppd":
-                                              valA = a.ppd;
-                                              valB = b.ppd;
-                                              break;
-                                            case "puntos":
-                                            default:
-                                              valA = a.data.puntos;
-                                              valB = b.data.puntos;
-                                              break;
-                                          }
+    let valA: any, valB: any;
+    switch (cyclistsSortColumn) {
+      case "pos": valA = a.originalIndex; valB = b.originalIndex; break;
+      case "nombre": valA = a.ciclista; valB = b.ciclista; break;
+      case "equipo": valA = a.nombreEquipo; valB = b.nombreEquipo; break;
+      case "pais": valA = a.pais; valB = b.pais; break;
+      case "victorias": valA = a.victorias; valB = b.victorias; break;
+      case "carreras": valA = a.numCarreras; valB = b.numCarreras; break;
+      case "dias": valA = a.dias; valB = b.dias; break;
+      case "ppc": valA = a.ppc; valB = b.ppc; break;
+      case "ppd": valA = a.ppd; valB = b.ppd; break;
+      case "puntos": default: valA = a.puntos; valB = b.puntos; break;
+    }
 
-                                          if (
-                                            typeof valA === "string" &&
-                                            typeof valB === "string"
-                                          ) {
-                                            return cyclistsSortDirection ===
-                                              "asc"
-                                              ? valA.localeCompare(valB)
-                                              : valB.localeCompare(valA);
-                                          }
+    if (typeof valA === "string" && typeof valB === "string") {
+      return cyclistsSortDirection === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    }
 
-                                          if (valA < valB)
-                                            return cyclistsSortDirection ===
-                                              "asc"
-                                              ? -1
-                                              : 1;
-                                          if (valA > valB)
-                                            return cyclistsSortDirection ===
-                                              "asc"
-                                              ? 1
-                                              : -1;
-                                          return 0;
-                                        });
+    if (valA < valB) return cyclistsSortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return cyclistsSortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
 
-                                        const sortedStats = topScorers;
+  const sortedStats = topScorers;
 
-                                        let maxVictorias = 0;
+  let maxVictorias = 0;
                                         let maxCarreras = 0,
                                           minCarreras = Infinity;
                                         let maxDias = 0,
@@ -1111,22 +848,22 @@ export function TopDraftCyclists() {
 
                                         if (sortedStats.length > 0) {
                                           maxPuntos =
-                                            sortedStats[0].data.puntos;
+                                            sortedStats[0].puntos;
                                           minPuntos =
                                             sortedStats[sortedStats.length - 1]
-                                              .data.puntos;
+                                              .puntos;
 
                                           sortedStats.forEach((s) => {
-                                            if (s.data.victorias > maxVictorias)
-                                              maxVictorias = s.data.victorias;
+                                            if (s.victorias > maxVictorias)
+                                              maxVictorias = s.victorias;
                                             if (s.numCarreras > maxCarreras)
                                               maxCarreras = s.numCarreras;
                                             if (s.numCarreras < minCarreras)
                                               minCarreras = s.numCarreras;
-                                            if (s.data.dias > maxDias)
-                                              maxDias = s.data.dias;
-                                            if (s.data.dias < minDias)
-                                              minDias = s.data.dias;
+                                            if (s.dias > maxDias)
+                                              maxDias = s.dias;
+                                            if (s.dias < minDias)
+                                              minDias = s.dias;
                                             if (s.ppc > maxPpc) maxPpc = s.ppc;
                                             if (s.ppc < minPpc) minPpc = s.ppc;
                                             if (s.ppd > maxPpd) maxPpd = s.ppd;
@@ -1167,12 +904,18 @@ export function TopDraftCyclists() {
 
                                         return sortedStats.map((s, idx) => {
                                           const {
-                                            name,
-                                            data,
+                                            ciclista,
+                                            nombreEquipo,
+                                            ronda,
+                                            orden,
+                                            pais,
+                                            victorias,
+                                            dias,
+                                            puntos,
                                             numCarreras,
                                             ppc,
                                             ppd,
-                                            originalPos,
+                                            originalIndex,
                                           } = s;
 
                                           let isHiddenVisual = false;
@@ -1204,7 +947,7 @@ export function TopDraftCyclists() {
 
                                           return (
                                             <tr
-                                              key={name}
+                                              key={ciclista}
                                               className={cn(
                                                 "hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100",
                                                 isHiddenVisual && "hidden",
@@ -1214,47 +957,47 @@ export function TopDraftCyclists() {
                                                 <span
                                                   className={cn(
                                                     "w-5 h-5 mx-auto rounded-full flex items-center justify-center text-[9px] font-bold",
-                                                    originalPos === 1
+                                                    originalIndex === 1
                                                       ? "bg-yellow-100 text-yellow-700"
-                                                      : originalPos === 2
+                                                      : originalIndex === 2
                                                         ? "bg-neutral-200 text-neutral-600"
-                                                        : originalPos === 3
+                                                        : originalIndex === 3
                                                           ? "bg-orange-100 text-orange-700"
                                                           : "bg-neutral-100 text-neutral-500",
                                                   )}
                                                 >
-                                                  {originalPos}
+                                                  {originalIndex}
                                                 </span>
                                               </td>
                                               <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
-                                                {name}{" "}
+                                                {ciclista}{" "}
                                                 <span className="text-neutral-400 font-normal text-[9px]">
-                                                  &lt;{data.ronda || "-"}&gt;
+                                                  &lt;{ronda || "-"}&gt;
                                                 </span>
                                               </td>
                                               <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
-                                                {data.nombreEquipo ===
+                                                {nombreEquipo ===
                                                 "No draft" ? (
                                                   <span className="text-neutral-400 italic text-[10px]">
                                                     No elegido
                                                   </span>
                                                 ) : (
                                                   <span className="font-medium">
-                                                    {data.nombreEquipo}{" "}
+                                                    {nombreEquipo}{" "}
                                                     <span className="text-neutral-400 font-normal text-[9px]">
-                                                      [#{data.orden}]
+                                                      [#{orden}]
                                                     </span>
                                                   </span>
                                                 )}
                                               </td>
                                               <td className="px-3 py-1 text-base text-center">
-                                                {data.pais}
+                                                {pais}
                                               </td>
                                               <td
                                                 className={cn(
                                                   "px-3 py-1 text-center font-mono",
                                                   getColorClass(
-                                                    data.victorias,
+                                                    victorias,
                                                     maxVictorias,
                                                     0,
                                                     true,
@@ -1262,7 +1005,7 @@ export function TopDraftCyclists() {
                                                 )}
                                               >
                                                 <span className="font-mono tracking-tight">{formatNumberSpanish(
-                                                  data.victorias,
+                                                  victorias,
                                                 )}</span>
                                               </td>
                                               <td
@@ -1283,13 +1026,13 @@ export function TopDraftCyclists() {
                                                 className={cn(
                                                   "px-3 py-1 text-center font-mono",
                                                   getColorClass(
-                                                    data.dias,
+                                                    dias,
                                                     maxDias,
                                                     minDias,
                                                   ),
                                                 )}
                                               >
-                                                <span className="font-mono tracking-tight">{formatNumberSpanish(data.dias)}</span>
+                                                <span className="font-mono tracking-tight">{formatNumberSpanish(dias)}</span>
                                               </td>
                                               <td
                                                 className={cn(
@@ -1323,12 +1066,12 @@ export function TopDraftCyclists() {
                                                 className="px-4 py-1 text-right font-black font-mono text-sm"
                                                 style={{
                                                   color: getPuntosColor(
-                                                    data.puntos,
+                                                    puntos,
                                                   ),
                                                 }}
                                               >
                                                 <span className="font-mono tracking-tight">{formatNumberSpanish(
-                                                  data.puntos,
+                                                  puntos,
                                                 )}</span>
                                               </td>
                                             </tr>

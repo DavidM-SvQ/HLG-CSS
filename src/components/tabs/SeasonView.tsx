@@ -1,8 +1,10 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import { SeasonViewContext } from "./season/SeasonViewContext";
+import { SeasonHighlights } from "./season/SeasonHighlights";
 import { SeasonCyclistsTab } from "./season/SeasonCyclistsTab";
 import { SeasonWinsTab } from "./season/SeasonWinsTab";
 import { SeasonPointsTab } from "./season/SeasonPointsTab";
+import { SeasonMilestones } from "./season/SeasonMilestones";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getVal, formatNumberSpanish } from "../../lib/data-processing";
@@ -10,6 +12,7 @@ import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
+import { motion, AnimatePresence } from "motion/react";
 
 const CyclistDetailView = lazy(() => import("../modals/CyclistDetailView").then(m => ({ default: m.CyclistDetailView })));
 
@@ -1023,177 +1026,13 @@ export const SeasonView = (props: SeasonViewProps) => {
 
   return (
     <SeasonViewContext.Provider value={{cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, evolutionTimeFilter, setEvolutionTimeFilter, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount}}>
-    <div className="space-y-8">
-        {(() => {
-                  const filteredLeaderboard =
-                    leaderboard?.filter((p) => p.nombreEquipo !== "No draft") ||
-                    [];
-                  const top3 = filteredLeaderboard.slice(0, 3);
-
-                  // Handle ties for Leader
-                  const maxPoints =
-                    filteredLeaderboard.length > 0
-                      ? filteredLeaderboard[0].puntos
-                      : 0;
-                  const leaders = filteredLeaderboard.filter(
-                    (p) => p.puntos === maxPoints,
-                  );
-                  const leaderNames = leaders
-                    .map((l) => l.nombreEquipo)
-                    .join(" / ");
-
-                  // Calculate wins per team (excluding No draft)
-                  const teamWinsCount: Record<string, number> = {};
-                  filteredLeaderboard?.forEach((p) => {
-                    if (
-                      p.nombreEquipo !== "No draft" &&
-                      p.nombreEquipo !== "No draft [99]"
-                    ) {
-                      teamWinsCount[p.nombreEquipo] = 0;
-                    }
-                  });
-                  Object.values(raceWinners).forEach((teamName) => {
-                    const name = teamName as string;
-                    if (teamWinsCount[name] !== undefined) {
-                      teamWinsCount[name]++;
-                    }
-                  });
-
-                  const maxWins = Math.max(...Object.values(teamWinsCount), 0);
-                  const topWinnerTeams = Object.keys(teamWinsCount).filter(
-                    (name) => teamWinsCount[name] === maxWins,
-                  );
-                  const winnerNames = topWinnerTeams.join(" / ");
-
-                  return (
-                    <>
-                      {/* KPIs */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                            <Trophy className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                              Carreras Terminadas
-                            </p>
-                            <p className="text-2xl font-bold text-neutral-900">
-                              {uniqueRaces.length} <span className="text-sm font-medium text-neutral-500">/ {files?.carreras?.data?.length || 0} ({files?.carreras?.data?.length ? Math.round((uniqueRaces.length / files.carreras.data.length) * 100) : 0}%)</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                          <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
-                            <Crown className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                              Líder Actual
-                            </p>
-                            <p className="text-xl font-bold text-neutral-900">
-                              {leaderNames || "-"}
-                            </p>
-                            <p className="text-xs text-neutral-500">
-                              {maxPoints || 0} puntos
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                          <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-                            <Medal className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                              Más Victorias
-                            </p>
-                            <p className="text-xl font-bold text-neutral-900">
-                              {winnerNames || "-"}
-                            </p>
-                            <p className="text-xs text-neutral-500">
-                              {maxWins} victorias
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Virtual Podium */}
-                      {top3.length > 0 && (
-                        <div className="flex flex-col items-center justify-end pt-12 pb-8 bg-white border border-neutral-200 rounded-2xl shadow-sm">
-                          <h3 className="text-lg font-bold mb-8 text-neutral-800 uppercase tracking-widest">
-                            Podio Virtual
-                          </h3>
-                          <div className="flex items-end gap-2 md:gap-8">
-                            {/* 2nd Place */}
-                            {top3[1] && (
-                              <div className="flex flex-col items-center">
-                                <div className="mb-2 text-center">
-                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
-                                    {top3[1].nombreEquipo}
-                                  </p>
-                                  <p className="text-xs text-neutral-500">
-                                    {top3[1].puntos} pts
-                                  </p>
-                                </div>
-                                <div className="w-24 md:w-32 h-32 bg-slate-300 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                                  <span className="text-4xl font-black text-slate-400">
-                                    2
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* 1st Place */}
-                            {top3[0] && (
-                              <div className="flex flex-col items-center">
-                                <Crown className="w-8 h-8 text-yellow-500 mb-2 animate-bounce" />
-                                <div className="mb-2 text-center">
-                                  <p className="text-base font-black text-neutral-900 truncate w-28 md:w-40">
-                                    {top3[0].nombreEquipo}
-                                  </p>
-                                  <p className="text-sm font-bold text-yellow-600">
-                                    {top3[0].puntos} pts
-                                  </p>
-                                </div>
-                                <div className="w-28 md:w-40 h-48 bg-yellow-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden border-x-4 border-t-4 border-yellow-300">
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
-                                  <span className="text-6xl font-black text-yellow-600">
-                                    1
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* 3rd Place */}
-                            {top3[2] && (
-                              <div className="flex flex-col items-center">
-                                <div className="mb-2 text-center">
-                                  <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
-                                    {top3[2].nombreEquipo}
-                                  </p>
-                                  <p className="text-xs text-neutral-500">
-                                    {top3[2].puntos} pts
-                                  </p>
-                                </div>
-                                <div className="w-24 md:w-32 h-24 bg-orange-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                                  <span className="text-4xl font-black text-orange-600">
-                                    3
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      
-        
-                      </>
-                  );
-                })()}
+          <div className="space-y-8">
+            <SeasonHighlights 
+              leaderboard={leaderboard} 
+              raceWinners={raceWinners} 
+              uniqueRaces={uniqueRaces} 
+              files={files} 
+            />
   {/* Sub-tabs Navigation */}
   <div className="flex justify-center mb-8">
     <div className="flex bg-neutral-100 p-1.5 rounded-xl shadow-inner">
@@ -1219,11 +1058,44 @@ export const SeasonView = (props: SeasonViewProps) => {
     </div>
   </div>
 
+  <AnimatePresence mode="wait">
+    {seasonSubTab === "puntos" && (
+      <motion.div
+        key="puntos"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <SeasonPointsTab />
+      </motion.div>
+    )}
+    {seasonSubTab === "victorias" && (
+      <motion.div
+        key="victorias"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <SeasonWinsTab />
+      </motion.div>
+    )}
+    {seasonSubTab === "ciclistas" && (
+      <motion.div
+        key="ciclistas"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <SeasonCyclistsTab />
+      </motion.div>
+    )}
+  </AnimatePresence>
 
-                {seasonSubTab === "puntos" && <SeasonPointsTab />}
-        {seasonSubTab === "victorias" && <SeasonWinsTab />}
-        {seasonSubTab === "ciclistas" && <SeasonCyclistsTab />}
-      </div>
+  <SeasonMilestones leaderboard={leaderboard} files={files} />
+</div>
     </SeasonViewContext.Provider>
   );
 };

@@ -375,7 +375,7 @@ export function UndebutedCyclists() {
                                       : "max-h-[750px]",
                                   )}
                                 >
-                                  <div ref={undebutedRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div ref={undebutedRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="min-w-full text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -479,7 +479,7 @@ export function UndebutedCyclists() {
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {(() => {
                                         // Get all cyclists from elecciones
                                         const undebuted = files.elecciones.data

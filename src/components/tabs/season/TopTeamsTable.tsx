@@ -1,16 +1,13 @@
 import React, { useContext } from "react";
 import { Copy, CheckCircle2, UploadCloud, Maximize2, Trophy, Search, ChevronUp, ChevronDown, X, Medal } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { useTopTeams } from "../../../lib/hooks/useTopTeams";
 
 export function TopTeamsTable() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
   const {
     cn,
-    files,
-    filteredLeaderboard,
-    raceWinners,
-    globalTeamPartialWinsCount,
     teamsMonthFilter,
     setTeamsMonthFilter,
     topTeamsSortColumn,
@@ -26,103 +23,24 @@ export function TopTeamsTable() {
     handleCopyTopTeamsTable,
     handleDownloadTopTeamsTable,
     formatNumberSpanish,
-    getVal,
   } = context;
 
-  // Map races to months
-  const raceMonths: Record<string, number> = {};
-  files.carreras.data?.forEach((r) => {
-    const carreraName = getVal(r, "Carrera")?.trim();
-    const fechaFin = getVal(r, "Fecha");
-    if (carreraName && fechaFin) {
-      const parts = fechaFin.toString().split(/[-/]/);
-      if (parts.length >= 2) {
-        const monthIndex = parseInt(parts[1]) - 1;
-        raceMonths[carreraName] = monthIndex;
-      }
-    }
-  });
+  const [localSearch, setLocalSearch] = React.useState(leaderboardTeamsSearch);
 
-  const teamStats = filteredLeaderboard.map((team, idx) => {
-    const filteredDetalles = team.detalles.filter((d) => {
-      if (
-        teamsMonthFilter !== "all" &&
-        raceMonths[d.carrera] !== parseInt(teamsMonthFilter)
-      ) {
-        return false;
-      }
-      return true;
-    });
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLeaderboardTeamsSearch(localSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, setLeaderboardTeamsSearch]);
 
-    const puntos = filteredDetalles.reduce(
-      (sum, d) => sum + d.puntosObtenidos,
-      0,
-    );
-    const uniqueRaces = new Set(filteredDetalles.map((d) => d.carrera));
-    const numCarreras = uniqueRaces.size;
+  const { sortedTeams, maxPoints, minPoints, maxWins, maxPartialWins } = useTopTeams(
+    teamsMonthFilter,
+    leaderboardTeamsSearch,
+    topTeamsSortColumn,
+    topTeamsSortDirection
+  );
 
-    let totalDays = 0;
-    uniqueRaces.forEach((raceName) => {
-      const raceData = files.carreras.data?.find(
-        (r) => getVal(r, "Carrera")?.trim() === raceName,
-      );
-      if (raceData) {
-        const diasStr = getVal(raceData, "Días");
-        totalDays += parseInt(diasStr) || 1;
-      } else {
-        totalDays += 1;
-      }
-    });
-
-    // Calculate wins for this team in the filtered period
-    let wins = 0;
-    Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
-      if (winnerTeam === team.nombreEquipo) {
-        if (
-          teamsMonthFilter === "all" ||
-          raceMonths[raceName] === parseInt(teamsMonthFilter)
-        ) {
-          wins++;
-        }
-      }
-    });
-
-    // Calculate partial wins for this team in the filtered period
-    let partialWins = 0;
-    Object.entries(globalTeamPartialWinsCount.byRace).forEach(
-      ([raceName, raceEvents]) => {
-        if (
-          teamsMonthFilter === "all" ||
-          raceMonths[raceName] === parseInt(teamsMonthFilter)
-        ) {
-          Object.values(raceEvents).forEach((winnerTeams) => {
-            if (winnerTeams.includes(team.nombreEquipo)) {
-              partialWins++;
-            }
-          });
-        }
-      },
-    );
-
-    const ppc =
-      numCarreras > 0 ? parseFloat((puntos / numCarreras).toFixed(1)) : 0;
-    const ppd =
-      totalDays > 0 ? parseFloat((puntos / totalDays).toFixed(1)) : 0;
-
-    return {
-      ...team,
-      puntos,
-      originalPos: idx + 1,
-      wins,
-      partialWins,
-      ppc,
-      ppd,
-      numCarreras,
-      totalDays,
-    };
-  });
-
-  // Sort and Filter logic
   const handleTeamsSort = (column: string) => {
     if (topTeamsSortColumn === column) {
       setTopTeamsSortDirection(
@@ -143,28 +61,6 @@ export function TopTeamsTable() {
     );
   };
 
-  const searchedTeams = teamStats.filter((t) =>
-    t.nombreEquipo
-      .toLowerCase()
-      .includes((leaderboardTeamsSearch || "").toLowerCase()),
-  );
-
-  const sortedTeams = [...searchedTeams].sort((a, b) => {
-    const aVal = a[topTeamsSortColumn as keyof typeof a] ?? 0;
-    const bVal = b[topTeamsSortColumn as keyof typeof b] ?? 0;
-
-    let res = 0;
-    if (typeof aVal === "number" && typeof bVal === "number") {
-      res = aVal - bVal;
-    } else {
-      res = String(aVal).localeCompare(String(bVal));
-    }
-    return topTeamsSortDirection === "asc" ? res : -res;
-  });
-
-  const maxPoints = Math.max(...sortedTeams.map((t) => t.puntos), 1);
-  const minPoints = Math.min(...sortedTeams.map((t) => t.puntos), 0);
-
   const getPuntosColor = (puntos: number) => {
     if (maxPoints === minPoints) return "#3b82f6";
     // Normalize points between 0 and 1
@@ -174,9 +70,6 @@ export function TopTeamsTable() {
     // Adjust lightness and saturation for good readability on white
     return `hsl(${hue}, 85%, 45%)`;
   };
-
-  const maxWins = Math.max(...sortedTeams.map((t) => t.wins));
-  const maxPartialWins = Math.max(...sortedTeams.map((t) => t.partialWins));
 
   return (
     <>
@@ -239,8 +132,8 @@ export function TopTeamsTable() {
               <input
                 type="text"
                 placeholder="Buscar equipo..."
-                value={leaderboardTeamsSearch}
-                onChange={(e) => setLeaderboardTeamsSearch(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-neutral-400 font-medium"
               />
             </div>
@@ -336,7 +229,7 @@ export function TopTeamsTable() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
             {sortedTeams.map((team, idx) => {
               const prevTeam = idx > 0 ? sortedTeams[idx - 1] : null;
               const pointsDiff = prevTeam
@@ -535,7 +428,7 @@ export function TopTeamsTable() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100">
+                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                   {sortedTeams.map((team, idx) => {
                     const draftOrder = team.orden ? parseInt(team.orden) : 0;
                     const posColor =

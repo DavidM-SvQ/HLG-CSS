@@ -1,10 +1,10 @@
-import React, { useContext, useMemo, useState, useRef } from "react";
+import React, { useContext, useState, useRef } from "react";
 import { SeasonViewContext } from "./SeasonViewContext";
-import { getVal } from "../../../lib/data-processing";
 import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
 import { domToBlob } from "modern-screenshot";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { copyImageToClipboard } from "../../../lib/clipboard";
+import { useHotStreaksTeams } from "../../../lib/hooks/useHotStreaks";
 
 export function HotStreakTeams() {
   const context = useContext(SeasonViewContext);
@@ -78,102 +78,17 @@ export function HotStreakTeams() {
     }
   };
 
-  const hotStreaksData = useMemo(() => {
-    if (!files.carreras?.data || !files.resultados?.data) return { teams: [], totalActiveWeeks: 0 };
+  const hotStreaksData = useHotStreaksTeams(
+    files, 
+    cyclistMetadata, 
+    playerTeamMap, 
+    playerOrderMap, 
+    hotStreakLastNWeeks, 
+    hotStreakMinPoints, 
+    hotStreakMaxPoints
+  );
 
-    const getISOWeekString = (date: Date) => {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-      const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
-      return `${d.getUTCFullYear()}-W${week.toString().padStart(2, '0')}`;
-    };
-
-    const raceWeeks: Record<string, string> = {};
-    const weeksWithResults = new Set<string>();
-
-    files.carreras.data.forEach((r: any) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const fechaFin = getVal(r, "Fecha");
-      if (carreraName && fechaFin) {
-        const parts = fechaFin.toString().split(/[-/]/);
-        let dateObj;
-        if (parts.length === 3) {
-          if (parts[0].length === 4) {
-            dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-          } else {
-            dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-          }
-          if (dateObj && !isNaN(dateObj.getTime())) {
-             raceWeeks[carreraName] = getISOWeekString(dateObj);
-          }
-        }
-      }
-    });
-
-    const cyclistToJugador: Record<string, string> = {};
-    if (files.elecciones?.data) {
-       files.elecciones.data.forEach((row: any) => {
-         const c = (row["Ciclista"] || "").toString().trim();
-         const j = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
-         if (c && j && j !== "No draft" && j !== "Libre") {
-           cyclistToJugador[c] = j;
-         }
-       });
-    }
-
-    const teamWeeklyPoints: Record<string, Record<string, number>> = {};
-    const teamToJugador: Record<string, string> = {};
-
-    Object.entries(cyclistMetadata || {}).forEach(([ciclista, meta]: [string, any]) => {
-      const jugador = cyclistToJugador[ciclista];
-      const team = jugador ? (playerTeamMap[jugador] || jugador) : null;
-      if (team) {
-         if (!teamWeeklyPoints[team]) teamWeeklyPoints[team] = {};
-         teamToJugador[team] = jugador;
-      }
-
-      if (meta.puntosPorCarrera && team) {
-        Object.entries(meta.puntosPorCarrera).forEach(([race, pts]) => {
-          const points = pts as number;
-          if (points > 0) {
-             const w = raceWeeks[race];
-             if (w) {
-               weeksWithResults.add(w);
-               teamWeeklyPoints[team][w] = (teamWeeklyPoints[team][w] || 0) + points;
-             }
-          }
-        });
-      }
-    });
-
-    const sortedActiveWeeks = Array.from(weeksWithResults).sort();
-    const recentWeeks = hotStreakLastNWeeks > 0 ? sortedActiveWeeks.slice(-hotStreakLastNWeeks) : sortedActiveWeeks;
-
-    const tStreaks = Object.entries(teamWeeklyPoints).map(([name, wMap]) => {
-      const order = playerOrderMap[teamToJugador[name]] || "?";
-      const pointsPerWeek = recentWeeks.map(w => wMap[w] || 0);
-      return {
-        name: `${name} [#${order}]`,
-        pointsInPeriod: pointsPerWeek.reduce((a, b) => a + b, 0),
-        pointsPerWeek
-      };
-    });
-
-    const minP = typeof hotStreakMinPoints === "number" ? hotStreakMinPoints : -Infinity;
-    const maxP = typeof hotStreakMaxPoints === "number" ? hotStreakMaxPoints : Infinity;
-
-    const filteredTeams = tStreaks.filter(x => x.pointsInPeriod >= minP && x.pointsInPeriod <= maxP);
-    filteredTeams.sort((a,b) => b.pointsInPeriod - a.pointsInPeriod);
-
-    return { 
-      teams: filteredTeams.slice(0, 20),
-      totalActiveWeeks: recentWeeks.length 
-    };
-  }, [files.carreras, files.resultados, files.elecciones, cyclistMetadata, playerTeamMap, hotStreakMinPoints, hotStreakMaxPoints, hotStreakLastNWeeks, playerOrderMap]);
-
-  if (!hotStreaksData || hotStreaksData.teams.length === 0) return null;
+  if (!hotStreaksData || hotStreaksData.items.length === 0) return null;
 
   return (
     <div className={cn("bg-white border border-neutral-200 rounded-2xl shadow-sm flex flex-col mt-6", isExpanded ? "fixed inset-4 z-50 overflow-hidden shadow-2xl" : "h-auto")} ref={chartRef}>
@@ -241,7 +156,7 @@ export function HotStreakTeams() {
       
       <div className={cn("p-6 flex-1 overflow-auto", isExpanded ? "h-0" : "")}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {hotStreaksData.teams.length > 0 ? hotStreaksData.teams.map((t, i) => (
+          {hotStreaksData.items.length > 0 ? hotStreaksData.items.map((t, i) => (
             <div key={i} className="flex flex-col bg-neutral-50 border border-neutral-100 p-2.5 rounded-xl gap-2">
               <div className="flex items-start gap-2">
                 <span className="font-black text-rose-500 bg-rose-50 w-6 h-6 flex items-center justify-center rounded-full text-[10px] shrink-0 mt-0.5">{i+1}</span>

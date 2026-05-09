@@ -1247,7 +1247,7 @@ export function SeasonWinsTab() {
                                           </th>
                                         </tr>
                                       </thead>
-                                      <tbody className="divide-y divide-neutral-100">
+                                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                         {(() => {
                                           if (filteredRaces.length === 0) {
                                             return (
@@ -1374,7 +1374,7 @@ export function SeasonWinsTab() {
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {(() => {
                                         const historyData = [];
                                         Object.entries(raceWinners).forEach(

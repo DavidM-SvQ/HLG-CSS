@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, BarChart, Bar, Legend } from 'recharts';
 import { getVal } from '../../lib/data-processing';
+import { GhostDraftView } from './tests/GhostDraftView';
 
 interface TestsViewProps {
   cyclistMetadata: Record<string, { puntosTotales: number; carrerasDisputadas: number; diasCompeticion: number; victorias: number; pais: string; equipoBreve: string; puntosPorCarrera?: Record<string, number> }>;
@@ -312,6 +313,13 @@ export function TestsView({ cyclistMetadata, playerOrderMap, playerTeamMap, cycl
 
   return (
     <div className="space-y-6">
+      <GhostDraftView 
+        files={files} 
+        cyclistMetadata={cyclistMetadata} 
+        playerTeamMap={playerTeamMap} 
+        playerOrderMap={playerOrderMap} 
+      />
+
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
          <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50">
             <h2 className="text-lg font-semibold text-neutral-900">

@@ -1340,7 +1340,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                 <ExportToolbar targetRef={ref1} filename="top-equipos" />
               </div>
               <div className="overflow-x-auto flex justify-center bg-neutral-50/20 pb-8 relative mt-2 text-sm">
-                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[600px] text-sm text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                   <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                     <tr>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100">Pos</th>
@@ -1350,7 +1350,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                       <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold  border-b border-neutral-100 text-right">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                     {(() => {
                       const maxWins = monthReportData.topTeams.length > 0 ? Math.max(...monthReportData.topTeams.map(t => t.wins)) : 0;
                       const minWins = monthReportData.topTeams.length > 0 ? Math.min(...monthReportData.topTeams.map(t => t.wins)) : 0;
@@ -1395,7 +1395,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                 <ExportToolbar targetRef={ref13} filename="puntos-meses" />
               </div>
               <div className="overflow-x-auto bg-neutral-50/20 pb-8 relative mt-2 text-sm w-full min-w-0">
-                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[800px] text-sm text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+                <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[800px] text-sm text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                   <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
                     <tr>
                       <th className="sticky top-0 z-30 bg-neutral-50 px-2 py-1.5 font-semibold  border-b border-neutral-100">Pos</th>
@@ -1409,7 +1409,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                       <th className="sticky top-0 z-30 bg-neutral-100 px-2 py-1.5 font-bold  border-b border-neutral-200 text-center w-24">Meses ganados</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                     {(() => {
                       const maxs: Record<number, number> = {};
                       const mins: Record<number, number> = {};
@@ -1562,7 +1562,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                       <th className="px-6 py-3 font-semibold  text-right">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100 bg-white">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                     {monthReportData.raceWinners.map((r, idx) => {
                       let isHiddenVisual = false;
                       if (isHistoryCopying) {
@@ -1620,7 +1620,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
               <ExportToolbar targetRef={ref3} filename="top-ciclistas" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     {['pos', 'nombre', 'equipo', 'pais', 'victorias', 'carreras', 'dias', 'ppc', 'ppd', 'puntos'].map((col) => {
@@ -1649,7 +1649,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                     })}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 bg-white">
+                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                   {sortedStats.map((s) => {
                     const { name, data, numCarreras, ppc, ppd, originalPos } = s;
                     return (
@@ -1707,7 +1707,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
               <ExportToolbar targetRef={ref4} filename="top-ciclistas-no-draft" />
             </div>
             <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-100 rounded-lg">
+              <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                 <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                   <tr className="divide-x divide-neutral-100">
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">Pos</th>
@@ -1717,7 +1717,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                     <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-right">Puntos</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100 bg-white">
+                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                   {monthReportData.topNoDraftCyclists.map((s) => (
                     <tr key={s.cyclist} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
                       <td className="px-3 py-1 text-center font-bold text-neutral-400">
@@ -1770,7 +1770,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white">
+              <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
                 {monthReportData.allTeams.map((team) => {
                   let teamTotal = 0;
                   return (
@@ -2362,7 +2362,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                                       : "h-[800px]",
                                   )}
                                 >
-                                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="min-w-full text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -2534,7 +2534,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {(() => {
                                         // Get all cyclists from elecciones
                                         const unscored = files.elecciones.data
@@ -3136,7 +3136,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                                       : "max-h-[750px]",
                                   )}
                                 >
-                                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="min-w-full text-xs text-left bg-white border-separate border-spacing-0 shadow-sm border border-neutral-200 rounded-lg">
+                                  <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container"><table className="min-w-full text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -3240,7 +3240,7 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {(() => {
                                         // Get all cyclists from elecciones
                                         const undebuted = files.elecciones.data

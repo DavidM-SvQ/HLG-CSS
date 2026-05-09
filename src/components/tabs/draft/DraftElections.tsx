@@ -1,9 +1,10 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
 import { ExportToolbar } from '../../ui/ExportToolbar';
+import { useDebounce } from '../../../lib/hooks/useDebounce';
 
 export interface DraftElectionsProps {
   files: any;
@@ -31,6 +32,20 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   draftComputedData,
 }) => {
   const [draftSearchTerm, setDraftSearchTerm] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
+  
+  useEffect(() => {
+    setLocalSearch(draftSearchTerm);
+  }, [draftSearchTerm]);
+  
+  const debouncedSearch = useDebounce(localSearch, 300);
+  
+  useEffect(() => {
+    if (debouncedSearch !== draftSearchTerm) {
+      setDraftSearchTerm(debouncedSearch);
+    }
+  }, [debouncedSearch, draftSearchTerm]);
+
   const [draftRoundFilter, setDraftRoundFilter] = useState<string[]>([]);
   const [draftTeamFilter, setDraftTeamFilter] = useState<string[]>([]);
   const [isDraftRoundFilterOpen, setIsDraftRoundFilterOpen] = useState(false);
@@ -144,8 +159,8 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
               <input
                 type="text"
                 placeholder="Buscar ciclista..."
-                value={draftSearchTerm}
-                onChange={(e) => setDraftSearchTerm(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
@@ -374,7 +389,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                 {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={15} /></tr>}
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const row = draftSortedData[virtualRow.index]; const idx = virtualRow.index;
@@ -386,13 +401,13 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                   return (
                     <tr key={idx} className="draft-row hover:bg-neutral-50 transition-colors h-6">
                       <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
-                      <td className="px-1 py-0.5 text-left truncate max-w-[100px] sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
+                      <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
                       <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
                       <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
                       <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px] sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{ciclista}</td>
                       <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
                       <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
-                      <td className="px-1 py-0.5 text-center text-neutral-500 truncate max-w-[80px]">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
+                      <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
                       <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
                       <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
                       <td className={cn("px-1 py-0.5 text-center font-mono", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>

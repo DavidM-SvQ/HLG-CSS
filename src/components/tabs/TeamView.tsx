@@ -1081,7 +1081,7 @@ export const TeamView = (props: TeamViewProps) => {
                                     </th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-neutral-100">
+                                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                   {cyclistStats.map((c, idx) => (
                                     <tr
                                       key={idx}

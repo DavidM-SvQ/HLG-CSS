@@ -1,8 +1,12 @@
 import { copyImageToClipboard, copyTextToClipboard } from "./lib/clipboard";
 import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import Papa from "papaparse";
 import localforage from "localforage";
+import { useDataStore } from "./lib/stores/useDataStore";
+import { useComputedStore } from "./lib/stores/useComputedStore";
+import { useAppComputations } from "./lib/hooks/useAppComputations";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import {
   UploadCloud,
@@ -581,15 +585,22 @@ export default function App() {
   const [racesCategoryFilter, setRacesCategoryFilter] = useState<string>("");
   const [racesMonthFilter, setRacesMonthFilter] = useState<string>("");
   const [infoCarrerasSortDir, setInfoCarrerasSortDir] = useState<"asc" | "desc">("asc");
-  const [files, setFiles] = useState<AppState>({
-    carreras: { file: null, data: null, error: null, loading: true },
-    ciclistas: { file: null, data: null, error: null, loading: true },
-    elecciones: { file: null, data: null, error: null, loading: true },
-    equipos: { file: null, data: null, error: null, loading: true },
-    puntos: { file: null, data: null, error: null, loading: true },
-    resultados: { file: null, data: null, error: null, loading: true },
-    startlist: { file: null, data: null, error: null, loading: true },
-  });
+  const { files, setFiles } = useDataStore();
+  const { 
+    leaderboard, 
+    raceWinners, 
+    globalTeamWinsCount, 
+    globalTeamPartialWinsCount, 
+    uniqueRaces,
+    cyclistMetadata,
+    playerOrderMap,
+    playerByCyclist,
+    playerTeamMap,
+    teamToPlayerMap,
+    cyclistRoundMap 
+  } = useComputedStore();
+
+  useAppComputations();
 
   useEffect(() => {
     if (view === "admin") return;
@@ -653,7 +664,6 @@ export default function App() {
     else setView("public");
   }, [isAdmin]);
 
-  const [leaderboard, setLeaderboard] = useState<PlayerScore[] | null>(null);
   const [startlistText, setStartlistText] = useState("");
   const [startlistRace, setStartlistRace] = useState("");
   const [parsedStartlist, setParsedStartlist] = useState<{
@@ -662,37 +672,6 @@ export default function App() {
     updatedAt?: string;
   } | null>(null);
   const [isSavingStartlist, setIsSavingStartlist] = useState(false);
-
-  const [cyclistMetadata, setCyclistMetadata] = useState<
-    Record<
-      string,
-      {
-        edad: string;
-        pais: string;
-        equipoBreve: string;
-        ronda: string;
-        carrerasDisputadas: number;
-        diasCompeticion: number;
-        puntosTotales?: number;
-        puntosPorCarrera?: Record<string, number>;
-      }
-    >
-  >({});
-  const [playerOrderMap, setPlayerOrderMap] = useState<Record<string, string>>(
-    {},
-  );
-  const [playerByCyclist, setPlayerByCyclist] = useState<
-    Record<string, string>
-  >({});
-  const [playerTeamMap, setPlayerTeamMap] = useState<Record<string, string>>(
-    {},
-  );
-  const [teamToPlayerMap, setTeamToPlayerMap] = useState<
-    Record<string, string>
-  >({});
-  const [cyclistRoundMap, setCyclistRoundMap] = useState<
-    Record<string, string>
-  >({});
 
   const essentialFiles = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados"];
   const allFilesUploaded = essentialFiles.every(
@@ -776,20 +755,7 @@ export default function App() {
     }
   };
 
-  // Automatically calculate points when all files are ready
-  useEffect(() => {
-    if (allFilesUploaded) {
-      calculatePoints();
-    }
-  }, [
-    files.carreras.data,
-    files.puntos.data,
-    files.elecciones.data,
-    files.resultados.data,
-    files.equipos.data,
-    files.ciclistas.data,
-    allFilesUploaded,
-  ]);
+  // Removed the useEffect for calculatePoints as it is now handled by useAppComputations
 
   // Supabase sync for global files
   useEffect(() => {
@@ -1247,294 +1213,7 @@ export default function App() {
   };
 
 
-  const calculatePoints = () => {
-    if (!allFilesUploaded) return;
-
-    const { carreras, puntos, elecciones, resultados } = files;
-
-    // 1. Build lookup dictionaries
-    const playerByCyclist: Record<string, string> = {};
-    const playerOrderMap: Record<string, string> = {};
-    const cyclistRoundMap: Record<string, string> = {};
-    const playerTeamMap: Record<string, string> = {};
-    const teamToPlayerMap: Record<string, string> = {};
-    const cyclistMetadata: Record<
-      string,
-      {
-        edad: string;
-        nacido: string;
-        pais: string;
-        paisLetras: string;
-        equipoBreve: string;
-        ronda: string;
-        eleccion: number;
-        carrerasDisputadas: number;
-        diasCompeticion: number;
-        victorias: number;
-        puntosTotales?: number;
-        puntosPorCarrera?: Record<string, number>;
-      }
-    > = {};
-
-    const uniquePlayers = [
-      ...new Set(
-        elecciones
-          .data!.map((r) => getVal(r, "Nombre_TG")?.trim())
-          .filter(Boolean),
-      ),
-    ] as string[];
-    const numPlayers = uniquePlayers.length;
-
-    // Build team/cyclist info
-    const fullToBreve: Record<string, string> = {};
-    files.equipos.data?.forEach((row) => {
-      const full = getVal(row, "EQUIPO COMPLETO")
-        ?.toString()
-        .trim()
-        .toLowerCase();
-      const breve = getVal(row, "EQUIPO BREVE")?.toString().trim();
-      if (full && breve) fullToBreve[full] = breve;
-    });
-
-    const cyclistToInfo: Record<string, { pais: string; equipoBreve: string; nacido: string; paisLetras: string }> =
-      {};
-    files.ciclistas.data?.forEach((row) => {
-      const ciclista = getVal(row, "Ciclista")?.toString().trim();
-      const pais = getVal(row, "Pais")?.toString().trim();
-      const full = getVal(row, "Equipo")?.toString().trim().toLowerCase();
-      if (ciclista) {
-        cyclistToInfo[ciclista] = {
-          pais: pais || "",
-          paisLetras: pais || "",
-          equipoBreve: (full && fullToBreve[full]) || "",
-          nacido: "",
-        };
-      }
-    });
-
-    files.resultados.data?.forEach((row) => {
-      const ciclista = getVal(row, "Ciclista")?.toString().trim();
-      const full = getVal(row, "Equipo")?.toString().trim().toLowerCase();
-      const nacido = getVal(row, "Nacido")?.toString().trim();
-      const pais = getVal(row, "País")?.toString().trim();
-      if (ciclista) {
-        if (!cyclistToInfo[ciclista])
-          cyclistToInfo[ciclista] = { pais: "", equipoBreve: "", nacido: "", paisLetras: "" };
-        if (full && fullToBreve[full]) {
-          cyclistToInfo[ciclista].equipoBreve = fullToBreve[full];
-        }
-        if (nacido) {
-          cyclistToInfo[ciclista].nacido = nacido;
-        }
-        if (pais) {
-          cyclistToInfo[ciclista].pais = pais;
-          cyclistToInfo[ciclista].paisLetras = pais;
-        }
-      }
-    });
-
-    // Pre-calculate cyclist stats from resultados
-    const cyclistStats: Record<
-      string,
-      { carreras: Set<string>; dias: number; victorias: number }
-    > = {};
-    resultados.data?.forEach((row) => {
-      const ciclista = getVal(row, "Ciclista")?.trim();
-      const carrera = getVal(row, "Carrera")?.trim();
-      const etapa = getVal(row, "Etapa")?.toString().trim();
-      const posicion = getVal(row, "Posición")?.toString().trim() || getVal(row, "Pos")?.toString().trim();
-
-      if (ciclista && carrera) {
-        if (!cyclistStats[ciclista]) {
-          cyclistStats[ciclista] = { carreras: new Set(), dias: 0, victorias: 0 };
-        }
-        cyclistStats[ciclista].carreras.add(carrera);
-
-        // Días: count all except Etapa = CP or CM
-        if (etapa !== "CP" && etapa !== "CM") {
-          cyclistStats[ciclista].dias += 1;
-        }
-
-        // Victorias: if pos == "1"
-        if (posicion === "1") {
-          cyclistStats[ciclista].victorias += 1;
-        }
-      }
-    });
-
-    // Populate metadata for ALL cyclists first
-    files.ciclistas.data?.forEach((row) => {
-      const ciclista = getVal(row, "Ciclista")?.toString().trim();
-      if (ciclista) {
-        cyclistMetadata[ciclista] = {
-          edad: "",
-          nacido: cyclistToInfo[ciclista]?.nacido || "",
-          pais: getFlagEmoji(cyclistToInfo[ciclista]?.pais || ""),
-          paisLetras: cyclistToInfo[ciclista]?.paisLetras || "",
-          equipoBreve: cyclistToInfo[ciclista]?.equipoBreve || "",
-          ronda: "",
-          eleccion: 0,
-          carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
-          diasCompeticion: cyclistStats[ciclista]?.dias || 0,
-          victorias: cyclistStats[ciclista]?.victorias || 0,
-        };
-      }
-    });
-
-    elecciones.data!.forEach((row, idx) => {
-      const ciclista = getVal(row, "Ciclista")?.trim();
-      const jugador = getVal(row, "Nombre_TG")?.trim();
-      const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim();
-      const edad = getVal(row, "Edad")?.toString().trim();
-      const paisElecciones = getVal(row, "País")?.trim();
-
-      if (ciclista && jugador) {
-        const playerIdx = uniquePlayers.indexOf(jugador);
-        playerOrderMap[jugador] = (playerIdx + 1).toString().padStart(2, "0");
-
-        if (nombreEquipo) {
-          playerTeamMap[jugador] = nombreEquipo;
-          teamToPlayerMap[nombreEquipo] = jugador;
-        }
-
-        let ronda = getVal(row, "Ronda")?.toString().trim();
-        if (!ronda && numPlayers > 0) {
-          ronda = (Math.floor(idx / numPlayers) + 1)
-            .toString()
-            .padStart(2, "0");
-        } else if (ronda) {
-          ronda = ronda.padStart(2, "0");
-        }
-
-        playerByCyclist[ciclista] = jugador;
-        cyclistRoundMap[ciclista] = ronda || "";
-
-        cyclistMetadata[ciclista] = {
-          edad: edad || "",
-          nacido: cyclistToInfo[ciclista]?.nacido || "",
-          pais: getFlagEmoji(
-            paisElecciones || cyclistToInfo[ciclista]?.pais || "",
-          ),
-          paisLetras: paisElecciones || cyclistToInfo[ciclista]?.paisLetras || "",
-          equipoBreve: cyclistToInfo[ciclista]?.equipoBreve || "",
-          ronda: ronda || "",
-          eleccion: idx + 1,
-          carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
-          diasCompeticion: cyclistStats[ciclista]?.dias || 0,
-          victorias: cyclistStats[ciclista]?.victorias || 0,
-        };
-      }
-    });
-
-    setPlayerOrderMap(playerOrderMap);
-    setPlayerByCyclist(playerByCyclist);
-    setPlayerTeamMap(playerTeamMap);
-    setTeamToPlayerMap(teamToPlayerMap);
-    setCyclistRoundMap(cyclistRoundMap);
-
-    const raceTypeByName: Record<string, string> = {};
-    const raceDateByName: Record<string, string> = {};
-    carreras.data!.forEach((row) => {
-      const carrera = getVal(row, "Carrera")?.trim();
-      const categoria = getVal(row, "Categoría")?.trim();
-      const fecha = getVal(row, "Fecha")?.trim();
-      if (carrera && categoria) {
-        raceTypeByName[carrera] = categoria;
-      }
-      if (carrera && fecha) {
-        raceDateByName[carrera] = fecha;
-      }
-    });
-
-    const pointsLookup: Record<string, number> = {};
-    puntos.data!.forEach((row) => {
-      const categoria = getVal(row, "Categoría")?.trim();
-      const tipo = getVal(row, "Tipo")?.trim();
-      const posicion = getVal(row, "Posición")?.toString().trim();
-      const pts = getVal(row, "Puntos");
-
-      if (categoria && tipo && posicion && pts !== undefined) {
-        const key = `${categoria}_${tipo}_${posicion}`;
-        pointsLookup[key] = Number(pts);
-      }
-    });
-
-    // 2. Calculate scores
-    const scoresMap: Record<string, PlayerScore> = {};
-    const cyclistPointsTotals: Record<string, number> = {};
-    const cyclistPointsByRace: Record<string, Record<string, number>> = {};
-
-    resultados.data!.forEach((row) => {
-      const ciclista = getVal(row, "Ciclista")?.trim();
-      const carrera = getVal(row, "Carrera")?.trim();
-      const tipoResultado = getVal(row, "Tipo")?.trim();
-      const etapa = getVal(row, "Etapa")?.toString().trim();
-      const posicion = getVal(row, "Pos")?.toString().trim() || "";
-
-      if (!ciclista || !carrera || !tipoResultado) return;
-
-      const jugador = playerByCyclist[ciclista] || "No draft";
-
-      const tipoCarrera = raceTypeByName[carrera];
-      if (!tipoCarrera) return;
-
-      const pointsKey = `${tipoCarrera}_${tipoResultado}_${posicion}`;
-      const puntosObtenidos = pointsLookup[pointsKey] || 0;
-
-      // Accumulate for metadata
-      if (!cyclistPointsTotals[ciclista]) cyclistPointsTotals[ciclista] = 0;
-      cyclistPointsTotals[ciclista] += puntosObtenidos;
-
-      if (!cyclistPointsByRace[ciclista]) cyclistPointsByRace[ciclista] = {};
-      if (!cyclistPointsByRace[ciclista][carrera])
-        cyclistPointsByRace[ciclista][carrera] = 0;
-      cyclistPointsByRace[ciclista][carrera] += puntosObtenidos;
-
-      if (!scoresMap[jugador]) {
-        scoresMap[jugador] = {
-          jugador,
-          nombreEquipo:
-            jugador === "No draft"
-              ? "No draft"
-              : playerTeamMap[jugador] || jugador,
-          orden: jugador === "No draft" ? "99" : playerOrderMap[jugador] || "",
-          puntos: 0,
-          detalles: [],
-        };
-      }
-
-      scoresMap[jugador].puntos += puntosObtenidos;
-
-      scoresMap[jugador].detalles.push({
-        ciclista,
-        ronda: cyclistRoundMap[ciclista] || "",
-        carrera,
-        tipoResultado,
-        etapa,
-        posicion,
-        puntosObtenidos,
-        fecha: raceDateByName[carrera],
-      });
-    });
-
-    const sortedLeaderboard = Object.values(scoresMap).sort(
-      (a, b) => b.puntos - a.puntos,
-    );
-    sortedLeaderboard.forEach((player) => {
-      player.detalles.sort((a, b) => b.puntosObtenidos - a.puntosObtenidos);
-    });
-
-    // Update metadata with calculated points
-    Object.keys(cyclistMetadata).forEach((ciclista) => {
-      cyclistMetadata[ciclista].puntosTotales =
-        cyclistPointsTotals[ciclista] || 0;
-      cyclistMetadata[ciclista].puntosPorCarrera =
-        cyclistPointsByRace[ciclista] || {};
-    });
-
-    setCyclistMetadata({ ...cyclistMetadata });
-    setLeaderboard(sortedLeaderboard);
-  };
+  
 
   const lastUpdatedDates = (Object.values(files) as FileState[])
     .map((f) => (f.updatedAt ? new Date(f.updatedAt).getTime() : 0))
@@ -1631,167 +1310,6 @@ export default function App() {
     };
     return flags[country] || countryName;
   };
-
-  const uniqueRaces = React.useMemo(() => {
-    if (!files.resultados.data || !files.carreras.data) return [];
-    const races = [
-      ...new Set(files.resultados.data.map((r) => getVal(r, "Carrera"))),
-    ].filter(Boolean) as string[];
-
-    const raceDates: Record<string, number> = {};
-    files.carreras?.data?.forEach((r) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const fechaFin = getVal(r, "Fecha");
-      if (carreraName && fechaFin) {
-        const parts = fechaFin.toString().split(/[-/]/);
-        if (parts.length === 3) {
-          let date;
-          if (parts[0].length === 4) {
-            date = new Date(
-              parseInt(parts[0]),
-              parseInt(parts[1]) - 1,
-              parseInt(parts[2]),
-            );
-          } else {
-            date = new Date(
-              parseInt(parts[2]),
-              parseInt(parts[1]) - 1,
-              parseInt(parts[0]),
-            );
-          }
-          raceDates[carreraName] = date.getTime();
-        }
-      }
-    });
-
-    return races.sort((a, b) => {
-      const dateA = raceDates[a] || 0;
-      const dateB = raceDates[b] || 0;
-      return dateB - dateA;
-    });
-  }, [files.resultados.data, files.carreras.data]);
-
-  const raceWinners = React.useMemo(() => {
-    if (!leaderboard || !files.carreras.data || !files.resultados.data)
-      return {};
-    const winners: Record<string, string> = {};
-    const races = files.carreras.data
-      .map((r) => getVal(r, "Carrera"))
-      .filter(Boolean) as string[];
-
-    races.forEach((race) => {
-      // Check if race has a final classification
-      const hasFinalClassification = files.resultados.data?.some(
-        (r) =>
-          getVal(r, "Carrera") === race &&
-          getVal(r, "Tipo")?.match(/Clasificación final/i),
-      );
-
-      if (!hasFinalClassification) return;
-
-      let maxPoints = 0;
-      let winnerTeam = "";
-      leaderboard?.forEach((player) => {
-        if (
-          player.nombreEquipo === "No draft" ||
-          player.nombreEquipo === "No draft [99]"
-        )
-          return;
-        const pts = player.detalles
-          .filter((d) => d.carrera === race)
-          .reduce((sum, d) => sum + d.puntosObtenidos, 0);
-        if (pts > maxPoints) {
-          maxPoints = pts;
-          winnerTeam = player.nombreEquipo;
-        }
-      });
-      if (winnerTeam) winners[race] = winnerTeam;
-    });
-    return winners;
-  }, [leaderboard, files.carreras.data, files.resultados.data]);
-
-  const globalTeamWinsCount = React.useMemo(() => {
-    if (!leaderboard) return {};
-    const teamWinsCount: Record<string, number> = {};
-    leaderboard?.forEach((p) => {
-      if (p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]") {
-        teamWinsCount[p.nombreEquipo] = 0;
-      }
-    });
-
-    Object.values(raceWinners).forEach((teamName) => {
-      const name = teamName as string;
-      if (teamWinsCount[name] !== undefined) {
-        teamWinsCount[name]++;
-      }
-    });
-    return teamWinsCount;
-  }, [leaderboard, raceWinners]);
-
-  const globalTeamPartialWinsCount = React.useMemo(() => {
-    if (!leaderboard || !files.carreras.data || !files.resultados.data)
-      return { totals: {}, byRace: {} };
-    const partialWins: Record<string, number> = {};
-    const byRace: Record<string, Record<string, string[]>> = {};
-    const eventPoints: Record<
-      string,
-      Record<string, Record<string, number>>
-    > = {};
-
-    const validTypes = [
-      "Etapa",
-      "Etapa (Crono equipos)",
-      "Clasificación final",
-      "Clasificación final (Crono equipos)",
-    ];
-
-    leaderboard?.forEach((player) => {
-      if (
-        player.nombreEquipo === "No draft" ||
-        player.nombreEquipo === "No draft [99]"
-      )
-        return;
-
-      partialWins[player.nombreEquipo] = 0;
-
-      player?.detalles?.forEach((d) => {
-        if (!validTypes.includes(d.tipoResultado || "")) return;
-
-        const raceName = d.carrera || "";
-        const eventKey = `${d.tipoResultado}_${d.etapa || ""}`;
-        if (!eventPoints[raceName]) eventPoints[raceName] = {};
-        if (!eventPoints[raceName][eventKey])
-          eventPoints[raceName][eventKey] = {};
-        if (!eventPoints[raceName][eventKey][player.nombreEquipo])
-          eventPoints[raceName][eventKey][player.nombreEquipo] = 0;
-
-        eventPoints[raceName][eventKey][player.nombreEquipo] +=
-          d.puntosObtenidos;
-      });
-    });
-
-    Object.entries(eventPoints).forEach(([raceName, raceEvents]) => {
-      byRace[raceName] = {};
-      Object.entries(raceEvents).forEach(([eventKey, teamPts]) => {
-        let maxPts = 0;
-        let winnerTeams: string[] = [];
-        Object.entries(teamPts).forEach(([team, pts]) => {
-          if (pts > maxPts) {
-            maxPts = pts;
-            winnerTeams = [team];
-          } else if (pts === maxPts && pts > 0) {
-            winnerTeams.push(team);
-          }
-        });
-        byRace[raceName][eventKey] = winnerTeams;
-        winnerTeams.forEach((team) => {
-          if (partialWins[team] !== undefined) partialWins[team]++;
-        });
-      });
-    });
-
-    return { totals: partialWins, byRace };
-  }, [leaderboard, files.carreras.data, files.resultados.data]);
 
   const memoizedPointsData = React.useMemo(() => {
     let filteredPoints = files.puntos.data || [];
@@ -2285,20 +1803,6 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       },
                     )}
                   </div>
-
-                  <button
-                    onClick={calculatePoints}
-                    disabled={!allFilesUploaded}
-                    className={cn(
-                      "w-full py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
-                      allFilesUploaded
-                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow"
-                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed",
-                    )}
-                  >
-                    <Trophy className="w-5 h-5" />
-                    Recalcular Puntuaciones
-                  </button>
                 </div>
 
                 {/* Main Content: Leaderboard */}
@@ -2824,32 +2328,42 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
             {/* Tab Content */}
             <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pestaña...</div>}>
-              {publicTab === "season" && <SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />}
-              {publicTab === "race" && <RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
-              {publicTab === "team" && <TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />}
-              {publicTab === "startlist" && (
-                <StartlistView
-                  files={files}
-                  publicStartlistRace={publicStartlistRace}
-                  setPublicStartlistRace={setPublicStartlistRace}
-                  cyclistMetadata={cyclistMetadata}
-                  cyclistRoundMap={cyclistRoundMap}
-                  playerTeamMap={playerTeamMap}
-                  playerOrderMap={playerOrderMap}
-                />
-              )}
-              {publicTab === "draft" && (
-                <DraftView
-                  files={files}
-                  cyclistMetadata={cyclistMetadata}
-                  playerTeamMap={playerTeamMap}
-                  leaderboard={leaderboard}
-                  getFlagEmoji={getFlagEmoji}
-                  teamToPlayerMap={teamToPlayerMap}
-                  playerOrderMap={playerOrderMap}
-                />
-              )}
-              {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} memoizedPointsData={memoizedPointsData} memoizedRacesData={memoizedRacesData} raceWinners={raceWinners} />}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={publicTab}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {publicTab === "season" && <SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />}
+                  {publicTab === "race" && <RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
+                  {publicTab === "team" && <TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />}
+                  {publicTab === "startlist" && (
+                    <StartlistView
+                      files={files}
+                      publicStartlistRace={publicStartlistRace}
+                      setPublicStartlistRace={setPublicStartlistRace}
+                      cyclistMetadata={cyclistMetadata}
+                      cyclistRoundMap={cyclistRoundMap}
+                      playerTeamMap={playerTeamMap}
+                      playerOrderMap={playerOrderMap}
+                    />
+                  )}
+                  {publicTab === "draft" && (
+                    <DraftView
+                      files={files}
+                      cyclistMetadata={cyclistMetadata}
+                      playerTeamMap={playerTeamMap}
+                      leaderboard={leaderboard}
+                      getFlagEmoji={getFlagEmoji}
+                      teamToPlayerMap={teamToPlayerMap}
+                      playerOrderMap={playerOrderMap}
+                    />
+                  )}
+                  {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} memoizedPointsData={memoizedPointsData} memoizedRacesData={memoizedRacesData} raceWinners={raceWinners} />}
+                </motion.div>
+              </AnimatePresence>
             </Suspense>
           </div>
         )}

@@ -751,7 +751,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                     </th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-neutral-100">
+                                <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                   {sortedTeams.map((team) => {
                                     let teamTotal = 0;
                                     const teamOrder = teamOrderMap[team] || "?";
@@ -1612,7 +1612,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                         </th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-neutral-100">
+                                    <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                                       {sortedSummaries.map((summary, idx) => {
                                         const jugador =
                                           teamToPlayerMap[summary.team] ||
@@ -1677,7 +1677,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                                 {idx + 1}
                                               </div>
                                               <span
-                                                className="truncate max-w-[140px]"
+                                                className="min-w-0"
                                                 title={summary.team}
                                               >
                                                 {teamFormatted}

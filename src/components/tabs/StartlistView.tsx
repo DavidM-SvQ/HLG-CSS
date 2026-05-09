@@ -671,7 +671,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-100">
+                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                         {filteredRows.length === 0 ? (
                           <tr>
                             <td colSpan={9} className="py-12 border-none">
@@ -840,7 +840,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-100">
+                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                       {teamRows.length === 0 ? (
                         <tr>
                           <td colSpan={4} className="py-8 text-center text-neutral-500 font-medium italic bg-neutral-50/50">
@@ -963,7 +963,7 @@ export const StartlistView: React.FC<StartlistViewProps> = ({
                       <th className="px-4 py-3 font-semibold text-right w-1/4">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                     {racePoints.map((p: any, idx: number) => {
                       const page = pointsPagination.pages[idx];
                       let isHiddenVisual = false;
