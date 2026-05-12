@@ -3,20 +3,27 @@ import { Maximize2, Copy, CheckCircle2, UploadCloud, BarChart3, X } from "lucide
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 
+import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+
 export function GeneralClassificationChart() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
   const {
     cn,
     filteredLeaderboard,
-    teamWinsCount,
-    isChartExpanded,
-    setIsChartExpanded,
-    isCopying,
-    chartRef,
-    handleCopyChart,
-    handleDownloadChart
+    teamWinsCount
   } = context;
+
+  const [isChartExpanded, setIsChartExpanded] = React.useState(false);
+  const [isCopying, setIsCopying] = React.useState(false);
+  const chartRef = React.useRef<HTMLDivElement>(null);
+
+  const handleCopyChart = async () => {
+    performImageCopy(chartRef, setIsCopying, true, "generalClassificationChart");
+  };
+  const handleDownloadChart = async () => {
+    performImageDownload(chartRef, "clasificacion-general.png", "generalClassificationChart");
+  };
 
   const chartData = filteredLeaderboard.map((p, idx) => {
     const draftOrder = p.orden ? parseInt(p.orden) : 0;

@@ -1408,13 +1408,13 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                     <tr key={idx} className="border-b last:border-0">
                       <td
                         className="py-2.5 font-bold truncate max-w-[120px]"
-                        title={t.team}
+                        title={t.team?.toString()}
                       >
                         {t.team}
                       </td>
                       <td className="py-2.5 text-green-700 truncate max-w-[150px]">
                         {t.best ? (
-                          <span title={t.best[0]} className="flex items-center gap-1">
+                          <span title={t.best[0]?.toString()} className="flex items-center gap-1">
                             <span className="truncate">{t.best[0]}</span>
                             <span className="shrink-0 bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold">
                               {t.best[1]}
@@ -1426,7 +1426,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                       </td>
                       <td className="py-2.5 text-red-600 truncate max-w-[150px]">
                         {t.worst ? (
-                          <span title={t.worst[0]} className="flex items-center gap-1">
+                          <span title={t.worst[0]?.toString()} className="flex items-center gap-1">
                             <span className="truncate">{t.worst[0]}</span>
                             <span className="shrink-0 bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold">
                               {t.worst[1]}

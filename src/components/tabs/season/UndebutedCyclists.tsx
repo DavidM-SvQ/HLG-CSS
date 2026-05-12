@@ -5,15 +5,36 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContain
 import { SeasonViewContext } from "./SeasonViewContext";
 
 
+import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+
 export function UndebutedCyclists() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
-  const topCyclistsDraftRefContainer = useRef<HTMLDivElement>(null);
-  const unscoredRefContainer = useRef<HTMLDivElement>(null);
-  const undebutedRefContainer = useRef<HTMLDivElement>(null);
-  const noDraftRefContainer = useRef<HTMLDivElement>(null);
+  const { cn, files, playerTeamMap, playerByCyclist, leaderboard, cyclistMetadata, cyclistRoundMap, playerOrderMap, getVal } = context;
 
-  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
+  const [undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter] = React.useState<string>("all");
+  const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = React.useState<string[]>([]);
+  const [isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen] = React.useState<boolean>(false);
+  const [undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn] = React.useState<string>("pos");
+  const [undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection] = React.useState<"asc"|"desc">("asc");
+  const [isUndebutedExpanded, setIsUndebutedExpanded] = React.useState(false);
+  
+  const [isUndebutedCopying, setIsUndebutedCopying] = React.useState<string | boolean>(false);
+  const [isUndebutedTextCopying, setIsUndebutedTextCopying] = React.useState<boolean>(false);
+  
+  const undebutedRef = useRef<HTMLDivElement>(null);
+  const undebutedRefContainer = useRef<HTMLDivElement>(null);
+  const undebutedTableRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyUndebuted = async (mode?: string) => {
+    performImageCopy(undebutedTableRef, setIsUndebutedCopying, mode || "full", "undebutedCyclists");
+  };
+  const handleCopyUndebutedText = async () => {
+    performTextCopy(undebutedTableRef, setIsUndebutedTextCopying, "undebutedCyclists");
+  };
+  const handleDownloadUndebuted = async (mode?: string) => {
+    performImageDownload(undebutedTableRef, `ciclistas-sin-debutar${mode && mode !== "full" ? `-${mode}` : ""}.png`, "undebutedCyclists");
+  };
 
   return (
     <>
@@ -606,7 +627,7 @@ export function UndebutedCyclists() {
                                               isHiddenVisual = false;
                                             else {
                                               const pageNum = parseInt(
-                                                isUndebutedCopying.substring(1),
+                                                (isUndebutedCopying as string).substring(1),
                                               );
                                               const start = (pageNum - 1) * 50;
                                               const end = start + 50;

@@ -31,7 +31,7 @@ export const SeasonHighlights = ({
   const leaders = filteredLeaderboard.filter((p: any) => p.puntos === maxPoints);
   const leaderNames = leaders.map((l: any) => l.nombreEquipo).join(" / ");
 
-  const maxWins = Math.max(...Object.values(teamWinsCount), 0);
+  const maxWins = Math.max(...(Object.values(teamWinsCount) as number[]), 0);
   const topWinnerTeams = Object.keys(teamWinsCount).filter(
     (name) => teamWinsCount[name] === maxWins,
   );

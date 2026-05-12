@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Copy, CheckCircle2, UploadCloud, Activity, File
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar } from 'recharts';
 import { expandNodeForCapture } from '../../lib/dom-utils';
 import { domToDataUrl } from 'modern-screenshot';
+import { motion, AnimatePresence } from 'motion/react';
 import { DraftElections } from './draft/DraftElections';
 import { DraftDatos } from './draft/DraftDatos';
 import { cn } from '../../lib/utils';
@@ -31,77 +32,6 @@ export const DraftView: React.FC<DraftViewProps> = ({
   playerOrderMap
 }) => {
   const [draftSubTab, setDraftSubTab] = useState<"elecciones" | "datos">("elecciones");
-  const [draftSearchTerm, setDraftSearchTerm] = useState("");
-  const [draftRoundFilter, setDraftRoundFilter] = useState<string[]>([]);
-  const [draftTeamFilter, setDraftTeamFilter] = useState<string[]>([]);
-  const [isDraftRoundFilterOpen, setIsDraftRoundFilterOpen] = useState(false);
-  const [isDraftTeamFilterOpen, setIsDraftTeamFilterOpen] = useState(false);
-  const [draftStatsFilters, setDraftStatsFilters] = useState<{ minPuntos: number; minVictorias: number; }>({ minPuntos: 0, minVictorias: 0 });
-  const [isDraftStatsFilterOpen, setIsDraftStatsFilterOpen] = useState(false);
-  const [draftDatosTooltip, setDraftDatosTooltip] = useState<any>(null);
-  const [draftDatosMonthFilter, setDraftDatosMonthFilter] = useState<string[]>([]);
-  const [draftDatosCategoryFilter, setDraftDatosCategoryFilter] = useState<string[]>([]);
-  const [draftDatosTeamFilter, setDraftDatosTeamFilter] = useState<string[]>([]);
-  const [isDraftDatosMonthFilterOpen, setIsDraftDatosMonthFilterOpen] = useState(false);
-  const [isDraftDatosCategoryFilterOpen, setIsDraftDatosCategoryFilterOpen] = useState(false);
-  const [isDraftDatosTeamFilterOpen, setIsDraftDatosTeamFilterOpen] = useState(false);
-  const [draftSortColumn, setDraftSortColumn] = useState<string>("Elección");
-  const [draftSortDirection, setDraftSortDirection] = useState<"asc" | "desc">("asc");
-  const [draftDatosSortColumn, setDraftDatosSortColumn] = useState<string>("Orden");
-  const [draftDatosSortDirection, setDraftDatosSortDirection] = useState<"asc" | "desc">("asc");
-  const [isDraftTableExpanded, setIsDraftTableExpanded] = useState(false);
-  const [isDraftDatosTableExpanded, setIsDraftDatosTableExpanded] = useState(false);
-  const [isDraftSummaryExpanded, setIsDraftSummaryExpanded] = useState(false);
-  const [draftSummarySort, setDraftSummarySort] = useState<{keys: string[]; order: "asc" | "desc";}>({ keys: ["totalPoints"], order: "desc" });
-
-  
-  const draftTableRef = useRef<HTMLDivElement>(null);
-  const draftDatosTableRef = useRef<HTMLDivElement>(null);
-  const draftSummaryTableRef = useRef<HTMLDivElement>(null);
-  const draftChartRef = useRef<HTMLDivElement>(null);
-
-  // Mocks for missing functions that were handled in App.tsx
-  const [isDraftTableCopying, setIsDraftTableCopying] = useState<string | false>(false);
-  const handleCopyDraftTableImage = (part?: any) => {};
-
-  const [isDraftDatosTableCopying, setIsDraftDatosTableCopying] = useState<string | false>(false);
-  const handleCopyDraftDatosTableImage = () => {};
-  const handleDownloadDraftDatosTableImage = () => {};
-  const handleDownloadDraftTableImage = (part?: any) => {};
-  
-  const getStatColor = (val: number, max: number, min: number = 0, inverted: boolean = false, allowZero: boolean = false, minNonZero: number = 0) => {
-    if (val === 0 && !allowZero) return "";
-    let t = 0;
-    if (max > min) {
-      const effectMin = allowZero ? min : minNonZero;
-      t = Math.max(0, Math.min(1, (val - effectMin) / (max - effectMin)));
-    }
-    t = Number.isNaN(t) ? 0 : t;
-    const hue = inverted ? 120 - t * 120 : t * 120; // 0=red, 120=green
-    return `bg-[${"hsl(" + hue + ", 80%, 45%)"}] text-white`;
-  };
- 
-  
-  
-  const raceTypeByName = useMemo(() => {
-    const map: Record<string, string> = {};
-    files?.carreras?.data?.forEach((row: any) => {
-      const carrera = getVal(row, "Carrera")?.trim();
-      const categoria = getVal(row, "Categoría")?.trim();
-      if (carrera && categoria) map[carrera] = categoria;
-    });
-    return map;
-  }, [files?.carreras?.data]);
-
-  const raceDateByName = useMemo(() => {
-    const map: Record<string, string> = {};
-    files?.carreras?.data?.forEach((row: any) => {
-      const carrera = getVal(row, "Carrera")?.trim();
-      const fecha = getVal(row, "Fecha")?.trim();
-      if (carrera && fecha) map[carrera] = fecha;
-    });
-    return map;
-  }, [files?.carreras?.data]);
 
   const draftCyclistStats = useMemo(() => {
     const stats: Record<string, { puntos: number; victorias: number }> = {};
@@ -190,104 +120,6 @@ export const DraftView: React.FC<DraftViewProps> = ({
     return { maxPuntos, minCarreras, minDc, minPpc, minPpd, minPct };
   }, [files?.elecciones?.data, draftCyclistStats, cyclistMetadata, teamTotalPoints]);
 
-  const draftFilteredData = useMemo(() => {
-    if (!files?.elecciones?.data) return [];
-    return files.elecciones.data.filter((row: any) => {
-      const ciclista = getVal(row, "Ciclista") as string;
-      const matchesSearch = ciclista
-        ?.toLowerCase()
-        .includes(draftSearchTerm.toLowerCase());
-      const matchesRound =
-        draftRoundFilter.length === 0 ||
-        draftRoundFilter.includes(String(getVal(row, "Ronda")));
-      const matchesTeam =
-        draftTeamFilter.length === 0 ||
-        draftTeamFilter.includes(
-          String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG"))
-        );
-
-      let matchesStats = true;
-      if (ciclista) {
-        const stats = draftCyclistStats[ciclista] || {
-          puntos: 0,
-          victorias: 0,
-        };
-        const meta = cyclistMetadata[ciclista] || {
-          carrerasDisputadas: 0,
-          diasCompeticion: 0,
-        };
-        const puntos = stats.puntos;
-        const victorias = stats.victorias;
-        const carr = meta.carrerasDisputadas;
-        const dc = meta.diasCompeticion;
-        const ppc = carr > 0 ? puntos / carr : 0;
-        const ppd = dc > 0 ? puntos / dc : 0;
-
-        if (
-          draftStatsFilters.minPuntos !== undefined &&
-          puntos < draftStatsFilters.minPuntos
-        )
-          matchesStats = false;
-        if (
-          draftStatsFilters.minVictorias !== undefined &&
-          victorias < draftStatsFilters.minVictorias
-        )
-          matchesStats = false;
-        // ignoring the max filters if they're not in the state right now, but let's just copy them as they were.
-        // Wait, draftStatsFilters only has minPuntos and minVictorias! The other ones were unused or custom.
-      }
-
-      return matchesSearch && matchesRound && matchesTeam && matchesStats;
-    });
-  }, [files?.elecciones?.data, draftSearchTerm, draftRoundFilter, draftTeamFilter, draftStatsFilters, draftCyclistStats, cyclistMetadata]);
-
-  
-  const draftSortedData = useMemo(() => {
-    return [...draftFilteredData].sort((a, b) => {
-      // Replicando la logica de sort
-      if (draftSortColumn === "Puntos") {
-        const ptsA = draftCyclistStats[getVal(a, "Ciclista") || ""]?.puntos || 0;
-        const ptsB = draftCyclistStats[getVal(b, "Ciclista") || ""]?.puntos || 0;
-        return draftSortDirection === "asc" ? ptsA - ptsB : ptsB - ptsA;
-      }
-      if (draftSortColumn === "V") {
-        const vicA = draftCyclistStats[getVal(a, "Ciclista") || ""]?.victorias || 0;
-        const vicB = draftCyclistStats[getVal(b, "Ciclista") || ""]?.victorias || 0;
-        return draftSortDirection === "asc" ? vicA - vicB : vicB - vicA;
-      }
-      if (draftSortColumn === "C") {
-        const cA = cyclistMetadata[getVal(a, "Ciclista") || ""]?.carrerasDisputadas || 0;
-        const cB = cyclistMetadata[getVal(b, "Ciclista") || ""]?.carrerasDisputadas || 0;
-        return draftSortDirection === "asc" ? cA - cB : cB - cA;
-      }
-      if (draftSortColumn === "DC") {
-        const dcA = cyclistMetadata[getVal(a, "Ciclista") || ""]?.diasCompeticion || 0;
-        const dcB = cyclistMetadata[getVal(b, "Ciclista") || ""]?.diasCompeticion || 0;
-        return draftSortDirection === "asc" ? dcA - dcB : dcB - dcA;
-      }
-      const valA = getVal(a, draftSortColumn);
-      const valB = getVal(b, draftSortColumn);
-      if (!valA) return 1;
-      if (!valB) return -1;
-      const numA = parseFloat(valA);
-      const numB = parseFloat(valB);
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return draftSortDirection === "asc" ? numA - numB : numB - numA;
-      }
-      return draftSortDirection === "asc"
-        ? String(valA).localeCompare(String(valB))
-        : String(valB).localeCompare(String(valA));
-    });
-  }, [draftFilteredData, draftSortColumn, draftSortDirection, draftCyclistStats, cyclistMetadata]);
-
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: draftSortedData.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 5,
-  });
-
   return (
     <>
 
@@ -326,28 +158,45 @@ export const DraftView: React.FC<DraftViewProps> = ({
         </button>
       </div>
     </div>
-
+    <AnimatePresence mode="wait">
         {draftSubTab === "elecciones" && (
-      <DraftElections 
-        files={files}
-        cyclistMetadata={cyclistMetadata}
-        leaderboard={leaderboard}
-        getFlagEmoji={getFlagEmoji}
-        teamTotalPoints={teamTotalPoints}
-        draftCyclistStats={draftCyclistStats}
-        draftComputedData={draftComputedData}
-      />
+      <motion.div
+        key="elecciones"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <DraftElections 
+          files={files}
+          cyclistMetadata={cyclistMetadata}
+          leaderboard={leaderboard}
+          getFlagEmoji={getFlagEmoji}
+          teamTotalPoints={teamTotalPoints}
+          draftCyclistStats={draftCyclistStats}
+          draftComputedData={draftComputedData}
+        />
+      </motion.div>
     )}
 
     {draftSubTab === "datos" && (
-      <DraftDatos 
-        files={files}
-        leaderboard={leaderboard}
-        cyclistMetadata={cyclistMetadata}
-        teamToPlayerMap={teamToPlayerMap}
-        playerOrderMap={playerOrderMap}
-      />
+      <motion.div
+        key="datos"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <DraftDatos 
+          files={files}
+          leaderboard={leaderboard}
+          cyclistMetadata={cyclistMetadata}
+          teamToPlayerMap={teamToPlayerMap}
+          playerOrderMap={playerOrderMap}
+        />
+      </motion.div>
     )}
+    </AnimatePresence>
   </div>
     </>
   );

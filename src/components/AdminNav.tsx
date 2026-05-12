@@ -3,8 +3,8 @@ import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker } from 'lucide-react
 import { cn } from '../lib/utils';
 
 interface AdminNavProps {
-  adminTab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas";
-  setAdminTab: (tab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas") => void;
+  adminTab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
+  setAdminTab: (tab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas") => void;
 }
 
 export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
@@ -81,6 +81,18 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <Beaker className="w-4 h-4" />
         Pruebas
+      </button>
+      <button
+        onClick={() => setAdminTab("estadisticas")}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+          adminTab === "estadisticas"
+            ? "bg-purple-50 text-purple-700"
+            : "text-neutral-600 hover:bg-neutral-100",
+        )}
+      >
+        <FileSpreadsheet className="w-4 h-4" />
+        Estadísticas
       </button>
     </div>
   );

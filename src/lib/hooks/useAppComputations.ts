@@ -181,6 +181,27 @@ export function useAppComputations() {
 
     const raceTypeByName: Record<string, string> = {};
     const raceDateByName: Record<string, string> = {};
+    
+    function parseSafeDateStr(dStr: string) {
+      if (!dStr) return "";
+      let s = dStr.toString().trim();
+      
+      const parts = s.split(/[-/.]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      } else if (parts.length === 2) {
+        return `${new Date().getFullYear()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      } else {
+        const v = parseFloat(s);
+        if (!isNaN(v) && v > 10000) { // excel date
+          const d = new Date((v - 25569) * 86400 * 1000);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      }
+      return s;
+    }
+
     carreras.data!.forEach((row: any) => {
       const carrera = getVal(row, "Carrera")?.trim();
       const categoria = getVal(row, "Categoría")?.trim();
@@ -189,7 +210,7 @@ export function useAppComputations() {
         raceTypeByName[carrera] = categoria;
       }
       if (carrera && fecha) {
-        raceDateByName[carrera] = fecha;
+        raceDateByName[carrera] = parseSafeDateStr(fecha);
       }
     });
 

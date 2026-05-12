@@ -2,16 +2,22 @@ import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, BarChart, Bar, Legend } from 'recharts';
 import { getVal } from '../../lib/data-processing';
 import { GhostDraftView } from './tests/GhostDraftView';
+import { TestsIdeasTracker } from './tests/TestsIdeasTracker';
+
+import { TestsCalendarHeatmap } from './tests/TestsCalendarHeatmap';
+
+import { CyclistMetadata } from '../../lib/stores/useComputedStore';
 
 interface TestsViewProps {
-  cyclistMetadata: Record<string, { puntosTotales: number; carrerasDisputadas: number; diasCompeticion: number; victorias: number; pais: string; equipoBreve: string; puntosPorCarrera?: Record<string, number> }>;
+  cyclistMetadata: Record<string, CyclistMetadata>;
   playerOrderMap: Record<string, string>;
   playerTeamMap: Record<string, string>;
   cyclistRoundMap: Record<string, string>;
   files: any;
+  leaderboard?: any[];
 }
 
-export function TestsView({ cyclistMetadata, playerOrderMap, playerTeamMap, cyclistRoundMap, files }: TestsViewProps) {
+export function TestsView({ leaderboard, cyclistMetadata, playerOrderMap, playerTeamMap, cyclistRoundMap, files }: TestsViewProps) {
   
   const [dependencyTopCount, setDependencyTopCount] = useState<number>(3);
   
@@ -313,12 +319,18 @@ export function TestsView({ cyclistMetadata, playerOrderMap, playerTeamMap, cycl
 
   return (
     <div className="space-y-6">
+      <TestsIdeasTracker />
+      
       <GhostDraftView 
         files={files} 
         cyclistMetadata={cyclistMetadata} 
         playerTeamMap={playerTeamMap} 
         playerOrderMap={playerOrderMap} 
       />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <TestsCalendarHeatmap files={files} playerTeamMap={playerTeamMap} leaderboard={leaderboard} />
+      </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
          <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50">

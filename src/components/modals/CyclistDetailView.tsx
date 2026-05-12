@@ -78,9 +78,14 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   }, [selectedCyclistDetail]);
 
   const [isCyclistDetailExpanded, setIsCyclistDetailExpanded] = useState(false);
-  const [cyclistDetailSortCol, setCyclistDetailSortCol] = useState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos">("fecha");
+  const [cyclistDetailSortCol, setCyclistDetailSortCol] = useState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("fecha");
   const [cyclistDetailSortDir, setCyclistDetailSortDir] = useState<"asc"|"desc">("asc");
-  const [cyclistDetailMonthFilter, setCyclistDetailMonthFilter] = useState<string[]>([]);
+  const [filterMode, setFilterMode] = useState<"quick" | "daily" | "monthly" | "yearly">("quick");
+  const [dateRange, setDateRange] = useState<"all" | "24h" | "7d" | "30d" | "year">("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [cyclistDetailCategoryFilter, setCyclistDetailCategoryFilter] = useState<string[]>([]);
   const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useState<string[]>([]);
   const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useState<{ op: string; val: string }>({ op: "<=", val: "" });
@@ -299,13 +304,41 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
           const allItems = (items as NonNullable<typeof items[0]>[]);
           let filteredItems = allItems.filter(it => {
-            if (cyclistDetailMonthFilter.length > 0) {
-              const parts = it.fecha.split(/[-/]/);
-              if (parts.length >= 2) {
-                const m = parseInt(parts[1], 10).toString();
-                if (!cyclistDetailMonthFilter.includes(m)) return false;
-              } else return false;
+            const parseDateFilters = (d: string) => {
+              if (!d) return new Date(0);
+              const p = d.split(/[-/]/);
+              if (p.length !== 3) return new Date(0);
+              return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+            };
+            const eventDate = parseDateFilters(it.fecha);
+
+            if (filterMode === "quick" && dateRange !== "all") {
+              const diffMs = Date.now() - eventDate.getTime();
+              const diffDays = diffMs / (1000 * 60 * 60 * 24);
+              switch (dateRange) {
+                case "24h": if (diffDays > 1) return false; break;
+                case "7d": if (diffDays > 7) return false; break;
+                case "30d": if (diffDays > 30) return false; break;
+                case "year": if (eventDate.getFullYear() !== new Date().getFullYear()) return false; break;
+              }
+            } else if (filterMode === "daily") {
+              if (startDate) {
+                const start = new Date(startDate);
+                start.setHours(0, 0, 0, 0);
+                if (eventDate < start) return false;
+              }
+              if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                if (eventDate > end) return false;
+              }
+            } else if (filterMode === "monthly" && selectedMonth) {
+              const [year, month] = selectedMonth.split('-');
+              if (eventDate.getFullYear() !== parseInt(year) || (eventDate.getMonth() + 1) !== parseInt(month)) return false;
+            } else if (filterMode === "yearly" && selectedYear) {
+              if (eventDate.getFullYear() !== parseInt(selectedYear)) return false;
             }
+
             if (cyclistDetailCategoryFilter.length > 0 && !cyclistDetailCategoryFilter.includes(it.categoria)) return false;
             if (cyclistDetailTypeFilter.length > 0 && !cyclistDetailTypeFilter.includes(it.tipo)) return false;
             if (cyclistDetailPosFilter.val !== "") {
@@ -334,10 +367,6 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
           const maxPointsInList = Math.max(1, ...filteredItems.map(i => i.puntos));
 
-          const filterOptionsMonth = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
-            const d = new Date(2000, m - 1, 1);
-            return { value: m.toString(), label: d.toLocaleString('es-ES', { month: 'long' }) };
-          });
           const filterOptionsCat = Array.from(new Set(allItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: c, label: c}));
           const filterOptionsType = Array.from(new Set(allItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: t, label: t}));
 
@@ -536,12 +565,76 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 items-end bg-neutral-50 p-4 rounded-xl border border-neutral-100 mt-6 mb-4">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Mes</span>
-                  <MultiSelect options={filterOptionsMonth} value={cyclistDetailMonthFilter} onChange={setCyclistDetailMonthFilter} placeholder="Meses" />
+              <div className="flex flex-col gap-4 bg-neutral-50 p-4 rounded-xl border border-neutral-100 mt-6 mb-4">
+                <div className="flex flex-wrap items-center gap-4 border-b border-neutral-200 pb-4">
+                  <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Fecha (Compuesto)</span>
+                    <div className="flex bg-neutral-200/50 p-1 rounded-lg w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                      <button onClick={() => setFilterMode("quick")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "quick" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Atajos</button>
+                      <button onClick={() => setFilterMode("daily")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "daily" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Diario</button>
+                      <button onClick={() => setFilterMode("monthly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "monthly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Mensual</button>
+                      <button onClick={() => setFilterMode("yearly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "yearly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Anual</button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 md:gap-4 items-center w-full sm:w-auto mt-2 sm:mt-5">
+                    {filterMode === "quick" && (
+                      <select 
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value as any)}
+                        className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 outline-none hover:border-neutral-300 transition-colors"
+                      >
+                        <option value="24h">Últimas 24h</option>
+                        <option value="7d">Últimos 7 días</option>
+                        <option value="30d">Últimos 30 días</option>
+                        <option value="year">Este año</option>
+                        <option value="all">Histórico completo</option>
+                      </select>
+                    )}
+
+                    {filterMode === "daily" && (
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <input 
+                          type="date" 
+                          value={startDate} 
+                          onChange={e => setStartDate(e.target.value)} 
+                          className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 outline-none hover:border-neutral-300 transition-colors flex-1 md:flex-none min-w-[120px]" 
+                        />
+                        <span className="text-neutral-500 text-xs font-medium">hasta</span>
+                        <input 
+                          type="date" 
+                          value={endDate} 
+                          onChange={e => setEndDate(e.target.value)} 
+                          className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 outline-none hover:border-neutral-300 transition-colors flex-1 md:flex-none min-w-[120px]" 
+                        />
+                      </div>
+                    )}
+
+                    {filterMode === "monthly" && (
+                      <input 
+                        type="month" 
+                        value={selectedMonth} 
+                        onChange={e => setSelectedMonth(e.target.value)} 
+                        className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 outline-none hover:border-neutral-300 transition-colors" 
+                      />
+                    )}
+
+                    {filterMode === "yearly" && (
+                      <select 
+                        value={selectedYear} 
+                        onChange={e => setSelectedYear(e.target.value)} 
+                        className="bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 outline-none hover:border-neutral-300 transition-colors"
+                      >
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                          <option key={y} value={y.toString()}>{y}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
+
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="flex flex-col gap-1.5">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Categoría</span>
                   <MultiSelect options={filterOptionsCat} value={cyclistDetailCategoryFilter} onChange={setCyclistDetailCategoryFilter} placeholder="Categorías" />
                 </div>
@@ -578,7 +671,12 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                 </div>
                 <div className="ml-auto flex items-center">
                   <button onClick={() => {
-                    setCyclistDetailMonthFilter([]);
+                    setFilterMode("quick");
+                    setDateRange("all");
+                    setStartDate("");
+                    setEndDate("");
+                    setSelectedMonth("");
+                    setSelectedYear(new Date().getFullYear().toString());
                     setCyclistDetailCategoryFilter([]);
                     setCyclistDetailTypeFilter([]);
                     setCyclistDetailPosFilter({ op: "<=", val: "" });
@@ -586,6 +684,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                   }} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 border border-neutral-200 bg-white px-4 py-1.5 rounded-md hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">Limpiar Filtros</button>
                 </div>
               </div>
+            </div>
 
               <div className="table-responsive-wrapper overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg">
                 <table className="w-full text-sm text-left table-fixed min-w-[900px]">

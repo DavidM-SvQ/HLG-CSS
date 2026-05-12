@@ -1,4 +1,5 @@
 import React, { useContext, useRef } from "react";
+import { motion } from "motion/react";
 import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
@@ -6,15 +7,42 @@ import { SeasonViewContext } from "./SeasonViewContext";
 import { useTopDraft } from "../../../lib/hooks/useTopDraft";
 
 
+import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+
 export function TopDraftCyclists() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
-  const topCyclistsDraftRefContainer = useRef<HTMLDivElement>(null);
-  const unscoredRefContainer = useRef<HTMLDivElement>(null);
-  const undebutedRefContainer = useRef<HTMLDivElement>(null);
-  const noDraftRefContainer = useRef<HTMLDivElement>(null);
+  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, leaderboard, cyclistMetadata, cyclistRoundMap, playerOrderMap, selectedCyclistDetail, setSelectedCyclistDetail, formatNumberSpanish, getVal } = context;
 
-  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, isChartExpanded, setIsChartExpanded, evolutionMode, setEvolutionMode, isEvolutionChartExpanded, setIsEvolutionChartExpanded, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, isTopTeamsTableExpanded, setIsTopTeamsTableExpanded, isTopTeamsTableCopying, setIsTopTeamsTableCopying, isWinsRankingExpanded, setIsWinsRankingExpanded, winsChartType, setWinsChartType, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen, isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen, isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen, isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded, topCyclistsLimit, setTopCyclistsLimit, isUnscoredExpanded, setIsUnscoredExpanded, isUndebutedExpanded, setIsUndebutedExpanded, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, isNoDraftCyclistsExpanded, setIsNoDraftCyclistsExpanded, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, isCopying, setIsCopying, winsRankingRef, winsHistoryRef, unscoredTableRef, undebutedTableRef, noDraftCyclistsTableRef, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, isTeamFilterOpen, setIsTeamFilterOpen, cyclistsCategoryFilter, setCyclistsCategoryFilter, isCategoryFilterOpen, setIsCategoryFilterOpen, cyclistsRoundFilter, setCyclistsRoundFilter, isRoundFilterOpen, setIsRoundFilterOpen, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, isChartCopying, setIsChartCopying, isEvolutionChartCopying, setIsEvolutionChartCopying, isTopTeamsCopying, setIsTopTeamsCopying, isWinsRankingCopying, setIsWinsRankingCopying, isWinsEvolutionCopying, setIsWinsEvolutionCopying, isWinsHistoryCopying, setIsWinsHistoryCopying, isWinsHistoryTextCopying, setIsWinsHistoryTextCopying, isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying, isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying, isUnscoredCopying, setIsUnscoredCopying, isUnscoredTextCopying, setIsUnscoredTextCopying, isUndebutedCopying, setIsUndebutedCopying, isUndebutedTextCopying, setIsUndebutedTextCopying, isNoDraftCyclistsCopying, setIsNoDraftCyclistsCopying, isNoDraftCyclistsTextCopying, setIsNoDraftCyclistsTextCopying, chartRef, evolutionChartRef, topTeamsTableRef, winsRankingTableRef, winsEvolutionRef, winsHistoryTableRef, topCyclistsDraftRef, unscoredRef, undebutedRef, noDraftCyclistsRef, selectedEvolutionTeams, setSelectedEvolutionTeams, isExpanded, setIsExpanded, isEvolutionExpanded, setIsEvolutionExpanded, isWinsExpanded, setIsWinsExpanded, isWinsEvolutionExpanded, setIsWinsEvolutionExpanded, isWinsHistoryExpanded, setIsWinsHistoryExpanded, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, handleCopyChart, handleDownloadChart, handleCopyEvolutionChart, handleDownloadEvolutionChart, handleCopyTopTeamsTable, handleDownloadTopTeamsTable, handleCopyWinsRanking, handleDownloadWinsRanking, handleCopyWinsEvolution, handleDownloadWinsEvolution, handleCopyWinsHistory, handleCopyWinsHistoryText, handleDownloadWinsHistory, handleCopyTopCyclistsDraft, handleCopyTopCyclistsDraftText, handleDownloadTopCyclistsDraft, handleCopyUnscored, handleCopyUnscoredText, handleDownloadUnscored, handleCopyUndebuted, handleCopyUndebutedText, handleDownloadUndebuted, handleCopyNoDraftCyclists, handleCopyNoDraftCyclistsText, handleDownloadNoDraftCyclists, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount } = context;
+  const [topCyclistsLimit, setTopCyclistsLimit] = React.useState(10);
+  const [cyclistsMonthFilter, setCyclistsMonthFilter] = React.useState<string>("all");
+  const [cyclistsTeamFilter, setCyclistsTeamFilter] = React.useState<string[]>([]);
+  const [cyclistsCategoryFilter, setCyclistsCategoryFilter] = React.useState<string[]>([]);
+  const [cyclistsRoundFilter, setCyclistsRoundFilter] = React.useState<string[]>([]);
+  const [cyclistsNameSearch, setCyclistsNameSearch] = React.useState<string>("");
+  
+  const [isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded] = React.useState(false);
+  const [isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen] = React.useState(false);
+  const [isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen] = React.useState(false);
+  const [isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen] = React.useState(false);
+  
+  const [cyclistsSortColumn, setCyclistsSortColumn] = React.useState<string>("puntos");
+  const [cyclistsSortDirection, setCyclistsSortDirection] = React.useState<"asc" | "desc">("desc");
+
+  const [isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying] = React.useState<string | boolean>(false);
+  const [isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying] = React.useState(false);
+  const topCyclistsDraftRef = useRef<HTMLDivElement>(null);
+  const topCyclistsDraftRefContainer = useRef<HTMLDivElement>(null);
+
+  const handleCopyTopCyclistsDraft = async (type?: string) => {
+    performImageCopy(topCyclistsDraftRef, setIsTopCyclistsDraftCopying, type || "full", "topCyclistsDraft");
+  };
+  const handleCopyTopCyclistsDraftText = async () => {
+    performTextCopy(topCyclistsDraftRef, setIsTopCyclistsDraftTextCopying, "topCyclistsDraft");
+  };
+  const handleDownloadTopCyclistsDraft = async (type?: string) => {
+    performImageDownload(topCyclistsDraftRef, `top-ciclistas-draft${type && type !== "full" ? `-${type}` : ""}.png`, "topCyclistsDraft");
+  };
 
   const { allStats } = useTopDraft(
     cyclistsMonthFilter,
@@ -26,12 +54,14 @@ export function TopDraftCyclists() {
 
   return (
     <>
-                              <div
-                                ref={topCyclistsDraftRef}
+                              <motion.div
+                                layout
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                ref={topCyclistsDraftRef as any}
                                 className={cn(
-                                  "bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm relative",
+                                  "bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm relative flex flex-col",
                                   isTopCyclistsDraftExpanded &&
-                                    "fixed inset-4 z-50 overflow-y-auto max-h-none shadow-2xl p-0",
+                                    "fixed inset-4 z-50 shadow-2xl p-0",
                                 )}
                               >
                                 {isTopCyclistsDraftExpanded && (
@@ -227,7 +257,7 @@ export function TopDraftCyclists() {
                                                   b as string,
                                                 ),
                                               )
-                                              .map((team) => (
+                                              .map((team: any) => (
                                                 <label
                                                   key={team}
                                                   className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors"
@@ -539,8 +569,8 @@ export function TopDraftCyclists() {
                                   </div>
                                 </div>
 
-                                <div className="overflow-x-auto overflow-y-auto max-h-[750px] bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin">
-                                  <div ref={topCyclistsDraftRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px]"><table className="w-full min-w-[700px] text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
+                                <div className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin", isTopCyclistsDraftExpanded ? "flex-1 min-h-0" : "max-h-[750px]")}>
+                                  <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full min-w-[700px] text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -927,7 +957,7 @@ export function TopDraftCyclists() {
                                               isHiddenVisual = false;
                                             else {
                                               const pageNum = parseInt(
-                                                isTopCyclistsDraftCopying.substring(
+                                                (isTopCyclistsDraftCopying as string).substring(
                                                   1,
                                                 ),
                                               );
@@ -1081,7 +1111,7 @@ export function TopDraftCyclists() {
                                     </tbody>
                                   </table></div>
                                 </div>
-                              </div>
+                              </motion.div>
     </>
   );
 }

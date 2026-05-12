@@ -112,6 +112,8 @@ interface AppState {
 import { formatNumberSpanish, normalizeStr, getVal, getCategoryColorStyle } from "./lib/data-processing";
 import { expandNodeForCapture } from "./lib/dom-utils";
 
+import { usePageView } from "./lib/analytics/usePageView";
+
 const CyclistDetailView = lazy(() => import("./components/modals/CyclistDetailView").then(m => ({ default: m.CyclistDetailView })));
 const StartlistView = lazy(() => import("./components/tabs/StartlistView").then(m => ({ default: m.StartlistView })));
 const RaceView = lazy(() => import("./components/tabs/RaceView").then(m => ({ default: m.RaceView })));
@@ -120,6 +122,7 @@ const SeasonView = lazy(() => import("./components/tabs/SeasonView").then(m => (
 const InfoView = lazy(() => import("./components/tabs/InfoView").then(m => ({ default: m.InfoView })));
 const DraftView = lazy(() => import("./components/tabs/DraftView").then(m => ({ default: m.DraftView })));
 const TestsView = lazy(() => import("./components/tabs/TestsView").then(m => ({ default: m.TestsView })));
+const AdminAnalyticsView = lazy(() => import("./components/tabs/AdminAnalyticsView").then(m => ({ default: m.AdminAnalyticsView })));
 
 interface PlayerScore {
   jugador: string;
@@ -280,6 +283,7 @@ export default function App() {
     | "reporte-mes"
     | "reporte-temporada"
     | "pruebas"
+    | "estadisticas"
   >("datos");
   const [publicTab, setPublicTab] = useState<
     "season" | "race" | "startlist" | "team" | "draft" | "info" | "pruebas"
@@ -577,13 +581,6 @@ export default function App() {
   const [infoSubTab, setInfoSubTab] = useState<
     "menu" | "puntuaciones" | "carreras"
   >("menu");
-  const [pointsCategoryFilter, setPointsCategoryFilter] = useState<string>("");
-  const [pointsRaceSearch, setPointsRaceSearch] = useState<string>("");
-  const [racesFilter, setRacesFilter] = useState<
-    "all" | "finished" | "upcoming"
-  >("all");
-  const [racesCategoryFilter, setRacesCategoryFilter] = useState<string>("");
-  const [racesMonthFilter, setRacesMonthFilter] = useState<string>("");
   const [infoCarrerasSortDir, setInfoCarrerasSortDir] = useState<"asc" | "desc">("asc");
   const { files, setFiles } = useDataStore();
   const { 
@@ -601,6 +598,7 @@ export default function App() {
   } = useComputedStore();
 
   useAppComputations();
+  usePageView("app_navigation", { publicTab, selectedRace, selectedTeam, view });
 
   useEffect(() => {
     if (view === "admin") return;
@@ -1311,88 +1309,6 @@ export default function App() {
     return flags[country] || countryName;
   };
 
-  const memoizedPointsData = React.useMemo(() => {
-    let filteredPoints = files.puntos.data || [];
-
-    if (pointsRaceSearch.trim()) {
-      const searchLower = pointsRaceSearch.toLowerCase();
-      const matchedRaces = files.carreras.data?.filter((r) =>
-        getVal(r, "Carrera")?.toLowerCase().includes(searchLower)
-      ) || [];
-      const matchedCategories = new Set(
-        matchedRaces.map((r) => getVal(r, "Categoría"))
-      );
-      filteredPoints = filteredPoints.filter((p) =>
-        matchedCategories.has(getVal(p, "Categoría"))
-      );
-    } else if (pointsCategoryFilter) {
-      filteredPoints = filteredPoints.filter(
-        (p) => getVal(p, "Categoría") === pointsCategoryFilter
-      );
-    }
-    
-    return filteredPoints;
-  }, [files.puntos.data, files.carreras.data, pointsRaceSearch, pointsCategoryFilter]);
-
-  const memoizedRacesData = React.useMemo(() => {
-    const now = new Date().getTime();
-    const resultObj = files.carreras.data?.filter((r) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const isFinished = Object.keys(raceWinners).includes(carreraName || "");
-
-      if (racesFilter === "finished" && !isFinished) return false;
-      if (racesFilter === "upcoming" && isFinished) return false;
-      if (racesCategoryFilter) {
-        if (getVal(r, "Categoría") !== racesCategoryFilter) return false;
-      }
-      if (racesMonthFilter) {
-        let dateObj: Date | null = null;
-        const fecha = getVal(r, "Fecha");
-        if (fecha) {
-          const parts = fecha.toString().split(/[-/]/);
-          if (parts.length === 3) {
-            if (parts[0].length === 4) {
-              dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else {
-              dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            }
-          }
-        }
-        if (dateObj) {
-          if ((dateObj.getMonth() + 1).toString().padStart(2, "0") !== racesMonthFilter) {
-            return false;
-          }
-        } else {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    if (resultObj) {
-      const parseDate = (dStr: string | null | undefined) => {
-        if (!dStr) return 0;
-        const p = dStr.toString().split(/[-/]/);
-        if (p.length === 3) {
-          if (p[0].length === 4) {
-            return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])).getTime();
-          } else {
-            return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
-          }
-        }
-        return 0;
-      };
-      
-      resultObj.sort((a, b) => {
-        const dA = parseDate(getVal(a, "Fecha"));
-        const dB = parseDate(getVal(b, "Fecha"));
-        return infoCarrerasSortDir === "asc" ? dA - dB : dB - dA;
-      });
-    }
-
-    return resultObj || [];
-  }, [files.carreras.data, raceWinners, racesFilter, racesCategoryFilter, racesMonthFilter, infoCarrerasSortDir]);
-
   const formattedTeams = React.useMemo(() => {
     if (!files.elecciones.data) return [];
 
@@ -1567,7 +1483,7 @@ export default function App() {
         isLoggingIn={isLoggingIn}
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8">
         {!isSupabaseConfigured && (
           <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
             <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
@@ -1736,10 +1652,9 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                                       {ft.name}
                                     </h3>
                                     {ft.global && (
-                                      <Globe
-                                        className="w-3 h-3 text-neutral-400"
-                                        title="Archivo Global"
-                                      />
+                                      <span title="Archivo Global">
+                                        <Globe className="w-3 h-3 text-neutral-400" />
+                                      </span>
                                     )}
                                   </div>
                                   <p className="text-xs text-neutral-500 mt-0.5">
@@ -2244,14 +2159,20 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
 
             {adminTab === "pruebas" && (
               <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pruebas...</div>}>
-                <TestsView cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} cyclistRoundMap={cyclistRoundMap} files={files} />
+                <TestsView leaderboard={leaderboard} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} cyclistRoundMap={cyclistRoundMap} files={files} />
+              </Suspense>
+            )}
+
+            {adminTab === "estadisticas" && (
+              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando estadísticas...</div>}>
+                <AdminAnalyticsView />
               </Suspense>
             )}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4 md:space-y-8">
             {/* Public Tabs Navigation */}
-            <div className="flex items-center gap-2 border-b border-neutral-200 pb-4 overflow-x-auto">
+            <div className="flex items-center justify-start sm:justify-center lg:justify-start gap-2 border-b border-neutral-200 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <button
                 onClick={() => setPublicTab("season")}
                 className={cn(
@@ -2361,7 +2282,7 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
                       playerOrderMap={playerOrderMap}
                     />
                   )}
-                  {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} memoizedPointsData={memoizedPointsData} memoizedRacesData={memoizedRacesData} raceWinners={raceWinners} />}
+                  {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} raceWinners={raceWinners} />}
                 </motion.div>
               </AnimatePresence>
             </Suspense>

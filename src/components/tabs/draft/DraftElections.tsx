@@ -23,6 +23,8 @@ export interface DraftElectionsProps {
   };
 }
 
+import { performImageCopy, performImageDownload, performTextCopy } from '../season/hooks/useExportHandlers';
+
 export const DraftElections: React.FC<DraftElectionsProps> = ({
   files,
   cyclistMetadata,
@@ -58,8 +60,12 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
   const draftTableRef = useRef<HTMLDivElement>(null);
   const [isDraftTableCopying, setIsDraftTableCopying] = useState<string | false>(false);
-  const handleCopyDraftTableImage = (part?: any) => {};
-  const handleDownloadDraftTableImage = (part?: any) => {};
+  const handleCopyDraftTableImage = (part?: any) => {
+    performImageCopy(draftTableRef, setIsDraftTableCopying, part || true, "draftElectionsTable");
+  };
+  const handleDownloadDraftTableImage = (part?: any) => {
+    performImageDownload(draftTableRef, `draft-elecciones${part && part !== true ? `-${part}` : ""}.png`, "draftElectionsTable");
+  };
 
   const draftFilteredData = useMemo(() => {
     if (!files?.elecciones?.data) return [];
@@ -261,7 +267,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                 className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
               >
                 <span className="text-neutral-700">
-                  {Object.values(draftStatsFilters).some((v) => v !== undefined && v !== "") ? "Est. activas" : "Estadísticas"}
+                  {Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "") ? "Est. activas" : "Estadísticas"}
                 </span>
                 <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
               </button>

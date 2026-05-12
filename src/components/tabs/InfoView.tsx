@@ -11,14 +11,12 @@ import { useDebounce } from "../../lib/hooks/useDebounce";
 export interface InfoViewProps {
   raceWinners: Record<string, string>;
   files: any;
-  infoSubTab: string;
-  setInfoSubTab: (val: string) => void;
-  memoizedPointsData?: any;
-  memoizedRacesData?: any;
+  infoSubTab: "menu" | "puntuaciones" | "carreras" | string;
+  setInfoSubTab: React.Dispatch<React.SetStateAction<"menu" | "puntuaciones" | "carreras">>;
 }
 
 export const InfoView = (props: InfoViewProps) => {
-  const { files, infoSubTab, setInfoSubTab, memoizedPointsData, memoizedRacesData, raceWinners } = props;
+  const { files, infoSubTab, setInfoSubTab, raceWinners } = props;
 
   const [isPointsExpanded, setIsPointsExpanded] = useState(false);
   const [isPointsTextCopying, setIsPointsTextCopying] = useState(false);
@@ -57,6 +55,100 @@ export const InfoView = (props: InfoViewProps) => {
   const pointsTableRef = useRef<HTMLDivElement>(null);
   const infoCarrerasTableRef = useRef<HTMLDivElement>(null);
 
+  const memoizedPointsData = React.useMemo(() => {
+    let filteredPoints = files.puntos?.data || [];
+
+    if (pointsRaceSearch.trim()) {
+      const searchLower = pointsRaceSearch.toLowerCase();
+      const matchedRaces = files.carreras?.data?.filter((r: any) =>
+        getVal(r, "Carrera")?.toLowerCase().includes(searchLower)
+      ) || [];
+      const matchedCategories = new Set(
+        matchedRaces.map((r: any) => getVal(r, "Categoría")?.trim())
+      );
+      filteredPoints = filteredPoints.filter((p: any) =>
+        matchedCategories.has(getVal(p, "Categoría")?.trim())
+      );
+    } else if (pointsCategoryFilter) {
+      filteredPoints = filteredPoints.filter(
+        (p: any) => getVal(p, "Categoría")?.trim() === pointsCategoryFilter.trim()
+      );
+    }
+    
+    return filteredPoints;
+  }, [files.puntos?.data, files.carreras?.data, pointsRaceSearch, pointsCategoryFilter]);
+
+  const memoizedRacesData = React.useMemo(() => {
+    const now = new Date().getTime();
+    const resultObj = files.carreras?.data?.filter((r: any) => {
+      const carreraName = getVal(r, "Carrera")?.trim();
+      const isFinished = Object.keys(raceWinners).includes(carreraName || "");
+
+      if (racesFilter === "finished" && !isFinished) return false;
+      if (racesFilter === "upcoming" && isFinished) return false;
+      if (racesCategoryFilter) {
+        if (getVal(r, "Categoría")?.trim() !== racesCategoryFilter.trim()) return false;
+      }
+      if (racesMonthFilter) {
+        let dateObj: Date | null = null;
+        const fecha = getVal(r, "Fecha");
+        if (fecha) {
+          const parts = fecha.toString().split(/[-/]/);
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else {
+              dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+          }
+        }
+        if (dateObj) {
+          if ((dateObj.getMonth() + 1).toString().padStart(2, "0") !== racesMonthFilter) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (resultObj) {
+      const parseDate = (dStr: string | null | undefined) => {
+        if (!dStr) return 0;
+        const p = dStr.toString().split(/[-/]/);
+        if (p.length === 3) {
+          if (p[0].length === 4) return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])).getTime();
+          return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
+        }
+        return 0;
+      };
+
+      resultObj.sort((a: any, b: any) => {
+        let valA: any = null, valB: any = null;
+        if (infoCarrerasSortColumn === "fecha") {
+          valA = parseDate(getVal(a, "Fecha"));
+          valB = parseDate(getVal(b, "Fecha"));
+        } else if (infoCarrerasSortColumn === "puntos") {
+          valA = parseInt(getVal(a, "Puntos") || "0");
+          valB = parseInt(getVal(b, "Puntos") || "0");
+        } else if (infoCarrerasSortColumn === "carrera") {
+          valA = getVal(a, "Carrera");
+          valB = getVal(b, "Carrera");
+        } else if (infoCarrerasSortColumn === "categoria") {
+          valA = getVal(a, "Categoría");
+          valB = getVal(b, "Categoría");
+        }
+
+        if (valA < valB) return infoCarrerasSortDir === "asc" ? -1 : 1;
+        if (valA > valB) return infoCarrerasSortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return resultObj || [];
+  }, [files.carreras?.data, raceWinners, racesFilter, racesCategoryFilter, racesMonthFilter, infoCarrerasSortColumn, infoCarrerasSortDir]);
+
   const handleCopyPoints = async () => {
     const table = document.querySelector("table");
     if (!table || isPointsTextCopying) return;
@@ -88,26 +180,20 @@ export const InfoView = (props: InfoViewProps) => {
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
       
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(tableContainer, {
-          scale: 3, 
-          
-          width: elWidth,
-          height: elHeight,
-          style: { overflow: "visible", margin: "0" },
-          
-        });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsPointsImageCopying(false), 2000);
-              }
-              
+      const dataUrlPromise = domToDataUrl(tableContainer, {
+        scale: 1.5, 
+        width: elWidth,
+        height: elHeight,
+        backgroundColor: '#ffffff',
+        style: { overflow: "visible", margin: "0" },
+      });
+      const blobPromise = dataUrlPromise.then(url => fetch(url).then(r => r.blob()));
+      
+      await copyImageToClipboard(blobPromise, "detalle-puntos.png", dataUrlPromise);
     } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
+      console.warn("Error during copy fallback", err);
+    } finally {
+      setTimeout(() => setIsPointsImageCopying(false), 1000);
       restore();
       tableContainer.className = originalClass;
     }
@@ -127,12 +213,11 @@ export const InfoView = (props: InfoViewProps) => {
       const elHeight = tableContainer.scrollHeight;
       const elWidth = tableContainer.scrollWidth;
       const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
+        scale: 1.5, 
         width: elWidth,
         height: elHeight,
+        backgroundColor: '#ffffff',
         style: { overflow: "visible", margin: "0" },
-        
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -165,42 +250,57 @@ export const InfoView = (props: InfoViewProps) => {
   const handleCopyRacesImage = async () => {
     if (!racesTableRef.current || isRacesImageCopying) return;
     setIsRacesImageCopying(true);
-    const restore = expandNodeForCapture(racesTableRef.current);
+    const tableContainer = racesTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass
+      .replace("h-[600px]", "")
+      .replace("overflow-y-auto", "")
+      .replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const elHeight = tableContainer.scrollHeight;
+      const elWidth = tableContainer.scrollWidth;
       
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(racesTableRef.current!, {
-              scale: 3, 
-
+      const dataUrlPromise = domToDataUrl(tableContainer, {
+        scale: 1.5, 
+        width: elWidth,
+        height: elHeight,
         backgroundColor: '#ffffff',
-              style: { overflow: "hidden" },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsRacesImageCopying(false), 2000);
-              }
-              
+        style: { overflow: "visible", margin: "0" },
+      });
+      const blobPromise = dataUrlPromise.then(url => fetch(url).then(r => r.blob()));
+      
+      await copyImageToClipboard(blobPromise, "detalle-carreras.png", dataUrlPromise);
     } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
+      console.warn("Error during copy fallback", err);
+    } finally {
+      setTimeout(() => setIsRacesImageCopying(false), 1000);
       restore();
+      tableContainer.className = originalClass;
     }
   };
 
   const handleDownloadRacesImage = async () => {
     if (!racesTableRef.current) return;
-    const restore = expandNodeForCapture(racesTableRef.current);
+    const tableContainer = racesTableRef.current;
+    const originalClass = tableContainer.className;
+    tableContainer.className = originalClass
+      .replace("h-[600px]", "")
+      .replace("overflow-y-auto", "")
+      .replace("overflow-x-auto", "");
+    const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(racesTableRef.current, {
-        scale: 3, 
-        
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const elHeight = tableContainer.scrollHeight;
+      const elWidth = tableContainer.scrollWidth;
+      
+      const dataUrl = await domToDataUrl(tableContainer, {
+        scale: 1.5, 
+        width: elWidth,
+        height: elHeight,
         backgroundColor: '#ffffff',
-        style: { overflow: "hidden" },
-        
+        style: { overflow: "visible", margin: "0" },
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -210,6 +310,7 @@ export const InfoView = (props: InfoViewProps) => {
       console.error("Error downloading table:", err);
     } finally {
       restore();
+      tableContainer.className = originalClass;
     }
   };
 
@@ -294,7 +395,7 @@ export const InfoView = (props: InfoViewProps) => {
                           <option value="">Todas las categorías</option>
                           {[
                             ...new Set(
-                              files.puntos.data?.map((r) => r.Categoría),
+                              files.puntos.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
                             ),
                           ]
                             .filter(Boolean)
@@ -397,8 +498,8 @@ export const InfoView = (props: InfoViewProps) => {
                         <option value="">Todas las categorías</option>
                         {[
                           ...new Set(
-                            files.carreras.data?.map((r) =>
-                              getVal(r, "Categoría"),
+                            files.carreras.data?.map((r: any) =>
+                              getVal(r, "Categoría")?.trim(),
                             ),
                           ),
                         ]

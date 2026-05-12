@@ -100,8 +100,18 @@ export const GhostDraftView = ({
                       </thead>
                       <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
                         {team.ghostRoster.map((roster: any, idx: number) => {
-                          const realPoints = cyclistMetadata[roster.original]?.puntosTotales || 0;
+                          const realMeta = cyclistMetadata[roster.original] || {};
+                          const ghostMeta = cyclistMetadata[roster.ghost] || {};
+                          
+                          const realPoints = realMeta.puntosTotales || 0;
                           const diff = roster.ghostPoints - realPoints;
+
+                          const formatNameAndPick = (name: string, meta: any) => {
+                            if (meta.ronda && meta.eleccion) {
+                              return `${name} <${meta.ronda}> (${meta.eleccion})`;
+                            }
+                            return `${name} <Libre>`;
+                          };
                           
                           return (
                             <tr key={idx} className="hover:bg-neutral-50/80 transition-colors">
@@ -112,7 +122,7 @@ export const GhostDraftView = ({
                               </td>
                               <td className="px-4 py-3">
                                 <div>
-                                  <p className="font-medium text-neutral-800">{roster.original}</p>
+                                  <p className="font-medium text-neutral-800">{formatNameAndPick(roster.original, realMeta)}</p>
                                   <p className="text-xs text-neutral-500">{realPoints.toLocaleString()} pts</p>
                                 </div>
                               </td>
@@ -120,7 +130,7 @@ export const GhostDraftView = ({
                                 <div className="flex items-center gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                                   <div>
-                                    <p className="font-bold text-indigo-900">{roster.ghost}</p>
+                                    <p className="font-bold text-indigo-900">{formatNameAndPick(roster.ghost, ghostMeta)}</p>
                                     <p className="text-xs text-indigo-700/70">{roster.ghostPoints.toLocaleString()} pts</p>
                                   </div>
                                 </div>

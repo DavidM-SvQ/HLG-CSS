@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
+import { domToDataUrl } from "modern-screenshot";
 
 interface ExportToolbarProps {
   isExpanded?: boolean;
@@ -16,6 +18,10 @@ interface ExportToolbarProps {
   imagePageCount?: number;
   
   onDownloadImage?: (range?: string) => void;
+
+  // Auto-export props
+  targetRef?: React.RefObject<HTMLElement>;
+  filename?: string;
 }
 
 export const ExportToolbar: React.FC<ExportToolbarProps> = ({
@@ -29,22 +35,69 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   isImageCopying,
   imagePageCount = 1,
   onDownloadImage,
+  targetRef,
+  filename = "export",
 }) => {
+  const [internalIsCopying, setInternalIsCopying] = useState<boolean | string | null>(false);
+
+  const _isImageCopying = isImageCopying !== undefined ? isImageCopying : internalIsCopying;
+
+  const handleAutoCopy = async (range?: string) => {
+    if (!targetRef?.current || _isImageCopying) return;
+    setInternalIsCopying(range || true);
+    try {
+      const dataUrl = await domToDataUrl(targetRef.current, {
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+        style: { overflow: "visible" },
+      });
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      await copyImageToClipboard(Promise.resolve(blob), `${filename}.png`);
+    } catch (err) {
+      console.warn("Error copying image", err);
+    } finally {
+      setTimeout(() => setInternalIsCopying(false), 2000);
+    }
+  };
+
+  const handleAutoDownload = async () => {
+    if (!targetRef?.current) return;
+    try {
+      const dataUrl = await domToDataUrl(targetRef.current, {
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+        style: { overflow: "visible" },
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${filename}.png`;
+      link.click();
+    } catch (err) {
+      console.warn("Error downloading image", err);
+    }
+  };
+
+  const _onCopyImage = onCopyImage || (targetRef ? handleAutoCopy : undefined);
+  const _onDownloadImage = onDownloadImage || (targetRef ? handleAutoDownload : undefined);
+
   const renderImageButtons = () => {
     return (
       <div className="flex items-center gap-1">
         <button
-          onClick={() => onCopyImage?.(imagePageCount > 1 ? 'full' : undefined)}
-          disabled={!!isImageCopying}
+          onClick={() => _onCopyImage?.(imagePageCount > 1 ? 'full' : undefined)}
+          disabled={!!_isImageCopying}
           className={cn(
             "p-1.5 rounded-md transition-colors border shadow-sm",
-            isImageCopying === 'full' || isImageCopying === true || (imagePageCount <= 1 && !!isImageCopying)
+            _isImageCopying === 'full' || _isImageCopying === true || (imagePageCount <= 1 && !!_isImageCopying)
               ? "bg-green-50 text-green-700 border-green-200"
               : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
           )}
           title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
         >
-          {isImageCopying === 'full' || isImageCopying === true || (imagePageCount <= 1 && !!isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {_isImageCopying === 'full' || _isImageCopying === true || (imagePageCount <= 1 && !!_isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         </button>
 
         {imagePageCount > 1 && (
@@ -52,18 +105,18 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
             {Array.from({ length: imagePageCount }, (_, i) => `p${i + 1}`).map((p) => (
               <button
                 key={p}
-                onClick={() => onCopyImage?.(p)}
-                disabled={!!isImageCopying}
+                onClick={() => _onCopyImage?.(p)}
+                disabled={!!_isImageCopying}
                 className={cn(
                   "px-2 py-1 text-[10px] font-bold rounded-md border shadow-sm flex items-center gap-1 transition-colors uppercase tracking-wider",
-                  isImageCopying === p
+                  _isImageCopying === p
                     ? "bg-green-50 text-green-700 border-green-200"
                     : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50",
-                  isImageCopying && isImageCopying !== p && "opacity-50 cursor-not-allowed"
+                  _isImageCopying && _isImageCopying !== p && "opacity-50 cursor-not-allowed"
                 )}
                 title={`Copiar ${p}`}
               >
-                {isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {_isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {p}
               </button>
             ))}

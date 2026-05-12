@@ -7,7 +7,8 @@ export function useRaceData(
   globalTeamPartialWinsCount: Record<string, any>,
   globalTeamWinsCount: Record<string, number>,
   raceWinners: Record<string, string>,
-  files: any
+  files: any,
+  cyclistMetadata?: Record<string, any>
 ) {
   return useMemo(() => {
     if (!selectedRace) return null;
@@ -371,7 +372,82 @@ export function useRaceData(
                     ? `\n\nClasificación por Etapas / Conceptos:\n${__etapasStr}\n🏆 ${__generalWinner} se lleva la clasificación general`
                     : "");
     
+                const cyclistToInfo = new Map<string, { equipo: string, orden: string, ronda: string, tempPoints: number, racePoints: number }>();
+                leaderboard?.forEach(player => {
+                  const teamName = player.nombreEquipo;
+                  const orden = player.orden;
+                  
+                  const tempPointsByCyc = new Map<string, number>();
+                  const racePointsByCyc = new Map<string, number>();
+                  const rondaByCyc = new Map<string, string>();
+
+                  player.detalles?.forEach((d: any) => {
+                      tempPointsByCyc.set(d.ciclista, (tempPointsByCyc.get(d.ciclista) || 0) + d.puntosObtenidos);
+                      if(d.carrera === selectedRace) {
+                          racePointsByCyc.set(d.ciclista, (racePointsByCyc.get(d.ciclista) || 0) + d.puntosObtenidos);
+                      }
+                      if(d.ronda) {
+                          rondaByCyc.set(d.ciclista, d.ronda);
+                      }
+                  });
+
+                  for(const [cyc, totalPts] of tempPointsByCyc.entries()) {
+                      cyclistToInfo.set(cyc, {
+                          equipo: teamName,
+                          orden: orden,
+                          ronda: rondaByCyc.get(cyc) || "Libre",
+                          tempPoints: totalPts,
+                          racePoints: racePointsByCyc.get(cyc) || 0
+                      });
+                  }
+                });
+
+                if (cyclistMetadata) {
+                  Object.entries(cyclistMetadata).forEach(([cyc, meta]: [string, any]) => {
+                    const equipo = meta.equipo || "Libre";
+                    if (!cyclistToInfo.has(cyc)) {
+                      cyclistToInfo.set(cyc, {
+                        equipo: equipo,
+                        orden: meta.playerOrder || "",
+                        ronda: meta.ronda || "Libre",
+                        tempPoints: 0,
+                        racePoints: 0
+                      });
+                    }
+                  });
+                }
+
+                const retiredStrings = ["DNF", "DNS", "OOT", "DSQ", "OTL"];
+                const isStageRace = finalColumns.some((c) => /^\d+/.test(c.formatted)) || finalColumns.length > 1;
+                const retiredCyclists: { ciclista: string, status: string, etapa: string, ronda: string, equipo: string, orden: string, tempPoints: number, racePoints: number }[] = [];
                 
+                if (isStageRace) {
+                    const processed = new Set();
+                    allRaceResults.forEach(r => {
+                        const posStr = (getVal(r, "Pos") || getVal(r, "Posición"))?.toString().trim().toUpperCase() || "";
+                        const isRetired = retiredStrings.some(rs => posStr.includes(rs));
+                        const cyclistName = getVal(r, "Ciclista")?.toString().trim();
+                        const statusVal = retiredStrings.find(rs => posStr.includes(rs)) || posStr;
+                        
+                        if (isRetired && cyclistName && !processed.has(cyclistName)) {
+                          const info = cyclistToInfo.get(cyclistName);
+                          if(info && info.equipo !== "No draft" && info.equipo !== "No draft [99]" && info.equipo !== "Libre" && info.equipo !== "") {
+                              retiredCyclists.push({
+                                  ciclista: cyclistName,
+                                  ronda: info.ronda,
+                                  equipo: info.equipo,
+                                  orden: info.orden,
+                                  tempPoints: info.tempPoints,
+                                  racePoints: info.racePoints,
+                                  status: statusVal,
+                                  etapa: getVal(r, "Etapa")?.toString() || ""
+                              });
+                              processed.add(cyclistName);
+                          }
+                        }
+                    });
+                    retiredCyclists.sort((a,b) => a.equipo.localeCompare(b.equipo));
+                }
 
     return {
       raceTeams,
@@ -390,7 +466,8 @@ export function useRaceData(
       raceCyclists,
       maxCyclistRacePoints,
       minCyclistRacePoints,
-      __textValue
+      __textValue,
+      retiredCyclists
     };
-  }, [selectedRace, leaderboard, globalTeamPartialWinsCount, globalTeamWinsCount, raceWinners, files]);
+  }, [selectedRace, leaderboard, globalTeamPartialWinsCount, globalTeamWinsCount, raceWinners, files, cyclistMetadata]);
 }

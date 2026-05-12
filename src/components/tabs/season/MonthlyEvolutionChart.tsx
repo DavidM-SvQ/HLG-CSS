@@ -3,26 +3,31 @@ import { TrendingUp, Maximize2, Copy, CheckCircle2, UploadCloud, X } from "lucid
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 
+import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext);
+  const [hoveredTeam, setHoveredTeam] = React.useState<string | null>(null);
   if (!context) return null;
   const {
     cn,
     filteredLeaderboard,
-    evolutionMode,
-    setEvolutionMode,
-    evolutionTimeFilter,
-    setEvolutionTimeFilter,
-    isEvolutionChartExpanded,
-    setIsEvolutionChartExpanded,
-    isEvolutionChartCopying,
-    evolutionChartRef,
-    selectedEvolutionTeams,
-    setSelectedEvolutionTeams,
-    handleCopyEvolutionChart,
-    handleDownloadEvolutionChart,
     LINE_COLORS,
   } = context;
+
+  const [evolutionMode, setEvolutionMode] = React.useState("posiciones");
+  const [evolutionTimeFilter, setEvolutionTimeFilter] = React.useState("all");
+  const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = React.useState(false);
+  const [isEvolutionChartCopying, setIsEvolutionChartCopying] = React.useState(false);
+  const [selectedEvolutionTeams, setSelectedEvolutionTeams] = React.useState<string[]>([]);
+  const evolutionChartRef = React.useRef<HTMLDivElement>(null);
+
+  const handleCopyEvolutionChart = async () => {
+    performImageCopy(evolutionChartRef, setIsEvolutionChartCopying, true, "monthlyEvolutionChart");
+  };
+  const handleDownloadEvolutionChart = async () => {
+    performImageDownload(evolutionChartRef, "evolucion-mensual.png", "monthlyEvolutionChart");
+  };
 
   const months = [
     "Ene",
@@ -43,8 +48,10 @@ export function MonthlyEvolutionChart() {
   const currentWeekStr = currentDayStr > 21 ? 3 : currentDayStr > 14 ? 2 : currentDayStr > 7 ? 1 : 0;
   const currentWIdx = currentMonthIdx * 4 + currentWeekStr;
 
+  const activeTeams = filteredLeaderboard?.filter(t => !t.nombreEquipo.toLowerCase().includes("no draft")) || [];
+
   const teamColors: Record<string, string> = {};
-  filteredLeaderboard?.forEach((team, idx) => {
+  activeTeams.forEach((team, idx) => {
     const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
     if (idx === 0) teamColors[teamKey] = "#fbbf24"; // Gold
     else if (idx === 1) teamColors[teamKey] = "#94a3b8"; // Silver
@@ -53,6 +60,82 @@ export function MonthlyEvolutionChart() {
   });
 
   const getEvolutionData = () => {
+    if (evolutionMode === "posiciones") {
+      const weeks: string[] = [];
+      for (let i = 0; i < 12; i++) {
+        for (let w = 1; w <= 4; w++) {
+          weeks.push(`${months[i]} S${w}`);
+        }
+      }
+      
+      const pointsByWeek = weeks.map(w => ({ month: w, scores: {} as Record<string, number> }));
+      
+      activeTeams.forEach(team => {
+        const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+        let accumulated = 0;
+        
+        months.forEach((m, mIdx) => {
+          for (let w = 1; w <= 4; w++) {
+            const wIdx = mIdx * 4 + (w - 1);
+            const weekPoints = team.detalles.reduce((sum: number, d: any) => {
+              if (!d.fecha) return sum;
+              const parts = d.fecha.split("/");
+              if (parts.length < 2) return sum;
+              const monthIndex = parseInt(parts[1]) - 1;
+              const day = parseInt(parts[0]);
+              if (isNaN(monthIndex) || isNaN(day)) return sum;
+
+              let weekIndex = 1;
+              if (day > 7 && day <= 14) weekIndex = 2;
+              else if (day > 14 && day <= 21) weekIndex = 3;
+              else if (day > 21) weekIndex = 4;
+
+              if (monthIndex === mIdx && weekIndex === w) return sum + (typeof d.puntosObtenidos === 'number' ? d.puntosObtenidos : 0);
+              return sum;
+            }, 0);
+            
+            accumulated += weekPoints;
+            pointsByWeek[wIdx].scores[teamKey] = accumulated;
+          }
+        });
+      });
+
+      const chartData: any[] = [];
+      let started = false;
+
+      pointsByWeek.forEach((weekData, wIdx) => {
+        if (wIdx > currentWIdx) return;
+        
+        const hasPoints = Object.values(weekData.scores).some(val => val > 0);
+        if (!hasPoints && !started) return;
+        started = true;
+        
+        const teamsScoreArray = Object.entries(weekData.scores).map(([team, score]) => ({ team, score }));
+        teamsScoreArray.sort((a, b) => b.score - a.score || a.team.localeCompare(b.team));
+        
+        const mIdx = Math.floor(wIdx / 4);
+        const rankData: any = { month: weekData.month, mIdx };
+        
+        teamsScoreArray.forEach((ts, idx) => {
+          rankData[ts.team] = idx + 1;
+        });
+        
+        chartData.push(rankData);
+      });
+
+      return chartData.filter((w) => {
+        if (evolutionTimeFilter !== "all") {
+          if (evolutionTimeFilter.includes("-")) {
+            const [start, end] = evolutionTimeFilter.split("-").map(Number);
+            if (w.mIdx < start || w.mIdx > end) return false;
+          } else {
+            if (w.mIdx !== parseInt(evolutionTimeFilter)) return false;
+          }
+        }
+        return true;
+      });
+    }
+
     if (evolutionMode === "semanal" || evolutionMode === "acumulado_semanal") {
       const weeks: string[] = [];
       for (let i = 0; i < 12; i++) {
@@ -61,7 +144,7 @@ export function MonthlyEvolutionChart() {
         }
       }
       const dataByWeek: any[] = weeks.map((w) => ({ month: w }));
-      filteredLeaderboard?.forEach((team) => {
+      activeTeams.forEach((team) => {
         const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
 
         let accumulated = 0;
@@ -122,7 +205,7 @@ export function MonthlyEvolutionChart() {
       month: m,
     }));
 
-    filteredLeaderboard?.forEach((team) => {
+    activeTeams.forEach((team) => {
       const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
 
       let accumulated = 0;
@@ -155,6 +238,39 @@ export function MonthlyEvolutionChart() {
   };
 
   const evolutionData = getEvolutionData();
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const sorted = [...payload].sort((a, b) => a.value - b.value);
+      return (
+        <div className="bg-white/95 backdrop-blur-sm p-4 border border-neutral-200 rounded-xl shadow-xl z-[100] min-w-[200px]">
+          <p className="font-bold text-neutral-800 mb-3 border-b border-neutral-100 pb-2">{label}</p>
+          <div className="space-y-1.5 flex flex-col">
+            {sorted.map((p, i) => {
+              const isHovered = hoveredTeam === p.dataKey;
+              return (
+                <div 
+                  key={p.dataKey}
+                  className={`flex items-center justify-between text-xs font-medium w-full px-2 py-1 rounded-md transition-all ${
+                    isHovered ? 'bg-neutral-800 text-white shadow-sm scale-110 -translate-y-px z-10' : p.value <= 3 ? 'bg-neutral-50/80' : ''
+                  }`}
+                  style={{ color: isHovered ? '#fff' : p.color }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${isHovered ? 'bg-white text-neutral-900' : 'bg-white border border-current'}`}>
+                      {p.value}
+                    </span>
+                    <span className="truncate max-w-[150px]" title={p.dataKey}>{p.dataKey}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <>
@@ -205,6 +321,17 @@ export function MonthlyEvolutionChart() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex bg-neutral-100 p-1 rounded-lg">
+              <button
+                onClick={() => setEvolutionMode("posiciones")}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                  evolutionMode === "posiciones"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-neutral-500 hover:text-neutral-700",
+                )}
+              >
+                Posiciones
+              </button>
               <button
                 onClick={() => setEvolutionMode("acumulado")}
                 className={cn(
@@ -291,28 +418,22 @@ export function MonthlyEvolutionChart() {
                   onClick={() => setSelectedEvolutionTeams([])}
                   className="text-xs font-medium text-blue-600 hover:text-blue-700"
                 >
-                  Mostrar Todos
+                  Todo
                 </button>
                 <button
-                  onClick={() =>
-                    setSelectedEvolutionTeams(
-                      filteredLeaderboard.map(
-                        (t) => `${t.nombreEquipo} [#${t.orden}]`,
-                      ),
-                    )
-                  }
+                  onClick={() => setSelectedEvolutionTeams(["_NONE_"])}
                   className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
                 >
-                  Seleccionar Todos
+                  Ninguno
                 </button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {filteredLeaderboard.map((team, idx) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              {activeTeams.map((team, idx) => {
                 const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
                 const isSelected =
                   selectedEvolutionTeams.length === 0 ||
-                  selectedEvolutionTeams.includes(teamKey);
+                  (selectedEvolutionTeams.includes(teamKey) && !selectedEvolutionTeams.includes("_NONE_"));
                 const color = teamColors[teamKey];
 
                 return (
@@ -322,21 +443,23 @@ export function MonthlyEvolutionChart() {
                       if (selectedEvolutionTeams.length === 0) {
                         setSelectedEvolutionTeams([teamKey]);
                       } else {
-                        if (selectedEvolutionTeams.includes(teamKey)) {
-                          const next = selectedEvolutionTeams.filter(
-                            (t) => t !== teamKey,
-                          );
+                        let next = selectedEvolutionTeams;
+                        if (next.includes("_NONE_")) next = next.filter(t => t !== "_NONE_");
+                        
+                        if (next.includes(teamKey)) {
+                          next = next.filter((t) => t !== teamKey);
+                          if (next.length === 0) next = ["_NONE_"];
                           setSelectedEvolutionTeams(next);
                         } else {
                           setSelectedEvolutionTeams([
-                            ...selectedEvolutionTeams,
+                            ...next,
                             teamKey,
                           ]);
                         }
                       }
                     }}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-2",
+                      "px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all border flex items-center justify-center gap-1.5 overflow-hidden",
                       isSelected
                         ? "bg-white shadow-sm"
                         : "bg-neutral-50 text-neutral-400 border-neutral-100 grayscale opacity-50",
@@ -347,18 +470,18 @@ export function MonthlyEvolutionChart() {
                     }}
                   >
                     <div
-                      className="w-2 h-2 rounded-full"
+                      className="w-2 h-2 rounded-full shrink-0"
                       style={{ backgroundColor: color }}
                     />
-                    {team.nombreEquipo}
+                    <span className="truncate max-w-[120px]">{team.nombreEquipo}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="h-[600px] w-full">
-            <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+          <div className="h-[600px] w-full mt-4 border-t border-neutral-100 pt-6">
+            <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
               <LineChart
                 data={evolutionData}
                 margin={{
@@ -374,26 +497,32 @@ export function MonthlyEvolutionChart() {
                   stroke="#f0f0f0"
                 />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                  }}
-                  itemSorter={(item) => -(item.value as number)}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  align="center"
-                  height={80}
-                  iconType="circle"
-                  wrapperStyle={{
-                    paddingTop: "20px",
-                    paddingBottom: "0px",
-                    fontSize: "12px",
-                  }}
-                />
+                {evolutionMode === "posiciones" ? (
+                  <YAxis 
+                    reversed 
+                    domain={[1, activeTeams.length]} 
+                    tickCount={activeTeams.length}
+                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={12}
+                    interval={0}
+                  />
+                ) : (
+                  <YAxis tick={{ fontSize: 12 }} />
+                )}
+                {evolutionMode === "posiciones" ? (
+                  <Tooltip content={<CustomTooltip />} />
+                ) : (
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                    }}
+                    itemSorter={(item) => -(item.value as number)}
+                  />
+                )}
                 {(evolutionMode === "semanal" ||
                   evolutionMode === "acumulado_semanal") && (
                   <Brush
@@ -425,6 +554,8 @@ export function MonthlyEvolutionChart() {
                         type="monotone"
                         dataKey={teamKey}
                         stroke={teamColors[teamKey]}
+                        onMouseEnter={() => setHoveredTeam(teamKey)}
+                        onMouseLeave={() => setHoveredTeam(null)}
                         strokeWidth={isSelected ? 3 : 1}
                         strokeOpacity={opacity}
                         dot={isSelected ? { r: 4, strokeWidth: 2 } : false}
@@ -433,6 +564,8 @@ export function MonthlyEvolutionChart() {
                             ? {
                                 r: 6,
                                 strokeWidth: 0,
+                                onMouseEnter: () => setHoveredTeam(teamKey),
+                                onMouseLeave: () => setHoveredTeam(null),
                               }
                             : false
                         }
@@ -453,7 +586,7 @@ export function MonthlyEvolutionChart() {
               <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-blue-600" />
                 Evolución por fechas (
-                {evolutionMode === "acumulado"
+                {evolutionMode === "posiciones" ? "Posiciones" : evolutionMode === "acumulado"
                   ? "Acumulado mensual"
                   : evolutionMode === "acumulado_semanal"
                     ? "Acumulado semanal"
@@ -471,7 +604,7 @@ export function MonthlyEvolutionChart() {
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
-                <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+                <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
                   <LineChart
                     data={evolutionData}
                     margin={{
@@ -487,29 +620,36 @@ export function MonthlyEvolutionChart() {
                       stroke="#f0f0f0"
                     />
                     <XAxis dataKey="month" tick={{ fontSize: 14 }} />
-                    <YAxis tick={{ fontSize: 14 }} />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                        fontSize: "14px",
-                      }}
-                      itemSorter={(item) => -(item.value as number)}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      align="center"
-                      height={100}
-                      iconType="circle"
-                      wrapperStyle={{
-                        paddingTop: "20px",
-                        paddingBottom: "0px",
-                        fontSize: "14px",
-                      }}
-                    />
+                    {evolutionMode === "posiciones" ? (
+                      <YAxis 
+                        reversed 
+                        domain={[1, activeTeams.length]} 
+                        tickCount={activeTeams.length}
+                        tick={{ fontSize: 13, fill: '#64748b', fontWeight: 'bold' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={12}
+                        interval={0}
+                      />
+                    ) : (
+                      <YAxis tick={{ fontSize: 14 }} />
+                    )}
+                    {evolutionMode === "posiciones" ? (
+                      <Tooltip content={<CustomTooltip />} />
+                    ) : (
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "none",
+                          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                          fontSize: "14px",
+                        }}
+                        itemSorter={(item) => -(item.value as number)}
+                      />
+                    )}
                     {(evolutionMode === "semanal" ||
-                      evolutionMode === "acumulado_semanal") && (
+                      evolutionMode === "acumulado_semanal" ||
+                      evolutionMode === "posiciones") && (
                       <Brush
                         dataKey="month"
                         height={30}
@@ -539,6 +679,8 @@ export function MonthlyEvolutionChart() {
                             type="monotone"
                             dataKey={teamKey}
                             stroke={teamColors[teamKey]}
+                            onMouseEnter={() => setHoveredTeam(teamKey)}
+                            onMouseLeave={() => setHoveredTeam(null)}
                             strokeWidth={isSelected ? 4 : 1}
                             strokeOpacity={opacity}
                             dot={isSelected ? { r: 5, strokeWidth: 2 } : false}
@@ -547,6 +689,8 @@ export function MonthlyEvolutionChart() {
                                 ? {
                                     r: 8,
                                     strokeWidth: 0,
+                                    onMouseEnter: () => setHoveredTeam(teamKey),
+                                    onMouseLeave: () => setHoveredTeam(null),
                                   }
                                 : false
                             }
