@@ -1,11 +1,11 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect } from "react";
 import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download } from "lucide-react";
-import { domToDataUrl } from "modern-screenshot";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
+import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 
 function MultiSelect({ options, value, onChange, placeholder }: { options: {value: string, label: string}[], value: string[], onChange: (v: string[]) => void, placeholder: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,7 +77,6 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
     }
   }, [selectedCyclistDetail]);
 
-  const [isCyclistDetailExpanded, setIsCyclistDetailExpanded] = useState(false);
   const [cyclistDetailSortCol, setCyclistDetailSortCol] = useState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("fecha");
   const [cyclistDetailSortDir, setCyclistDetailSortDir] = useState<"asc"|"desc">("asc");
   const [filterMode, setFilterMode] = useState<"quick" | "daily" | "monthly" | "yearly">("quick");
@@ -90,97 +89,13 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useState<string[]>([]);
   const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useState<{ op: string; val: string }>({ op: "<=", val: "" });
   const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useState<{ op: string; val: string }>({ op: ">=", val: "" });
-  const [isCyclistDetailCopying, setIsCyclistDetailCopying] = useState(false);
-  const [isCyclistDetailDownloading, setIsCyclistDetailDownloading] = useState(false);
-  const [isCyclistDetailTextCopying, setIsCyclistDetailTextCopying] = useState(false);
-  const cyclistDetailRef = useRef<HTMLDivElement>(null);
 
-  const handleCopyCyclistDetail = async () => {
-    if (!cyclistDetailRef.current || isCyclistDetailCopying) return;
-    setIsCyclistDetailCopying(true);
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const tableContainer = cyclistDetailRef.current;
-    if (!tableContainer) return;
-    const restore = expandNodeForCapture(tableContainer);
-    try 
-  {
-    const processCopy = async () => {
-      const dataUrl = await domToDataUrl(tableContainer, {
-          scale: 3, 
-          backgroundColor: '#ffffff',
-          style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        });
-      return await (await fetch(dataUrl)).blob();
-    };
-    await copyImageToClipboard(processCopy(), "export.png");
-    setTimeout(() => setIsCyclistDetailCopying(false), 2000);
-  }
-                           catch (err) {
-      setIsCyclistDetailCopying(false);
-      try {
-        const dataUrl = await domToDataUrl(tableContainer, {
-          scale: 3,
-          backgroundColor: '#ffffff',
-          style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        });
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `detalle_${selectedCyclistDetail}.png`;
-        link.click();
-      } catch (fallbackErr) {}
-    } finally {
-      restore();
-    }
-  };
-
-  const handleCopyCyclistDetailText = async () => {
-    if (!cyclistDetailRef.current) return;
-    setIsCyclistDetailTextCopying(true);
-    try {
-      const table = cyclistDetailRef.current.querySelector("table");
-      if (!table) return;
-      const ths = Array.from(table.querySelectorAll("th")).map((th) => (th as HTMLElement).textContent?.trim() || "");
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
-      const lines = [ths.join("\t")];
-      rows.forEach((row) => {
-        if ((row as HTMLElement).classList.contains("hidden")) return;
-        const tds = Array.from((row as HTMLElement).querySelectorAll("td")).map((td) => (td as HTMLElement).textContent?.trim() || "");
-        if (tds.length === 1) return;
-        lines.push(tds.join("\t"));
-      });
-      const text = lines.join("\n");
-      await await copyTextToClipboard(text, 'export.txt');
-      setTimeout(() => setIsCyclistDetailTextCopying(false), 2000);
-    } catch (err) {
-      setIsCyclistDetailTextCopying(false);
-    }
-  };
-
-  const handleDownloadCyclistDetailImage = async () => {
-    if (!cyclistDetailRef.current || isCyclistDetailDownloading) return;
-    setIsCyclistDetailDownloading(true);
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const tableContainer = cyclistDetailRef.current;
-    if (!tableContainer) return;
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-      const link = document.createElement("a");
-      link.download = `detalle_${selectedCyclistDetail}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => setIsCyclistDetailDownloading(false), 2000);
-    } catch (err) {
-      console.error(err);
-      setIsCyclistDetailDownloading(false);
-    } finally {
-      restore();
+  const handleSort = (col: any) => {
+    if (cyclistDetailSortCol === col) {
+      setCyclistDetailSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setCyclistDetailSortCol(col);
+      setCyclistDetailSortDir("asc");
     }
   };
 
@@ -370,27 +285,17 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
           const filterOptionsCat = Array.from(new Set(allItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: c, label: c}));
           const filterOptionsType = Array.from(new Set(allItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: t, label: t}));
 
-          const sortDirNum = cyclistDetailSortDir === "asc" ? 1 : -1;
-          filteredItems.sort((a, b) => {
-            if (cyclistDetailSortCol === "fecha") {
-              const parseDate = (d: string) => {
-                if (!d) return 0;
-                const p = d.split(/[-/]/);
-                if (p.length !== 3) return 0;
-                return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
-              };
-              return (parseDate(a!.fecha) - parseDate(b!.fecha)) * sortDirNum;
-            }
-            if (cyclistDetailSortCol === "puntos") return (a!.puntos - b!.puntos) * sortDirNum;
-            const valA = (a as any)[cyclistDetailSortCol] || "";
-            const valB = (b as any)[cyclistDetailSortCol] || "";
-            return valA.toString().localeCompare(valB.toString()) * sortDirNum;
-          });
-
-          const handleSort = (col: string) => {
-            if (cyclistDetailSortCol === col) { setCyclistDetailSortDir(prev => prev === "asc" ? "desc" : "asc"); }
-            else { setCyclistDetailSortCol(col as any); setCyclistDetailSortDir("asc"); }
-          };
+          const {
+            ref: cyclistDetailRef,
+            isExpanded: isCyclistDetailExpanded,
+            setIsExpanded: setIsCyclistDetailExpanded,
+            isCopying: isCyclistDetailCopying,
+            isDownloading: isCyclistDetailDownloading,
+            isTextCopying: isCyclistDetailTextCopying,
+            handleCopyImage,
+            handleDownloadImage,
+            handleCopyText
+          } = useTableScreenshot<HTMLDivElement>();
 
           return (
             <div 
@@ -430,7 +335,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     )}
                   </button>
                   <button
-                    onClick={handleCopyCyclistDetail}
+                    onClick={() => handleCopyImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
                     disabled={!!isCyclistDetailCopying}
                     title="Copiar imagen"
                     className={cn(
@@ -447,7 +352,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     )}
                   </button>
                   <button
-                    onClick={handleDownloadCyclistDetailImage}
+                    onClick={() => handleDownloadImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
                     disabled={isCyclistDetailDownloading}
                     title="Descargar imagen"
                     className={cn(
@@ -464,7 +369,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     )}
                   </button>
                   <button
-                    onClick={handleCopyCyclistDetailText}
+                    onClick={handleCopyText}
                     disabled={isCyclistDetailTextCopying}
                     title="Copiar texto"
                     className={cn(

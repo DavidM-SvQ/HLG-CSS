@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Save, Bold, Italic, Strikethrough, List, ListOrdered } from 'lucide-react';
 import { supabase } from '../../../supabase';
+import { Skeleton } from "../../ui/Skeleton";
 
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) {
@@ -141,8 +142,8 @@ export function TestsIdeasTracker() {
       )}
 
       {!isLoaded ? (
-        <div className="h-40 flex items-center justify-center text-sm text-neutral-400 bg-neutral-50 rounded-lg border border-neutral-100">
-          Cargando bloc de notas...
+        <div className="h-40 flex items-center justify-center p-4 bg-white border border-neutral-200 rounded-lg">
+          <Skeleton className="w-full h-full" />
         </div>
       ) : (
         <div className="mt-2">

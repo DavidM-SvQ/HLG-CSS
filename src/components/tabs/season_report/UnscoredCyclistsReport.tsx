@@ -2,9 +2,9 @@ import React, { useState, useRef, useMemo } from "react";
 import { UserMinus, ChevronDown, ChevronUp, Copy, CheckCircle2, Minimize2, Maximize2, Download, FileText } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { ExportToolbar } from "../../ui/ExportToolbar";
-import { domToDataUrl } from "modern-screenshot";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import { flushSync } from "react-dom";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 interface UnscoredCyclistsReportProps {
   files: any;
@@ -26,6 +26,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
   expandNodeForCapture
 }) => {
   const unscoredTableRef = useRef<HTMLDivElement>(null);
+  const { handleCopyImage: copyUnscoredImage, handleDownloadImage: downloadUnscoredImage, isCopying: isUnscoredTableCopyingState } = useTableScreenshot(unscoredTableRef);
   
   const [unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn] = useState<string>("jugador");
   const [unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection] = useState<"asc" | "desc">("asc");
@@ -115,45 +116,32 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
   const handleCopyUnscored = async (
     subset?: "full" | string,
   ) => {
-    if (!unscoredTableRef.current || isUnscoredCopying) return;
+    if (isUnscoredCopying) return;
     flushSync(() => {
       setIsUnscoredCopying(subset || "full");
     });
-    const tableContainer = unscoredTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-
     try {
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-      };
-      await copyImageToClipboard(processCopy(), "export.png");
-      setTimeout(() => setIsUnscoredCopying(null), 2000);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
+      await copyUnscoredImage({
+        fileName: "export.png",
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+      });
     } finally {
-      restore();
+      setIsUnscoredCopying(null);
     }
   };
 
   const handleDownloadUnscored = async (
     subset?: "full" | string,
   ) => {
-    if (!unscoredTableRef.current) return;
-    const tableContainer = unscoredTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      const dataUrl = await domToDataUrl(tableContainer, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      const suffix = subset && subset !== "full" ? `-${subset}` : "";
-      link.download = `ciclistas-sin-puntuar${suffix}.png`;
-      link.click();
-    } catch (err) {
-    } finally {
-      restore();
-    }
+    const suffix = subset && subset !== "full" ? `-${subset}` : "";
+    await downloadUnscoredImage({
+      fileName: `ciclistas-sin-puntuar${suffix}.png`,
+      scale: 3,
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      backgroundColor: "#ffffff",
+    });
   };
 
   return (

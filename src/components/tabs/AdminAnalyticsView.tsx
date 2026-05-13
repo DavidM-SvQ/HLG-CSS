@@ -3,6 +3,7 @@ import { supabase } from "../../supabase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Loader2, AlertCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { Skeleton } from "../ui/Skeleton";
 
 export const AdminAnalyticsView = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -52,9 +53,8 @@ export const AdminAnalyticsView = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64 text-purple-600">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-2 font-medium">Cargando estadísticas...</span>
+      <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mb-6">
+        <Skeleton className="h-48 w-full" />
       </div>
     );
   }

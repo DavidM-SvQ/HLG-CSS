@@ -3,9 +3,9 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
-
-import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+import { performTextCopy } from "./hooks/useExportHandlers";
 
 export function UnscoredCyclists() {
   const context = useContext(SeasonViewContext);
@@ -27,14 +27,21 @@ export function UnscoredCyclists() {
   const unscoredRefContainer = useRef<HTMLDivElement>(null);
   const unscoredTableRef = useRef<HTMLDivElement>(null);
 
+  const { handleCopyImage: copyUnscoredImage, handleDownloadImage: downloadUnscoredImage, isCopying: isUnscoredTableCopying } = useTableScreenshot(unscoredTableRef);
+
   const handleCopyUnscored = async (mode?: string) => {
-    performImageCopy(unscoredTableRef, setIsUnscoredCopying, mode || "full", "unscoredCyclists");
+    setIsUnscoredCopying(mode || "full");
+    try {
+      await copyUnscoredImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
+    } finally {
+      setIsUnscoredCopying(false);
+    }
   };
   const handleCopyUnscoredText = async () => {
     performTextCopy(unscoredTableRef, setIsUnscoredTextCopying, "unscoredCyclists");
   };
   const handleDownloadUnscored = async (mode?: string) => {
-    performImageDownload(unscoredTableRef, `ciclistas-sin-puntuar${mode && mode !== "full" ? `-${mode}` : ""}.png`, "unscoredCyclists");
+    await downloadUnscoredImage({ fileName: `ciclistas-sin-puntuar${mode && mode !== "full" ? `-${mode}` : ""}.png`, scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   return (

@@ -3,9 +3,9 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
-
-import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+import { performTextCopy } from "./hooks/useExportHandlers";
 
 export function NoDraftCyclists() {
   const context = useContext(SeasonViewContext);
@@ -25,15 +25,22 @@ export function NoDraftCyclists() {
   const noDraftCyclistsRef = useRef<HTMLDivElement>(null);
   const noDraftCyclistsTableRef = useRef<HTMLDivElement>(null);
   const noDraftRefContainer = useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyNoDraft, handleDownloadImage: downloadNoDraft, isCopying: noDraftIsCopyingMode } = useTableScreenshot(noDraftCyclistsTableRef);
 
   const handleCopyNoDraftCyclists = async (mode?: string) => {
-    performImageCopy(noDraftCyclistsTableRef, setIsNoDraftCyclistsCopying, mode || "full", "noDraftCyclists");
+    setIsNoDraftCyclistsCopying(mode || "full");
+    try {
+      await copyNoDraft({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
+    } finally {
+      setIsNoDraftCyclistsCopying(false);
+    }
   };
   const handleCopyNoDraftCyclistsText = async () => {
     performTextCopy(noDraftCyclistsTableRef, setIsNoDraftCyclistsTextCopying, "noDraftCyclists");
   };
   const handleDownloadNoDraftCyclists = async (mode?: string) => {
-    performImageDownload(noDraftCyclistsTableRef, `top-ciclistas-no-elegidos${mode && mode !== "full" ? `-${mode}` : ""}.png`, "noDraftCyclists");
+    await downloadNoDraft({ fileName: `top-ciclistas-no-elegidos${mode && mode !== "full" ? `-${mode}` : ""}.png`, scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   return (

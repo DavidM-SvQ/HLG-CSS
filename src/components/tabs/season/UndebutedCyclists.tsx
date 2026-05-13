@@ -3,9 +3,9 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
-
-import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+import { performTextCopy } from "./hooks/useExportHandlers";
 
 export function UndebutedCyclists() {
   const context = useContext(SeasonViewContext);
@@ -25,15 +25,22 @@ export function UndebutedCyclists() {
   const undebutedRef = useRef<HTMLDivElement>(null);
   const undebutedRefContainer = useRef<HTMLDivElement>(null);
   const undebutedTableRef = useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyUndebutedImage, handleDownloadImage: downloadUndebutedImage, isCopying: isUndebutedTableCopyingState } = useTableScreenshot(undebutedTableRef);
 
   const handleCopyUndebuted = async (mode?: string) => {
-    performImageCopy(undebutedTableRef, setIsUndebutedCopying, mode || "full", "undebutedCyclists");
+    setIsUndebutedCopying(mode || "full");
+    try {
+      await copyUndebutedImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
+    } finally {
+      setIsUndebutedCopying(false);
+    }
   };
   const handleCopyUndebutedText = async () => {
     performTextCopy(undebutedTableRef, setIsUndebutedTextCopying, "undebutedCyclists");
   };
   const handleDownloadUndebuted = async (mode?: string) => {
-    performImageDownload(undebutedTableRef, `ciclistas-sin-debutar${mode && mode !== "full" ? `-${mode}` : ""}.png`, "undebutedCyclists");
+    await downloadUndebutedImage({ fileName: `ciclistas-sin-debutar${mode && mode !== "full" ? `-${mode}` : ""}.png`, scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   return (

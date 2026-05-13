@@ -3,8 +3,7 @@ import { Copy, Maximize2, UploadCloud, CheckCircle2, TrendingUp, X } from "lucid
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
-
-import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function MonthlyWinsEvolutionChart() {
   const context = useContext(SeasonViewContext);
@@ -16,17 +15,22 @@ export function MonthlyWinsEvolutionChart() {
   } = context;
 
   const [isWinsEvolutionExpanded, setIsWinsEvolutionExpanded] = React.useState(false);
-  const [isWinsEvolutionCopying, setIsWinsEvolutionCopying] = React.useState(false);
   const winsEvolutionRef = React.useRef<HTMLDivElement>(null);
   
   const [winsChartType, setWinsChartType] = React.useState("acumulado");
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = React.useState<string[]>([]);
+  
+  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(winsEvolutionRef);
 
   const handleCopyWinsEvolution = async () => {
-    performImageCopy(winsEvolutionRef, setIsWinsEvolutionCopying, true, "monthlyWinsEvolutionChart");
+    await handleCopyImage({
+      fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff"
+    });
   };
   const handleDownloadWinsEvolution = async () => {
-    performImageDownload(winsEvolutionRef, "evolucion-victorias.png", "monthlyWinsEvolutionChart");
+    await handleDownloadImage({
+      fileName: "evolucion-victorias.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff"
+    });
   };
 
   const { teamColors, monthlyWinsEvolutionData } = useFilters({
@@ -54,16 +58,16 @@ export function MonthlyWinsEvolutionChart() {
               </button>
               <button
                 onClick={handleCopyWinsEvolution}
-                disabled={isWinsEvolutionCopying}
+                disabled={!!isCopying}
                 className={cn(
                   "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                  isWinsEvolutionCopying
+                  isCopying
                     ? "bg-green-50 text-green-600 border border-green-200"
                     : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
                 )}
-                title={isWinsEvolutionCopying ? "Copiado" : "Copiar gráfico como imagen"}
+                title={isCopying ? "Copiado" : "Copiar gráfico como imagen"}
               >
-                {isWinsEvolutionCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {isCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
               <button
                 onClick={handleDownloadWinsEvolution}

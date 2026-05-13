@@ -2,8 +2,7 @@ import React, { useContext } from "react";
 import { Maximize2, Copy, CheckCircle2, UploadCloud, BarChart3, X } from "lucide-react";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
-
-import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function GeneralClassificationChart() {
   const context = useContext(SeasonViewContext);
@@ -15,14 +14,15 @@ export function GeneralClassificationChart() {
   } = context;
 
   const [isChartExpanded, setIsChartExpanded] = React.useState(false);
-  const [isCopying, setIsCopying] = React.useState(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyChartImage, handleDownloadImage: downloadChartImage, isCopying } = useTableScreenshot(chartRef);
 
   const handleCopyChart = async () => {
-    performImageCopy(chartRef, setIsCopying, true, "generalClassificationChart");
+    await copyChartImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
   const handleDownloadChart = async () => {
-    performImageDownload(chartRef, "clasificacion-general.png", "generalClassificationChart");
+    await downloadChartImage({ fileName: "clasificacion-general.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   const chartData = filteredLeaderboard.map((p, idx) => {

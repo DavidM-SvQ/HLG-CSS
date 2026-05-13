@@ -7,11 +7,8 @@ import localforage from "localforage";
 import { useDataStore } from "./lib/stores/useDataStore";
 import { useComputedStore } from "./lib/stores/useComputedStore";
 import { useAppComputations } from "./lib/hooks/useAppComputations";
-import { domToBlob, domToDataUrl } from "modern-screenshot";
 import {
   UploadCloud,
-  CheckCircle2,
-  AlertCircle,
   Trophy,
   Medal,
   Users,
@@ -46,9 +43,13 @@ import {
   FileText,
   ArrowUpDown,
   HelpCircle,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { AppHeader } from "./components/AppHeader";
 import { AdminNav } from "./components/AdminNav";
+import { TableSkeleton } from "./components/ui/Skeleton";
+import { Routes, Route, Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 
 const MonthlyReportView = lazy(() => import("./components/tabs/MonthlyReportView").then(m => ({ default: m.MonthlyReportView })));
 const SeasonReportView = lazy(() => import("./components/tabs/SeasonReportView").then(m => ({ default: m.SeasonReportView })));
@@ -266,8 +267,8 @@ function MultiSelect({ options, value, onChange, placeholder }: { options: {valu
 }
 
 export default function App() {
+  const location = useLocation();
   const initParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-  const initTab = (initParams.get("tab") as any) || "season";
   const initRace = initParams.get("race") || "";
   const initStartlistRace = initParams.get("startlist_race") || "";
   const initTeam = initParams.get("selected_team") || "";
@@ -275,6 +276,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showFrameWarning, setShowFrameWarning] = useState(false);
   const [view, setView] = useState<"public" | "admin">("public");
   const [adminTab, setAdminTab] = useState<
     | "datos"
@@ -285,9 +287,6 @@ export default function App() {
     | "pruebas"
     | "estadisticas"
   >("datos");
-  const [publicTab, setPublicTab] = useState<
-    "season" | "race" | "startlist" | "team" | "draft" | "info" | "pruebas"
-  >(initTab);
   const [draftSubTab, setDraftSubTab] = useState<"elecciones" | "datos">(
     "elecciones",
   );
@@ -598,20 +597,21 @@ export default function App() {
   } = useComputedStore();
 
   useAppComputations();
-  usePageView("app_navigation", { publicTab, selectedRace, selectedTeam, view });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTabName = location.pathname.split("/")[1] || "season";
+
+  usePageView("app_navigation", { publicTab: currentTabName, selectedRace, selectedTeam, view });
 
   useEffect(() => {
     if (view === "admin") return;
-    const urlParams = new URLSearchParams(window.location.search);
-    if (publicTab !== "season") urlParams.set("tab", publicTab); else urlParams.delete("tab");
-    if (publicTab === "race" && selectedRace) urlParams.set("race", selectedRace); else urlParams.delete("race");
-    if (publicTab === "startlist" && publicStartlistRace) urlParams.set("startlist_race", publicStartlistRace); else urlParams.delete("startlist_race");
-    if (publicTab === "team" && selectedTeam) urlParams.set("selected_team", selectedTeam); else urlParams.delete("selected_team");
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (currentTabName === "race" && selectedRace) newParams.set("race", selectedRace); else newParams.delete("race");
+    if (currentTabName === "startlist" && publicStartlistRace) newParams.set("startlist_race", publicStartlistRace); else newParams.delete("startlist_race");
+    if (currentTabName === "team" && selectedTeam) newParams.set("selected_team", selectedTeam); else newParams.delete("selected_team");
 
-    const query = urlParams.toString();
-    const newUrl = query ? `?${query}` : window.location.pathname;
-    window.history.replaceState(null, "", newUrl);
-  }, [publicTab, selectedRace, publicStartlistRace, selectedTeam, view]);
+    setSearchParams(newParams, { replace: true });
+  }, [currentTabName, selectedRace, publicStartlistRace, selectedTeam, view, setSearchParams]);
 
   const isAdmin = user?.email === "davidmv1985@gmail.com";
   const isSupabaseConfigured =
@@ -620,22 +620,11 @@ export default function App() {
 
   // Auth listener
   useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.type === "SUPABASE_SESSION" && event.data?.session) {
-        const { access_token, refresh_token } = event.data.session;
-        if (access_token && refresh_token) {
-          await supabase.auth.setSession({ access_token, refresh_token });
-        }
-      }
-    };
-    window.addEventListener("message", handleMessage);
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser((session?.user as any) ?? null);
       setIsAuthReady(true);
-      if (session && window.opener) {
-        window.opener.postMessage({ type: "SUPABASE_SESSION", session }, "*");
-        window.close();
+      if (session) {
+        setIsLoggingIn(false);
       }
     });
 
@@ -644,17 +633,17 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser((session?.user as any) ?? null);
       setIsAuthReady(true);
-      if (session && window.opener) {
-        window.opener.postMessage({ type: "SUPABASE_SESSION", session }, "*");
-        window.close();
+      if (session) {
+        setIsLoggingIn(false);
       }
     });
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener("message", handleMessage);
     };
   }, []);
+
+
 
   // Automatically switch to admin view if user is admin
   useEffect(() => {
@@ -815,24 +804,58 @@ export default function App() {
         const popup = window.open(
           data.url,
           "oauth_popup",
-          "width=600,height=700",
+          "width=600,height=700"
         );
         if (!popup) {
-          alert(
-            "Por favor, permite las ventanas emergentes (popups) para iniciar sesión.",
-          );
+          setShowFrameWarning(true);
           setIsLoggingIn(false);
           return;
         }
 
-        const checkPopup = setInterval(() => {
+        const checkPopup = setInterval(async () => {
           if (popup.closed) {
             clearInterval(checkPopup);
-            setIsLoggingIn(false);
+            setTimeout(() => {
+              setIsLoggingIn(prev => { if (prev) return false; return prev; });
+            }, 1000);
+            return;
           }
-        }, 1000);
-      } else {
-        throw new Error("No redirect URL returned from Supabase");
+
+          try {
+            const popupUrl = popup.location.href;
+            if (popupUrl && popupUrl.startsWith(window.location.origin)) {
+              // Extract from hash (implicit flow)
+              if (popupUrl.includes('#access_token=')) {
+                const hash = new URL(popupUrl).hash.substring(1);
+                const params = new URLSearchParams(hash);
+                const access_token = params.get('access_token');
+                const refresh_token = params.get('refresh_token');
+                
+                if (access_token && refresh_token) {
+                  clearInterval(checkPopup);
+                  popup.close();
+                  await supabase.auth.setSession({ access_token, refresh_token });
+                  setIsLoggingIn(false);
+                }
+              }
+              // Extract from search (PKCE flow)
+              else if (popupUrl.includes('?code=') || popupUrl.includes('&code=')) {
+                const search = new URL(popupUrl).search;
+                const params = new URLSearchParams(search);
+                const code = params.get('code');
+                
+                if (code) {
+                  clearInterval(checkPopup);
+                  popup.close();
+                  await supabase.auth.exchangeCodeForSession(code);
+                  setIsLoggingIn(false);
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore Cross-Origin errors, normal while navigating Google
+          }
+        }, 500);
       }
     } catch (error) {
       console.error("Login failed", error);
@@ -968,247 +991,7 @@ export default function App() {
 
 
 
-  const handleCopyStage = async () => {
-    if (!stageTableRef.current || isStageCopying) return;
-    setIsStageCopying(true);
-    const restore = expandNodeForCapture(stageTableRef.current);
-    try {
-      
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(stageTableRef.current!, {
-              scale: 3, 
-
-        backgroundColor: '#ffffff',
-              style: { overflow: "hidden" },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsStageCopying(false), 2000);
-              }
-              
-    } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
-      restore();
-    }
-  };
-
-  const handleDownloadStage = async () => {
-    if (!stageTableRef.current) return;
-    const restore = expandNodeForCapture(stageTableRef.current);
-    try {
-      const dataUrl = await domToDataUrl(stageTableRef.current, {
-        scale: 3, 
-        
-        backgroundColor: '#ffffff',
-        style: { overflow: "hidden" },
-        
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "clasificacion-etapas.png";
-      link.click();
-    } catch (err) {
-      console.error("Error downloading table:", err);
-    } finally {
-      restore();
-    }
-  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const handleCopyDraftTableImage = async (
-    subset?:
-      | "p1"
-      | "p2"
-      | "p3"
-      | "p4"
-      | "p5"
-      | "p6"
-      | "p7"
-      | "p8"
-      | "p9"
-      | "p10",
-  ) => {
-    if (!draftTableRef.current || isDraftTableCopying) return;
-    setIsDraftTableCopying(subset || "full");
-
-    const tableContainer = draftTableRef.current;
-    const originalClass = tableContainer.className;
-    const rows = tableContainer.querySelectorAll(".draft-row");
-
-    try {
-      // Apply subset filtering (50 rows per block)
-      if (subset) {
-        const start =
-          ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"].indexOf(
-            subset,
-          ) * 50;
-        const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add("hidden");
-        });
-      }
-
-      // Force a clean layout for capture
-      tableContainer.className =
-        "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
-
-      
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, 
-
-        backgroundColor: '#ffffff',
-              
-              style: { overflow: "visible" },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsDraftTableCopying(null), 2000);
-              }
-              
-    } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
-      tableContainer.className = originalClass;
-      rows.forEach((row) => row.classList.remove("hidden"));
-    }
-  };
-
-  const handleDownloadDraftTableImage = async (
-    subset?:
-      | "p1"
-      | "p2"
-      | "p3"
-      | "p4"
-      | "p5"
-      | "p6"
-      | "p7"
-      | "p8"
-      | "p9"
-      | "p10",
-  ) => {
-    if (!draftTableRef.current) return;
-
-    const tableContainer = draftTableRef.current;
-    const originalClass = tableContainer.className;
-    const rows = tableContainer.querySelectorAll(".draft-row");
-
-    try {
-      if (subset) {
-        const start =
-          ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"].indexOf(
-            subset,
-          ) * 50;
-        const end = start + 50;
-        rows.forEach((row, idx) => {
-          const num = idx + 1;
-          if (num <= start || num > end) row.classList.add("hidden");
-        });
-      }
-
-      tableContainer.className =
-        "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
-
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
-        backgroundColor: '#ffffff',
-        
-        style: { overflow: "visible" },
-        
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      const suffix = subset ? `-${subset}` : "";
-      link.download = `draft-elecciones${suffix}.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading draft table image:", err);
-    } finally {
-      tableContainer.className = originalClass;
-      rows.forEach((row) => row.classList.remove("hidden"));
-    }
-  };
-
-  const handleCopyDraftDatosTableImage = async () => {
-    if (!draftDatosTableRef.current || isDraftDatosTableCopying) return;
-    setIsDraftDatosTableCopying(true);
-
-    const tableContainer = draftDatosTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-
-    try {
-      
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(tableContainer, {
-              scale: 3, 
-
-        backgroundColor: '#ffffff',
-              width: tableContainer.scrollWidth,
-              style: { overflow: "visible" },
-              
-            });
-            const response = await fetch(dataUrl);
-            return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsDraftDatosTableCopying(false), 2000);
-              }
-              
-    } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
-      restore();
-    }
-  };
-
-  const handleDownloadDraftDatosTableImage = async () => {
-    if (!draftDatosTableRef.current) return;
-
-    const tableContainer = draftDatosTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-
-    try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, 
-        
-        backgroundColor: '#ffffff',
-        width: tableContainer.scrollWidth,
-        style: { overflow: "visible" },
-        
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `draft-puntos-rondas.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading draft datos table image:", err);
-    } finally {
-      restore();
-    }
-  };
+{/* Removed dead routines */}
 
 
   
@@ -1472,6 +1255,46 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200">
       <Toaster position="top-center" richColors />
+      
+      {showFrameWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 mx-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-amber-100 p-2.5 rounded-full">
+                <AlertCircle className="w-6 h-6 text-amber-600" />
+              </div>
+              <button onClick={() => setShowFrameWarning(false)} className="text-neutral-400 hover:bg-neutral-100 p-1.5 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+              Autenticación pausada
+            </h3>
+            <p className="text-neutral-600 text-sm mb-6 leading-relaxed">
+              El navegador está bloqueando la ventana emergente (pop-up) de inicio de sesión de Google.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+              <p className="text-sm font-medium text-blue-900 mb-2">Pasos para iniciar sesión:</p>
+              <ol className="text-sm text-blue-800 list-decimal pl-4 space-y-1">
+                <li>Permite las ventanas emergentes para este sitio en la configuración de la barra de direcciones de tu navegador (arriba a la derecha).</li>
+                <li>Vuelve a hacer click en "Iniciar sesión".</li>
+              </ol>
+            </div>
+            
+            <div className="flex justify-end">
+              <button 
+                onClick={() => setShowFrameWarning(false)}
+                className="px-4 py-2 bg-neutral-900 text-white font-medium rounded-xl hover:bg-neutral-800 transition-colors"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AppHeader 
         view={view}
         setView={setView}
@@ -2140,31 +1963,31 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
             )}
 
             {adminTab === "reporte-carrera" && (
-              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte de carrera...</div>}>
+              <Suspense fallback={<div className="p-8"><TableSkeleton /></div>}>
                 <RaceView isAdminReport={true} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />
               </Suspense>
             )}
 
             {adminTab === "reporte-mes" && (
-              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte del mes...</div>}>
+              <Suspense fallback={<div className="p-8"><TableSkeleton /></div>}>
                 <MonthlyReportView files={files} leaderboard={leaderboard} />
               </Suspense>
             )}
 
             {adminTab === "reporte-temporada" && (
-              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando reporte de temporada...</div>}>
+              <Suspense fallback={<div className="p-8"><TableSkeleton /></div>}>
                 <SeasonReportView files={files} leaderboard={leaderboard} cyclistRoundMap={cyclistRoundMap} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} />
               </Suspense>
             )}
 
             {adminTab === "pruebas" && (
-              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pruebas...</div>}>
+              <Suspense fallback={<div className="p-8"><TableSkeleton /></div>}>
                 <TestsView leaderboard={leaderboard} cyclistMetadata={cyclistMetadata} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} cyclistRoundMap={cyclistRoundMap} files={files} />
               </Suspense>
             )}
 
             {adminTab === "estadisticas" && (
-              <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando estadísticas...</div>}>
+              <Suspense fallback={<div className="p-8"><TableSkeleton /></div>}>
                 <AdminAnalyticsView />
               </Suspense>
             )}
@@ -2173,116 +1996,99 @@ create policy "Admin write access" on global_files for all using (auth.jwt() ->>
           <div className="space-y-4 md:space-y-8">
             {/* Public Tabs Navigation */}
             <div className="flex items-center justify-start sm:justify-center lg:justify-start gap-2 border-b border-neutral-200 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <button
-                onClick={() => setPublicTab("season")}
+              <Link
+                to="/season"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "season"
+                  (location.pathname === "/season" || location.pathname === "/")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <Trophy className="w-4 h-4" />
                 Resultados temporada
-              </button>
-              <button
-                onClick={() => setPublicTab("race")}
+              </Link>
+              <Link
+                to="/race"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "race"
+                  location.pathname.startsWith("/race")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <Flag className="w-4 h-4" />
                 Clasificación de la carrera
-              </button>
-              <button
-                onClick={() => setPublicTab("startlist")}
+              </Link>
+              <Link
+                to="/startlist"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "startlist"
+                  location.pathname.startsWith("/startlist")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <List className="w-4 h-4" />
                 Startlist carrera
-              </button>
-              <button
-                onClick={() => setPublicTab("team")}
+              </Link>
+              <Link
+                to="/team"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "team"
+                  location.pathname.startsWith("/team")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <Users className="w-4 h-4" />
                 Equipos
-              </button>
-              <button
-                onClick={() => setPublicTab("draft")}
+              </Link>
+              <Link
+                to="/draft"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "draft"
+                  location.pathname.startsWith("/draft")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <LayoutGrid className="w-4 h-4" />
                 Draft
-              </button>
-              <button
-                onClick={() => setPublicTab("info")}
+              </Link>
+              <Link
+                to="/info"
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-                  publicTab === "info"
+                  location.pathname.startsWith("/info")
                     ? "bg-blue-50 text-blue-700"
                     : "text-neutral-600 hover:bg-neutral-100",
                 )}
               >
                 <Info className="w-4 h-4" />
                 Información
-              </button>
+              </Link>
             </div>
 
             {/* Tab Content */}
-            <Suspense fallback={<div className="p-8 text-center text-neutral-500 font-medium animate-pulse">Cargando pestaña...</div>}>
+            <Suspense fallback={<div className="p-8"><TableSkeleton rows={8} /></div>}>
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={publicTab}
+                  key={location.pathname.split("/")[1] || "season"}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {publicTab === "season" && <SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />}
-                  {publicTab === "race" && <RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />}
-                  {publicTab === "team" && <TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />}
-                  {publicTab === "startlist" && (
-                    <StartlistView
-                      files={files}
-                      publicStartlistRace={publicStartlistRace}
-                      setPublicStartlistRace={setPublicStartlistRace}
-                      cyclistMetadata={cyclistMetadata}
-                      cyclistRoundMap={cyclistRoundMap}
-                      playerTeamMap={playerTeamMap}
-                      playerOrderMap={playerOrderMap}
-                    />
-                  )}
-                  {publicTab === "draft" && (
-                    <DraftView
-                      files={files}
-                      cyclistMetadata={cyclistMetadata}
-                      playerTeamMap={playerTeamMap}
-                      leaderboard={leaderboard}
-                      getFlagEmoji={getFlagEmoji}
-                      teamToPlayerMap={teamToPlayerMap}
-                      playerOrderMap={playerOrderMap}
-                    />
-                  )}
-                  {publicTab === "info" && <InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} raceWinners={raceWinners} />}
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/season" replace />} />
+                    <Route path="/season" element={<SeasonView files={files} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} playerByCyclist={playerByCyclist} uniqueRaces={uniqueRaces} />} />
+                    <Route path="/race" element={<RaceView isAdminReport={false} files={files} selectedRace={selectedRace} setSelectedRace={setSelectedRace} uniqueRaces={uniqueRaces} leaderboard={leaderboard} globalTeamPartialWinsCount={globalTeamPartialWinsCount} raceWinners={raceWinners} globalTeamWinsCount={globalTeamWinsCount} cyclistMetadata={cyclistMetadata} />} />
+                    <Route path="/team" element={<TeamView files={files} selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} formattedTeams={formattedTeams} leaderboard={leaderboard} raceWinners={raceWinners} globalTeamPartialWinsCount={globalTeamPartialWinsCount} cyclistMetadata={cyclistMetadata} />} />
+                    <Route path="/startlist" element={<StartlistView files={files} publicStartlistRace={publicStartlistRace} setPublicStartlistRace={setPublicStartlistRace} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerTeamMap={playerTeamMap} playerOrderMap={playerOrderMap} />} />
+                    <Route path="/draft" element={<DraftView files={files} cyclistMetadata={cyclistMetadata} playerTeamMap={playerTeamMap} leaderboard={leaderboard} getFlagEmoji={getFlagEmoji} teamToPlayerMap={teamToPlayerMap} playerOrderMap={playerOrderMap} />} />
+                    <Route path="/info" element={<InfoView files={files} infoSubTab={infoSubTab} setInfoSubTab={setInfoSubTab} raceWinners={raceWinners} />} />
+                  </Routes>
                 </motion.div>
               </AnimatePresence>
             </Suspense>

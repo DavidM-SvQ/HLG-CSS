@@ -6,10 +6,10 @@ import { cn } from '../../../lib/utils';
 import { getVal, getCategoryColorStyle, formatNumberSpanish } from '../../../lib/data-processing';
 import { ExportToolbar } from '../../ui/ExportToolbar';
 import { expandNodeForCapture } from '../../../lib/dom-utils';
-import { domToDataUrl } from 'modern-screenshot';
 import { DraftPointsTable } from './DraftPointsTable';
 import { DraftPerformanceSummary } from './DraftPerformanceSummary';
 import { DraftRoiChart } from './DraftRoiChart';
+import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 
 export interface DraftDatosProps {
   files: any;
@@ -18,8 +18,6 @@ export interface DraftDatosProps {
   teamToPlayerMap: any;
   playerOrderMap: any;
 }
-
-import { performImageCopy, performImageDownload, performTextCopy } from '../season/hooks/useExportHandlers';
 
 export const DraftDatos: React.FC<DraftDatosProps> = ({
   files,
@@ -45,12 +43,13 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
   const draftSummaryTableRef = useRef<HTMLDivElement>(null);
   const draftChartRef = useRef<HTMLDivElement>(null);
   
-  const [isDraftDatosTableCopying, setIsDraftDatosTableCopying] = useState<string | false>(false);
+  const { handleCopyImage: copyDraftTable, handleDownloadImage: downloadDraftTable, isCopying: isDraftTableCopying } = useTableScreenshot(draftDatosTableRef);
+
   const handleCopyDraftDatosTableImage = () => {
-    performImageCopy(draftDatosTableRef, setIsDraftDatosTableCopying, true, "draftDatosTable");
+    copyDraftTable({ fileName: "draft-datos.png", scale: 3, style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
   };
   const handleDownloadDraftDatosTableImage = () => {
-    performImageDownload(draftDatosTableRef, "draft-datos.png", "draftDatosTable");
+    downloadDraftTable({ fileName: "draft-datos.png", scale: 3, style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
   };
 
   return (
@@ -409,7 +408,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                               className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
                               title="Copiar como imagen"
                             >
-                              {isDraftDatosTableCopying ? (
+                              {isDraftTableCopying ? (
                                 <CheckCircle2 className="w-4 h-4 text-green-600" />
                               ) : (
                                 <Copy className="w-4 h-4" />

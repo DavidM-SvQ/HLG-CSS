@@ -2,9 +2,9 @@ import React, { useRef, useState } from "react";
 import { Users, Flag, Copy, CheckCircle2, X } from "lucide-react";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
-import { domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { cn } from "../../../lib/utils";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 interface RaceStatsProps {
   raceCyclists: any[];
@@ -36,9 +36,6 @@ export const RaceStats = ({
   const [isRetiredExpanded, setIsRetiredExpanded] = useState(false);
   const [isDetailedBreakdownExpanded, setIsDetailedBreakdownExpanded] = useState(false);
 
-  const [isCyclistsCopying, setIsCyclistsCopying] = useState(false);
-  const [isRaceBreakdownCopying, setIsRaceBreakdownCopying] = useState(false);
-  const [isRetiredCopying, setIsRetiredCopying] = useState(false);
   const [isDetailedBreakdownCopying, setIsDetailedBreakdownCopying] = useState<"full" | "first" | "second" | "third" | null>(null);
   const [isDetailedBreakdownTextCopying, setIsDetailedBreakdownTextCopying] = useState(false);
 
@@ -47,243 +44,85 @@ export const RaceStats = ({
   const retiredTableRef = useRef<HTMLDivElement>(null);
   const detailedBreakdownRef = useRef<HTMLDivElement>(null);
 
-  const handleCopyCyclists = async () => {
-    if (!cyclistsTableRef.current || isCyclistsCopying) return;
-    setIsCyclistsCopying(true);
-    const restore = expandNodeForCapture(cyclistsTableRef.current);
-    try {
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-      };
-      await copyImageToClipboard(processCopy(), "export.png");
-      setTimeout(() => setIsCyclistsCopying(false), 2000);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
-    } finally {
-      restore();
+  const { handleCopyImage: copyCyclists, handleDownloadImage: downloadCyclists, isCopying: isCyclistsCopying } = useTableScreenshot(cyclistsTableRef);
+  const { handleCopyImage: copyRaceBreakdown, handleDownloadImage: downloadRaceBreakdown, isCopying: isRaceBreakdownCopying } = useTableScreenshot(raceBreakdownTableRef);
+  const { handleCopyImage: copyRetired, handleDownloadImage: downloadRetired, isCopying: isRetiredCopying } = useTableScreenshot(retiredTableRef);
+  const { handleCopyImage: copyDetailedBreakdown, handleDownloadImage: downloadDetailedBreakdown } = useTableScreenshot(detailedBreakdownRef);
+
+  const handleCopyCyclists = () => copyCyclists({ fileName: "export.png", scale: 3, style: { backgroundColor: "#ffffff" } });
+  const handleDownloadCyclists = () => downloadCyclists({ fileName: "clasificacion-ciclistas.png", scale: 3, style: { backgroundColor: "#ffffff" } });
+
+  const handleCopyRaceBreakdownImage = () => copyRaceBreakdown({ fileName: "export.png", scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
+  const handleDownloadRaceBreakdownImage = () => downloadRaceBreakdown({ fileName: `clasificacion-etapas-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}.png`, scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
+
+  const getRetiredOptions = (fileName: string) => ({
+    fileName,
+    scale: 1.5,
+    style: { backgroundColor: "#ffffff", overflow: "visible", margin: "0" },
+    onBeforeCapture: (el: HTMLElement) => {
+      el.className = el.className.replace("max-h-[75vh]", "").replace("overflow-y-auto", "").replace("overflow-x-auto", "");
+    },
+    onAfterCapture: (el: HTMLElement) => {
+      // Re-add classes handled by the component's render or state if necessary (or we just let react re-render)
     }
-  };
+  });
 
-  const handleDownloadCyclists = async () => {
-    if (!cyclistsTableRef.current) return;
-    const restore = expandNodeForCapture(cyclistsTableRef.current);
-    try {
-      const dataUrl = await domToDataUrl(cyclistsTableRef.current!, { scale: 3, backgroundColor: "#ffffff" });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "clasificacion-ciclistas.png";
-      link.click();
-    } catch (err) {
-      console.error("Error downloading table:", err);
-    } finally {
-      restore();
-    }
-  };
+  const handleCopyRetiredImage = () => copyRetired({ ...getRetiredOptions("abandonos.png") });
+  const handleDownloadRetiredImage = () => downloadRetired({ ...getRetiredOptions(`abandonos-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}.png`) });
 
-  const handleCopyRaceBreakdownImage = async () => {
-    if (!raceBreakdownTableRef.current || isRaceBreakdownCopying) return;
-    setIsRaceBreakdownCopying(true);
-
-    const tableContainer = raceBreakdownTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-
-    try {
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(tableContainer, {
-          scale: 3,
-          backgroundColor: '#ffffff',
-          style: { overflow: "visible" },
-        });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-      };
-      await copyImageToClipboard(processCopy(), "export.png");
-      setTimeout(() => setIsRaceBreakdownCopying(false), 2000);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
-    } finally {
-      restore();
-    }
-  };
-
-  const handleDownloadRaceBreakdownImage = async () => {
-    if (!raceBreakdownTableRef.current) return;
-
-    const tableContainer = raceBreakdownTableRef.current;
-    const restore = expandNodeForCapture(tableContainer);
-
-    try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `clasificacion-etapas-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading race breakdown image:", err);
-    } finally {
-      restore();
-    }
-  };
-
-  const handleCopyRetiredImage = async () => {
-    if (!retiredTableRef.current || isRetiredCopying) return;
-    setIsRetiredCopying(true);
-    const tableContainer = retiredTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("max-h-[75vh]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      
-      const dataUrlPromise = domToDataUrl(tableContainer, {
-        scale: 1.5,
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const blobPromise = dataUrlPromise.then(url => fetch(url).then(r => r.blob()));
-      await copyImageToClipboard(blobPromise, "abandonos.png", dataUrlPromise);
-    } catch (err) {
-      console.warn("Error copying abandoned list", err);
-    } finally {
-      setTimeout(() => setIsRetiredCopying(false), 1000);
-      restore();
-      tableContainer.className = originalClass;
-    }
-  };
-
-  const handleDownloadRetiredImage = async () => {
-    if (!retiredTableRef.current) return;
-    const tableContainer = retiredTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("max-h-[75vh]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 1.5,
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `abandonos-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading retired image:", err);
-    } finally {
-      restore();
-      tableContainer.className = originalClass;
-    }
-  };
-
-  const handleCopyDetailedBreakdownImage = async (
-    subset?: "full" | "first" | "second" | "third",
-  ) => {
-    if (!detailedBreakdownRef.current || isDetailedBreakdownCopying) return;
+  const handleCopyDetailedBreakdownImage = async (subset?: "full" | "first" | "second" | "third") => {
     setIsDetailedBreakdownCopying(subset || "full");
-
-    const container = detailedBreakdownRef.current;
-    const originalClass = container.className;
-    const cards = container.querySelectorAll(".team-card-breakdown");
-
     try {
-      if (subset) {
-        cards.forEach((card, idx) => {
-          const num = idx + 1;
-          if (subset === "first" && num > 12) card.classList.add("hidden");
-          if (subset === "second" && (num <= 12 || num > 24))
-            card.classList.add("hidden");
-          if (subset === "third" && num <= 24) card.classList.add("hidden");
-        });
-      }
-
-      container.className = cn(
-        "grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]",
-        subset ? "" : "grid-cols-3",
-      );
-
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(container, {
-          scale: 3,
-          style: {
-            textRendering: "optimizeLegibility",
-          },
-        });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-      };
-      await copyImageToClipboard(processCopy(), "export.png");
-      setTimeout(() => setIsDetailedBreakdownCopying(null), 2000);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
+      await copyDetailedBreakdown({
+        fileName: "export.png",
+        scale: 3,
+        style: { textRendering: "optimizeLegibility" },
+        onBeforeCapture: (container) => {
+          const cards = container.querySelectorAll(".team-card-breakdown");
+          if (subset) {
+            cards.forEach((card, idx) => {
+              const num = idx + 1;
+              if (subset === "first" && num > 12) card.classList.add("hidden");
+              if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
+              if (subset === "third" && num <= 24) card.classList.add("hidden");
+            });
+          }
+          container.className = cn("grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]", subset ? "" : "grid-cols-3");
+        },
+        onAfterCapture: (container) => {
+          const cards = container.querySelectorAll(".team-card-breakdown");
+          cards.forEach((card) => card.classList.remove("hidden"));
+        }
+      });
     } finally {
-      container.className = originalClass;
-      cards.forEach((card) => card.classList.remove("hidden"));
+      setIsDetailedBreakdownCopying(null);
     }
   };
 
-  const handleDownloadDetailedBreakdownImage = async (
-    subset?: "full" | "first" | "second" | "third",
-  ) => {
-    if (!detailedBreakdownRef.current) return;
-
-    const container = detailedBreakdownRef.current;
-    const originalClass = container.className;
-    const cards = container.querySelectorAll(".team-card-breakdown");
-
+  const handleDownloadDetailedBreakdownImage = async (subset?: "full" | "first" | "second" | "third") => {
     try {
-      if (subset) {
-        cards.forEach((card, idx) => {
-          const num = idx + 1;
-          if (subset === "first" && num > 12) card.classList.add("hidden");
-          if (subset === "second" && (num <= 12 || num > 24))
-            card.classList.add("hidden");
-          if (subset === "third" && num <= 24) card.classList.add("hidden");
-        });
-      }
-
-      container.className = cn(
-        "grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]",
-        subset ? "" : "grid-cols-3",
-      );
-
-      const dataUrl = await domToDataUrl(container, {
+      await downloadDetailedBreakdown({
+        fileName: `desglose-equipos-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}${subset ? `-${subset}` : ""}.png`,
         scale: 3,
-        style: {
-          textRendering: "optimizeLegibility",
+        style: { textRendering: "optimizeLegibility" },
+        onBeforeCapture: (container) => {
+          const cards = container.querySelectorAll(".team-card-breakdown");
+          if (subset) {
+            cards.forEach((card, idx) => {
+              const num = idx + 1;
+              if (subset === "first" && num > 12) card.classList.add("hidden");
+              if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
+              if (subset === "third" && num <= 24) card.classList.add("hidden");
+            });
+          }
+          container.className = cn("grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]", subset ? "" : "grid-cols-3");
         },
+        onAfterCapture: (container) => {
+          const cards = container.querySelectorAll(".team-card-breakdown");
+          cards.forEach((card) => card.classList.remove("hidden"));
+        }
       });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      const suffix = subset ? `-${subset}` : "";
-      link.download = `desglose-equipos-${selectedRace.replace(/\\s+/g, "-").toLowerCase()}${suffix}.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading detailed breakdown image:", err);
     } finally {
-      container.className = originalClass;
-      cards.forEach((card) => card.classList.remove("hidden"));
     }
   };
 

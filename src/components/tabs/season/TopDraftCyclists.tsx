@@ -5,9 +5,9 @@ import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Tr
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useTopDraft } from "../../../lib/hooks/useTopDraft";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
-
-import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+import { performTextCopy } from "./hooks/useExportHandlers";
 
 export function TopDraftCyclists() {
   const context = useContext(SeasonViewContext);
@@ -34,14 +34,46 @@ export function TopDraftCyclists() {
   const topCyclistsDraftRef = useRef<HTMLDivElement>(null);
   const topCyclistsDraftRefContainer = useRef<HTMLDivElement>(null);
 
+  const { handleCopyImage: copyTopCyclistsImage, handleDownloadImage: downloadTopCyclistsImage, isCopying: isTopDraftCopying } = useTableScreenshot(topCyclistsDraftRef);
+
+  const prepareTableForCopy = (container: HTMLElement, subset?: string) => {
+    const rows = container.querySelectorAll(".top-cyclists-row");
+    if (subset && subset !== "full") {
+      const idx = parseInt(subset.slice(1)) - 1; // "p1" -> 0
+      const start = idx * 50;
+      const end = start + 50;
+      rows.forEach((row, rIdx) => {
+        if (rIdx < start || rIdx >= end) row.classList.add("hidden");
+      });
+    }
+  };
+
+  const resetTableAfterCopy = (container: HTMLElement) => {
+    container.querySelectorAll(".top-cyclists-row").forEach((row) => row.classList.remove("hidden"));
+  };
+
   const handleCopyTopCyclistsDraft = async (type?: string) => {
-    performImageCopy(topCyclistsDraftRef, setIsTopCyclistsDraftCopying, type || "full", "topCyclistsDraft");
+    setIsTopCyclistsDraftCopying(type || "full");
+    try {
+      await copyTopCyclistsImage({
+        fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        onBeforeCapture: (el) => prepareTableForCopy(el, type),
+        onAfterCapture: (el) => resetTableAfterCopy(el)
+      });
+    } finally {
+      setIsTopCyclistsDraftCopying(false);
+    }
   };
   const handleCopyTopCyclistsDraftText = async () => {
     performTextCopy(topCyclistsDraftRef, setIsTopCyclistsDraftTextCopying, "topCyclistsDraft");
   };
   const handleDownloadTopCyclistsDraft = async (type?: string) => {
-    performImageDownload(topCyclistsDraftRef, `top-ciclistas-draft${type && type !== "full" ? `-${type}` : ""}.png`, "topCyclistsDraft");
+    await downloadTopCyclistsImage({
+      fileName: `top-ciclistas-draft${type && type !== "full" ? `-${type}` : ""}.png`,
+      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+      onBeforeCapture: (el) => prepareTableForCopy(el, type),
+      onAfterCapture: (el) => resetTableAfterCopy(el)
+    });
   };
 
   const { allStats } = useTopDraft(

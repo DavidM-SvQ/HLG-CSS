@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, Clock, FileCheck } from "lucide-react";
 import { supabase } from "../../../supabase";
 import { getVal } from "../../../lib/data-processing";
+import { Skeleton } from "../../ui/Skeleton";
 
 interface PublishedRacesTrackerProps {
   files: any;
@@ -85,7 +86,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
   const pendingRaces = finishedRaces.filter(r => !publishedRaces.includes(r));
   const completedRaces = finishedRaces.filter(r => publishedRaces.includes(r));
 
-  if (!isLoaded) return <div className="text-sm text-neutral-500 animate-pulse bg-white border border-neutral-200 rounded-xl p-4 mb-8">Cargando estado de publicación...</div>;
+  if (!isLoaded) return <div className="p-4 mb-8 bg-white border border-neutral-200 rounded-xl"><Skeleton className="h-16 w-full" /></div>;
 
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mb-8">

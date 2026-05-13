@@ -1,15 +1,14 @@
 import React, { useMemo, useRef, useState } from "react";
 import { formatNumberSpanish, getVal } from "../../../lib/data-processing";
-import { Award, Trophy, Crown, Flag, Maximize2, Minimize2, Copy, Download, Globe, Users, Medal } from "lucide-react";
-import { copyImageToClipboard } from "../../../lib/clipboard";
+import { Award, Trophy, Crown, Flag, Maximize2, Minimize2, Copy, Download, Globe, Users, Medal, CheckCircle2 } from "lucide-react";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
-import { domToDataUrl } from "modern-screenshot";
 import { cn } from "../../../lib/utils";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: any[]; files: any; cyclistMetadata: any; raceWinners?: Record<string, string> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(containerRef);
 
   const { teamMilestones, cyclistMilestones } = useMemo(() => {
     if (!files.resultados?.data || !files.carreras?.data || !leaderboard) return { teamMilestones: [], cyclistMilestones: [] };
@@ -614,35 +613,11 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
   }, [files.resultados?.data, files.carreras?.data, leaderboard, cyclistMetadata]);
 
   const handleCopy = async () => {
-    if (!containerRef.current || isCopying) return;
-    setIsCopying(true);
-    const restore = expandNodeForCapture(containerRef.current);
-    try {
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(containerRef.current!, { scale: 3, backgroundColor: "#ffffff", style: { overflow: "visible" } });
-        return await (await fetch(dataUrl)).blob();
-      };
-      await copyImageToClipboard(processCopy(), "hitos.png");
-    } finally {
-      restore();
-      setTimeout(() => setIsCopying(false), 2000);
-    }
+    await handleCopyImage({ scale: 3, backgroundColor: "#ffffff", style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
   };
 
   const handleDownload = async () => {
-    if (!containerRef.current || isCopying) return;
-    setIsCopying(true);
-    const restore = expandNodeForCapture(containerRef.current);
-    try {
-      const dataUrl = await domToDataUrl(containerRef.current!, { scale: 3, backgroundColor: "#ffffff", style: { overflow: "visible" } });
-      const link = document.createElement("a");
-      link.download = `hitos_temporada.png`;
-      link.href = dataUrl;
-      link.click();
-    } finally {
-      restore();
-      setTimeout(() => setIsCopying(false), 2000);
-    }
+    await handleDownloadImage({ fileName: "hitos_temporada.png", scale: 3, backgroundColor: "#ffffff", style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
   };
 
   if (teamMilestones.length === 0 && cyclistMilestones.length === 0) return null;

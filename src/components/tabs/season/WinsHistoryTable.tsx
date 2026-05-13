@@ -2,8 +2,9 @@ import React, { useContext } from "react";
 import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
-import { performImageCopy, performImageDownload, performTextCopy } from "./hooks/useExportHandlers";
+import { performTextCopy } from "./hooks/useExportHandlers";
 
 export function WinsHistoryTable() {
   const context = useContext(SeasonViewContext);
@@ -24,14 +25,46 @@ export function WinsHistoryTable() {
   const [historySortColumn, setHistorySortColumn] = React.useState("date");
   const [historySortDirection, setHistorySortDirection] = React.useState<"asc" | "desc">("desc");
 
+  const { handleCopyImage: copyWinsImage, handleDownloadImage: downloadWinsImage } = useTableScreenshot(winsHistoryRef);
+
+  const prepareTableForCopy = (container: HTMLElement, subset?: string) => {
+    const rows = container.querySelectorAll(".wins-history-row");
+    if (subset && subset !== "full") {
+      const idx = parseInt(subset.slice(1)) - 1; // "p1" -> 0
+      const start = idx * 50;
+      const end = start + 50;
+      rows.forEach((row, rIdx) => {
+        if (rIdx < start || rIdx >= end) row.classList.add("hidden");
+      });
+    }
+  };
+
+  const resetTableAfterCopy = (container: HTMLElement) => {
+    container.querySelectorAll(".wins-history-row").forEach((row) => row.classList.remove("hidden"));
+  };
+
   const handleCopyWinsHistory = async (type?: string) => {
-    performImageCopy(winsHistoryRef, setIsWinsHistoryCopying, type || "full", "winsHistoryTable");
+    setIsWinsHistoryCopying(type || "full");
+    try {
+      await copyWinsImage({
+        fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        onBeforeCapture: (el) => prepareTableForCopy(el, type),
+        onAfterCapture: (el) => resetTableAfterCopy(el)
+      });
+    } finally {
+      setIsWinsHistoryCopying(false);
+    }
   };
   const handleCopyWinsHistoryText = async () => {
     performTextCopy(winsHistoryRef, setIsWinsHistoryTextCopying, "winsHistoryTable");
   };
   const handleDownloadWinsHistory = async (type?: string) => {
-    performImageDownload(winsHistoryRef, `historial-ganadores${type && type !== "full" ? `-${type}` : ""}.png`, "winsHistoryTable");
+    await downloadWinsImage({
+      fileName: `historial-ganadores${type && type !== "full" ? `-${type}` : ""}.png`,
+      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+      onBeforeCapture: (el) => prepareTableForCopy(el, type),
+      onAfterCapture: (el) => resetTableAfterCopy(el)
+    });
   };
 
   const { filteredHistoryRaces } = useFilters({
@@ -247,10 +280,10 @@ export function WinsHistoryTable() {
                     const { race, winnerTeamName, winnerDisplayName, winnerPoints, date } = item;
 
                     let isHiddenVisual = false;
-                    if (isWinsHistoryCopying && typeof isWinsHistoryCopying === "string") {
+                    if (isWinsHistoryCopying) {
                       if (isWinsHistoryCopying === "full") isHiddenVisual = false;
                       else {
-                        const pageNum = parseInt(isWinsHistoryCopying.substring(1));
+                        const pageNum = parseInt((isWinsHistoryCopying as string).substring(1));
                         const start = (pageNum - 1) * 50;
                         const end = start + 50;
                         isHiddenVisual = !(idx >= start && idx < end);

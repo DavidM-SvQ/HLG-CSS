@@ -8,6 +8,7 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
+import { TableSkeleton } from "../../ui/Skeleton";
 
 
 export function SeasonCyclistsTab() {
@@ -65,7 +66,7 @@ export function SeasonCyclistsTab() {
                           ) : cyclistsSubTab === "no-draft" ? (
                             <NoDraftCyclists />
                           ) : cyclistsSubTab === "detalle" ? (
-                            <React.Suspense fallback={<div className="p-4 text-center text-neutral-500 animate-pulse">Cargando detalles...</div>}>
+                            <React.Suspense fallback={<div className="p-4"><TableSkeleton rows={4} /></div>}>
                               <CyclistDetailView files={files} selectedCyclistDetail={selectedCyclistDetail} setSelectedCyclistDetail={setSelectedCyclistDetail} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerByCyclist={playerByCyclist} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} />
                             </React.Suspense>
                           ) : null}

@@ -36,10 +36,11 @@ export interface SeasonViewProps {
 export const SeasonView = (props: SeasonViewProps) => {
   const { files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap } = props;
 
+  const [selectedCyclistDetail, setSelectedCyclistDetail] = React.useState<string | null>(null);
+
   const {
     seasonSubTab, setSeasonSubTab,
     cyclistsSubTab, setCyclistsSubTab,
-    selectedCyclistDetail, setSelectedCyclistDetail,
   } = useUIState();
 
   const {

@@ -1,11 +1,9 @@
 import React from 'react';
-import { BarChart3, ChevronDown, Copy, Download, X, TrendingUp, Trophy, Activity } from 'lucide-react';
+import { BarChart3, ChevronDown, Copy, Download, X, TrendingUp, Trophy, Activity, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar } from 'recharts';
 import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
-import { expandNodeForCapture } from '../../../lib/dom-utils';
-import { domToDataUrl } from 'modern-screenshot';
-import { copyImageToClipboard } from '../../../lib/clipboard';
+import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useDraftStats } from './hooks/useDraftStats';
 
 interface DraftRoiChartProps {
@@ -107,6 +105,8 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
     };
   });
 
+  const { handleCopyImage: copyRoiChartImage, handleDownloadImage: downloadRoiChartImage, isCopying: isRoiChartCopying } = useTableScreenshot(draftChartRef);
+
   return (
     <div
       className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-hidden"
@@ -165,54 +165,18 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={async () => {
-                if (draftChartRef.current) {
-                  let restore = () => {};
-                  try {
-                    restore = expandNodeForCapture(draftChartRef.current);
-                    const processCopy = async () => {
-                      const dataUrl = await domToDataUrl(draftChartRef.current!, {
-                        scale: 3,
-                        backgroundColor: '#ffffff',
-                        style: { overflow: "visible" },
-                      });
-                      return await (await fetch(dataUrl)).blob();
-                    };
-                    await copyImageToClipboard(processCopy(), "grafico_draft.png");
-                  } catch (err) {
-                    console.error("Error al copiar imagen:", err);
-                  } finally {
-                    restore();
-                  }
-                }
-              }}
+              onClick={() => copyRoiChartImage({
+                fileName: "grafico_draft.png", scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
+              })}
               className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
               title="Copiar gráfico"
             >
-              <Copy className="w-4 h-4" />
+              {isRoiChartCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
             </button>
             <button
-              onClick={async () => {
-                if (draftChartRef.current) {
-                  let restore = () => {};
-                  try {
-                    restore = expandNodeForCapture(draftChartRef.current);
-                    const dataUrl = await domToDataUrl(draftChartRef.current, {
-                      scale: 3,
-                      backgroundColor: '#ffffff',
-                      style: { overflow: "visible" },
-                    });
-                    const link = document.createElement("a");
-                    link.download = `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`;
-                    link.href = dataUrl;
-                    link.click();
-                  } catch (err) {
-                    console.error("Error al descargar gráfico:", err);
-                  } finally {
-                    restore();
-                  }
-                }
-              }}
+              onClick={() => downloadRoiChartImage({
+                fileName: `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`, scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
+              })}
               className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
               title="Descargar gráfico"
             >

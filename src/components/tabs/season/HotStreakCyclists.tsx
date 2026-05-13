@@ -1,10 +1,10 @@
 import React, { useContext, useState, useRef } from "react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
-import { domToBlob } from "modern-screenshot";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { copyImageToClipboard } from "../../../lib/clipboard";
 import { useHotStreaks } from "../../../lib/hooks/useHotStreaks";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function HotStreakCyclists() {
   const context = useContext(SeasonViewContext);
@@ -13,70 +13,40 @@ export function HotStreakCyclists() {
 
   const chartRef = useRef<HTMLDivElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
 
   const [hotStreakMinPoints, setHotStreakMinPoints] = useState<number | "">(1);
   const [hotStreakMaxPoints, setHotStreakMaxPoints] = useState<number | "">("");
   const [hotStreakLastNWeeks, setHotStreakLastNWeeks] = useState<number>(4);
   const [hotStreakCyclistsLimit, setHotStreakCyclistsLimit] = useState<number>(10);
+  
+  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(chartRef);
 
   const handleCopy = async () => {
-    if (!chartRef.current || isCopying) return;
-    setIsCopying(true);
-    let restore = () => {};
-    try {
-      restore = expandNodeForCapture(chartRef.current);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      const blobPromise = domToBlob(chartRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        style: {
-          fontFamily: "Inter, sans-serif",
-          padding: "24px",
-          borderRadius: "16px",
-        },
-      }).then(blob => {
-        if (!blob) throw new Error("Could not generate image");
-        return blob;
-      });
-      await copyImageToClipboard(blobPromise, "rachas-puntos-ciclistas.png");
-    } catch (e) {
-      console.error(e);
-    } finally {
-      restore();
-      setIsCopying(false);
-    }
+    await handleCopyImage({
+      fileName: "rachas-puntos-ciclistas.png",
+      scale: 2,
+      backgroundColor: "#ffffff",
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      style: {
+        fontFamily: "Inter, sans-serif",
+        padding: "24px",
+        borderRadius: "16px",
+      }
+    });
   };
 
   const handleDownload = async () => {
-    if (!chartRef.current || isCopying) return;
-    setIsCopying(true);
-    let restore = () => {};
-    try {
-      restore = expandNodeForCapture(chartRef.current);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      const blob = await domToBlob(chartRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        style: {
-          fontFamily: "Inter, sans-serif",
-          padding: "24px",
-          borderRadius: "16px",
-        },
-      });
-      if (!blob) throw new Error("no blob generated");
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `rachas-puntos-ciclistas.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      restore();
-      setIsCopying(false);
-    }
+    await handleDownloadImage({
+      fileName: "rachas-puntos-ciclistas.png",
+      scale: 2,
+      backgroundColor: "#ffffff",
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      style: {
+        fontFamily: "Inter, sans-serif",
+        padding: "24px",
+        borderRadius: "16px",
+      }
+    });
   };
 
   const hotStreaksData = useHotStreaks(

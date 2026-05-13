@@ -5,6 +5,7 @@ import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
 import { ExportToolbar } from '../../ui/ExportToolbar';
 import { useDebounce } from '../../../lib/hooks/useDebounce';
+import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 
 export interface DraftElectionsProps {
   files: any;
@@ -22,8 +23,6 @@ export interface DraftElectionsProps {
     minPct: number;
   };
 }
-
-import { performImageCopy, performImageDownload, performTextCopy } from '../season/hooks/useExportHandlers';
 
 export const DraftElections: React.FC<DraftElectionsProps> = ({
   files,
@@ -59,12 +58,56 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   const [isDraftTableExpanded, setIsDraftTableExpanded] = useState(false);
 
   const draftTableRef = useRef<HTMLDivElement>(null);
+  const { handleCopyImage: copyDraftTableImage, handleDownloadImage: downloadDraftTableImage, isCopying: isDraftTableCopyingState } = useTableScreenshot(draftTableRef);
+
   const [isDraftTableCopying, setIsDraftTableCopying] = useState<string | false>(false);
-  const handleCopyDraftTableImage = (part?: any) => {
-    performImageCopy(draftTableRef, setIsDraftTableCopying, part || true, "draftElectionsTable");
+  
+  const prepareTableForCopy = (container: HTMLElement, subset?: string) => {
+    const rows = container.querySelectorAll(".draft-row");
+    if (subset) {
+      const start = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"].indexOf(subset) * 50;
+      const end = start + 50;
+      rows.forEach((row, idx) => {
+        if (idx + 1 <= start || idx + 1 > end) row.classList.add("hidden");
+      });
+    }
+    container.className = "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
   };
-  const handleDownloadDraftTableImage = (part?: any) => {
-    performImageDownload(draftTableRef, `draft-elecciones${part && part !== true ? `-${part}` : ""}.png`, "draftElectionsTable");
+  
+  const resetTableAfterCopy = (container: HTMLElement, originalClass: string) => {
+    container.className = originalClass;
+    container.querySelectorAll(".draft-row").forEach((row) => row.classList.remove("hidden"));
+  };
+
+  const handleCopyDraftTableImage = async (subset?: string) => {
+    setIsDraftTableCopying(subset || "full");
+    const container = draftTableRef.current;
+    if (!container) return;
+    const originalClass = container.className;
+    try {
+      await copyDraftTableImage({
+        fileName: "export.png",
+        scale: 3,
+        style: { overflow: "visible" },
+        onBeforeCapture: (el) => prepareTableForCopy(el, subset),
+        onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
+      });
+    } finally {
+      setIsDraftTableCopying(false);
+    }
+  };
+  
+  const handleDownloadDraftTableImage = async (subset?: string) => {
+    const container = draftTableRef.current;
+    if (!container) return;
+    const originalClass = container.className;
+    await downloadDraftTableImage({
+      fileName: `draft-elecciones${subset ? `-${subset}` : ""}.png`,
+      scale: 3,
+      style: { overflow: "visible" },
+      onBeforeCapture: (el) => prepareTableForCopy(el, subset),
+      onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
+    });
   };
 
   const draftFilteredData = useMemo(() => {

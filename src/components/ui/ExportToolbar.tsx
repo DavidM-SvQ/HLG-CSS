@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
-import { domToDataUrl } from "modern-screenshot";
+import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 
 interface ExportToolbarProps {
   isExpanded?: boolean;
@@ -40,44 +39,34 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
 }) => {
   const [internalIsCopying, setInternalIsCopying] = useState<boolean | string | null>(false);
 
-  const _isImageCopying = isImageCopying !== undefined ? isImageCopying : internalIsCopying;
+  // We explicitly type generic any for generic hook ref
+  const { handleCopyImage: autoCopyImage, handleDownloadImage: autoDownloadImage, isCopying: isHookCopying } = useTableScreenshot(targetRef as React.RefObject<any>);
+
+  const _isImageCopying = isImageCopying !== undefined ? isImageCopying : (internalIsCopying || isHookCopying);
 
   const handleAutoCopy = async (range?: string) => {
     if (!targetRef?.current || _isImageCopying) return;
     setInternalIsCopying(range || true);
     try {
-      const dataUrl = await domToDataUrl(targetRef.current, {
+      await autoCopyImage({
+        fileName: `${filename}.png`,
         scale: 3,
         filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-        backgroundColor: "#ffffff",
-        style: { overflow: "visible" },
+        style: { overflow: "visible" }
       });
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-      await copyImageToClipboard(Promise.resolve(blob), `${filename}.png`);
-    } catch (err) {
-      console.warn("Error copying image", err);
     } finally {
-      setTimeout(() => setInternalIsCopying(false), 2000);
+      setInternalIsCopying(false);
     }
   };
 
   const handleAutoDownload = async () => {
     if (!targetRef?.current) return;
-    try {
-      const dataUrl = await domToDataUrl(targetRef.current, {
-        scale: 3,
-        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-        backgroundColor: "#ffffff",
-        style: { overflow: "visible" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${filename}.png`;
-      link.click();
-    } catch (err) {
-      console.warn("Error downloading image", err);
-    }
+    await autoDownloadImage({
+      fileName: `${filename}.png`,
+      scale: 3,
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      style: { overflow: "visible" }
+    });
   };
 
   const _onCopyImage = onCopyImage || (targetRef ? handleAutoCopy : undefined);

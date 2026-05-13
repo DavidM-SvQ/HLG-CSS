@@ -1,11 +1,10 @@
 import React, { useContext } from "react";
 import { Copy, CheckCircle2, UploadCloud, Maximize2, Trophy, Search, ChevronUp, ChevronDown, X, Medal } from "lucide-react";
-import { domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { copyImageToClipboard } from "../../../lib/clipboard";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useTopTeams } from "../../../lib/hooks/useTopTeams";
-import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function TopTeamsTable() {
   const context = useContext(SeasonViewContext);
@@ -21,10 +20,11 @@ export function TopTeamsTable() {
   const [topTeamsSortDirection, setTopTeamsSortDirection] = React.useState<"asc" | "desc">("asc");
   const [leaderboardTeamsSearch, setLeaderboardTeamsSearch] = React.useState("");
   const [isTopTeamsTableExpanded, setIsTopTeamsTableExpanded] = React.useState(false);
-  const [isTopTeamsCopying, setIsTopTeamsCopying] = React.useState(false);
   const topTeamsTableRef = React.useRef<HTMLDivElement>(null);
 
   const [localSearch, setLocalSearch] = React.useState(leaderboardTeamsSearch);
+  
+  const { handleCopyImage: copyTopTeams, handleDownloadImage: downloadTopTeams, isCopying: isTopTeamsCopying } = useTableScreenshot(topTeamsTableRef);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,11 +34,11 @@ export function TopTeamsTable() {
   }, [localSearch, setLeaderboardTeamsSearch]);
 
   const handleCopyTopTeamsTable = async () => {
-    performImageCopy(topTeamsTableRef, setIsTopTeamsCopying, true, "topTeamsTable");
+    await copyTopTeams({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   const handleDownloadTopTeamsTable = async () => {
-    performImageDownload(topTeamsTableRef, "top_teams.png", "topTeamsTable");
+    await downloadTopTeams({ fileName: "top_teams.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   const { sortedTeams, maxPoints, minPoints, maxWins, maxPartialWins } = useTopTeams(

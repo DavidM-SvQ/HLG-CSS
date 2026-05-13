@@ -1,9 +1,9 @@
 import React, { useContext } from "react";
 import { Copy, Maximize2, UploadCloud, CheckCircle2, Trophy, X } from "lucide-react";
-import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function TeamWinsRankingChart() {
   const context = useContext(SeasonViewContext);
@@ -14,14 +14,15 @@ export function TeamWinsRankingChart() {
   } = context;
 
   const [isWinsRankingExpanded, setIsWinsRankingExpanded] = React.useState(false);
-  const [isWinsRankingCopying, setIsWinsRankingCopying] = React.useState(false);
   const winsRankingRef = React.useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyWinsRankingImage, handleDownloadImage: downloadWinsRankingImage, isCopying: isWinsRankingCopying } = useTableScreenshot(winsRankingRef);
 
   const handleCopyWinsRanking = async () => {
-    performImageCopy(winsRankingRef, setIsWinsRankingCopying, true, "teamWinsRankingChart");
+    await copyWinsRankingImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
   const handleDownloadWinsRanking = async () => {
-    performImageDownload(winsRankingRef, "ranking-victorias.png", "teamWinsRankingChart");
+    await downloadWinsRankingImage({ fileName: "ranking-victorias.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   const { teamWinsRankingData } = useFilters(context);

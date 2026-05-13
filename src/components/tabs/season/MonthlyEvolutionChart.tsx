@@ -2,8 +2,7 @@ import React, { useContext } from "react";
 import { TrendingUp, Maximize2, Copy, CheckCircle2, UploadCloud, X } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
-
-import { performImageCopy, performImageDownload } from "./hooks/useExportHandlers";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext);
@@ -18,15 +17,16 @@ export function MonthlyEvolutionChart() {
   const [evolutionMode, setEvolutionMode] = React.useState("posiciones");
   const [evolutionTimeFilter, setEvolutionTimeFilter] = React.useState("all");
   const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = React.useState(false);
-  const [isEvolutionChartCopying, setIsEvolutionChartCopying] = React.useState(false);
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = React.useState<string[]>([]);
   const evolutionChartRef = React.useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyEvolutionImage, handleDownloadImage: downloadEvolutionImage, isCopying: isEvolutionChartCopying } = useTableScreenshot(evolutionChartRef);
 
   const handleCopyEvolutionChart = async () => {
-    performImageCopy(evolutionChartRef, setIsEvolutionChartCopying, true, "monthlyEvolutionChart");
+    await copyEvolutionImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
   const handleDownloadEvolutionChart = async () => {
-    performImageDownload(evolutionChartRef, "evolucion-mensual.png", "monthlyEvolutionChart");
+    await downloadEvolutionImage({ fileName: "evolucion-mensual.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
   };
 
   const months = [
