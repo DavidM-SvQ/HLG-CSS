@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Grid, Calendar, Crown, Medal, Maximize2, Minimize2, CheckCircle2, Copy, ClipboardList, History } from "lucide-react";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { cn } from "../../../lib/utils";
+import { Button } from "../../ui/button";
 
 interface TopTeamsReportProps {
   monthReportData: any;
@@ -207,14 +208,14 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex flex-wrap items-center gap-1.5 pr-3 copy-button-ignore">
-              <button
+              <Button variant="outline"
                 onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
                 className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
                 title={isHistoryExpanded ? "Contraer tabla" : "Expandir tabla"}
               >
                 {isHistoryExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={() => handleCopyHistory("full")}
                 disabled={!!isHistoryCopying}
                 title="Copiar imagen"
@@ -225,7 +226,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                 )}
               >
                 {isHistoryCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
+              </Button>
               
               {(() => {
                 const count = monthReportData.raceWinners.length;
@@ -236,7 +237,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                         const s = "p" + (i + 1);
                         const isCopyingThis = isHistoryCopying === s;
                         return (
-                          <button
+                          <Button variant="outline"
                             key={s}
                             onClick={() => handleCopyHistory(s)}
                             disabled={!!isHistoryCopying}
@@ -248,7 +249,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                           >
                             {isCopyingThis ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                             {i * 50 + 1}-{(i + 1) * 50}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -257,7 +258,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                 return null;
               })()}
 
-              <button
+              <Button variant="ghost" size="icon"
                 onClick={handleCopyHistoryText}
                 disabled={isHistoryTextCopying}
                 title="Copiar texto"
@@ -269,7 +270,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                 )}
               >
                 {isHistoryTextCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <ClipboardList className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

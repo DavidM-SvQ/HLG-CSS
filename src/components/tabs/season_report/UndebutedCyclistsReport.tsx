@@ -5,6 +5,7 @@ import { ExportToolbar } from "../../ui/ExportToolbar";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import { flushSync } from "react-dom";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
 
 interface UndebutedCyclistsReportProps {
   files: any;
@@ -143,7 +144,7 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
           />
 
           <div className="relative">
-            <button
+            <Button variant="outline"
               onClick={() => setIsUndebutedRoundFilterOpen(!isUndebutedRoundFilterOpen)}
               className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
             >
@@ -153,14 +154,14 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
                   : `${undebutedCyclistsRoundFilter.length} rondas`}
               </span>
               <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isUndebutedRoundFilterOpen && "rotate-180")} />
-            </button>
+            </Button>
             {isUndebutedRoundFilterOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsUndebutedRoundFilterOpen(false)} />
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto">
                   <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
                     <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
-                    {undebutedCyclistsRoundFilter.length > 0 && <button onClick={() => setUndebutedCyclistsRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</button>}
+                    {undebutedCyclistsRoundFilter.length > 0 && <Button variant="ghost" size="sm" onClick={() => setUndebutedCyclistsRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>}
                   </div>
                   {Array.from(new Set(Object.values(cyclistRoundMap) as string[])).filter(Boolean).sort((a, b) => a.localeCompare(b)).map((ronda) => (
                     <label key={ronda} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">

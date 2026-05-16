@@ -1,5 +1,5 @@
-import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import React, { useState, useRef, useMemo } from 'react';
+import { useUrlState } from '../../../hooks/useUrlState';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronDown, ChevronUp, Copy, CheckCircle2, UploadCloud, Activity, FileText, Download, HelpCircle, ArrowUpDown, Maximize2, X, BarChart3, TrendingUp, Trophy } from 'lucide-react';
 import { cn } from '../../../lib/utils';
@@ -10,6 +10,7 @@ import { DraftPointsTable } from './DraftPointsTable';
 import { DraftPerformanceSummary } from './DraftPerformanceSummary';
 import { DraftRoiChart } from './DraftRoiChart';
 import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
+import { Button } from "../../ui/button";
 
 export interface DraftDatosProps {
   files: any;
@@ -26,17 +27,17 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
   teamToPlayerMap,
   playerOrderMap,
 }) => {
-  const [draftDatosMonthFilter, setDraftDatosMonthFilter] = useState<string[]>([]);
-  const [draftDatosCategoryFilter, setDraftDatosCategoryFilter] = useState<string[]>([]);
-  const [draftDatosTeamFilter, setDraftDatosTeamFilter] = useState<string[]>([]);
+  const [draftDatosMonthFilter, setDraftDatosMonthFilter] = useUrlState<string[]>("draftDatosMonthFilter", []);
+  const [draftDatosCategoryFilter, setDraftDatosCategoryFilter] = useUrlState<string[]>("draftDatosCategoryFilter", []);
+  const [draftDatosTeamFilter, setDraftDatosTeamFilter] = useUrlState<string[]>("draftDatosTeamFilter", []);
   const [isDraftDatosMonthFilterOpen, setIsDraftDatosMonthFilterOpen] = useState(false);
   const [isDraftDatosCategoryFilterOpen, setIsDraftDatosCategoryFilterOpen] = useState(false);
   const [isDraftDatosTeamFilterOpen, setIsDraftDatosTeamFilterOpen] = useState(false);
-  const [draftDatosSortColumn, setDraftDatosSortColumn] = useState<string>("Orden");
-  const [draftDatosSortDirection, setDraftDatosSortDirection] = useState<"asc" | "desc">("asc");
+  const [draftDatosSortColumn, setDraftDatosSortColumn] = useUrlState<string>("draftDatosSortColumn", "Orden");
+  const [draftDatosSortDirection, setDraftDatosSortDirection] = useUrlState<"asc" | "desc">("draftDatosSortDirection", "asc");
   const [isDraftDatosTableExpanded, setIsDraftDatosTableExpanded] = useState(false);
   const [isDraftSummaryExpanded, setIsDraftSummaryExpanded] = useState(false);
-  const [draftSummarySort, setDraftSummarySort] = useState<{keys: string[]; order: "asc" | "desc";}>({ keys: ["totalPoints"], order: "desc" });
+  const [draftSummarySort, setDraftSummarySort] = useUrlState<{keys: string[]; order: "asc" | "desc";}>("draftSummarySort", { keys: ["totalPoints"], order: "desc" });
   const [draftDatosTooltip, setDraftDatosTooltip] = useState<any>(null);
 
   const draftDatosTableRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                           <div className="flex flex-wrap items-center gap-2">
                             {/* Meses Filter */}
                             <div className="relative">
-                              <button
+                              <Button variant="outline"
                                 onClick={() => {
                                   setIsDraftDatosMonthFilterOpen(
                                     !isDraftDatosMonthFilterOpen,
@@ -96,7 +97,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                     isDraftDatosMonthFilterOpen && "rotate-180",
                                   )}
                                 />
-                              </button>
+                              </Button>
                               {isDraftDatosMonthFilterOpen && (
                                 <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
                                   <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
@@ -104,14 +105,14 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                       Meses
                                     </span>
                                     {draftDatosMonthFilter.length > 0 && (
-                                      <button
+                                      <Button variant="outline"
                                         onClick={() =>
                                           setDraftDatosMonthFilter([])
                                         }
                                         className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
                                       >
                                         Limpiar
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                   <div className="max-h-60 overflow-y-auto">
@@ -170,7 +171,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
 
                             {/* Categoría Filter */}
                             <div className="relative">
-                              <button
+                              <Button variant="outline"
                                 onClick={() => {
                                   setIsDraftDatosCategoryFilterOpen(
                                     !isDraftDatosCategoryFilterOpen,
@@ -192,7 +193,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                       "rotate-180",
                                   )}
                                 />
-                              </button>
+                              </Button>
                               {isDraftDatosCategoryFilterOpen && (
                                 <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
                                   <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
@@ -200,14 +201,14 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                       Categorías
                                     </span>
                                     {draftDatosCategoryFilter.length > 0 && (
-                                      <button
+                                      <Button variant="outline"
                                         onClick={() =>
                                           setDraftDatosCategoryFilter([])
                                         }
                                         className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
                                       >
                                         Limpiar
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                   <div className="max-h-60 overflow-y-auto">
@@ -288,7 +289,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
 
                             {/* Equipo Filter */}
                             <div className="relative">
-                              <button
+                              <Button variant="outline"
                                 onClick={() => {
                                   setIsDraftDatosTeamFilterOpen(
                                     !isDraftDatosTeamFilterOpen,
@@ -309,7 +310,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                     isDraftDatosTeamFilterOpen && "rotate-180",
                                   )}
                                 />
-                              </button>
+                              </Button>
                               {isDraftDatosTeamFilterOpen && (
                                 <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
                                   <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
@@ -317,14 +318,14 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                                       Equipos
                                     </span>
                                     {draftDatosTeamFilter.length > 0 && (
-                                      <button
+                                      <Button variant="outline"
                                         onClick={() =>
                                           setDraftDatosTeamFilter([])
                                         }
                                         className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
                                       >
                                         Limpiar
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                   <div className="max-h-60 overflow-y-auto">
@@ -392,35 +393,15 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
                               )}
                             </div>
 
-                            <button
-                              onClick={() =>
-                                setIsDraftDatosTableExpanded(
-                                  !isDraftDatosTableExpanded,
-                                )
-                              }
-                              className="p-2 ml-1 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              title="Ampliar"
-                            >
-                              <Maximize2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={handleCopyDraftDatosTableImage}
-                              className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              title="Copiar como imagen"
-                            >
-                              {isDraftTableCopying ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={handleDownloadDraftDatosTableImage}
-                              className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 copy-button-ignore"
-                              title="Descargar imagen"
-                            >
-                              <UploadCloud className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center border-l border-neutral-200 pl-2 ml-1">
+  <ExportToolbar 
+    isExpanded={isDraftDatosTableExpanded}
+    onExpand={() => setIsDraftDatosTableExpanded(!isDraftDatosTableExpanded)}
+    onCopyImage={handleCopyDraftDatosTableImage}
+    isImageCopying={isDraftTableCopying}
+    onDownloadImage={handleDownloadDraftDatosTableImage}
+  />
+</div>
                           </div>
                         </div>
 

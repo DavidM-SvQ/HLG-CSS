@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, BarChart, Bar, Legend } from 'recharts';
 import { getVal } from '../../lib/data-processing';
+import { cn } from '../../lib/utils';
+import { ChartTooltip } from '../ui/ChartTooltip';
 import { GhostDraftView } from './tests/GhostDraftView';
 import { TestsIdeasTracker } from './tests/TestsIdeasTracker';
 
@@ -301,22 +303,6 @@ export function TestsView({ leaderboard, cyclistMetadata, playerOrderMap, player
     };
   }, [teamA, teamB, files.elecciones.data, files.resultados.data, cyclistMetadata, playerTeamMap]);
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg">
-          <p className="font-bold text-neutral-800">{data.ciclista}</p>
-          <div className="mt-2 space-y-1 text-sm text-neutral-600">
-            <p><span className="font-medium">Orden Draft:</span> {data.pickOrder}</p>
-            <p><span className="font-medium">Puntos Totales:</span> {Math.round(data.puntos)}</p>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="space-y-6">
       <TestsIdeasTracker />
@@ -359,7 +345,22 @@ export function TestsView({ leaderboard, cyclistMetadata, playerOrderMap, player
                       label={{ value: 'Puntos Totales', angle: -90, position: 'insideLeft' }} 
                     />
                     <ZAxis type="number" range={[50, 50]} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                    <Tooltip 
+                      cursor={{ strokeDasharray: '3 3' }} 
+                      content={(props) => (
+                        <ChartTooltip 
+                          {...props}
+                          formatter={(value, name, item) => (
+                            <div className="mt-2 space-y-1 text-sm text-neutral-600">
+                              <p><span className="font-medium">Orden Draft:</span> {item.payload.pickOrder}</p>
+                              <p><span className="font-medium">Puntos Totales:</span> {Math.round(item.payload.puntos)}</p>
+                            </div>
+                          )}
+                          labelFormatter={() => null}
+                          title={props.payload?.[0]?.payload?.ciclista}
+                        />
+                      )}
+                    />
                     <Scatter name="Ciclistas" data={draftData} fill="#3b82f6" fillOpacity={0.6} />
                   </ScatterChart>
                 </ResponsiveContainer>
@@ -406,26 +407,34 @@ export function TestsView({ leaderboard, cyclistMetadata, playerOrderMap, player
                     <XAxis type="number" domain={[0, 100]} unit="%" />
                     <YAxis dataKey="teamName" type="category" width={140} tick={{fontSize: 12}} />
                     <Tooltip 
-                      formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name === "topPercent" ? "Estrellas" : "Resto del Bloque"]} 
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg text-sm z-50">
-                              <p className="font-bold text-neutral-800 mb-2 truncate max-w-[200px]">{data.teamName}</p>
+                      content={(props) => (
+                        <ChartTooltip 
+                          {...props}
+                          formatter={(value, name, item) => {
+                            const data = item.payload;
+                            const isTop = name === "topPercent";
+                            return (
                               <div className="space-y-1">
-                                <p><span className="font-semibold text-indigo-600">Estrellas:</span> {Math.round(data.topPoints)} pts ({data.topPercent.toFixed(1)}%)</p>
-                                {data.topNames && data.topNames.map((n: string, i: number) => (
-                                  <p key={i} className="text-xs text-neutral-500 pl-2">- {n}</p>
+                                <p>
+                                  <span className={cn("font-semibold", isTop ? "text-indigo-600" : "text-emerald-500")}>
+                                    {isTop ? `Estrellas (Top ${dependencyTopCount}):` : "Resto del Bloque:"}
+                                  </span>{" "}
+                                  {Math.round(isTop ? data.topPoints : data.restPoints)} pts ({value.toFixed(1)}%)
+                                </p>
+                                {isTop && data.topNames && data.topNames.map((n: string, i: number) => (
+                                  <p key={i} className="text-[10px] text-neutral-500 pl-2 leading-tight">- {n}</p>
                                 ))}
-                                <p className="mt-2"><span className="font-semibold text-emerald-500">Resto del Bloque:</span> {Math.round(data.restPoints)} pts ({data.restPercent.toFixed(1)}%)</p>
-                                <p className="border-t border-neutral-100 mt-2 pt-2 font-bold text-neutral-800">Total: {Math.round(data.totalPoints)} pts</p>
+                                {!isTop && (
+                                  <p className="border-t border-neutral-100 mt-2 pt-2 font-bold text-neutral-800">
+                                    Total: {Math.round(data.totalPoints)} pts
+                                  </p>
+                                )}
                               </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
+                            );
+                          }}
+                          labelFormatter={(label) => label}
+                        />
+                      )}
                     />
                     <Legend />
                     <Bar dataKey="topPercent" name={`Top ${dependencyTopCount} Estrellas`} stackId="a" fill="#4f46e5" />

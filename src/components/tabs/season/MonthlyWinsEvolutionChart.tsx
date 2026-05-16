@@ -1,9 +1,12 @@
 import React, { useContext } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { Copy, Maximize2, UploadCloud, CheckCircle2, TrendingUp, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
+import { ChartTooltip } from "../../ui/ChartTooltip";
 
 export function MonthlyWinsEvolutionChart() {
   const context = useContext(SeasonViewContext);
@@ -17,8 +20,8 @@ export function MonthlyWinsEvolutionChart() {
   const [isWinsEvolutionExpanded, setIsWinsEvolutionExpanded] = React.useState(false);
   const winsEvolutionRef = React.useRef<HTMLDivElement>(null);
   
-  const [winsChartType, setWinsChartType] = React.useState("acumulado");
-  const [selectedEvolutionTeams, setSelectedEvolutionTeams] = React.useState<string[]>([]);
+  const [winsChartType, setWinsChartType] = useUrlState<string>("winsChartType", "acumulado");
+  const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useUrlState<string[]>("winsChartEvolutionTeams", []);
   
   const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(winsEvolutionRef);
 
@@ -49,14 +52,14 @@ export function MonthlyWinsEvolutionChart() {
               <span className="truncate">Evolución Mensual de Victorias</span>
             </h3>
             <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-              <button
+              <Button variant="outline"
                 onClick={() => setIsWinsEvolutionExpanded(true)}
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                 title="Ampliar gráfico"
               >
                 <Maximize2 className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost" size="icon"
                 onClick={handleCopyWinsEvolution}
                 disabled={!!isCopying}
                 className={cn(
@@ -68,18 +71,18 @@ export function MonthlyWinsEvolutionChart() {
                 title={isCopying ? "Copiado" : "Copiar gráfico como imagen"}
               >
                 {isCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost" size="sm"
                 onClick={handleDownloadWinsEvolution}
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                 title="Descargar gráfico como imagen"
               >
                 <UploadCloud className="w-4 h-4 rotate-180" />
-              </button>
+              </Button>
             </div>
           </div>
           <div className="flex bg-neutral-100 p-1 rounded-lg">
-            <button
+            <Button variant="outline"
               onClick={() => setWinsChartType("acumulado")}
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
@@ -89,8 +92,8 @@ export function MonthlyWinsEvolutionChart() {
               )}
             >
               Acumulado
-            </button>
-            <button
+            </Button>
+            <Button variant="outline"
               onClick={() => setWinsChartType("mensual")}
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
@@ -100,7 +103,7 @@ export function MonthlyWinsEvolutionChart() {
               )}
             >
               Mensual
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -110,13 +113,13 @@ export function MonthlyWinsEvolutionChart() {
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-bold text-neutral-700">Filtrar Equipos:</p>
               <div className="flex gap-2">
-                <button
+                <Button variant="outline"
                   onClick={() => setSelectedEvolutionTeams([])}
                   className="text-xs font-medium text-blue-600 hover:text-blue-700"
                 >
                   Mostrar Todos
-                </button>
-                <button
+                </Button>
+                <Button variant="outline"
                   onClick={() =>
                     setSelectedEvolutionTeams(
                       filteredLeaderboard.map((t: any) => `${t.nombreEquipo} [#${t.orden}]`)
@@ -125,7 +128,7 @@ export function MonthlyWinsEvolutionChart() {
                   className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
                 >
                   Seleccionar Todos
-                </button>
+                </Button>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -136,7 +139,7 @@ export function MonthlyWinsEvolutionChart() {
                 const color = teamColors[teamKey];
 
                 return (
-                  <button
+                  <Button variant="outline"
                     key={teamKey}
                     onClick={() => {
                       if (selectedEvolutionTeams.includes(teamKey)) {
@@ -159,7 +162,7 @@ export function MonthlyWinsEvolutionChart() {
                     }}
                   >
                     {team.nombreEquipo}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -189,13 +192,7 @@ export function MonthlyWinsEvolutionChart() {
                         allowDecimals={false}
                       />
                       <Tooltip
-                        contentStyle={{
-                          borderRadius: "8px",
-                          border: "none",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        }}
-                        itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-                        labelStyle={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
+                        content={(props) => <ChartTooltip {...props} />}
                       />
                       <Legend
                         verticalAlign="bottom"
@@ -244,12 +241,12 @@ export function MonthlyWinsEvolutionChart() {
                 <TrendingUp className="w-6 h-6 text-blue-600" />
                 Evolución Mensual de Victorias ({winsChartType === "acumulado" ? "Acumulado" : "Mensual"})
               </h3>
-              <button
+              <Button variant="outline"
                 onClick={() => setIsWinsEvolutionExpanded(false)}
                 className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
               >
                 <X className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
@@ -264,13 +261,7 @@ export function MonthlyWinsEvolutionChart() {
                         <XAxis dataKey="month" tick={{ fontSize: 14 }} />
                         <YAxis tick={{ fontSize: 14 }} allowDecimals={false} />
                         <Tooltip
-                          contentStyle={{
-                            borderRadius: "12px",
-                            border: "none",
-                            boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                            fontSize: "14px",
-                          }}
-                          itemSorter={(item) => -(item.value as number)}
+                          content={(props) => <ChartTooltip {...props} />}
                         />
                         <Legend
                           verticalAlign="bottom"

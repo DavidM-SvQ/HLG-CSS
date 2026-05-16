@@ -2,9 +2,8 @@ import React, { useRef, useState } from "react";
 import { Trophy, X } from "lucide-react";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { cn } from "../../../lib/utils";
-import { expandNodeForCapture } from "../../../lib/dom-utils";
-import { domToDataUrl } from "modern-screenshot";
-import { copyImageToClipboard } from "../../../lib/clipboard";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
 
 interface RaceTeamsListProps {
   rankedTeams: any[];
@@ -23,52 +22,16 @@ export const RaceTeamsList = ({
   minRacePartialWins,
   maxRacePartialWins,
 }: RaceTeamsListProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
-
-  const handleCopy = async () => {
-    if (!tableRef.current || isCopying) return;
-    setIsCopying(true);
-    const restore = expandNodeForCapture(tableRef.current);
-    try {
-      const processCopy = async () => {
-        const dataUrl = await domToDataUrl(tableRef.current!, {
-          scale: 3,
-          backgroundColor: "#ffffff",
-          style: { overflow: "hidden" },
-        });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-      };
-      await copyImageToClipboard(processCopy(), "export.png");
-      setTimeout(() => setIsCopying(false), 2000);
-    } catch (err) {
-      console.warn("Error during copy", err);
-    } finally {
-      restore();
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!tableRef.current) return;
-    const restore = expandNodeForCapture(tableRef.current);
-    try {
-      const dataUrl = await domToDataUrl(tableRef.current, {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        style: { overflow: "hidden" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "clasificacion-carrera.png";
-      link.click();
-    } catch (err) {
-      console.error("Error downloading table:", err);
-    } finally {
-      restore();
-    }
-  };
+  const { 
+    isExpanded, 
+    setIsExpanded, 
+    isCopying, 
+    handleCopyImage, 
+    handleDownloadImage,
+    handleCopyText,
+    isTextCopying
+  } = useTableScreenshot(tableRef);
 
   return (
     <div>
@@ -80,9 +43,13 @@ export const RaceTeamsList = ({
         <ExportToolbar
           isExpanded={isExpanded}
           onExpand={() => setIsExpanded(!isExpanded)}
-          onCopyImage={handleCopy}
+          onCopyImage={() => handleCopyImage({ fileName: 'export.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) })}
           isImageCopying={isCopying}
-          onDownloadImage={handleDownload}
+          onDownloadImage={() => handleDownloadImage({ fileName: 'clasificacion-carrera.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) })}
+          onCopyText={handleCopyText}
+          isTextCopying={isTextCopying}
+          useClipboardIconForText={true}
+          textCopyLabel=""
         />
       </div>
       <div className="flex justify-center w-full">
@@ -95,12 +62,12 @@ export const RaceTeamsList = ({
           )}
         >
           {isExpanded && (
-            <button
+            <Button variant="outline"
               onClick={() => setIsExpanded(false)}
               className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
             >
               <X className="w-6 h-6" />
-            </button>
+            </Button>
           )}
           <div className="table-responsive-wrapper overflow-auto w-full h-full">
             <table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">

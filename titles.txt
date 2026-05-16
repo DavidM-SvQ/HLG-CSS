@@ -1,0 +1,152 @@
+src/components/tabs/draft/DraftRoiChart.tsx:              title="Copiar gráfico"
+src/components/tabs/draft/DraftRoiChart.tsx:              title="Descargar gráfico"
+src/components/tabs/draft/DraftPerformanceSummary.tsx:        title="Ampliar tabla"
+src/components/tabs/draft/SummaryComponentBody.txt:                                title="Ampliar tabla"
+src/components/tabs/draft/SummaryComponentBody.txt:                                title="Copiar como imagen"
+src/components/tabs/draft/SummaryComponentBody.txt:                                title="Copiar como texto (Excel)"
+src/components/tabs/draft/SummaryComponentBody.txt:                                title="Descargar imagen"
+src/components/tabs/draft/SummaryComponentBody.txt:                                                title={summary.team}
+src/components/tabs/draft/DraftDatos.tsx:                                            title={team}
+src/components/tabs/draft/DraftDatos.tsx:                              title="Ampliar"
+src/components/tabs/draft/DraftDatos.tsx:                              title="Copiar como imagen"
+src/components/tabs/draft/DraftDatos.tsx:                              title="Descargar imagen"
+src/components/tabs/draft/DraftElections.tsx:                <Button variant="ghost" size="sm" key={s} onClick={() => handleCopyDraftTableImage(s)} className={cn("px-2.5 py-1 text-[10px] rounded border font-bold transition-all shadow-sm active:scale-95", isCopyingThis ? "bg-green-600 border-green-600 text-white" : "bg-white text-blue-600 border-neutral-200 hover:bg-blue-50 hover:text-blue-700")} title={`Copiar bloque ${start}-${end}`}>{label}</Button>
+src/components/tabs/draft/DraftElections.tsx:                      <th key={col} className={`${"px-2 py-1.5 font-semibold cursor-pointer hover:bg-neutral-100 transition-colors text-center"} ${(col === "Ciclista" || col === "Nombre_Equipo") ? "sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5]" : ""}`} title={colTitle} onClick={() => {
+src/components/tabs/draft/DraftElections.tsx:                      <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
+src/components/tabs/draft/ChartComponentBody.txt:                                          title="Copiar gráfico como imagen"
+src/components/tabs/draft/ChartComponentBody.txt:                                          title="Descargar gráfico"
+src/components/tabs/season_report/BestPicksReport.tsx:               <div className="w-40 text-sm font-semibold text-neutral-700 truncate text-right" title={p.team}>
+src/components/tabs/season_report/TopCyclistsReport.tsx:                      <td className="px-3 py-1 text-base text-center" title={data.pais}>{getFlagEmoji(data.pais)}</td>
+src/components/tabs/season_report/TopCyclistsReport.tsx:                    <td className="px-3 py-1 text-base text-center" title={s.pais}>
+src/components/tabs/season_report/MinMaxReport.tsx:                  title={t.team?.toString()}
+src/components/tabs/season_report/MinMaxReport.tsx:                    <span title={t.best[0]?.toString()} className="flex items-center gap-1">
+src/components/tabs/season_report/MinMaxReport.tsx:                    <span title={t.worst[0]?.toString()} className="flex items-center gap-1">
+src/components/tabs/season_report/PointsPerRoundReport.tsx:          <td className="px-4 py-2 font-medium text-neutral-900 border-r border-neutral-200 bg-white sticky left-0 z-10" title={team}>
+src/components/tabs/season_report/PanenkitaReport.tsx:            <h4 className="font-bold text-pink-800 text-sm truncate" title={monthReportData.bestPanenkitaTeam || "N/A"}>
+src/components/tabs/season_report/UnscoredCyclistsReport.tsx:                  title="Carreras disputadas"
+src/components/tabs/season_report/UnscoredCyclistsReport.tsx:                  title="Días de competición"
+src/components/tabs/season_report/TopTeamsReport.tsx:                title={isHistoryExpanded ? "Contraer tabla" : "Expandir tabla"}
+src/components/tabs/season_report/TopTeamsReport.tsx:                title="Copiar imagen"
+src/components/tabs/season_report/TopTeamsReport.tsx:                title="Copiar texto"
+src/components/tabs/season_report/TopTeamsReport.tsx:                      <td className="px-6 py-2.5 font-medium text-neutral-900 max-w-[200px] truncate" title={r.race}>{r.race}</td>
+src/components/tabs/season/NoDraftCyclists.tsx:                                        title={
+src/components/tabs/season/NoDraftCyclists.tsx:                                        title="Copiar imagen"
+src/components/tabs/season/NoDraftCyclists.tsx:                                        title="Copiar texto"
+src/components/tabs/season/NoDraftCyclists.tsx:                                        title="Descargar imagen"
+src/components/tabs/season/NoDraftCyclists.tsx:                                          title="Puntos por carreras"
+src/components/tabs/season/HotStreakTeams.tsx:             <Button variant="ghost" size="icon" onClick={handleCopy} className={cn("p-1.5 rounded-md transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
+src/components/tabs/season/HotStreakTeams.tsx:             <Button variant="ghost" size="sm" onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title="Descargar ranking">
+src/components/tabs/season/HotStreakTeams.tsx:             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
+src/components/tabs/season/HotStreakTeams.tsx:                     <span className="font-bold text-neutral-800 text-sm line-clamp-1" title={t.name}>{t.name}</span>
+src/components/tabs/season/HotStreakTeams.tsx:                    <div key={idx} className={`w-8 text-center text-[10px] py-0.5 rounded ${qualifies ? 'bg-rose-100 text-rose-700 font-bold' : 'bg-neutral-200 text-neutral-500'}`} title={`Semana ${idx + 1}: ${pts} pts`}>
+src/components/tabs/season/HotStreakCyclists.tsx:             <Button variant="ghost" size="icon" onClick={handleCopy} className={cn("p-1.5 rounded-md transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
+src/components/tabs/season/HotStreakCyclists.tsx:             <Button variant="ghost" size="sm" onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title="Descargar ranking">
+src/components/tabs/season/HotStreakCyclists.tsx:             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
+src/components/tabs/season/HotStreakCyclists.tsx:                        <span className="font-bold text-neutral-800 text-sm line-clamp-1" title={c.name}>{c.name}</span>
+src/components/tabs/season/HotStreakCyclists.tsx:                        <span className="text-[11px] text-neutral-500 line-clamp-1" title={c.team}>{c.team}</span>
+src/components/tabs/season/HotStreakCyclists.tsx:                    <div key={idx} className={`w-8 text-center text-[10px] py-0.5 rounded ${qualifies ? 'bg-orange-100 text-orange-700 font-bold' : 'bg-neutral-200 text-neutral-500'}`} title={`Semana ${idx + 1}: ${pts} pts`}>
+src/components/tabs/season/WinsHistoryTable.tsx:                title="Ampliar tabla"
+src/components/tabs/season/WinsHistoryTable.tsx:                title={isWinsHistoryCopying === "full" ? "Copiado" : "Copiar tabla como imagen"}
+src/components/tabs/season/WinsHistoryTable.tsx:                        title={`Copiar rango ${label}`}
+src/components/tabs/season/WinsHistoryTable.tsx:                title="Copiar como texto"
+src/components/tabs/season/WinsHistoryTable.tsx:                title="Descargar tabla como imagen"
+src/components/tabs/season/MonthlyWinsEvolutionChart.tsx:                title="Ampliar gráfico"
+src/components/tabs/season/MonthlyWinsEvolutionChart.tsx:                title={isCopying ? "Copiado" : "Copiar gráfico como imagen"}
+src/components/tabs/season/MonthlyWinsEvolutionChart.tsx:                title="Descargar gráfico como imagen"
+src/components/tabs/season/UndebutedCyclists.tsx:                                        title={
+src/components/tabs/season/UndebutedCyclists.tsx:                                        title="Copiar imagen"
+src/components/tabs/season/UndebutedCyclists.tsx:                                        title="Copiar texto"
+src/components/tabs/season/UndebutedCyclists.tsx:                                        title="Descargar imagen"
+src/components/tabs/season/MonthlyEvolutionChart.tsx:                    <span className="truncate max-w-[150px]" title={p.dataKey}>{p.dataKey}</span>
+src/components/tabs/season/MonthlyEvolutionChart.tsx:                title="Ampliar gráfico"
+src/components/tabs/season/MonthlyEvolutionChart.tsx:                title={
+src/components/tabs/season/MonthlyEvolutionChart.tsx:                title="Descargar gráfico como imagen"
+src/components/tabs/season/TopTeamsTable.tsx:                title="Ampliar tabla"
+src/components/tabs/season/TopTeamsTable.tsx:                title={
+src/components/tabs/season/TopTeamsTable.tsx:                title="Descargar gráfico como imagen"
+src/components/tabs/season/TopTeamsTable.tsx:                title="Diferencia de posiciones respecto al orden del draft"
+src/components/tabs/season/TopTeamsTable.tsx:                title="Carreras donde el equipo obtuvo la mayor puntuación entre todos los participantes"
+src/components/tabs/season/TopTeamsTable.tsx:                title="Clasificaciones Parciales (Etapas, Montaña, Regularidad, Jóvenes, etc) donde un ciclista del equipo obtuvo el primer lugar"
+src/components/tabs/season/TopDraftCyclists.tsx:                                        title="Ampliar tabla"
+src/components/tabs/season/TopDraftCyclists.tsx:                                        title="Copiar tabla completa como imagen"
+src/components/tabs/season/TopDraftCyclists.tsx:                                        title="Copiar texto de la tabla"
+src/components/tabs/season/TopDraftCyclists.tsx:                                        title="Descargar tabla completa como imagen"
+src/components/tabs/season/TopDraftCyclists.tsx:                                          title="Días de competición"
+src/components/tabs/season/TopDraftCyclists.tsx:                                          title="Puntos por carreras"
+src/components/tabs/season/TopDraftCyclists.tsx:                                          title="Puntos por día de competición"
+src/components/tabs/season/TeamWinsRankingChart.tsx:              title="Ampliar gráfico"
+src/components/tabs/season/TeamWinsRankingChart.tsx:              title={isWinsRankingCopying ? "Copiado" : "Copiar gráfico como imagen"}
+src/components/tabs/season/TeamWinsRankingChart.tsx:              title="Descargar gráfico como imagen"
+src/components/tabs/season/UnscoredCyclists.tsx:                                        title={
+src/components/tabs/season/UnscoredCyclists.tsx:                                        title="Copiar imagen"
+src/components/tabs/season/UnscoredCyclists.tsx:                                        title="Copiar texto"
+src/components/tabs/season/UnscoredCyclists.tsx:                                        title="Descargar imagen"
+src/components/tabs/season/UnscoredCyclists.tsx:                                          title="Carreras disputadas"
+src/components/tabs/season/UnscoredCyclists.tsx:                                          title="Días de competición"
+src/components/tabs/season/GeneralClassificationChart.tsx:              title="Ampliar gráfico"
+src/components/tabs/season/GeneralClassificationChart.tsx:              title={
+src/components/tabs/season/GeneralClassificationChart.tsx:              title="Descargar gráfico como imagen"
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Ronda de elección" onClick={() => handleSort("ronda", "asc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Victorias" onClick={() => handleSort("victorias", "desc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Carreras" onClick={() => handleSort("carreras", "desc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Días de competición" onClick={() => handleSort("dias", "desc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por carreras" onClick={() => handleSort("ppc", "desc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por día de competición" onClick={() => handleSort("ppd", "desc")}>
+src/components/tabs/team/TeamCyclistsTable.tsx:              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="% de puntos sobre el total del equipo" onClick={() => handleSort("pct", "desc")}>
+src/components/tabs/TeamView.tsx:                title="Copiar imagen"
+src/components/tabs/TeamView.tsx:                title="Descargar"
+src/components/tabs/tests/TestsCalendarHeatmap.tsx:               <div key={t} className="h-6 flex items-center text-xs text-neutral-600 font-medium truncate" title={t}>
+src/components/tabs/tests/TestsCalendarHeatmap.tsx:                         title={`${target} - Sem ${w}: ${Math.round(score)} pts`}
+src/components/tabs/race/RacePodium.tsx:                   <div className="font-bold text-sm md:text-base leading-tight w-full truncate px-1 text-slate-800" title={team.nombreEquipo}>{team.nombreEquipo}</div>
+src/components/tabs/race/RaceStats.tsx:                  title="Copiar equipos 1-12"
+src/components/tabs/race/RaceStats.tsx:                  title="Copiar equipos 13-24"
+src/components/tabs/race/RaceStats.tsx:                    title="Copiar equipos 25+"
+src/components/tabs/StartlistView.tsx:                            title="Días de Competición Totales"
+src/components/tabs/StartlistView.tsx:                            title="Puntos con los que el ciclista ha llegado a esta carrera"
+src/components/tabs/StartlistView.tsx:                            <td className="px-3 py-2 font-medium text-neutral-800 truncate sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50" title={r.jugador}>
+src/components/tabs/StartlistView.tsx:                            <td className="px-3 py-2 font-semibold text-neutral-900 truncate" title={r.ciclista}>
+src/components/tabs/StartlistView.tsx:                               <span title={r.paisLetras}>{r.pais}</span>
+src/components/tabs/StartlistView.tsx:                            <td className="px-3 py-2 text-center font-medium text-neutral-600 truncate" title={r.equipo}>
+src/components/tabs/StartlistView.tsx:                            title="Desviación respecto a la media"
+src/components/tabs/StartlistView.tsx:                            title="Puntos Totales (Excluyendo esta carrera)"
+src/components/tabs/StartlistView.tsx:                            title="Puntos Medios"
+src/components/tabs/StartlistView.tsx:                      title="Contraer"
+src/components/tabs/MonthlyReportView.tsx:        title="Copiar texto"
+src/components/tabs/MonthlyReportView.tsx:        title="Ampliar"
+src/components/tabs/MonthlyReportView.tsx:        title="Copiar imagen"
+src/components/tabs/MonthlyReportView.tsx:        title="Descargar imagen"
+src/components/tabs/MonthlyReportView.tsx:                        <td className="px-6 py-2.5 font-medium text-neutral-900 max-w-[200px] truncate" title={r.race}>{r.race}</td>
+src/components/tabs/MonthlyReportView.tsx:                        <td className="px-3 py-1 text-base text-center" title={data.pais}>{getFlagEmoji(data.pais)}</td>
+src/components/tabs/MonthlyReportView.tsx:                      <td className="px-3 py-1 text-base text-center" title={s.pais}>
+src/components/tabs/MonthlyReportView.tsx:                        title={team}
+src/components/tabs/MonthlyReportView.tsx:                        title={t.team?.toString()}
+src/components/tabs/MonthlyReportView.tsx:                          <span title={t.best[0]?.toString()} className="flex items-center gap-1">
+src/components/tabs/MonthlyReportView.tsx:                          <span title={t.worst[0]?.toString()} className="flex items-center gap-1">
+src/components/tabs/MonthlyReportView.tsx:                    title={monthReportData.bestPanenkitaTeam || "N/A"}
+src/components/tabs/TestsView.tsx:               <div className={`p-4 text-center text-lg font-bold border-t border-neutral-200 ${h2hData.A.avgAge <= h2hData.B.avgAge ? 'text-blue-700' : 'text-neutral-500'}`} title="Entre más bajo, equipo más joven">
+src/components/tabs/TestsView.tsx:               <div className={`p-4 text-center text-lg font-bold border-t border-neutral-200 ${h2hData.B.avgAge <= h2hData.A.avgAge ? 'text-rose-700' : 'text-neutral-500'}`} title="Entre más bajo, equipo más joven">
+src/components/tabs/SeasonReportView.tsx:        title="Copiar texto"
+src/components/tabs/SeasonReportView.tsx:        title="Ampliar"
+src/components/tabs/SeasonReportView.tsx:        title="Copiar imagen"
+src/components/tabs/SeasonReportView.tsx:        title="Descargar imagen"
+src/components/ui/ExportToolbar.tsx:          title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
+src/components/ui/ExportToolbar.tsx:                title={`Copiar ${p}`}
+src/components/ui/ExportToolbar.tsx:          title="Copiar texto"
+src/components/ui/ExportToolbar.tsx:          title={isExpanded ? "Contraer" : "Ampliar"}
+src/components/ui/ExportToolbar.tsx:          title="Descargar imagen"
+src/components/modals/CyclistDetailView.tsx:                    title={
+src/components/modals/CyclistDetailView.tsx:                    title="Copiar imagen"
+src/components/modals/CyclistDetailView.tsx:                    title="Descargar imagen"
+src/components/modals/CyclistDetailView.tsx:                    title="Copiar texto"
+src/components/modals/CyclistDetailView.tsx:                      <span className="text-sm font-semibold text-neutral-900 flex items-center gap-1" title={meta.paisLetras}>{meta.pais} {meta.paisLetras}</span>
+src/components/modals/CyclistDetailView.tsx:                    <div className="flex flex-col gap-1" title="Puntos por carrera">
+src/components/modals/CyclistDetailView.tsx:                    <div className="flex flex-col gap-1" title="Puntos por día de competición">
+src/components/modals/CyclistDetailView.tsx:                        <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
+src/components/modals/CyclistDetailView.tsx:                        <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
+src/components/modals/CyclistDetailView.tsx:                        <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
+src/components/modals/CyclistDetailView.tsx:                        <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
+src/components/AppHeader.tsx:                title="Cerrar Sesión"
+src/components/AppHeader.tsx:                  title="Cerrar Sesión"
+src/App.tsx:                                      <span title="Archivo Global">
+src/App.tsx:                              title={`Subir ${ft.name}`}
+src/App.tsx:                              title="Eliminar Startlist"

@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, Clock, FileCheck } from "lucide-r
 import { supabase } from "../../../supabase";
 import { getVal } from "../../../lib/data-processing";
 import { Skeleton } from "../../ui/Skeleton";
+import { Button } from "../../ui/button";
 
 interface PublishedRacesTrackerProps {
   files: any;
@@ -75,7 +76,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
   if (files.resultados?.data) {
     files.resultados.data.forEach((row: any) => {
       const type = getVal(row, "Tipo")?.trim();
-      if (type === "Clasificación final" || type === "Clasificación final (crono por equipos)") {
+      if (type && type.match(/Clasificación final/i)) {
          const race = getVal(row, "Carrera")?.trim();
          if (race) finishedRacesSet.add(race);
       }
@@ -118,7 +119,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
             ) : (
               <div className="flex flex-col gap-1">
                 {pendingRaces.map(race => (
-                  <button
+                  <Button variant="outline"
                     key={race}
                     onClick={() => toggleRace(race)}
                     className="flex justify-between items-center px-3 py-2.5 rounded-lg hover:bg-white border border-transparent hover:border-amber-200 hover:shadow-sm transition-all group"
@@ -127,7 +128,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
                     <div className="w-5 h-5 rounded border border-amber-300 flex items-center justify-center text-transparent group-hover:border-indigo-400 group-hover:text-indigo-200 transition-colors">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -136,7 +137,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
 
         {/* Published panel */}
         <div className="border border-green-200 bg-green-50/30 rounded-xl overflow-hidden flex flex-col">
-          <button 
+          <Button variant="outline" 
             className="bg-green-100/50 px-4 py-3 border-b border-green-200 flex items-center justify-between hover:bg-green-100/80 transition-colors w-full text-left"
             onClick={() => setIsPublishedExpanded(!isPublishedExpanded)}
           >
@@ -150,7 +151,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
               </span>
               {isPublishedExpanded ? <ChevronUp className="w-4 h-4 text-green-700" /> : <ChevronDown className="w-4 h-4 text-green-700" />}
             </div>
-          </button>
+          </Button>
           {isPublishedExpanded && (
             <div className="p-2 flex-grow overflow-y-auto max-h-[300px]">
               {completedRaces.length === 0 ? (
@@ -160,14 +161,14 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
               ) : (
                 <div className="flex flex-col gap-1">
                   {completedRaces.map(race => (
-                    <button
+                    <Button variant="outline"
                       key={race}
                       onClick={() => toggleRace(race)}
                       className="flex justify-between items-center px-3 py-2.5 rounded-lg hover:bg-white border border-transparent hover:border-green-200 hover:shadow-sm transition-all group opacity-70 hover:opacity-100"
                     >
                       <span className="font-medium text-green-900 text-sm line-through decoration-green-300 decoration-2 text-left">{race}</span>
                       <CheckCircle2 className="w-5 h-5 text-green-500 group-hover:text-amber-400 transition-colors" />
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

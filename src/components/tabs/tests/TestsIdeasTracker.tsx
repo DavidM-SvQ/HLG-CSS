@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Save, Bold, Italic, Strikethrough, List, ListOrdered } from 'lucide-react';
 import { supabase } from '../../../supabase';
 import { Skeleton } from "../../ui/Skeleton";
+import { Button } from "../../ui/button";
 
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) {
@@ -12,40 +13,40 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
   return (
     <div className="flex gap-1 mb-2">
-      <button
+      <Button variant="outline"
         onClick={() => editor.chain().focus().toggleBold().run()}
         disabled={!editor.can().chain().focus().toggleBold().run()}
         className={`p-1.5 rounded-md text-sm ${editor.isActive('bold') ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100'}`}
       >
         <Bold className="w-4 h-4" />
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => editor.chain().focus().toggleItalic().run()}
         disabled={!editor.can().chain().focus().toggleItalic().run()}
         className={`p-1.5 rounded-md text-sm ${editor.isActive('italic') ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100'}`}
       >
         <Italic className="w-4 h-4" />
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => editor.chain().focus().toggleStrike().run()}
         disabled={!editor.can().chain().focus().toggleStrike().run()}
         className={`p-1.5 rounded-md text-sm ${editor.isActive('strike') ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100'}`}
       >
         <Strikethrough className="w-4 h-4" />
-      </button>
+      </Button>
       <div className="w-px h-6 bg-neutral-200 mx-1 self-center" />
-      <button
+      <Button variant="outline"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         className={`p-1.5 rounded-md text-sm ${editor.isActive('bulletList') ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100'}`}
       >
         <List className="w-4 h-4" />
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         className={`p-1.5 rounded-md text-sm ${editor.isActive('orderedList') ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100'}`}
       >
         <ListOrdered className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 };
@@ -127,14 +128,10 @@ export function TestsIdeasTracker() {
           <h2 className="text-lg font-semibold text-neutral-900">Bloc de Ideas & Funcionalidades</h2>
           <p className="text-sm text-neutral-500 mt-1">Anota aquí cualquier mejora, estadística o idea para el Fantasy. (Cuadro de texto enriquecido)</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={!isLoaded || isSaving}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex-shrink-0"
-        >
+        <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="whitespace-nowrap flex items-center gap-2">
           <Save className="w-4 h-4" />
           {isSaving ? "Guardando..." : "Guardar ideas"}
-        </button>
+        </Button>
       </div>
       
       {saveMessage && (

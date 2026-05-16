@@ -53,6 +53,8 @@ export function useFilters(context: any) {
     const dataByMonth: any[] = months.map((m) => ({ month: m }));
     const raceMonths: Record<string, number> = {};
     
+    let maxMonthIdx = -1;
+
     files.carreras.data?.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
@@ -61,13 +63,16 @@ export function useFilters(context: any) {
         if (parts.length >= 2) {
           const monthIndex = parseInt(parts[1]) - 1;
           raceMonths[carreraName] = monthIndex;
+          if (!isNaN(monthIndex) && monthIndex > maxMonthIdx) maxMonthIdx = monthIndex;
         }
       }
     });
 
+    const activeMaxMonthIdx = maxMonthIdx >= 0 ? maxMonthIdx : new Date().getMonth();
+
     filteredLeaderboard?.forEach((team: any) => {
       const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
-      if (selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return;
+      if (selectedEvolutionTeams && selectedEvolutionTeams.length > 0 && !selectedEvolutionTeams.includes(teamKey)) return;
 
       let accumulated = 0;
       months.forEach((_m, mIdx) => {
@@ -88,9 +93,9 @@ export function useFilters(context: any) {
 
     return dataByMonth.filter((m, idx) => {
       const hasData = Object.keys(m).some((key) => key !== "month" && m[key] > 0);
-      return hasData && idx <= currentMonthIdx;
+      return hasData && idx <= activeMaxMonthIdx;
     });
-  }, [months, files.carreras.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType, currentMonthIdx]);
+  }, [months, files.carreras.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType]);
 
   // 4. Wins History Data (Filtered and Sorted)
   const filteredHistoryRaces = useMemo(() => {

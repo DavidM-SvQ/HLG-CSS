@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useGhostDraft } from "../../../lib/hooks/useGhostDraft";
 import { Ghost, TrendingUp, Trophy, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { Button } from "../../ui/button";
 
 export const GhostDraftView = ({
   files,
@@ -80,9 +81,9 @@ export const GhostDraftView = ({
                     <span className="font-bold text-sm">+{team.diff.toLocaleString()} pts</span>
                   </div>
 
-                  <button className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-400">
+                  <Button variant="ghost" size="sm" className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-400">
                     {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </button>
+                  </Button>
                 </div>
               </div>
 

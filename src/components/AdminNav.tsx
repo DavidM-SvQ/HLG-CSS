@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Button } from "./ui/button";
 
 interface AdminNavProps {
   adminTab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
@@ -10,7 +11,7 @@ interface AdminNavProps {
 export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
   return (
     <div className="flex items-center gap-2 border-b border-neutral-200 pb-4 overflow-x-auto">
-      <button
+      <Button variant="outline"
         onClick={() => setAdminTab("datos")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -21,8 +22,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <FileSpreadsheet className="w-4 h-4" />
         Datos
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("gestion-startlists")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -33,8 +34,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <List className="w-4 h-4" />
         Gestor de startlist
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("reporte-carrera")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -45,8 +46,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <Flag className="w-4 h-4" />
         Reporte carrera
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("reporte-mes")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -57,8 +58,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <Clock className="w-4 h-4" />
         Reporte mes
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("reporte-temporada")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -69,8 +70,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <Trophy className="w-4 h-4" />
         Reporte temporada
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("pruebas")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -81,8 +82,8 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <Beaker className="w-4 h-4" />
         Pruebas
-      </button>
-      <button
+      </Button>
+      <Button variant="outline"
         onClick={() => setAdminTab("estadisticas")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -93,7 +94,7 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <FileSpreadsheet className="w-4 h-4" />
         Estadísticas
-      </button>
+      </Button>
     </div>
   );
 }

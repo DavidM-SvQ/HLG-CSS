@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
+import { ChartTooltip } from "../../ui/ChartTooltip";
 
 export function TeamWinsRankingChart() {
   const context = useContext(SeasonViewContext);
@@ -40,14 +42,14 @@ export function TeamWinsRankingChart() {
             <span className="truncate">Ranking de Victorias por Equipo</span>
           </h3>
           <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-            <button
+            <Button variant="outline"
               onClick={() => setIsWinsRankingExpanded(true)}
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
               title="Ampliar gráfico"
             >
               <Maximize2 className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost" size="icon"
               onClick={handleCopyWinsRanking}
               disabled={isWinsRankingCopying}
               className={cn(
@@ -59,14 +61,14 @@ export function TeamWinsRankingChart() {
               title={isWinsRankingCopying ? "Copiado" : "Copiar gráfico como imagen"}
             >
               {isWinsRankingCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost" size="sm"
               onClick={handleDownloadWinsRanking}
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
               title="Descargar gráfico como imagen"
             >
               <UploadCloud className="w-4 h-4 rotate-180" />
-            </button>
+            </Button>
           </div>
         </div>
         <div className="h-[500px] w-full mt-4">
@@ -83,7 +85,7 @@ export function TeamWinsRankingChart() {
                   <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} interval={0} />
                   <Tooltip
                     cursor={{ fill: "#f5f5f5" }}
-                    contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                    content={(props) => <ChartTooltip {...props} />}
                   />
                   <Bar dataKey="wins" radius={[0, 4, 4, 0]} barSize={24}>
                     {teamWinsRankingData.map((entry: any, index: number) => (
@@ -106,12 +108,12 @@ export function TeamWinsRankingChart() {
                 <Trophy className="w-6 h-6 text-yellow-500" />
                 Ranking de Victorias por Equipo
               </h3>
-              <button
+              <Button variant="outline"
                 onClick={() => setIsWinsRankingExpanded(false)}
                 className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
               >
                 <X className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
@@ -126,7 +128,7 @@ export function TeamWinsRankingChart() {
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
                         <XAxis type="number" hide />
                         <YAxis dataKey="name" type="category" width={200} tick={{ fontSize: 14, fontWeight: 600, fill: "#404040" }} />
-                        <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} />
+                        <Tooltip cursor={{ fill: "#f8fafc" }} content={(props) => <ChartTooltip {...props} />} />
                         <Bar dataKey="wins" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
                           <LabelList dataKey="wins" position="right" style={{ fill: "#1d4ed8", fontWeight: 800, fontSize: 16 }} />
                         </Bar>

@@ -1,7 +1,10 @@
+import { getFlagEmoji } from "../../../lib/data-processing";
 import React, { useRef } from "react";
 import { User, ChevronUp, ChevronDown } from "lucide-react";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { cn } from "../../../lib/utils";
+
+import { VirtualizedTableBody } from '../../ui/VirtualizedTableBody';
 
 interface TopCyclistsReportProps {
   sortedStats: any[];
@@ -50,6 +53,8 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
 }) => {
   const ref3 = useRef<HTMLDivElement>(null);
   const ref4 = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const noDraftContainerRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
@@ -67,7 +72,7 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
           <ExportToolbar targetRef={ref3} filename="top-ciclistas" />
         </div>
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
+          <div ref={containerRef} className="table-responsive-wrapper overflow-auto w-full max-h-[600px] crosshair-container">
             <table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                 <tr className="divide-x divide-neutral-100">
@@ -97,11 +102,15 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
-                {sortedStats.map((s) => {
+              <VirtualizedTableBody
+                items={sortedStats}
+                scrollElementRef={containerRef}
+                colSpan={10}
+                className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white"
+                renderRow={(s) => {
                   const { name, data, numCarreras, ppc, ppd, originalPos } = s;
                   return (
-                    <tr key={name} className="hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100">
+                    <tr className="hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100">
                       <td className="px-3 py-1 text-center">
                         <span className={cn("w-5 h-5 mx-auto rounded-full flex items-center justify-center text-[9px] font-bold", originalPos === 1 ? "bg-yellow-100 text-yellow-700" : originalPos === 2 ? "bg-neutral-200 text-neutral-600" : originalPos === 3 ? "bg-orange-100 text-orange-700" : "bg-neutral-100 text-neutral-500")}>
                           {originalPos}
@@ -134,8 +143,8 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
+                }}
+              />
             </table>
           </div>
         </div>
@@ -155,7 +164,7 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
           <ExportToolbar targetRef={ref4} filename="top-ciclistas-no-draft" />
         </div>
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
+          <div ref={noDraftContainerRef} className="table-responsive-wrapper overflow-auto w-full max-h-[600px] crosshair-container">
             <table className="w-full min-w-[700px] mx-auto text-xs text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
                 <tr className="divide-x divide-neutral-100">
@@ -166,9 +175,13 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
                   <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-right">Puntos</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white">
-                {monthReportData.topNoDraftCyclists.map((s: any) => (
-                  <tr key={s.cyclist} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
+              <VirtualizedTableBody
+                items={monthReportData.topNoDraftCyclists}
+                scrollElementRef={noDraftContainerRef}
+                colSpan={5}
+                className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-white"
+                renderRow={(s: any) => (
+                  <tr className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
                     <td className="px-3 py-1 text-center font-bold text-neutral-400">
                       {s.originalPos}º
                     </td>
@@ -185,8 +198,8 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
                       <span className="font-mono tracking-tight">{formatNumberSpanish(s.pts)}</span>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                )}
+              />
             </table>
           </div>
         </div>

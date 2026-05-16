@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { domToDataUrl } from 'modern-screenshot';
 import { copyImageToClipboard, copyTextToClipboard } from '../lib/clipboard';
 import { expandNodeForCapture } from '../lib/dom-utils';

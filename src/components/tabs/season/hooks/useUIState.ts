@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useUrlState } from "../../../../hooks/useUrlState";
 
 export function useUIState() {
-  const [seasonSubTab, setSeasonSubTab] = useState("puntos");
-  const [cyclistsSubTab, setCyclistsSubTab] = useState("draft");
+  const [seasonSubTab, setSeasonSubTab] = useUrlState<"puntos" | "victorias" | "ciclistas">("seasonSubTab", "puntos");
+  const [cyclistsSubTab, setCyclistsSubTab] = useUrlState<"draft" | "no-draft" | "detalle">("cyclistsSubTab", "draft");
 
   return {
     seasonSubTab, setSeasonSubTab,

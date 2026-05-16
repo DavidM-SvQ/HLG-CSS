@@ -23,7 +23,23 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
 
   return useMemo(() => {
     if (!leaderboard || !files.carreras.data) {
-      return { sortedTeams: [], maxPoints: 1, minPoints: 0, maxWins: 0, maxPartialWins: 0 };
+      return { 
+        sortedTeams: [], 
+        maxPoints: 1, 
+        minPoints: 0, 
+        maxWins: 0, 
+        minWins: 0, 
+        maxPartialWins: 0, 
+        minPartialWins: 0, 
+        maxCarreras: 0, 
+        minCarreras: 0,
+        maxPpc: 0,
+        minPpc: 0,
+        maxDays: 0,
+        minDays: 0,
+        maxPpd: 0,
+        minPpd: 0
+      };
     }
 
     const filteredLeaderboard = leaderboard.filter((p) => p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]");
@@ -89,10 +105,14 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       const ppc = numCarreras > 0 ? parseFloat((puntos / numCarreras).toFixed(1)) : 0;
       const ppd = totalDays > 0 ? parseFloat((puntos / totalDays).toFixed(1)) : 0;
 
+      const draftPos = parseInt(team.orden) || 0;
+      const diff = draftPos > 0 ? draftPos - (idx + 1) : 0;
+
       return {
         ...team,
         puntos,
         originalPos: idx + 1,
+        diff,
         wins,
         partialWins,
         ppc,
@@ -119,12 +139,38 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       return topTeamsSortDirection === "asc" ? res : -res;
     });
 
-    const maxPoints = Math.max(...sortedTeams.map((t) => t.puntos), 1);
-    const minPoints = Math.min(...sortedTeams.map((t) => t.puntos), 0);
-    const maxWins = Math.max(...sortedTeams.map((t) => t.wins), 0);
-    const maxPartialWins = Math.max(...sortedTeams.map((t) => t.partialWins), 0);
+    const maxPoints = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.puntos)) : 1;
+    const minPoints = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.puntos)) : 0;
+    const maxWins = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.wins)) : 0;
+    const minWins = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.wins)) : 0;
+    const maxPartialWins = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.partialWins)) : 0;
+    const minPartialWins = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.partialWins)) : 0;
+    const maxCarreras = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.numCarreras)) : 0;
+    const minCarreras = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.numCarreras)) : 0;
+    const maxPpc = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.ppc)) : 0;
+    const minPpc = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.ppc)) : 0;
+    const maxDays = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.totalDays)) : 0;
+    const minDays = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.totalDays)) : 0;
+    const maxPpd = sortedTeams.length > 0 ? Math.max(...sortedTeams.map((t) => t.ppd)) : 0;
+    const minPpd = sortedTeams.length > 0 ? Math.min(...sortedTeams.map((t) => t.ppd)) : 0;
 
-    return { sortedTeams, maxPoints, minPoints, maxWins, maxPartialWins };
+    return { 
+      sortedTeams, 
+      maxPoints, 
+      minPoints, 
+      maxWins, 
+      minWins, 
+      maxPartialWins, 
+      minPartialWins, 
+      maxCarreras, 
+      minCarreras,
+      maxPpc,
+      minPpc,
+      maxDays,
+      minDays,
+      maxPpd,
+      minPpd
+    };
 
   }, [
     files.carreras.data,

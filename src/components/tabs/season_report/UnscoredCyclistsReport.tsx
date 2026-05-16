@@ -5,6 +5,7 @@ import { ExportToolbar } from "../../ui/ExportToolbar";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import { flushSync } from "react-dom";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
 
 interface UnscoredCyclistsReportProps {
   files: any;
@@ -171,7 +172,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
 
           {/* Round Multi-select Filter */}
           <div className="relative">
-            <button
+            <Button variant="outline"
               onClick={() => setIsUnscoredRoundFilterOpen(!isUnscoredRoundFilterOpen)}
               className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
             >
@@ -186,7 +187,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
                   isUnscoredRoundFilterOpen && "rotate-180",
                 )}
               />
-            </button>
+            </Button>
 
             {isUnscoredRoundFilterOpen && (
               <>
@@ -200,12 +201,12 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
                       Rondas
                     </span>
                     {unscoredCyclistsRoundFilter.length > 0 && (
-                      <button
+                      <Button variant="outline"
                         onClick={() => setUnscoredCyclistsRoundFilter([])}
                         className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
                       >
                         Limpiar
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {Array.from(new Set(Object.values(cyclistRoundMap) as string[]))

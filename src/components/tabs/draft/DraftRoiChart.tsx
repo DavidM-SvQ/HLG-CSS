@@ -1,3 +1,4 @@
+import { ExportToolbar } from "../../ui/ExportToolbar";
 import React from 'react';
 import { BarChart3, ChevronDown, Copy, Download, X, TrendingUp, Trophy, Activity, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar } from 'recharts';
@@ -5,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
 import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useDraftStats } from './hooks/useDraftStats';
+import { Button } from "../../ui/button";
 
 interface DraftRoiChartProps {
   files: any;
@@ -25,14 +27,14 @@ const CustomDraftTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-md p-4 border border-neutral-200 shadow-xl rounded-xl w-64 ring-1 ring-black/5">
+      <div className="bg-white/95 backdrop-blur-md p-4 border border-neutral-200 shadow-lg rounded-xl w-64 ring-1 ring-black/5">
         <p className="font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3">
           {data.equipo}
         </p>
         <div className="space-y-3">
           <div className="bg-green-50/50 p-2 rounded-lg border border-green-100/50">
             <p className="text-xs font-bold text-green-800 flex justify-between mb-1">
-              <span>Ganadores (1500+ pts)</span>
+              <span>1º por ronda</span>
               <span className="font-black">
                 {data.ganador} ({data.pctGanadores}%)
               </span>
@@ -40,9 +42,25 @@ const CustomDraftTooltip = ({ active, payload, label }: any) => {
           </div>
           <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
             <p className="text-xs font-bold text-blue-800 flex justify-between mb-1">
-              <span>Buenos (600+ pts)</span>
+              <span>Buenos (Top 2-5)</span>
               <span className="font-black">
                 {data.bueno} ({data.pctBuenos}%)
+              </span>
+            </p>
+          </div>
+          <div className="bg-yellow-50/50 p-2 rounded-lg border border-yellow-100/50">
+            <p className="text-xs font-bold text-yellow-800 flex justify-between mb-1">
+              <span>Normales (Top 6-14)</span>
+              <span className="font-black">
+                {data.normal} ({data.pctNormales}%)
+              </span>
+            </p>
+          </div>
+          <div className="bg-orange-50/50 p-2 rounded-lg border border-orange-100/50">
+            <p className="text-xs font-bold text-orange-800 flex justify-between mb-1">
+              <span>Malos (Top 15+ o 0pts)</span>
+              <span className="font-black">
+                {data.malo} ({data.pctMalos}%)
               </span>
             </p>
           </div>
@@ -96,12 +114,15 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
       equipo: equipoVisual,
       fullEquipo: s.team,
       ganador: s.pickGanador,
-      bueno: s.buenosPicks - s.pickGanador,
-      malo: s.malosPicks - (s.sinPuntuar || 0),
+      bueno: s.buenosPicks,
+      normal: s.normalesPicks,
+      malo: s.malosPicks,
       nulo: s.sinPuntuar,
       totalPicks: s.totalPicks,
-      pctBuenos: s.pctBuenos.toFixed(1),
       pctGanadores: s.pctGanadores.toFixed(1),
+      pctBuenos: s.pctBuenos.toFixed(1),
+      pctNormales: s.pctNormales.toFixed(1),
+      pctMalos: s.pctMalos.toFixed(1),
     };
   });
 
@@ -163,26 +184,15 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
               </div>
             </details>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => copyRoiChartImage({
+          <ExportToolbar
+            onCopyImage={() => copyRoiChartImage({
                 fileName: "grafico_draft.png", scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
-              })}
-              className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
-              title="Copiar gráfico"
-            >
-              {isRoiChartCopying ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={() => downloadRoiChartImage({
+            })}
+            isImageCopying={isRoiChartCopying}
+            onDownloadImage={() => downloadRoiChartImage({
                 fileName: `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`, scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
-              })}
-              className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
-              title="Descargar gráfico"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
+            })}
+          />
         </div>
       </div>
       <div className="h-[500px]">
@@ -215,10 +225,10 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
                 />
                 <RechartsTooltip content={<CustomDraftTooltip />} cursor={{ fill: "#f8fafc", opacity: 0.5 }} />
                 <Legend verticalAlign="top" align="right" iconType="square" wrapperStyle={{ fontSize: "11px", paddingBottom: "20px", fontWeight: "500" }} />
-                <Bar dataKey="ganador" stackId="a" fill="#15803d" name="Ganadores" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="bueno" stackId="a" fill="#4ade80" name="Buenos" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="malo" stackId="a" fill="#fb923c" name="Malos" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="nulo" stackId="a" fill="#d4d4d8" name="Sin Puntos" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="ganador" stackId="a" fill="#15803d" name="1º" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="bueno" stackId="a" fill="#4ade80" name="Buenos (Top 2-5)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="normal" stackId="a" fill="#facc15" name="Normales (Top 6-14)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="malo" stackId="a" fill="#fb923c" name="Malos (Top 15+)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

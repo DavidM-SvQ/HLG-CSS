@@ -1,3 +1,4 @@
+import React from 'react';
 import { copyTextToClipboard } from "../../../../lib/clipboard";
 import { trackEvent } from "../../../../lib/analytics/trackEvent";
 

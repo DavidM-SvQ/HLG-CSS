@@ -126,6 +126,7 @@ export function useDraftStats({
            team: t,
            pickGanador: 0,
            buenosPicks: 0,
+           normalesPicks: 0,
            malosPicks: 0,
            sinPuntuar: 0,
            totalPoints: teamTotals[t] || 0,
@@ -133,24 +134,49 @@ export function useDraftStats({
          };
       }
 
+      const picksByRound: Record<string, { equipo: string, ciclista: string, pts: number }[]> = {};
+
       files.elecciones.data.forEach((row: any) => {
          const teamName = String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG") || "");
          if (!validTeams.has(teamName)) return;
          
          const ciclista = getVal(row, "Ciclista") as string;
          const pts = cyclistPoints[ciclista] || 0;
-         const summary = teamSummariesObj[teamName];
-         summary.totalPicks++;
-         if (pts >= 1500) summary.pickGanador++;
-         else if (pts >= 600) summary.buenosPicks++;
-         else if (pts > 0) summary.malosPicks++;
-         else summary.sinPuntuar++;
+         const rStr = String(getVal(row, "Ronda"));
+         const ronda = rStr.padStart(2, "0");
+         
+         if (!picksByRound[ronda]) picksByRound[ronda] = [];
+         picksByRound[ronda].push({ equipo: teamName, ciclista, pts });
       });
+
+      for (const ronda in picksByRound) {
+        const picks = picksByRound[ronda];
+        picks.sort((a, b) => b.pts - a.pts);
+        
+        let currentRank = 1;
+        picks.forEach((p, index) => {
+          if (index > 0 && p.pts < picks[index - 1].pts) {
+            currentRank = index + 1;
+          }
+          const summary = teamSummariesObj[p.equipo];
+          summary.totalPicks++;
+          
+          if (p.pts === 0) {
+             summary.malosPicks++;
+          } else {
+             if (currentRank === 1) summary.pickGanador++;
+             else if (currentRank <= 5) summary.buenosPicks++;
+             else if (currentRank <= 14) summary.normalesPicks++;
+             else summary.malosPicks++;
+          }
+        });
+      }
 
       const teamSummaries = Object.values(teamSummariesObj).map((t: any) => ({
         ...t,
         pctGanadores: t.totalPicks > 0 ? (t.pickGanador / t.totalPicks) * 100 : 0,
         pctBuenos: t.totalPicks > 0 ? (t.buenosPicks / t.totalPicks) * 100 : 0,
+        pctNormales: t.totalPicks > 0 ? (t.normalesPicks / t.totalPicks) * 100 : 0,
         pctMalos: t.totalPicks > 0 ? (t.malosPicks / t.totalPicks) * 100 : 0,
         pctSinPuntuar: t.totalPicks > 0 ? (t.sinPuntuar / t.totalPicks) * 100 : 0,
       }));

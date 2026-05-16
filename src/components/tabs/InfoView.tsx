@@ -1,5 +1,6 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useUrlState } from "../../hooks/useUrlState";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ExportToolbar } from "../ui/ExportToolbar";
@@ -7,6 +8,9 @@ import { getVal, formatNumberSpanish } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { useDebounce } from "../../lib/hooks/useDebounce";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Button } from "../ui/button";
 
 export interface InfoViewProps {
   raceWinners: Record<string, string>;
@@ -25,8 +29,8 @@ export const InfoView = (props: InfoViewProps) => {
   const racesTableRef = useRef<HTMLDivElement>(null);
 
 
-  const [pointsCategoryFilter, setPointsCategoryFilter] = useState<string>("");
-  const [pointsRaceSearch, setPointsRaceSearch] = useState<string>("");
+  const [pointsCategoryFilter, setPointsCategoryFilter] = useUrlState<string>("pointsCategoryFilter", "");
+  const [pointsRaceSearch, setPointsRaceSearch] = useUrlState<string>("pointsRaceSearch", "");
   const [localRaceSearch, setLocalRaceSearch] = useState<string>("");
   
   useEffect(() => {
@@ -44,11 +48,11 @@ export const InfoView = (props: InfoViewProps) => {
   const [isPointsCopying, setIsPointsCopying] = useState(false);
   const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
 
-  const [infoCarrerasSortColumn, setInfoCarrerasSortColumn] = useState<string>("fecha");
-  const [infoCarrerasSortDir, setInfoCarrerasSortDir] = useState<"asc" | "desc">("asc");
-  const [racesFilter, setRacesFilter] = useState<string>("all"); // all, finished, upcoming
-  const [racesCategoryFilter, setRacesCategoryFilter] = useState<string>("");
-  const [racesMonthFilter, setRacesMonthFilter] = useState<string>("");
+  const [infoCarrerasSortColumn, setInfoCarrerasSortColumn] = useUrlState<string>("infoCarrerasSortColumn", "fecha");
+  const [infoCarrerasSortDir, setInfoCarrerasSortDir] = useUrlState<"asc" | "desc">("infoCarrerasSortDir", "asc");
+  const [racesFilter, setRacesFilter] = useUrlState<string>("racesFilter", "all"); // all, finished, upcoming
+  const [racesCategoryFilter, setRacesCategoryFilter] = useUrlState<string>("racesCategoryFilter", "");
+  const [racesMonthFilter, setRacesMonthFilter] = useUrlState<string>("racesMonthFilter", "");
   const [isRacesCopying, setIsRacesCopying] = useState(false);
   const [isRacesImageCopying, setIsRacesImageCopying] = useState(false);
 
@@ -320,7 +324,7 @@ export const InfoView = (props: InfoViewProps) => {
               <div className="space-y-8">
                 {infoSubTab === "menu" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-8">
-                    <button
+                    <Button variant="outline"
                       onClick={() => setInfoSubTab("puntuaciones")}
                       className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group"
                     >
@@ -334,9 +338,9 @@ export const InfoView = (props: InfoViewProps) => {
                         Consulta los puntos que otorga cada carrera según su
                         categoría y tipo de resultado.
                       </p>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button variant="outline"
                       onClick={() => setInfoSubTab("carreras")}
                       className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group"
                     >
@@ -350,7 +354,7 @@ export const InfoView = (props: InfoViewProps) => {
                         Calendario de carreras, estado actual y ganadores de las
                         pruebas ya disputadas.
                       </p>
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -358,12 +362,12 @@ export const InfoView = (props: InfoViewProps) => {
                   <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <button
+                        <Button variant="outline"
                           onClick={() => setInfoSubTab("menu")}
                           className="text-neutral-400 hover:text-neutral-900 transition-colors"
                         >
                           <ChevronUp className="w-5 h-5 -rotate-90" />
-                        </button>
+                        </Button>
                         <h3 className="font-semibold text-lg text-neutral-900">
                           Detalle de puntos
                         </h3>
@@ -378,33 +382,37 @@ export const InfoView = (props: InfoViewProps) => {
                           isImageCopying={isPointsImageCopying} 
                           onDownloadImage={handleDownloadPointsImage} 
                         />
-                        <input
+                        <Input
                           type="text"
                           placeholder="Buscar carrera..."
                           value={localRaceSearch}
                           onChange={(e) => setLocalRaceSearch(e.target.value)}
-                          className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-48 bg-white border-neutral-300 focus-visible:ring-blue-500 rounded-lg"
                         />
-                        <select
+                        <Select
                           value={pointsCategoryFilter}
-                          onChange={(e) =>
-                            setPointsCategoryFilter(e.target.value)
+                          onValueChange={(value) =>
+                            setPointsCategoryFilter(value === "all" ? "" : value)
                           }
-                          className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         >
-                          <option value="">Todas las categorías</option>
-                          {[
-                            ...new Set(
-                              files.puntos.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
-                            ),
-                          ]
-                            .filter(Boolean)
-                            .map((c) => (
-                              <option key={c as string} value={c as string}>
-                                {c as string}
-                              </option>
-                            ))}
-                        </select>
+                          <SelectTrigger className="w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
+                            <SelectValue placeholder="Todas las categorías" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas las categorías</SelectItem>
+                            {[
+                              ...new Set(
+                                files.puntos.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
+                              ),
+                            ]
+                              .filter(Boolean)
+                              .map((c) => (
+                                <SelectItem key={c as string} value={c as string}>
+                                  {c as string}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div
@@ -417,12 +425,12 @@ export const InfoView = (props: InfoViewProps) => {
                       )}
                     >
                       {isPointsExpanded && (
-                        <button
+                        <Button variant="outline"
                           onClick={() => setIsPointsExpanded(false)}
                           className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
                         >
                           <X className="w-6 h-6" />
-                        </button>
+                        </Button>
                       )}
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <div className="table-responsive-wrapper overflow-y-auto w-full h-full pb-4">
@@ -471,73 +479,85 @@ export const InfoView = (props: InfoViewProps) => {
                   <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <button
+                        <Button variant="outline"
                           onClick={() => setInfoSubTab("menu")}
                           className="text-neutral-400 hover:text-neutral-900 transition-colors"
                         >
                           <ChevronUp className="w-5 h-5 -rotate-90" />
-                        </button>
+                        </Button>
                         <h3 className="font-semibold text-lg text-neutral-900">
                           Detalle de carreras
                         </h3>
                       </div>
-                      <select
+                      <Select
                         value={racesFilter}
-                        onChange={(e) => setRacesFilter(e.target.value as any)}
-                        className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        onValueChange={(value) => setRacesFilter(value as any)}
                       >
-                        <option value="all">Todas las carreras</option>
-                        <option value="finished">Ya disputadas</option>
-                        <option value="upcoming">Por disputar</option>
-                      </select>
-                      <select
+                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
+                          <SelectValue placeholder="Todas las carreras" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las carreras</SelectItem>
+                          <SelectItem value="finished">Ya disputadas</SelectItem>
+                          <SelectItem value="upcoming">Por disputar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
                         value={racesCategoryFilter}
-                        onChange={(e) => setRacesCategoryFilter(e.target.value)}
-                        className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        onValueChange={(value) => setRacesCategoryFilter(value === "all" ? "" : value)}
                       >
-                        <option value="">Todas las categorías</option>
-                        {[
-                          ...new Set(
-                            files.carreras.data?.map((r: any) =>
-                              getVal(r, "Categoría")?.trim(),
+                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
+                          <SelectValue placeholder="Todas las categorías" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las categorías</SelectItem>
+                          {[
+                            ...new Set(
+                              files.carreras.data?.map((r: any) =>
+                                getVal(r, "Categoría")?.trim(),
+                              ),
                             ),
-                          ),
-                        ]
-                          .filter(Boolean)
-                          .map((c) => (
-                            <option key={c as string} value={c as string}>
-                              {c as string}
-                            </option>
-                          ))}
-                      </select>
-                      <select
+                          ]
+                            .filter(Boolean)
+                            .map((c) => (
+                              <SelectItem key={c as string} value={c as string}>
+                                {c as string}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
                         value={racesMonthFilter}
-                        onChange={(e) => setRacesMonthFilter(e.target.value)}
-                        className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        onValueChange={(value) => setRacesMonthFilter(value === "all" ? "" : value)}
                       >
-                        <option value="">Todos los meses</option>
-                        {[
-                          "Enero",
-                          "Febrero",
-                          "Marzo",
-                          "Abril",
-                          "Mayo",
-                          "Junio",
-                          "Julio",
-                          "Agosto",
-                          "Septiembre",
-                          "Octubre",
-                          "Noviembre",
-                          "Diciembre",
-                        ].map((m, i) => (
-                          <option
-                            key={m}
-                            value={(i + 1).toString().padStart(2, "0")}
-                          >
-                            {m}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
+                          <SelectValue placeholder="Todos los meses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los meses</SelectItem>
+                          {[
+                            "Enero",
+                            "Febrero",
+                            "Marzo",
+                            "Abril",
+                            "Mayo",
+                            "Junio",
+                            "Julio",
+                            "Agosto",
+                            "Septiembre",
+                            "Octubre",
+                            "Noviembre",
+                            "Diciembre",
+                          ].map((m, i) => (
+                            <SelectItem
+                              key={m}
+                              value={(i + 1).toString().padStart(2, "0")}
+                            >
+                              {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <div className="flex items-center gap-2">
                         <ExportToolbar 
                           isExpanded={isRacesExpanded} 
@@ -560,12 +580,12 @@ export const InfoView = (props: InfoViewProps) => {
                       )}
                     >
                       {isRacesExpanded && (
-                        <button
+                        <Button variant="outline"
                           onClick={() => setIsRacesExpanded(false)}
                           className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
                         >
                           <X className="w-6 h-6" />
-                        </button>
+                        </Button>
                       )}
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <div className="table-responsive-wrapper overflow-y-auto w-full h-full pb-4">

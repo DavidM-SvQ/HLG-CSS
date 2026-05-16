@@ -1,6 +1,7 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import React from "react";
 import { ClipboardList } from "lucide-react";
+import { Button } from "../../ui/button";
 
 interface AdminReportProps {
   isAdminReport: boolean;
@@ -29,7 +30,7 @@ export const RaceAdminReport: React.FC<AdminReportProps> = ({
         className="w-full h-48 text-sm font-mono p-4 border rounded-lg mb-4 bg-white"
       />
       <div className="flex gap-4">
-        <button
+        <Button variant="outline"
           onClick={async (e) => {
             const textarea = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement);
             if (textarea) {
@@ -39,7 +40,7 @@ export const RaceAdminReport: React.FC<AdminReportProps> = ({
           className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium transition-colors"
         >
           <ClipboardList className="w-4 h-4" /> Copiar para Telegram
-        </button>
+        </Button>
       </div>
     </div>
   );

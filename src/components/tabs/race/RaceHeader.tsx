@@ -1,5 +1,6 @@
 import React from "react";
 import { PublishedRacesTracker } from "./PublishedRacesTracker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 
 interface RaceHeaderProps {
   isAdminReport: boolean;
@@ -20,18 +21,18 @@ export const RaceHeader = ({ isAdminReport, files, uniqueRaces, selectedRace, se
         <label className="block text-sm font-medium text-neutral-700 mb-2">
           Selecciona una carrera
         </label>
-        <select
-          value={selectedRace}
-          onChange={(e) => setSelectedRace(e.target.value)}
-          className="w-full border border-neutral-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-        >
-          <option value="">-- Seleccionar Carrera --</option>
-          {uniqueRaces.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+        <Select value={selectedRace} onValueChange={(value) => setSelectedRace(value)}>
+          <SelectTrigger className="w-full bg-white">
+            <SelectValue placeholder="-- Seleccionar Carrera --" />
+          </SelectTrigger>
+          <SelectContent>
+            {uniqueRaces.map((r) => (
+              <SelectItem key={r} value={r}>
+                {r}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </>
   );

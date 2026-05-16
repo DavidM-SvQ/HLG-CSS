@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Button } from "../../ui/button";
 
 // Utility to get ISO week number
 function getISOWeek(date: Date) {
@@ -96,18 +97,18 @@ export function TestsCalendarHeatmap({ leaderboard }: TestsCalendarHeatmapProps)
         </div>
         
         <div className="flex gap-2">
-           <button
+           <Button variant="outline"
              onClick={() => setViewMode("teams")}
              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${viewMode === 'teams' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
            >
              Equipos
-           </button>
-           <button
+           </Button>
+           <Button variant="outline"
              onClick={() => setViewMode("cyclists")}
              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${viewMode === 'cyclists' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
            >
              Top 50 Ciclistas
-           </button>
+           </Button>
         </div>
       </div>
 

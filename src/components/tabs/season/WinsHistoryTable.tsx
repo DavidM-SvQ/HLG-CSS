@@ -1,10 +1,12 @@
 import React, { useContext } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 import { performTextCopy } from "./hooks/useExportHandlers";
+import { Button } from "../../ui/button";
 
 export function WinsHistoryTable() {
   const context = useContext(SeasonViewContext);
@@ -20,10 +22,10 @@ export function WinsHistoryTable() {
   const [isWinsHistoryTextCopying, setIsWinsHistoryTextCopying] = React.useState(false);
   const winsHistoryRef = React.useRef<HTMLDivElement>(null);
 
-  const [historyTeamFilter, setHistoryTeamFilter] = React.useState("all");
-  const [historyMonthFilter, setHistoryMonthFilter] = React.useState("all");
-  const [historySortColumn, setHistorySortColumn] = React.useState("date");
-  const [historySortDirection, setHistorySortDirection] = React.useState<"asc" | "desc">("desc");
+  const [historyTeamFilter, setHistoryTeamFilter] = useUrlState("historyTeamFilter", "all");
+  const [historyMonthFilter, setHistoryMonthFilter] = useUrlState("historyMonthFilter", "all");
+  const [historySortColumn, setHistorySortColumn] = useUrlState("historySortColumn", "date");
+  const [historySortDirection, setHistorySortDirection] = useUrlState<"asc" | "desc">("historySortDirection", "desc");
 
   const { handleCopyImage: copyWinsImage, handleDownloadImage: downloadWinsImage } = useTableScreenshot(winsHistoryRef);
 
@@ -93,14 +95,14 @@ export function WinsHistoryTable() {
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
             <div className="copy-button-ignore flex items-center gap-2">
-              <button
+              <Button variant="outline"
                 onClick={() => setIsWinsHistoryExpanded(true)}
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                 title="Ampliar tabla"
               >
                 <Maximize2 className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={() => handleCopyWinsHistory("full")}
                 disabled={!!isWinsHistoryCopying}
                 className={cn(
@@ -112,7 +114,7 @@ export function WinsHistoryTable() {
                 title={isWinsHistoryCopying === "full" ? "Copiado" : "Copiar tabla como imagen"}
               >
                 {isWinsHistoryCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
+              </Button>
               {numBlocks > 1 && (
                 <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
                   {Array.from({ length: numBlocks }).map((_, i) => {
@@ -122,7 +124,7 @@ export function WinsHistoryTable() {
                     const label = `${start}-${end}`;
                     const isCopyingThis = isWinsHistoryCopying === s;
                     return (
-                      <button
+                      <Button variant="outline"
                         key={s}
                         onClick={() => handleCopyWinsHistory(s as any)}
                         disabled={!!isWinsHistoryCopying}
@@ -137,12 +139,12 @@ export function WinsHistoryTable() {
                       >
                         {isCopyingThis ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {label}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
               )}
-              <button
+              <Button variant="ghost" size="icon"
                 onClick={handleCopyWinsHistoryText}
                 disabled={isWinsHistoryTextCopying}
                 className={cn(
@@ -155,14 +157,14 @@ export function WinsHistoryTable() {
               >
                 {isWinsHistoryTextCopying ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <ClipboardList className="w-4 h-4 mr-1.5" />}
                 Texto
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={() => handleDownloadWinsHistory("full")}
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
                 title="Descargar tabla como imagen"
               >
                 <UploadCloud className="w-4 h-4 rotate-180" />
-              </button>
+              </Button>
             </div>
             <div className="flex gap-2">
               <select
@@ -327,12 +329,12 @@ export function WinsHistoryTable() {
                 <History className="w-6 h-6 text-purple-600" />
                 Historial de Ganadores por Carrera
               </h3>
-              <button
+              <Button variant="outline"
                 onClick={() => setIsWinsHistoryExpanded(false)}
                 className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
               >
                 <X className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="table-responsive-wrapper overflow-auto w-full h-full">

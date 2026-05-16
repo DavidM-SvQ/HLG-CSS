@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useDraftStats } from './hooks/useDraftStats';
+import { Button } from "../../ui/button";
 
 interface DraftPerformanceSummaryProps {
   files: any;
@@ -68,13 +69,13 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
       </p>
     </div>
     <div className="flex items-center gap-1.5 self-end md:self-start shrink-0 copy-button-ignore">
-      <button
+      <Button variant="outline"
         onClick={() => setIsDraftSummaryExpanded(true)}
         className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-white shadow-sm border border-neutral-100"
         title="Ampliar tabla"
       >
         <Activity className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -88,9 +89,9 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
           <th className="px-3 py-2 border-r border-neutral-100 w-10 text-center">#</th>
           <th className="px-3 py-2 border-r border-neutral-100 min-w-[120px]">Equipo</th>
           <th className="px-2 py-2 text-center text-blue-800 bg-blue-50/50">1º</th>
-          <th className="px-2 py-2 text-center text-green-800 bg-green-50/50">Top</th>
-          <th className="px-2 py-2 text-center text-orange-800 bg-orange-50/50">Mid</th>
-          <th className="px-2 py-2 text-center text-neutral-800 bg-neutral-100/50 w-20">0 pts</th>
+          <th className="px-2 py-2 text-center text-green-800 bg-green-50/50">Buenos</th>
+          <th className="px-2 py-2 text-center text-yellow-800 bg-yellow-50/50">Normales</th>
+          <th className="px-2 py-2 text-center text-orange-800 bg-orange-50/50">Malos</th>
           <th className="px-2 py-2 text-center text-green-800 bg-green-50/80 border-x border-neutral-100 w-24">Eficiencia</th>
           <th className="px-3 py-2 text-right">Pts Totales</th>
         </tr>
@@ -127,7 +128,17 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                   </span>
                 </div>
               </td>
-              <td className="px-2 py-1 text-center bg-orange-50/30">
+              <td className="px-2 py-1 text-center bg-yellow-50/30">
+                <div className="flex flex-col items-center justify-center">
+                  <span className="font-bold text-yellow-700 text-xs">
+                    {summary.normalesPicks}
+                  </span>
+                  <span className="text-[10px] text-yellow-600/70 font-medium">
+                    {summary.pctNormales?.toFixed(1) || 0}%
+                  </span>
+                </div>
+              </td>
+              <td className="px-2 py-1 text-center bg-orange-50/30 border-r border-neutral-100/50">
                 <div className="flex flex-col items-center justify-center">
                   <span className="font-bold text-orange-700 text-xs">
                     {summary.malosPicks}
@@ -137,18 +148,8 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                   </span>
                 </div>
               </td>
-              <td className="px-2 py-1 text-center bg-neutral-50 border-x border-neutral-100/50">
-                <div className="flex flex-col items-center justify-center">
-                  <span className="font-medium text-neutral-500 text-xs">
-                    {summary.sinPuntuar}
-                  </span>
-                  <span className="text-[10px] opacity-60 font-medium">
-                    {summary.pctSinPuntuar.toFixed(1)}%
-                  </span>
-                </div>
-              </td>
               <td className="px-2 py-1 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
-                {summary.pctBuenos.toFixed(1)}%
+                {summary.totalPicks > 0 ? ((summary.pickGanador + summary.buenosPicks) / summary.totalPicks * 100).toFixed(1) : 0}%
               </td>
               <td
                 className={cn(

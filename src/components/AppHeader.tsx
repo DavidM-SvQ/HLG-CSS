@@ -1,22 +1,20 @@
 import React from 'react';
 import { Trophy, Clock, LogOut, LogIn } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { User } from '@supabase/supabase-js'; // Or local User type
+import { useAuth } from '../lib/auth/AuthContext';
+import { Button } from "./ui/button";
 
 interface AppHeaderProps {
   view: "public" | "admin";
   setView: (view: "public" | "admin") => void;
-  isAdmin: boolean;
-  user: any;
   lastUpdated: Date | null;
-  handleLogin: () => void;
-  handleLogout: () => void;
-  isLoggingIn: boolean;
 }
 
 export function AppHeader({
-  view, setView, isAdmin, user, lastUpdated, handleLogin, handleLogout, isLoggingIn
+  view, setView, lastUpdated
 }: AppHeaderProps) {
+  const { user, isAdmin, handleLogin, handleLogout, isLoggingIn } = useAuth();
+  
   return (
     <header className="bg-white border-b border-neutral-200 px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
@@ -58,15 +56,15 @@ export function AppHeader({
           
           <div className="flex md:hidden items-center shrink-0 ml-2">
             {user ? (
-              <button
+              <Button variant="ghost" size="sm"
                 onClick={handleLogout}
                 className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-5 h-5" />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="ghost" size="icon"
                 onClick={handleLogin}
                 disabled={isLoggingIn}
                 className={cn(
@@ -81,7 +79,7 @@ export function AppHeader({
                 ) : (
                   <LogIn className="w-4 h-4 text-blue-600" />
                 )}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -89,7 +87,7 @@ export function AppHeader({
         <div className="flex items-center w-full md:w-auto justify-between md:justify-end gap-4 overflow-x-auto pb-1 md:pb-0">
           {isAdmin && (
             <nav className="flex items-center bg-neutral-100 p-1 rounded-lg w-full md:w-auto shrink-0">
-              <button
+              <Button variant="outline"
                 onClick={() => setView("public")}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex-1 md:flex-none text-center",
@@ -99,8 +97,8 @@ export function AppHeader({
                 )}
               >
                 Público
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={() => setView("admin")}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex-1 md:flex-none text-center",
@@ -110,7 +108,7 @@ export function AppHeader({
                 )}
               >
                 Admin
-              </button>
+              </Button>
             </nav>
           )}
 
@@ -133,16 +131,16 @@ export function AppHeader({
                     referrerPolicy="no-referrer"
                   />
                 )}
-                <button
+                <Button variant="ghost" size="sm"
                   onClick={handleLogout}
                   className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors"
                   title="Cerrar Sesión"
                 >
                   <LogOut className="w-5 h-5" />
-                </button>
+                </Button>
               </div>
             ) : (
-            <button
+            <Button variant="ghost" size="icon"
               onClick={handleLogin}
               disabled={isLoggingIn}
               className={cn(
@@ -163,7 +161,7 @@ export function AppHeader({
                   <span className="hidden sm:inline">Iniciar Sesión</span>
                 </>
               )}
-            </button>
+            </Button>
           )}
         </div>
         </div>

@@ -62,7 +62,7 @@ export function useStartlistData(
     const selectedData = startlistArray.find(
       (d: any) => d.carrera === publicStartlistRace,
     );
-    if (!selectedData) return { filteredRows: [], teamRows: [], uniqueTeams: [], maxCiclistas: 0, minCiclistas: 0, minTeamPoints: 0, maxTeamPoints: 0, minTeamPointsMedios: 0, maxTeamPointsMedios: 0 };
+    if (!selectedData) return { filteredRows: [], teamRows: [], uniqueTeams: [], uniqueRondas: [], maxCiclistas: 0, minCiclistas: 0, minTeamPoints: 0, maxTeamPoints: 0, minTeamPointsMedios: 0, maxTeamPointsMedios: 0, maxCyclistPoints: 0, minCyclistPoints: 0, maxDias: 0, minDias: 0 };
 
     let rows: any[] = [];
     selectedData.resultados?.forEach((res: any) => {

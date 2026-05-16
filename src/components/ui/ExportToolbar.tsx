@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
+import { Button } from "./button";
 
 interface ExportToolbarProps {
   isExpanded?: boolean;
@@ -21,6 +22,9 @@ interface ExportToolbarProps {
   // Auto-export props
   targetRef?: React.RefObject<HTMLElement>;
   filename?: string;
+
+  // Extra buttons for subsets
+  customImageButtons?: React.ReactNode;
 }
 
 export const ExportToolbar: React.FC<ExportToolbarProps> = ({
@@ -28,7 +32,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   onExpand,
   onCopyText,
   isTextCopying,
-  textCopyLabel = "Copiar texto",
+  textCopyLabel,
   useClipboardIconForText = false,
   onCopyImage,
   isImageCopying,
@@ -36,6 +40,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   onDownloadImage,
   targetRef,
   filename = "export",
+  customImageButtons,
 }) => {
   const [internalIsCopying, setInternalIsCopying] = useState<boolean | string | null>(false);
 
@@ -75,7 +80,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   const renderImageButtons = () => {
     return (
       <div className="flex items-center gap-1">
-        <button
+        <Button variant="outline"
           onClick={() => _onCopyImage?.(imagePageCount > 1 ? 'full' : undefined)}
           disabled={!!_isImageCopying}
           className={cn(
@@ -87,12 +92,12 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
         >
           {_isImageCopying === 'full' || _isImageCopying === true || (imagePageCount <= 1 && !!_isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        </button>
+        </Button>
 
         {imagePageCount > 1 && (
           <div className="flex border-l border-neutral-200 pl-1.5 gap-1 ml-1">
             {Array.from({ length: imagePageCount }, (_, i) => `p${i + 1}`).map((p) => (
-              <button
+              <Button variant="outline"
                 key={p}
                 onClick={() => _onCopyImage?.(p)}
                 disabled={!!_isImageCopying}
@@ -107,7 +112,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
               >
                 {_isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {p}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -117,49 +122,51 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
 
   return (
     <div className="flex items-center gap-1.5 copy-button-ignore">
-      {onCopyText && (
-        <button
-          onClick={onCopyText}
-          disabled={isTextCopying}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors border shadow-sm",
-            isTextCopying
-              ? "bg-green-50 text-green-700 border-green-200"
-              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-          )}
-          title="Copiar texto"
-        >
-          {isTextCopying ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : useClipboardIconForText ? (
-            <ClipboardList className="w-3.5 h-3.5" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-          <span className="hidden sm:inline">{textCopyLabel}</span>
-        </button>
-      )}
-
       {onExpand && (
-        <button
+        <Button variant="ghost" size="sm"
           onClick={onExpand}
           className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
           title={isExpanded ? "Contraer" : "Ampliar"}
         >
           {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
+        </Button>
       )}
 
       {onCopyImage && renderImageButtons()}
+      {customImageButtons}
+
+      {onCopyText && (
+        <Button variant="outline"
+          onClick={onCopyText}
+          disabled={isTextCopying}
+          className={cn(
+            "transition-colors border shadow-sm rounded-md",
+            textCopyLabel ? "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium" : "p-1.5 flex items-center justify-center",
+            isTextCopying
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+          )}
+          title={textCopyLabel || "Copiar texto"}
+        >
+          {isTextCopying ? (
+            <CheckCircle2 className={textCopyLabel ? "w-3.5 h-3.5" : "w-4 h-4"} />
+          ) : useClipboardIconForText ? (
+            <ClipboardList className={textCopyLabel ? "w-3.5 h-3.5" : "w-4 h-4"} />
+          ) : (
+            <Copy className={textCopyLabel ? "w-3.5 h-3.5" : "w-4 h-4"} />
+          )}
+          {textCopyLabel && <span className="hidden sm:inline">{textCopyLabel}</span>}
+        </Button>
+      )}
 
       {onDownloadImage && (
-        <button
+        <Button variant="outline"
           onClick={() => onDownloadImage()}
           className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
           title="Descargar imagen"
         >
           <UploadCloud className="w-4 h-4" />
-        </button>
+        </Button>
       )}
     </div>
   );

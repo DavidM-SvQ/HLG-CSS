@@ -1,16 +1,11 @@
-import { useVirtualizer } from '@tanstack/react-virtual';
-import React, { useState, useRef, useMemo } from 'react';
-import { useCrosshair } from '../../hooks/useCrosshair';
-import { Search, Minimize2, Maximize2, X, Filter } from 'lucide-react';
-import { ChevronDown, ChevronUp, Copy, CheckCircle2, UploadCloud, Activity, FileText, Download, HelpCircle, ArrowUpDown, BarChart3, TrendingUp, Trophy } from 'lucide-react';
-import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar } from 'recharts';
-import { expandNodeForCapture } from '../../lib/dom-utils';
-import { domToDataUrl } from 'modern-screenshot';
+import React, { useMemo } from 'react';
+import { useUrlState } from '../../hooks/useUrlState';
 import { motion, AnimatePresence } from 'motion/react';
 import { DraftElections } from './draft/DraftElections';
 import { DraftDatos } from './draft/DraftDatos';
 import { cn } from '../../lib/utils';
-import { getVal, getCategoryColorStyle, formatNumberSpanish } from '../../lib/data-processing';
+import { getVal } from '../../lib/data-processing';
+import { Button } from "../ui/button";
 
 export interface DraftViewProps {
   leaderboard: any;
@@ -31,7 +26,7 @@ export const DraftView: React.FC<DraftViewProps> = ({
   teamToPlayerMap,
   playerOrderMap
 }) => {
-  const [draftSubTab, setDraftSubTab] = useState<"elecciones" | "datos">("elecciones");
+  const [draftSubTab, setDraftSubTab] = useUrlState<"elecciones" | "datos">("draftSubTab", "elecciones");
 
   const draftCyclistStats = useMemo(() => {
     const stats: Record<string, { puntos: number; victorias: number }> = {};
@@ -134,7 +129,7 @@ export const DraftView: React.FC<DraftViewProps> = ({
         </p>
       </div>
       <div className="flex bg-neutral-100 p-1 rounded-lg self-start">
-        <button
+        <Button variant="outline"
           onClick={() => setDraftSubTab("elecciones")}
           className={cn(
             "px-4 py-2 rounded-md text-sm font-medium transition-all",
@@ -144,8 +139,8 @@ export const DraftView: React.FC<DraftViewProps> = ({
           )}
         >
           Elecciones
-        </button>
-        <button
+        </Button>
+        <Button variant="outline"
           onClick={() => setDraftSubTab("datos")}
           className={cn(
             "px-4 py-2 rounded-md text-sm font-medium transition-all",
@@ -155,7 +150,7 @@ export const DraftView: React.FC<DraftViewProps> = ({
           )}
         >
           Datos
-        </button>
+        </Button>
       </div>
     </div>
     <AnimatePresence mode="wait">

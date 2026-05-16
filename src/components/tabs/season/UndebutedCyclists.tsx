@@ -1,22 +1,26 @@
+import { cn } from "../../../lib/utils";
+import { motion, AnimatePresence } from "motion/react";
 import React, { useContext, useRef } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
-import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History , ChevronRight} from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 
 import { performTextCopy } from "./hooks/useExportHandlers";
+import { Button } from "../../ui/button";
 
 export function UndebutedCyclists() {
   const context = useContext(SeasonViewContext);
   if (!context) return null;
   const { cn, files, playerTeamMap, playerByCyclist, leaderboard, cyclistMetadata, cyclistRoundMap, playerOrderMap, getVal } = context;
 
-  const [undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter] = React.useState<string>("all");
-  const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = React.useState<string[]>([]);
+  const [undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter] = useUrlState<string>("undebutedCyclistsTeamFilter", "all");
+  const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = useUrlState<string[]>("undebutedCyclistsRoundFilter", []);
   const [isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen] = React.useState<boolean>(false);
-  const [undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn] = React.useState<string>("pos");
-  const [undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection] = React.useState<"asc"|"desc">("asc");
+  const [undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn] = useUrlState<string>("undebutedCyclistsSortColumn", "pos");
+  const [undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection] = useUrlState<"asc"|"desc">("undebutedCyclistsSortDirection", "asc");
   const [isUndebutedExpanded, setIsUndebutedExpanded] = React.useState(false);
   
   const [isUndebutedCopying, setIsUndebutedCopying] = React.useState<string | boolean>(false);
@@ -106,7 +110,7 @@ export function UndebutedCyclists() {
                                   </p>
                                   <div className="flex flex-wrap gap-3 mt-1">
                                     <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore">
-                                      <button
+                                      <Button variant="outline"
                                         onClick={() =>
                                           setIsUndebutedExpanded(
                                             !isUndebutedExpanded,
@@ -124,8 +128,8 @@ export function UndebutedCyclists() {
                                         ) : (
                                           <Maximize2 className="w-4 h-4" />
                                         )}
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button variant="outline"
                                         onClick={() =>
                                           handleCopyUndebuted("full")
                                         }
@@ -146,7 +150,7 @@ export function UndebutedCyclists() {
                                         ) : (
                                           <Copy className="w-4 h-4" />
                                         )}
-                                      </button>
+                                      </Button>
 
                                       {(() => {
                                         const undebutedCount =
@@ -202,7 +206,7 @@ export function UndebutedCyclists() {
                                                 const isCopyingThis =
                                                   isUndebutedCopying === s;
                                                 return (
-                                                  <button
+                                                  <Button variant="outline"
                                                     key={s}
                                                     onClick={() =>
                                                       handleCopyUndebuted(
@@ -228,7 +232,7 @@ export function UndebutedCyclists() {
                                                       <Copy className="w-3.5 h-3.5" />
                                                     )}
                                                     {i * 50 + 1}-{(i + 1) * 50}
-                                                  </button>
+                                                  </Button>
                                                 );
                                               })}
                                             </div>
@@ -237,7 +241,7 @@ export function UndebutedCyclists() {
                                         return null;
                                       })()}
 
-                                      <button
+                                      <Button variant="ghost" size="icon"
                                         onClick={handleCopyUndebutedText}
                                         disabled={isUndebutedTextCopying}
                                         title="Copiar texto"
@@ -254,8 +258,8 @@ export function UndebutedCyclists() {
                                           <FileText className="w-4 h-4 mr-1.5" />
                                         )}
                                         Texto
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button variant="outline"
                                         onClick={() =>
                                           handleDownloadUndebuted("full")
                                         }
@@ -263,10 +267,10 @@ export function UndebutedCyclists() {
                                         className="px-2 py-1.5 text-xs font-semibold bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8"
                                       >
                                         <Download className="w-4 h-4" />
-                                      </button>
+                                      </Button>
                                     </div>
                                     <div className="relative">
-                                      <button
+                                      <Button variant="outline"
                                         onClick={() =>
                                           setIsUndebutedRoundFilterOpen(
                                             !isUndebutedRoundFilterOpen,
@@ -291,7 +295,7 @@ export function UndebutedCyclists() {
                                               "rotate-180",
                                           )}
                                         />
-                                      </button>
+                                      </Button>
 
                                       {isUndebutedRoundFilterOpen && (
                                         <>
@@ -310,7 +314,7 @@ export function UndebutedCyclists() {
                                               </span>
                                               {undebutedCyclistsRoundFilter.length >
                                                 0 && (
-                                                <button
+                                                <Button variant="outline"
                                                   onClick={() =>
                                                     setUndebutedCyclistsRoundFilter(
                                                       [],
@@ -319,7 +323,7 @@ export function UndebutedCyclists() {
                                                   className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
                                                 >
                                                   Limpiar
-                                                </button>
+                                                </Button>
                                               )}
                                             </div>
                                             {Array.from(
@@ -691,6 +695,54 @@ export function UndebutedCyclists() {
                                   </table></div>
                                 </div>
                               </div>
+    </>
+  );
+}
+
+
+function UndebutedCyclistRow({ s, isHiddenVisual, getFlagEmoji }: any) {
+  const [expanded, setExpanded] = React.useState(false);
+  const { ciclista, equipo, pais, draftInfo, rank } = s;
+
+  if (isHiddenVisual) return null;
+
+  return (
+    <>
+      <motion.tr layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
+        <td className="px-4 py-3 md:px-4 md:py-1 flex md:table-cell justify-between items-center w-full md:w-auto md:text-center text-neutral-400 font-medium whitespace-nowrap">
+          <div className="flex items-center gap-2 md:contents">
+            <span className="w-5 h-5 md:mx-auto rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 bg-neutral-100 text-neutral-500">
+              {rank}
+            </span>
+            <span className="font-bold text-neutral-900 md:hidden">{ciclista}</span>
+          </div>
+          <div className="flex items-center gap-3 md:hidden">
+            <ChevronRight className={cn("w-4 h-4 text-neutral-400 transition-transform", expanded && "rotate-90")} />
+          </div>
+        </td>
+        <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap hidden md:table-cell">
+          {ciclista}
+        </td>
+        <td className={cn("px-4 py-2 md:py-1 text-neutral-600 whitespace-nowrap md:table-cell", expanded ? "block" : "hidden")}>
+          <div className="flex justify-between items-center md:contents">
+            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+            {equipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium">{equipo}</span>}
+          </div>
+        </td>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 text-base md:text-center md:table-cell border-b border-neutral-100 md:border-b-0", expanded ? "block" : "hidden")}>
+          <div className="flex justify-between items-center md:contents">
+            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
+            <span>{getFlagEmoji(pais)}</span>
+          </div>
+        </td>
+        <td className={cn("px-4 py-2 md:py-1 whitespace-nowrap md:table-cell hidden md:table-cell", expanded ? "block" : "hidden")}>
+          <div className="flex justify-between items-center md:contents">
+            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Draft</span>
+            {draftInfo ? <span className="text-neutral-600"><span className="font-medium whitespace-nowrap">{draftInfo.equipo}</span> <span className="text-neutral-400 font-normal text-[9px] ml-1">&lt;R{draftInfo.ronda} - #{draftInfo.orden}&gt;</span></span> : <span className="text-neutral-400 italic text-[10px]">No elegido</span>}
+          </div>
+        </td>
+      </motion.tr>
+      {expanded && <tr className="md:hidden"><td colSpan={5} className="h-2 bg-neutral-100/50"></td></tr>}
     </>
   );
 }

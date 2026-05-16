@@ -4,6 +4,8 @@ import { ChevronUp, ChevronDown, X, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { getVal, getCategoryColorStyle } from '../../../lib/data-processing';
 import { useDraftStats } from './hooks/useDraftStats';
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 interface DraftPointsTableProps {
   files: any;
@@ -171,20 +173,20 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
       ref={draftDatosTableRef as any}
       className={cn(
         "bg-white border border-neutral-200 rounded-xl overflow-hidden relative shadow-sm",
-        isDraftDatosTableExpanded ? "fixed inset-4 z-50 p-6 shadow-2xl m-0 flex flex-col" : "max-h-[70vh]"
+        isDraftDatosTableExpanded ? "fixed inset-4 z-50 p-6 shadow-2xl m-0 flex flex-col" : "w-full"
       )}
     >
       {isDraftDatosTableExpanded && (
-        <button
+        <Button variant="outline"
           onClick={() => setIsDraftDatosTableExpanded(false)}
           className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
         >
           <X className="w-6 h-6" />
-        </button>
+        </Button>
       )}
 
-      <div className={cn("table-responsive-wrapper overflow-auto w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0" : "max-h-[70vh]")}>
-        <table className="min-w-max w-full text-xs text-left border-collapse">
+      <div className={cn("table-responsive-wrapper w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-x-auto")}>
+        <table className="w-full text-[10px] sm:text-xs text-left border-collapse">
           <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b border-neutral-200">
             <tr>
               <th
@@ -204,11 +206,8 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                   <ArrowUpDown className={cn("w-3 h-3 text-neutral-300", draftDatosSortColumn === "Orden" && "text-blue-600")} />
                 </div>
               </th>
-              <th className="px-4 py-3 font-bold border-l border-neutral-200 sticky left-[60px] z-40 bg-neutral-50" style={{ width: "150px", minWidth: "150px" }}>
+              <th className="px-4 py-3 font-bold border-l border-neutral-200 sticky left-[60px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "150px", minWidth: "150px" }}>
                 Equipo
-              </th>
-              <th className="px-3 py-3 border-l border-neutral-200 text-center font-bold sticky left-[210px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "100px", minWidth: "100px" }}>
-                Manager
               </th>
               {rounds.map((r, i) => (
                 <th
@@ -264,11 +263,8 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                       <span className="w-5 inline-block text-center">{order}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[60px] z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "150px", maxWidth: "150px", minWidth: "150px" }}>
+                  <td className="px-4 py-2 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[60px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "150px", maxWidth: "150px", minWidth: "150px" }}>
                     {teamName}
-                  </td>
-                  <td className="px-3 py-2 text-center text-neutral-500 border-l border-neutral-100 text-[10px] uppercase font-bold truncate sticky left-[210px] z-20 bg-white shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-50/50" style={{ width: "100px", maxWidth: "100px", minWidth: "100px" }}>
-                    {player || "-"}
                   </td>
                   {rounds.map((r, i) => {
                     const pts = teamRoundData[teamName][r] || 0;
@@ -307,24 +303,47 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                           (i + 1) % 5 === 0 ? "border-r border-r-neutral-200" : ""
                         )}
                         style={cellStyle}
-                        onMouseEnter={(e) => {
-                          if (cyclistName) {
-                            setDraftDatosTooltip({
-                              show: true,
-                              x: e.clientX,
-                              y: e.clientY,
-                              data: { cyclistName, eqComp, r, order, wins, pts, meta, ppc, ppdc },
-                            });
-                          }
-                        }}
-                        onMouseMove={(e) => {
-                          if (cyclistName && draftDatosTooltip) {
-                            setDraftDatosTooltip((prev: any) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
-                          }
-                        }}
-                        onMouseLeave={() => setDraftDatosTooltip(null)}
                       >
-                        <span className="cursor-default">{pts > 0 ? pts : "0"}</span>
+                        {cyclistName ? (
+                          <Tooltip>
+                            <TooltipTrigger render={
+                              <div className="w-full h-full flex items-center justify-center cursor-default">
+                                {pts > 0 ? pts : "0"}
+                              </div>
+                            } />
+                            <TooltipContent side="top" className="text-left bg-neutral-900 text-white border-neutral-800 shadow-xl max-w-[280px]">
+                              <div className="flex flex-col gap-1.5 whitespace-nowrap text-xs p-1">
+                                <div className="font-bold border-b border-neutral-700 pb-1 mb-0.5 whitespace-normal break-words">
+                                  {cyclistName}
+                                </div>
+                                <div className="text-neutral-300">
+                                  Equipo: <span className="text-white font-medium">{eqComp || "-"}</span>
+                                </div>
+                                <div className="text-neutral-300">
+                                  Ronda: <span className="text-white font-medium">{r}</span> | Orden: <span className="text-white font-medium">{order || "-"}</span>
+                                </div>
+                                <div className="text-neutral-300">
+                                  Victorias: <span className="text-white font-medium">{wins}</span>
+                                </div>
+                                <div className="text-neutral-300">
+                                  Puntos Totales: <span className="text-blue-400 font-bold">{pts}</span>
+                                </div>
+                                {(ppc > 0 || ppdc > 0) && (
+                                  <div className="flex items-center gap-3 mt-1 pt-1 border-t border-neutral-700/50">
+                                    <span className="text-neutral-400">
+                                      P/C: <span className="text-neutral-200 font-mono">{ppc.toFixed(1)}</span>
+                                    </span>
+                                    <span className="text-neutral-400">
+                                      P/D: <span className="text-neutral-200 font-mono">{ppdc.toFixed(1)}</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="cursor-default text-neutral-300">-</span>
+                        )}
                       </td>
                     );
                   })}

@@ -3,6 +3,8 @@ import { Maximize2, Copy, CheckCircle2, UploadCloud, BarChart3, X } from "lucide
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
+import { ChartTooltip } from "../../ui/ChartTooltip";
 
 export function GeneralClassificationChart() {
   const context = useContext(SeasonViewContext);
@@ -50,14 +52,14 @@ export function GeneralClassificationChart() {
             <span className="truncate">Clasificación General</span>
           </h3>
           <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-            <button
+            <Button variant="outline"
               onClick={() => setIsChartExpanded(true)}
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
               title="Ampliar gráfico"
             >
               <Maximize2 className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost" size="icon"
               onClick={handleCopyChart}
               disabled={isCopying}
               className={cn(
@@ -77,14 +79,14 @@ export function GeneralClassificationChart() {
               ) : (
                 <Copy className="w-4 h-4" />
               )}
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost" size="sm"
               onClick={handleDownloadChart}
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
               title="Descargar gráfico como imagen"
             >
               <UploadCloud className="w-4 h-4 rotate-180" />
-            </button>
+            </Button>
           </div>
         </div>
         <div
@@ -166,56 +168,32 @@ export function GeneralClassificationChart() {
               />
               <Tooltip
                 cursor={{ fill: "#f8fafc" }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div className="bg-white p-4 border border-neutral-200 rounded-xl shadow-xl">
-                        <p className="font-bold text-neutral-900 mb-2">
-                          {data.displayName}
-                        </p>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between gap-8">
-                            <span className="text-neutral-500">
-                              Puntos:
-                            </span>
-                            <span className="font-bold text-blue-600">
-                              {data.puntos}
-                            </span>
-                          </div>
-                          <div className="flex justify-between gap-8">
-                            <span className="text-neutral-500">
-                              Victorias:
-                            </span>
-                            <span className="font-bold text-yellow-600">
-                              {data.victorias}
-                            </span>
-                          </div>
-                          <div className="flex justify-between gap-8">
-                            <span className="text-neutral-500">
-                              Dif con orden:
-                            </span>
-                            <span
-                              className={cn(
-                                "font-bold",
-                                data.diff > 0
-                                  ? "text-green-600"
-                                  : data.diff < 0
-                                    ? "text-red-600"
-                                    : "text-yellow-600",
-                              )}
-                            >
-                              {data.diff > 0
-                                ? `+${data.diff}`
-                                : data.diff}
-                            </span>
-                          </div>
+                content={(props) => (
+                  <ChartTooltip 
+                    {...props} 
+                    formatter={(value, name, item) => (
+                      <div className="space-y-1">
+                        <div className="flex justify-between gap-8">
+                          <span className="text-neutral-500">Puntos:</span>
+                          <span className="font-bold text-blue-600">{item.payload.puntos}</span>
+                        </div>
+                        <div className="flex justify-between gap-8">
+                          <span className="text-neutral-500">Victorias:</span>
+                          <span className="font-bold text-yellow-600">{item.payload.victorias}</span>
+                        </div>
+                        <div className="flex justify-between gap-8">
+                          <span className="text-neutral-500">Dif con orden:</span>
+                          <span className={cn(
+                            "font-bold",
+                            item.payload.diff > 0 ? "text-green-600" : item.payload.diff < 0 ? "text-red-600" : "text-yellow-600"
+                          )}>
+                            {item.payload.diff > 0 ? `+${item.payload.diff}` : item.payload.diff}
+                          </span>
                         </div>
                       </div>
-                    );
-                  }
-                  return null;
-                }}
+                    )}
+                  />
+                )}
               />
               <Bar
                 dataKey="puntos"
@@ -259,12 +237,12 @@ export function GeneralClassificationChart() {
                 <BarChart3 className="w-6 h-6 text-blue-600" />
                 Clasificación General
               </h3>
-              <button
+              <Button variant="outline"
                 onClick={() => setIsChartExpanded(false)}
                 className="p-2 hover:bg-neutral-200 rounded-full transition-colors text-neutral-500"
               >
                 <X className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div
@@ -354,60 +332,32 @@ export function GeneralClassificationChart() {
                     />
                     <Tooltip
                       cursor={{ fill: "#f8fafc" }}
-                      content={({ active, payload }) => {
-                        if (
-                          active &&
-                          payload &&
-                          payload.length
-                        ) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white p-5 border border-neutral-200 rounded-xl shadow-2xl">
-                              <p className="font-bold text-neutral-900 text-lg mb-3">
-                                {data.displayName}
-                              </p>
-                              <div className="space-y-2 text-base">
-                                <div className="flex justify-between gap-12">
-                                  <span className="text-neutral-500">
-                                    Puntos:
-                                  </span>
-                                  <span className="font-bold text-blue-600">
-                                    {data.puntos}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between gap-12">
-                                  <span className="text-neutral-500">
-                                    Victorias:
-                                  </span>
-                                  <span className="font-bold text-yellow-600">
-                                    {data.victorias}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between gap-12">
-                                  <span className="text-neutral-500">
-                                    Dif con orden:
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      "font-bold",
-                                      data.diff > 0
-                                        ? "text-green-600"
-                                        : data.diff < 0
-                                          ? "text-red-600"
-                                          : "text-yellow-600",
-                                    )}
-                                  >
-                                    {data.diff > 0
-                                      ? `+${data.diff}`
-                                      : data.diff}
-                                  </span>
-                                </div>
+                      content={(props) => (
+                        <ChartTooltip 
+                          {...props} 
+                          formatter={(value, name, item) => (
+                            <div className="space-y-2">
+                              <div className="flex justify-between gap-12 text-base">
+                                <span className="text-neutral-500">Puntos:</span>
+                                <span className="font-bold text-blue-600">{item.payload.puntos}</span>
+                              </div>
+                              <div className="flex justify-between gap-12 text-base">
+                                <span className="text-neutral-500">Victorias:</span>
+                                <span className="font-bold text-yellow-600">{item.payload.victorias}</span>
+                              </div>
+                              <div className="flex justify-between gap-12 text-base">
+                                <span className="text-neutral-500">Dif con orden:</span>
+                                <span className={cn(
+                                  "font-bold",
+                                  item.payload.diff > 0 ? "text-green-600" : item.payload.diff < 0 ? "text-red-600" : "text-yellow-600"
+                                )}>
+                                  {item.payload.diff > 0 ? `+${item.payload.diff}` : item.payload.diff}
+                                </span>
                               </div>
                             </div>
-                          );
-                        }
-                        return null;
-                      }}
+                          )}
+                        />
+                      )}
                     />
                     <Bar
                       dataKey="puntos"

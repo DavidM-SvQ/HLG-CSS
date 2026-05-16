@@ -1,10 +1,12 @@
 import React, { useContext, useState, useRef } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { copyImageToClipboard } from "../../../lib/clipboard";
 import { useHotStreaks } from "../../../lib/hooks/useHotStreaks";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
 
 export function HotStreakCyclists() {
   const context = useContext(SeasonViewContext);
@@ -14,10 +16,10 @@ export function HotStreakCyclists() {
   const chartRef = useRef<HTMLDivElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const [hotStreakMinPoints, setHotStreakMinPoints] = useState<number | "">(1);
-  const [hotStreakMaxPoints, setHotStreakMaxPoints] = useState<number | "">("");
-  const [hotStreakLastNWeeks, setHotStreakLastNWeeks] = useState<number>(4);
-  const [hotStreakCyclistsLimit, setHotStreakCyclistsLimit] = useState<number>(10);
+  const [hotStreakMinPoints, setHotStreakMinPoints] = useUrlState<number | "">("hotStreakMinPoints", 1);
+  const [hotStreakMaxPoints, setHotStreakMaxPoints] = useUrlState<number | "">("hotStreakMaxPoints", "");
+  const [hotStreakLastNWeeks, setHotStreakLastNWeeks] = useUrlState<number>("hotStreakLastNWeeks", 4);
+  const [hotStreakCyclistsLimit, setHotStreakCyclistsLimit] = useUrlState<number>("hotStreakCyclistsLimit", 10);
   
   const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(chartRef);
 
@@ -77,16 +79,16 @@ export function HotStreakCyclists() {
           </div>
           
           <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-neutral-200 shadow-sm relative z-10 hidden sm:flex">
-             <button onClick={handleCopy} className={cn("p-1.5 rounded-md transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
+             <Button variant="ghost" size="icon" onClick={handleCopy} className={cn("p-1.5 rounded-md transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
                <Copy className="w-4 h-4" />
-             </button>
-             <button onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title="Descargar ranking">
+             </Button>
+             <Button variant="ghost" size="sm" onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title="Descargar ranking">
                <Download className="w-4 h-4" />
-             </button>
+             </Button>
              <div className="w-px h-4 bg-neutral-300 mx-1"></div>
-             <button onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
+             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-             </button>
+             </Button>
           </div>
         </div>
 

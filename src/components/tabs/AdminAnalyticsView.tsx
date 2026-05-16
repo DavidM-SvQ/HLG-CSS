@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Loader2, AlertCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Skeleton } from "../ui/Skeleton";
+import { Button } from "../ui/button";
+import { ChartTooltip } from "../ui/ChartTooltip";
 
 export const AdminAnalyticsView = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -170,16 +172,29 @@ NOTIFY pgrst, reload_schema;`}
   // 2. Compute tab visits
   const tabVisits: Record<string, number> = {};
   filteredEvents.forEach(e => {
-    if (e.event_name === "app_navigation" && e.event_data?.publicTab) {
+    if (e.event_name === "page_view" && e.event_data?.page === "app_navigation" && e.event_data?.publicTab) {
       const tab = e.event_data.publicTab;
       tabVisits[tab] = (tabVisits[tab] || 0) + 1;
     }
   });
   
-  const tabData = Object.keys(tabVisits).map(tab => ({
-    name: tab,
-    vistas: tabVisits[tab]
-  })).sort((a, b) => b.vistas - a.vistas);
+  const tabData = Object.keys(tabVisits).map(tab => {
+    let displayName = tab;
+    if (tab === "season") displayName = "Temporada";
+    if (tab === "season-puntos") displayName = "Temporada (Puntos)";
+    if (tab === "season-victorias") displayName = "Temporada (Victorias)";
+    if (tab === "season-ciclistas") displayName = "Temporada (Ciclistas)";
+    if (tab === "team") displayName = "Equipos";
+    if (tab === "race") displayName = "Ranking";
+    if (tab === "draft") displayName = "Draft";
+    if (tab === "startlist") displayName = "Startlist";
+    if (tab === "resultados") displayName = "Resultados";
+    
+    return {
+      name: displayName,
+      vistas: tabVisits[tab]
+    };
+  }).sort((a, b) => b.vistas - a.vistas);
 
   // 3. Most viewed races & teams
   const teamVisits: Record<string, number> = {};
@@ -190,7 +205,7 @@ NOTIFY pgrst, reload_schema;`}
   const exportsByChart: Record<string, { image_copy: number, text_copy: number, image_download: number, total: number }> = {};
   
   filteredEvents.forEach(e => {
-    if (e.event_name === "app_navigation") {
+    if (e.event_name === "page_view" && e.event_data?.page === "app_navigation") {
       if (e.event_data?.selectedTeam) {
         teamVisits[e.event_data.selectedTeam] = (teamVisits[e.event_data.selectedTeam] || 0) + 1;
       }
@@ -244,10 +259,10 @@ NOTIFY pgrst, reload_schema;`}
 
         <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-neutral-100">
           <div className="flex bg-neutral-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <button onClick={() => setFilterMode("quick")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "quick" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Atajos</button>
-            <button onClick={() => setFilterMode("daily")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "daily" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Diario</button>
-            <button onClick={() => setFilterMode("monthly")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "monthly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Mensual</button>
-            <button onClick={() => setFilterMode("yearly")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "yearly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Anual</button>
+            <Button variant="outline" onClick={() => setFilterMode("quick")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "quick" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Atajos</Button>
+            <Button variant="outline" onClick={() => setFilterMode("daily")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "daily" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Diario</Button>
+            <Button variant="outline" onClick={() => setFilterMode("monthly")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "monthly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Mensual</Button>
+            <Button variant="outline" onClick={() => setFilterMode("yearly")} className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "yearly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Anual</Button>
           </div>
 
           <div className="flex flex-wrap gap-2 md:gap-4 items-center w-full sm:w-auto">
@@ -327,33 +342,41 @@ NOTIFY pgrst, reload_schema;`}
         <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-neutral-900 mb-6">Gráficos/Tablas más exportados</h3>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={exportsData} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} />
-                <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend />
-                <Bar dataKey="image_copy" name="Copiar Imagen" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="text_copy" name="Copiar Texto" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="image_download" name="Descargar" stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {exportsData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={exportsData} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} />
+                  <Tooltip cursor={{ fill: '#F3F4F6' }} content={(props) => <ChartTooltip {...props} />} />
+                  <Legend />
+                  <Bar dataKey="image_copy" name="Copiar Imagen" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="text_copy" name="Copiar Texto" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="image_download" name="Descargar" stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex justify-center items-center h-full text-neutral-400 font-medium">Sin datos aún</div>
+            )}
           </div>
         </div>
 
         <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-neutral-900 mb-6">Visitas por Sección</h3>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={tabData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="vistas" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {tabData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tabData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: '#F3F4F6' }} content={(props) => <ChartTooltip {...props} />} />
+                  <Bar dataKey="vistas" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+             ) : (
+              <div className="flex justify-center items-center h-full text-neutral-400 font-medium">Sin datos aún</div>
+            )}
           </div>
         </div>
 
@@ -361,15 +384,19 @@ NOTIFY pgrst, reload_schema;`}
           <h3 className="font-bold text-neutral-900 mb-6">Carreras MÁS Vistas (Clasificación)</h3>
           <div className="h-80 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="min-w-[600px] h-full">
+            {raceClasificacionData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={raceClasificacionData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={80} />
                   <YAxis />
-                  <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip cursor={{ fill: '#F3F4F6' }} content={(props) => <ChartTooltip {...props} />} />
                   <Bar dataKey="vistas" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+             ) : (
+                <div className="flex justify-center items-center h-full text-neutral-400 font-medium">Sin datos aún</div>
+             )}
             </div>
           </div>
         </div>
@@ -378,15 +405,19 @@ NOTIFY pgrst, reload_schema;`}
           <h3 className="font-bold text-neutral-900 mb-6">Carreras MÁS Vistas (Startlist)</h3>
           <div className="h-80 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="min-w-[600px] h-full">
+            {raceStartlistData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={raceStartlistData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={80} />
                   <YAxis />
-                  <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip cursor={{ fill: '#F3F4F6' }} content={(props) => <ChartTooltip {...props} />} />
                   <Bar dataKey="vistas" fill="#14b8a6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+             ) : (
+                <div className="flex justify-center items-center h-full text-neutral-400 font-medium">Sin datos aún</div>
+             )}
             </div>
           </div>
         </div>
@@ -395,15 +426,19 @@ NOTIFY pgrst, reload_schema;`}
           <h3 className="font-bold text-neutral-900 mb-6">Equipos Más Vistos</h3>
           <div className="h-80 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="min-w-[600px] h-full">
+            {teamData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={teamData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={80} />
                   <YAxis />
-                  <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip cursor={{ fill: '#F3F4F6' }} content={(props) => <ChartTooltip {...props} />} />
                   <Bar dataKey="vistas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+             ) : (
+                <div className="flex justify-center items-center h-full text-neutral-400 font-medium">Sin datos aún</div>
+             )}
             </div>
           </div>
         </div>

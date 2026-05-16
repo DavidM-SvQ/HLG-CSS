@@ -1,14 +1,15 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { useUrlState } from "../../../hooks/useUrlState";
 
 interface TeamCyclistsTableProps {
   cyclistStats: any[];
 }
 
 export const TeamCyclistsTable = ({ cyclistStats }: TeamCyclistsTableProps) => {
-  const [sortColumn, setSortColumn] = useState<string>("puntos");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortColumn, setSortColumn] = useUrlState<string>("teamCyclistsSortCol", "puntos");
+  const [sortDirection, setSortDirection] = useUrlState<"asc" | "desc">("teamCyclistsSortDir", "desc");
 
   const sortedStats = useMemo(() => {
     return [...cyclistStats].sort((a, b) => {

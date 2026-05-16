@@ -6,47 +6,9 @@ import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
+import { Button } from "../ui/button";
 
-function MultiSelect({ options, value, onChange, placeholder }: { options: {value: string, label: string}[], value: string[], onChange: (v: string[]) => void, placeholder: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setIsOpen(!isOpen)} className="px-3 py-1.5 bg-white border border-neutral-200 rounded-md text-sm text-neutral-700 flex items-center justify-between min-w-[150px] shadow-sm hover:bg-neutral-50">
-        <span className="truncate">{value.length === 0 ? placeholder : `${placeholder} (${value.length})`}</span>
-        <ChevronDown className="w-4 h-4 ml-2 text-neutral-400" />
-      </button>
-      {isOpen && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-full min-w-[200px] bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          <div className="p-2 flex flex-col gap-1">
-             <label className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded cursor-pointer">
-               <input type="checkbox" checked={value.length === 0} onChange={() => onChange([])} className="rounded text-blue-600 focus:ring-blue-500" />
-               <span className="text-sm font-medium">Todos</span>
-             </label>
-             <div className="h-px bg-neutral-100 my-1"></div>
-             {options.map(opt => (
-               <label key={opt.value} className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded cursor-pointer">
-                 <input type="checkbox" checked={value.includes(opt.value)} onChange={(e) => {
-                   if (e.target.checked) onChange([...value, opt.value]);
-                   else onChange(value.filter(v => v !== opt.value));
-                 }} className="rounded text-blue-600 focus:ring-blue-500" />
-                 <span className="text-sm truncate">{opt.label}</span>
-               </label>
-             ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+import { MultiSelect } from "../ui/multi-select";
 
 export interface CyclistDetailViewProps {
   files: any;
@@ -306,16 +268,16 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               ref={cyclistDetailRef}
             >
               {isCyclistDetailExpanded && (
-                <button
+                <Button variant="outline"
                   onClick={() => setIsCyclistDetailExpanded(false)}
                   className="fixed top-8 right-8 p-3 bg-neutral-800 text-white rounded-full shadow-2xl z-[60] copy-button-ignore hover:bg-neutral-700 transition-all cursor-pointer"
                 >
                   <X className="w-5 h-5" />
-                </button>
+                </Button>
               )}
               {!isCyclistDetailExpanded && (
                 <div className="absolute top-4 right-4 flex gap-2 z-10 copy-button-ignore">
-                  <button
+                  <Button variant="outline"
                     onClick={() =>
                       setIsCyclistDetailExpanded(
                         !isCyclistDetailExpanded,
@@ -333,8 +295,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     ) : (
                       <Maximize2 className="w-4 h-4" />
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="outline"
                     onClick={() => handleCopyImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
                     disabled={!!isCyclistDetailCopying}
                     title="Copiar imagen"
@@ -350,8 +312,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     ) : (
                       <Copy className="w-4 h-4" />
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="outline"
                     onClick={() => handleDownloadImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
                     disabled={isCyclistDetailDownloading}
                     title="Descargar imagen"
@@ -367,8 +329,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     ) : (
                       <Download className="w-4 h-4" />
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost" size="icon"
                     onClick={handleCopyText}
                     disabled={isCyclistDetailTextCopying}
                     title="Copiar texto"
@@ -385,7 +347,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                       <FileText className="w-4 h-4 mr-1.5" />
                     )}
                     Texto
-                  </button>
+                  </Button>
                 </div>
               )}
               <div className="flex flex-col bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm mt-6">
@@ -475,10 +437,10 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                   <div className="flex flex-col gap-1.5 w-full sm:w-auto">
                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Fecha (Compuesto)</span>
                     <div className="flex bg-neutral-200/50 p-1 rounded-lg w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      <button onClick={() => setFilterMode("quick")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "quick" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Atajos</button>
-                      <button onClick={() => setFilterMode("daily")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "daily" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Diario</button>
-                      <button onClick={() => setFilterMode("monthly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "monthly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Mensual</button>
-                      <button onClick={() => setFilterMode("yearly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "yearly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Anual</button>
+                      <Button variant="outline" onClick={() => setFilterMode("quick")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "quick" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Atajos</Button>
+                      <Button variant="outline" onClick={() => setFilterMode("daily")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "daily" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Diario</Button>
+                      <Button variant="outline" onClick={() => setFilterMode("monthly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "monthly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Mensual</Button>
+                      <Button variant="outline" onClick={() => setFilterMode("yearly")} className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap", filterMode === "yearly" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-600 hover:text-neutral-900")}>Anual</Button>
                     </div>
                   </div>
 
@@ -575,7 +537,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                   </div>
                 </div>
                 <div className="ml-auto flex items-center">
-                  <button onClick={() => {
+                  <Button variant="outline" onClick={() => {
                     setFilterMode("quick");
                     setDateRange("all");
                     setStartDate("");
@@ -586,7 +548,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     setCyclistDetailTypeFilter([]);
                     setCyclistDetailPosFilter({ op: "<=", val: "" });
                     setCyclistDetailPointsFilterAdv({ op: ">=", val: "" });
-                  }} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 border border-neutral-200 bg-white px-4 py-1.5 rounded-md hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">Limpiar Filtros</button>
+                  }} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 border border-neutral-200 bg-white px-4 py-1.5 rounded-md hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">Limpiar Filtros</Button>
                 </div>
               </div>
             </div>

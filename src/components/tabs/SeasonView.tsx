@@ -1,22 +1,15 @@
-import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
-import { SeasonViewContext } from "./season/SeasonViewContext";
+import React from "react";
+import { SeasonViewProvider } from "./season/SeasonViewProvider";
 import { SeasonHighlights } from "./season/SeasonHighlights";
 import { SeasonCyclistsTab } from "./season/SeasonCyclistsTab";
 import { SeasonWinsTab } from "./season/SeasonWinsTab";
 import { SeasonPointsTab } from "./season/SeasonPointsTab";
 import { SeasonMilestones } from "./season/SeasonMilestones";
-import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, TrendingUp, Calendar, AlertCircle, UserMinus, FileText, Download, BarChart3, Crown, Medal, Minimize2, LayoutGrid, X, User, History } from "lucide-react";
+import { BarChart3, Trophy, Users } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { getVal, formatNumberSpanish } from "../../lib/data-processing";
-import { domToBlob, domToDataUrl } from "modern-screenshot";
-import { expandNodeForCapture } from "../../lib/dom-utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
-import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from "react";
-import { useUIState } from "./season/hooks/useUIState";
-import { useFiltersState } from "./season/hooks/useFiltersState";
+import { useUrlState } from "../../hooks/useUrlState";
 import { motion, AnimatePresence } from "motion/react";
-
-const CyclistDetailView = lazy(() => import("../modals/CyclistDetailView").then(m => ({ default: m.CyclistDetailView })));
+import { Button } from "../ui/button";
 
 
 export interface SeasonViewProps {
@@ -34,61 +27,11 @@ export interface SeasonViewProps {
 }
 
 export const SeasonView = (props: SeasonViewProps) => {
-  const { files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap } = props;
-
-  const [selectedCyclistDetail, setSelectedCyclistDetail] = React.useState<string | null>(null);
-
-  const {
-    seasonSubTab, setSeasonSubTab,
-    cyclistsSubTab, setCyclistsSubTab,
-  } = useUIState();
-
-  const {
-    evolutionTimeFilter, setEvolutionTimeFilter,
-    teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection,
-    historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection,
-    cyclistsMonthFilter, setCyclistsMonthFilter, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter,
-    topCyclistsLimit, setTopCyclistsLimit, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit,
-    topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection,
-    winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection,
-    cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection,
-    unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection,
-    undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection,
-    noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection,
-    teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter,
-    cyclistsTeamFilter, setCyclistsTeamFilter, cyclistsCategoryFilter, setCyclistsCategoryFilter,
-    cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsNameSearch, setCyclistsNameSearch,
-    unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter,
-    undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter,
-    noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter,
-    selectedEvolutionTeams, setSelectedEvolutionTeams,
-    leaderboardTeamsSearch, setLeaderboardTeamsSearch,
-    winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch,
-  } = useFiltersState();
-
-  const LINE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#d97706", "#7c3aed", "#0284c7", "#ea580c", "#c026d3", "#059669", "#4f46e5", "#b91c1c", "#0891b2", "#84cc16", "#db2777", "#f59e0b", "#65a30d", "#8b5cf6", "#14b8a6", "#ec4899", "#f97316"];
-
-  
-
-  const { filteredLeaderboard, teamWinsCount } = useMemo(() => {
-    const filteredLeaderboard = leaderboard?.filter((p) => p.nombreEquipo !== "No draft") || [];
-    const teamWinsCount: Record<string, number> = {};
-    filteredLeaderboard?.forEach((p) => {
-      if (p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]") {
-        teamWinsCount[p.nombreEquipo] = 0;
-      }
-    });
-    Object.values(raceWinners).forEach((teamName) => {
-      const name = teamName as string;
-      if (teamWinsCount[name] !== undefined) {
-        teamWinsCount[name]++;
-      }
-    });
-    return { filteredLeaderboard, teamWinsCount };
-  }, [leaderboard, raceWinners]);
+  const { files, uniqueRaces, leaderboard, raceWinners, cyclistMetadata } = props;
+  const [seasonSubTab, setSeasonSubTab] = useUrlState<"puntos" | "victorias" | "ciclistas">("seasonSubTab", "puntos");
 
   return (
-    <SeasonViewContext.Provider value={{cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, uniqueRaces, leaderboard, raceWinners, globalTeamPartialWinsCount, globalTeamWinsCount, cyclistMetadata, cyclistRoundMap, playerOrderMap, seasonSubTab, setSeasonSubTab, evolutionTimeFilter, setEvolutionTimeFilter, teamsSortColumn, setTeamsSortColumn, teamsSortDirection, setTeamsSortDirection, historyTeamFilter, setHistoryTeamFilter, historySortColumn, setHistorySortColumn, historySortDirection, setHistorySortDirection, cyclistsSubTab, setCyclistsSubTab, cyclistsMonthFilter, setCyclistsMonthFilter, topCyclistsLimit, setTopCyclistsLimit, noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter, noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit, selectedCyclistDetail, setSelectedCyclistDetail, LINE_COLORS, topTeamsSortColumn, setTopTeamsSortColumn, topTeamsSortDirection, setTopTeamsSortDirection, winsHistorySortColumn, setWinsHistorySortColumn, winsHistorySortDirection, setWinsHistorySortDirection, cyclistsSortColumn, setCyclistsSortColumn, cyclistsSortDirection, setCyclistsSortDirection, unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection, undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection, noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection, teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter, cyclistsTeamFilter, setCyclistsTeamFilter, cyclistsCategoryFilter, setCyclistsCategoryFilter, cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsNameSearch, setCyclistsNameSearch, unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter, undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter, noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter, selectedEvolutionTeams, setSelectedEvolutionTeams, leaderboardTeamsSearch, setLeaderboardTeamsSearch, winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch, formatNumberSpanish, getVal, filteredLeaderboard, teamWinsCount}}>
+    <SeasonViewProvider {...props}>
           <div className="space-y-8">
             <SeasonHighlights 
               leaderboard={leaderboard} 
@@ -104,7 +47,7 @@ export const SeasonView = (props: SeasonViewProps) => {
         { id: "victorias", label: "Victorias", icon: Trophy },
         { id: "ciclistas", label: "Ciclistas", icon: Users },
       ].map((tab) => (
-        <button
+        <Button variant="outline"
           key={tab.id}
           onClick={() => setSeasonSubTab(tab.id as any)}
           className={cn(
@@ -116,7 +59,7 @@ export const SeasonView = (props: SeasonViewProps) => {
         >
           <tab.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
           {tab.label}
-        </button>
+        </Button>
       ))}
     </div>
   </div>
@@ -159,7 +102,7 @@ export const SeasonView = (props: SeasonViewProps) => {
 
   <SeasonMilestones leaderboard={leaderboard} files={files} cyclistMetadata={cyclistMetadata} raceWinners={raceWinners} />
 </div>
-    </SeasonViewContext.Provider>
+    </SeasonViewProvider>
   );
 };
 

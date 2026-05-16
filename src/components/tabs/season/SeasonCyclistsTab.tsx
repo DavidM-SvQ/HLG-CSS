@@ -9,6 +9,7 @@ import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Tr
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Bar, BarChart, Cell, LabelList, Tooltip } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { TableSkeleton } from "../../ui/Skeleton";
+import { Button } from "../../ui/button";
 
 
 export function SeasonCyclistsTab() {
@@ -37,7 +38,7 @@ export function SeasonCyclistsTab() {
                                 },
                                 { id: "detalle", label: "Detalle ciclista", icon: Users },
                               ].map((tab) => (
-                                <button
+                                <Button variant="outline"
                                   key={tab.id}
                                   onClick={() =>
                                     setCyclistsSubTab(tab.id as any)
@@ -51,7 +52,7 @@ export function SeasonCyclistsTab() {
                                 >
                                   <tab.icon className="w-4 h-4" />
                                   {tab.label}
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           </div>

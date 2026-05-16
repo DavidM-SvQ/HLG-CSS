@@ -4,6 +4,7 @@ import { Award, Trophy, Crown, Flag, Maximize2, Minimize2, Copy, Download, Globe
 import { expandNodeForCapture } from "../../../lib/dom-utils";
 import { cn } from "../../../lib/utils";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
+import { Button } from "../../ui/button";
 
 export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: any[]; files: any; cyclistMetadata: any; raceWinners?: Record<string, string> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -636,17 +637,17 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
             </div>
           </div>
           <div className="flex items-center gap-2 copy-button-ignore">
-            <button onClick={handleDownload} disabled={isCopying} className="p-2 sm:px-4 sm:py-2 flex items-center justify-center gap-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+            <Button variant="ghost" size="sm" onClick={handleDownload} disabled={isCopying} className="p-2 sm:px-4 sm:py-2 flex items-center justify-center gap-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-semibold">Descargar</span>
-            </button>
-            <button onClick={handleCopy} disabled={isCopying} className="p-2 sm:px-4 sm:py-2 flex items-center justify-center gap-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCopy} disabled={isCopying} className="p-2 sm:px-4 sm:py-2 flex items-center justify-center gap-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
               <Copy className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-semibold">{isCopying ? "Copiando..." : "Copiar"}</span>
-            </button>
-            <button onClick={() => setIsExpanded(!isExpanded)} className="p-2 rounded-lg bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-2 rounded-lg bg-white border border-neutral-200 text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
               {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
+            </Button>
           </div>
         </div>
 
