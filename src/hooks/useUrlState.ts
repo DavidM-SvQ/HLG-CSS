@@ -1,20 +1,37 @@
 import { useCallback, useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
+
+let pendingParams: URLSearchParams | null = null;
+let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((prev: T) => T)) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  const stringifiedInitialValue = JSON.stringify(initialValue);
   const initialValueRef = useRef(initialValue);
+  
   useEffect(() => {
-    initialValueRef.current = initialValue;
-  }, [initialValue]);
+    try {
+      if (stringifiedInitialValue) {
+        initialValueRef.current = JSON.parse(stringifiedInitialValue);
+      } else {
+        initialValueRef.current = initialValue;
+      }
+    } catch {
+      initialValueRef.current = initialValue;
+    }
+  }, [stringifiedInitialValue, initialValue]);
+
 
   // Parse value from URL
   const getUrlValue = useCallback(() => {
     const val = searchParams.get(key);
     if (val !== null) {
       if (Array.isArray(initialValueRef.current)) {
-        return val.split(",") as unknown as T;
+        if (val.trim() === "") return [] as unknown as T;
+        return val.split(",").filter(v => v.trim() !== "") as unknown as T;
       }
       if (typeof initialValueRef.current === "number") {
         return Number(val) as unknown as T;
@@ -39,13 +56,14 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const skipSyncRef = useRef(false);
 
   // Sync from URL to state if URL changes externally (e.g. back button)
   const stateStr = JSON.stringify(state);
   const urlValStr = JSON.stringify(getUrlValue());
   
   useEffect(() => {
-    if (stateStr !== urlValStr) {
+    if (!skipSyncRef.current && stateStr !== urlValStr) {
       setState(getUrlValue());
     }
   }, [urlValStr, stateStr, getUrlValue]);
@@ -55,45 +73,52 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
       const prev = stateRef.current;
       const computedVal = typeof newVal === "function" ? (newVal as Function)(prev) : newVal;
 
+      skipSyncRef.current = true;
       setState(computedVal);
       // Immediately update ref so consecutive synchronous calls see the newest state
       stateRef.current = computedVal;
 
-      setSearchParams(
-        (prevParams) => {
-          const nextParams = new URLSearchParams(prevParams);
+      let stringVal = "";
+      if (Array.isArray(computedVal)) {
+        stringVal = computedVal.join(",");
+      } else if (typeof computedVal === "object" && computedVal !== null) {
+        stringVal = JSON.stringify(computedVal);
+        if (Object.keys(computedVal).length === 0) stringVal = "";
+      } else {
+        stringVal = String(computedVal);
+      }
 
-          let stringVal = "";
-          if (Array.isArray(computedVal)) {
-            stringVal = computedVal.join(",");
-          } else if (typeof computedVal === "object" && computedVal !== null) {
-            stringVal = JSON.stringify(computedVal);
-            if (Object.keys(computedVal).length === 0) stringVal = "";
-          } else {
-            stringVal = String(computedVal);
-          }
+      if (!pendingParams) {
+        pendingParams = new URLSearchParams(window.location.search);
+      }
 
-          if (
-            stringVal === "" ||
-            stringVal === "[]" ||
-            computedVal === null ||
-            computedVal === undefined ||
-            // Don't clutter URL with default values
-            (typeof computedVal !== 'object' && computedVal === initialValue) ||
-            (Array.isArray(computedVal) && computedVal.length === 0) ||
-            (typeof computedVal === 'object' && JSON.stringify(computedVal) === JSON.stringify(initialValue))
-          ) {
-            nextParams.delete(key);
-          } else {
-            nextParams.set(key, stringVal);
-          }
-          
-          return nextParams;
-        },
-        { replace: true }
-      );
+      if (
+        stringVal === "" ||
+        stringVal === "[]" ||
+        computedVal === null ||
+        computedVal === undefined ||
+        (typeof computedVal !== 'object' && computedVal === initialValueRef.current) ||
+        (Array.isArray(computedVal) && computedVal.length === 0) ||
+        (typeof computedVal === 'object' && JSON.stringify(computedVal) === JSON.stringify(initialValueRef.current))
+      ) {
+        pendingParams.delete(key);
+      } else {
+        pendingParams.set(key, stringVal);
+      }
+
+      if (flushTimeout) {
+        clearTimeout(flushTimeout);
+      }
+
+      flushTimeout = setTimeout(() => {
+        skipSyncRef.current = false;
+        if (pendingParams) {
+          navigate(`${window.location.pathname}?${pendingParams.toString()}${window.location.hash}`, { replace: true });
+          pendingParams = null;
+        }
+      }, 0);
     },
-    [key, setSearchParams, initialValue]
+    [key, navigate]
   );
 
   return [state, setUrlState];

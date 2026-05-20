@@ -1,6 +1,6 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Star } from "lucide-react";
-import { ExportToolbar } from "../../ui/ExportToolbar";
+import { ReportCard } from "../../ui/ReportCard";
 import { cn } from "../../../lib/utils";
 
 interface BestPicksReportProps {
@@ -13,18 +13,23 @@ export const BestPicksReport: React.FC<BestPicksReportProps> = ({
   monthsText,
 }) => {
   const ref12 = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (!monthReportData) return null;
 
   return (
-    <div className="mt-8 bg-neutral-50 p-5 rounded-xl border border-neutral-200 overflow-x-auto" ref={ref12}>
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start mb-6 gap-4">
-        <h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
-          <Star className="w-5 h-5 text-yellow-500" /> Mejores picks por equipo {monthsText ? ` [${monthsText}]` : ""}
-        </h3>
-        <ExportToolbar targetRef={ref12} filename="mejores-picks" />
-      </div>
-      
+    <ReportCard
+      title={`Mejores picks por equipo ${monthsText ? ` [${monthsText}]` : ""}`}
+      icon={<Star />}
+      filename="mejores-picks"
+      ref={ref12}
+      className="mt-8"
+      toolbarProps={{
+        isExpanded,
+        onExpand: () => setIsExpanded(!isExpanded)
+      }}
+      bodyClassName={cn("bg-neutral-50 px-6 py-5 rounded-b-xl border-t border-neutral-100 overflow-auto crosshair-container", !isExpanded && "max-h-[800px]")}
+    >
       <div className="space-y-3 max-w-3xl">
          {monthReportData.bestPicks.map((p: any, idx: number) => {
            const maxPicks = monthReportData.bestPicks[0]?.count || 1;
@@ -51,6 +56,6 @@ export const BestPicksReport: React.FC<BestPicksReportProps> = ({
            <p className="text-sm text-neutral-500 italic">No hay datos suficientes de rondas.</p>
          )}
       </div>
-    </div>
+    </ReportCard>
   );
 };

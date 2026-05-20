@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Trophy, Crown, Medal } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export const SeasonHighlights = ({
   leaderboard,
@@ -37,129 +38,145 @@ export const SeasonHighlights = ({
   );
   const winnerNames = topWinnerTeams.join(" / ");
 
-  return (
-    <>
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Trophy className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-              Carreras Terminadas
-            </p>
-            <p className="text-2xl font-bold text-neutral-900">
-              {uniqueRaces?.length || 0} <span className="text-sm font-medium text-neutral-500">/ {files?.carreras?.data?.length || 0} ({files?.carreras?.data?.length ? Math.round(((uniqueRaces?.length || 0) / files.carreras.data.length) * 100) : 0}%)</span>
-            </p>
-          </div>
-        </div>
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
 
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
-            <Crown className="w-6 h-6" />
+  return (
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+      className="flex flex-col gap-6"
+    >
+      {/* KPIs Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-100/50 rounded-full blur-2xl group-hover:bg-blue-200/50 transition-colors" />
+          <div className="p-3.5 bg-blue-500/10 text-blue-600 rounded-2xl shrink-0 z-10 block backdrop-blur-md">
+            <Trophy className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          <div className="z-10">
+            <p className="text-[11px] font-bold text-blue-500/80 uppercase tracking-widest mb-1">
+              Carreras Term.
+            </p>
+            <p className="text-3xl font-black text-neutral-900 tracking-tight">
+              {uniqueRaces?.length || 0} <span className="text-sm font-semibold text-neutral-400">/ {files?.carreras?.data?.length || 0}</span>
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
+           <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-100/50 rounded-full blur-2xl group-hover:bg-amber-200/50 transition-colors" />
+          <div className="p-3.5 bg-amber-500/10 text-amber-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
+            <Crown className="w-7 h-7" />
+          </div>
+          <div className="z-10">
+            <p className="text-[11px] font-bold text-amber-500/80 uppercase tracking-widest mb-1">
               Líder Actual
             </p>
-            <p className="text-xl font-bold text-neutral-900">
+            <p className="text-xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1">
               {leaderNames || "-"}
             </p>
-            <p className="text-xs text-neutral-500">
-              {maxPoints || 0} puntos
+            <p className="text-sm font-semibold text-amber-600/80 mt-0.5">
+              {maxPoints || 0} pts
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-            <Medal className="w-6 h-6" />
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-100/50 rounded-full blur-2xl group-hover:bg-emerald-200/50 transition-colors" />
+          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
+            <Medal className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          <div className="z-10">
+            <p className="text-[11px] font-bold text-emerald-500/80 uppercase tracking-widest mb-1">
               Más Victorias
             </p>
-            <p className="text-xl font-bold text-neutral-900">
+            <p className="text-xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1">
               {winnerNames || "-"}
             </p>
-            <p className="text-xs text-neutral-500">
-              {maxWins} victorias
+            <p className="text-sm font-semibold text-emerald-600/80 mt-0.5">
+              {maxWins} wins
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Virtual Podium */}
       {top3.length > 0 && (
-        <div className="flex flex-col items-center justify-end pt-12 pb-8 bg-white border border-neutral-200 rounded-2xl shadow-sm">
-          <h3 className="text-lg font-bold mb-8 text-neutral-800 uppercase tracking-widest">
+        <motion.div variants={itemVariants} className="flex flex-col items-center justify-end pt-12 pb-0 bg-white border border-neutral-200 rounded-3xl shadow-sm overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-neutral-50/50 to-transparent pointer-events-none" />
+          <h3 className="text-sm font-black mb-10 text-neutral-400 uppercase tracking-[0.2em] relative z-10">
             Podio Virtual
           </h3>
-          <div className="flex items-end gap-2 md:gap-8">
+          <div className="flex items-end gap-2 md:gap-8 px-4 relative z-10">
             {/* 2nd Place */}
             {top3[1] && (
-              <div className="flex flex-col items-center">
-                <div className="mb-2 text-center">
+              <motion.div whileHover={{ y: -4 }} className="flex flex-col items-center">
+                <div className="mb-3 text-center">
                   <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
                     {top3[1].nombreEquipo}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs font-semibold text-neutral-500">
                     {top3[1].puntos} pts
                   </p>
                 </div>
-                <div className="w-24 md:w-32 h-32 bg-slate-300 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                  <span className="text-4xl font-black text-slate-400">
+                <div className="w-24 md:w-32 h-32 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-2xl flex items-start justify-center shadow-[inset_0_2px_10px_rgba(255,255,255,1)] relative overflow-hidden border border-slate-200 border-b-0 pt-4">
+                  <span className="text-5xl font-black text-slate-300 drop-shadow-sm">
                     2
                   </span>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* 1st Place */}
             {top3[0] && (
-              <div className="flex flex-col items-center">
-                <Crown className="w-8 h-8 text-yellow-500 mb-2 animate-bounce" />
-                <div className="mb-2 text-center">
+              <motion.div whileHover={{ y: -4 }} className="flex flex-col items-center z-10">
+                <motion.div 
+                   animate={{ y: [0, -8, 0] }} 
+                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Crown className="w-10 h-10 text-amber-400 mb-2 drop-shadow-md fill-amber-400/20" />
+                </motion.div>
+                <div className="mb-3 text-center">
                   <p className="text-base font-black text-neutral-900 truncate w-28 md:w-40">
                     {top3[0].nombreEquipo}
                   </p>
-                  <p className="text-sm font-bold text-yellow-600">
+                  <p className="text-sm font-black text-amber-500">
                     {top3[0].puntos} pts
                   </p>
                 </div>
-                <div className="w-28 md:w-40 h-48 bg-yellow-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden border-x-4 border-t-4 border-yellow-300">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
-                  <span className="text-6xl font-black text-yellow-600">
+                <div className="w-28 md:w-40 h-44 bg-gradient-to-t from-amber-200 to-amber-100 rounded-t-2xl flex items-start justify-center shadow-[inset_0_2px_15px_rgba(255,255,255,1),_0_-10px_30px_rgba(251,191,36,0.2)] relative overflow-hidden border-2 border-amber-300 border-b-0 pt-6">
+                  <span className="text-7xl font-black text-amber-400/50 drop-shadow-sm">
                     1
                   </span>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* 3rd Place */}
             {top3[2] && (
-              <div className="flex flex-col items-center">
-                <div className="mb-2 text-center">
+              <motion.div whileHover={{ y: -4 }} className="flex flex-col items-center">
+                <div className="mb-3 text-center">
                   <p className="text-sm font-bold text-neutral-700 truncate w-24 md:w-32">
                     {top3[2].nombreEquipo}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs font-semibold text-neutral-500">
                     {top3[2].puntos} pts
                   </p>
                 </div>
-                <div className="w-24 md:w-32 h-24 bg-orange-400 rounded-t-xl flex items-center justify-center shadow-inner relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                  <span className="text-4xl font-black text-orange-600">
+                <div className="w-24 md:w-32 h-24 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-2xl flex items-start justify-center shadow-[inset_0_2px_10px_rgba(255,255,255,1)] relative overflow-hidden border border-orange-200 border-b-0 pt-4">
+                  <span className="text-5xl font-black text-orange-300 drop-shadow-sm">
                     3
                   </span>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
-    </>
+    </motion.div>
   );
 };

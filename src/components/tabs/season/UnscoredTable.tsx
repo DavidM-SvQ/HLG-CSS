@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 interface UnscoredTableProps {
   tableRef: React.RefObject<HTMLDivElement | null>;
@@ -25,6 +26,14 @@ export function UnscoredTable({
   maxDias,
   isUnscoredCopying
 }: UnscoredTableProps) {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
   
   const renderSortIcon = (column: string) => {
     if (unscoredCyclistsSortColumn !== column) return null;
@@ -35,17 +44,35 @@ export function UnscoredTable({
     );
   };
 
+  const responsiveWrapperRef = React.useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredAndSortedData.length,
+    getScrollElement: () => responsiveWrapperRef.current,
+    estimateSize: () => isMobile ? 120 : 32,
+    overscan: 10,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom = virtualItems.length > 0
+    ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end
+    : 0;
+
   return (
     <div
       ref={tableRef}
       className={cn(
-        "overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 scrollbar-thin",
-        isUnscoredExpanded ? "max-h-none" : "h-[800px]"
+        "overflow-hidden bg-white border-t border-neutral-100",
+        isUnscoredExpanded ? "max-h-none" : "h-[800px] px-2 md:px-0"
       )}
     >
-      <div className="table-responsive-wrapper overflow-auto w-full max-h-[600px]">
-        <table className="min-w-full text-xs text-left bg-white rounded-xl shadow-sm">
-          <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
+      <div 
+        ref={responsiveWrapperRef}
+        className="table-responsive-wrapper overflow-auto w-full max-h-[600px] scrollbar-thin pb-4"
+      >
+        <table className="w-full text-xs text-left block md:table bg-white rounded-xl shadow-sm md:shadow-none">
+          <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
             <tr className="divide-x divide-neutral-100">
               {[
                 { id: "jugador", label: "Jugador" },
@@ -70,74 +97,98 @@ export function UnscoredTable({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
+          <tbody className="divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
             {filteredAndSortedData.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic text-[11px]">
+              <tr className="block">
+                <td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic text-[11px] block w-full">
                   No hay ciclistas sin puntuar que coincidan con los criterios.
                 </td>
               </tr>
             ) : (
-              filteredAndSortedData.map((c, idx) => {
-                let isHiddenVisual = false;
-                if (isUnscoredCopying) {
-                  if (isUnscoredCopying === "full") isHiddenVisual = false;
-                  else {
-                    const pageNum = parseInt((isUnscoredCopying as string).substring(1));
-                    const start = (pageNum - 1) * 50;
-                    const end = start + 50;
-                    isHiddenVisual = !(idx >= start && idx < end);
+              <>
+                {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={5} /></tr>}
+                {virtualItems.map((virtualRow) => {
+                  const idx = virtualRow.index;
+                  const c = filteredAndSortedData[idx];
+                  let isHiddenVisual = false;
+                  if (isUnscoredCopying) {
+                    if (isUnscoredCopying === "full") isHiddenVisual = false;
+                    else {
+                      const pageNum = parseInt((isUnscoredCopying as string).substring(1));
+                      const start = (pageNum - 1) * 50;
+                      const end = start + 50;
+                      isHiddenVisual = !(idx >= start && idx < end);
+                    }
                   }
-                }
 
-                if (isHiddenVisual && isUnscoredCopying) return null;
+                  if (isHiddenVisual && isUnscoredCopying) return null;
 
-                return (
-                  <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
-                    <td className="px-4 py-1 text-neutral-600 whitespace-nowrap">
-                      <span className="font-medium">{c.nombreEquipo}</span>{" "}
-                      <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span>
-                    </td>
-                    <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
-                      {c.ciclista}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-1 text-center font-mono whitespace-nowrap",
-                        ["01", "02", "03", "1", "2", "3"].includes(c.ronda)
-                          ? "bg-yellow-50 text-yellow-700 font-bold"
-                          : "text-neutral-500"
-                      )}
+                  return (
+                    <tr 
+                      key={virtualRow.key} 
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      className="hover:bg-neutral-50 transition-colors text-[11px] md:divide-x md:divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100"
                     >
-                      {c.ronda}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-1 text-center font-mono whitespace-nowrap",
-                        c.carreras === 0
-                          ? "text-red-600 font-bold"
-                          : c.carreras === maxCarreras && maxCarreras > 0
-                          ? "text-green-600 font-bold"
-                          : "text-neutral-600"
-                      )}
-                    >
-                      {c.carreras}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-1 text-center font-mono whitespace-nowrap",
-                        c.dias === 0
-                          ? "text-red-600 font-bold"
-                          : c.dias === maxDias && maxDias > 0
-                          ? "text-green-600 font-bold"
-                          : "text-neutral-600"
-                      )}
-                    >
-                      {c.dias}
-                    </td>
-                  </tr>
-                );
-              })
+                      <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1 bg-neutral-50/50 md:bg-transparent rounded-t-xl md:rounded-none">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-semibold md:font-medium text-neutral-800 md:text-neutral-600 truncate">{c.nombreEquipo}</span>{" "}
+                          <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                        <span className="font-bold text-neutral-900 truncate text-sm md:text-[11px]">{c.ciclista}</span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums",
+                            ["01", "02", "03", "1", "2", "3"].includes(c.ronda)
+                              ? "bg-yellow-50 md:bg-transparent text-yellow-700 font-bold px-2 py-0.5 rounded md:p-0"
+                              : "text-neutral-500"
+                          )}
+                        >
+                          {c.ronda}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carreras</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums text-sm md:text-[11px]",
+                            c.carreras === 0
+                              ? "text-red-600 font-bold"
+                              : c.carreras === maxCarreras && maxCarreras > 0
+                              ? "text-green-600 font-bold"
+                              : "text-neutral-600"
+                          )}
+                        >
+                          {c.carreras}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-neutral-50/30 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums text-sm md:text-[11px]",
+                            c.dias === 0
+                              ? "text-red-600 font-bold"
+                              : c.dias === maxDias && maxDias > 0
+                              ? "text-green-600 font-bold"
+                              : "text-neutral-600"
+                          )}
+                        >
+                          {c.dias}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {paddingBottom > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingBottom}px`}} colSpan={5} /></tr>}
+              </>
             )}
           </tbody>
         </table>

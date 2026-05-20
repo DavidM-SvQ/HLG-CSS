@@ -1,11 +1,12 @@
 import React, { useState, useRef, useMemo } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { UserX, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { ExportToolbar } from "../../ui/ExportToolbar";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import { flushSync } from "react-dom";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
+import { ReportCard } from "../../ui/ReportCard";
 
 interface UndebutedCyclistsReportProps {
   files: any;
@@ -29,14 +30,14 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
   const undebutedTableRef = useRef<HTMLDivElement>(null);
   const { handleCopyImage: copyUndebutedImage, handleDownloadImage: downloadUndebutedImage, isCopying: isUndebutedTableCopyingState } = useTableScreenshot(undebutedTableRef);
   
-  const [undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn] = useState<string>("jugador");
-  const [undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection] = useState<"asc" | "desc">("asc");
+  const [undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn] = useUrlState<string>("undebutedSort", "jugador");
+  const [undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection] = useUrlState<"asc" | "desc">("undebutedDir", "asc");
   const [isUndebutedExpanded, setIsUndebutedExpanded] = useState(false);
   const [isUndebutedCopying, setIsUndebutedCopying] = useState<string | null>(null);
   const [isUndebutedTextCopying, setIsUndebutedTextCopying] = useState(false);
   
-  const [undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter] = useState<string>("all");
-  const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = useState<string[]>([]);
+  const [undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter] = useUrlState<string>("undebutedTeam", "all");
+  const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = useUrlState<string[]>("undebutedRounds", []);
   const [isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen] = useState(false);
 
   const undebutedList = useMemo(() => {
@@ -92,6 +93,26 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
     setTimeout(() => setIsUndebutedTextCopying(false), 2000);
   };
 
+  const prepareTableForCopy = (container: HTMLElement, subset?: string) => {
+    if (subset && subset !== "full") {
+      const pageNum = parseInt(subset.slice(1));
+      const startIdx = (pageNum - 1) * 50;
+      const endIdx = startIdx + 50;
+      
+      const rows = container.querySelectorAll("tbody tr");
+      rows.forEach((row, i) => {
+        if (i < startIdx || i >= endIdx) {
+          row.classList.add("hidden");
+        } else {
+          row.classList.remove("hidden");
+        }
+      });
+    } else {
+      const rows = container.querySelectorAll("tbody tr");
+      rows.forEach((row) => row.classList.remove("hidden"));
+    }
+  };
+
   const handleCopyUndebuted = async (subset?: "full" | string) => {
     if (isUndebutedCopying) return;
     flushSync(() => { setIsUndebutedCopying(subset || "full"); });
@@ -101,6 +122,7 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
         scale: 3,
         filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         backgroundColor: "#ffffff",
+        onBeforeCapture: (el: HTMLElement) => prepareTableForCopy(el, subset),
       });
     } finally {
       setIsUndebutedCopying(null);
@@ -114,93 +136,90 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
       scale: 3,
       filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
       backgroundColor: "#ffffff",
+      onBeforeCapture: (el: HTMLElement) => prepareTableForCopy(el, subset),
     });
   };
 
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-8">
-      <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
-        <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
-          <UserX className="w-5 h-5 text-neutral-400" />
-          Ciclistas sin debutar ({countFiltered})
-        </h3>
-        <p className="text-xs text-neutral-500 ">
-          Corredores arrastrados desde el draft que no han competido todavía
-          este año.
-        </p>
-        <div className="flex flex-wrap items-center gap-3 mt-1">
-          <ExportToolbar 
-            isExpanded={isUndebutedExpanded}
-            onExpand={() => setIsUndebutedExpanded(!isUndebutedExpanded)}
-            
-            onCopyText={handleCopyUndebutedText}
-            isTextCopying={isUndebutedTextCopying}
-            
-            onCopyImage={(range) => handleCopyUndebuted(range)}
-            isImageCopying={isUndebutedCopying}
-            imagePageCount={Math.ceil(countFiltered / 50)}
-            
-            onDownloadImage={(range) => handleDownloadUndebuted(range)}
-          />
-
-          <div className="relative">
-            <Button variant="outline"
-              onClick={() => setIsUndebutedRoundFilterOpen(!isUndebutedRoundFilterOpen)}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
-            >
-              <span className="truncate">
-                {undebutedCyclistsRoundFilter.length === 0
-                  ? "Todas las rondas"
-                  : `${undebutedCyclistsRoundFilter.length} rondas`}
-              </span>
-              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isUndebutedRoundFilterOpen && "rotate-180")} />
-            </Button>
-            {isUndebutedRoundFilterOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsUndebutedRoundFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
-                    {undebutedCyclistsRoundFilter.length > 0 && <Button variant="ghost" size="sm" onClick={() => setUndebutedCyclistsRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>}
+    <ReportCard
+      title={`Ciclistas sin debutar (${countFiltered})`}
+      subtitle="Corredores arrastrados desde el draft que no han competido todavía este año."
+      icon={<UserX />}
+      iconClassName="text-neutral-400"
+      filename="ciclistas-sin-debutar"
+      ref={undebutedTableRef}
+      className="mt-8"
+      toolbarProps={{
+        isExpanded: isUndebutedExpanded,
+        onExpand: () => setIsUndebutedExpanded(!isUndebutedExpanded),
+        onCopyText: handleCopyUndebutedText,
+        isTextCopying: isUndebutedTextCopying,
+        onCopyImage: handleCopyUndebuted,
+        isImageCopying: isUndebutedCopying,
+        imagePageCount: Math.ceil(countFiltered / 50),
+        onDownloadImage: handleDownloadUndebuted,
+        customFilters: (
+          <div className="flex flex-wrap items-center gap-1.5 ml-1 pt-1 sm:pt-0">
+            <div className="relative">
+              <Button variant="outline"
+                onClick={() => setIsUndebutedRoundFilterOpen(!isUndebutedRoundFilterOpen)}
+                className="flex items-center justify-between gap-2 px-3 h-8 text-[11px] font-semibold bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[120px] copy-button-ignore text-neutral-600"
+              >
+                <span className="truncate">
+                  {undebutedCyclistsRoundFilter.length === 0
+                    ? "Todas las rondas"
+                    : `${undebutedCyclistsRoundFilter.length} rondas`}
+                </span>
+                <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-400 transition-transform", isUndebutedRoundFilterOpen && "rotate-180")} />
+              </Button>
+              {isUndebutedRoundFilterOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsUndebutedRoundFilterOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto">
+                    <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
+                      {undebutedCyclistsRoundFilter.length > 0 && <Button variant="ghost" size="sm" onClick={() => setUndebutedCyclistsRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>}
+                    </div>
+                    {Array.from(new Set(Object.values(cyclistRoundMap) as string[])).filter(Boolean).sort((a, b) => a.localeCompare(b)).map((ronda) => (
+                      <label key={ronda} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                          checked={undebutedCyclistsRoundFilter.includes(ronda)}
+                          onChange={(e) => {
+                            if (e.target.checked) setUndebutedCyclistsRoundFilter([...undebutedCyclistsRoundFilter, ronda,]);
+                            else setUndebutedCyclistsRoundFilter(undebutedCyclistsRoundFilter.filter((r) => r !== ronda));
+                          }}
+                        />
+                        <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
+                      </label>
+                    ))}
                   </div>
-                  {Array.from(new Set(Object.values(cyclistRoundMap) as string[])).filter(Boolean).sort((a, b) => a.localeCompare(b)).map((ronda) => (
-                    <label key={ronda} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                        checked={undebutedCyclistsRoundFilter.includes(ronda)}
-                        onChange={(e) => {
-                          if (e.target.checked) setUndebutedCyclistsRoundFilter([...undebutedCyclistsRoundFilter, ronda,]);
-                          else setUndebutedCyclistsRoundFilter(undebutedCyclistsRoundFilter.filter((r) => r !== ronda));
-                        }}
-                      />
-                      <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
 
-          <select
-            value={undebutedCyclistsTeamFilter}
-            onChange={(e) => setUndebutedCyclistsTeamFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="all">Todos los equipos</option>
-            {leaderboard?.map((p) => (
-              <option key={p.nombreEquipo} value={p.nombreEquipo}>{p.nombreEquipo}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+            <select
+              value={undebutedCyclistsTeamFilter}
+              onChange={(e) => setUndebutedCyclistsTeamFilter(e.target.value)}
+              className="px-3 h-8 text-[11px] font-semibold bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 copy-button-ignore text-neutral-600"
+            >
+              <option value="all">Todos los equipos</option>
+              {leaderboard?.map((p) => (
+                <option key={p.nombreEquipo} value={p.nombreEquipo}>{p.nombreEquipo}</option>
+              ))}
+            </select>
+          </div>
+        )
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+    >
       <div
-        ref={undebutedTableRef}
-        className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 scrollbar-thin", isUndebutedExpanded ? "max-h-none" : "h-[800px]")}
+        className={cn("overflow-x-auto overflow-y-auto bg-white scrollbar-thin rounded-b-xl", isUndebutedExpanded ? "max-h-none" : "h-[800px]")}
       >
-        <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
-          <table className="min-w-full text-xs text-left bg-white rounded-xl shadow-sm rounded-lg">
-            <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
+        <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container md:px-0 px-2 pt-2">
+          <table className="w-full text-xs text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none md:rounded-lg block md:table border-collapse">
+            <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
               <tr className="divide-x divide-neutral-100">
                 <th
                   className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
@@ -231,9 +250,9 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
+            <tbody className="md:divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
               {(() => {
-                if (filtered.length === 0) return <tr><td colSpan={3} className="px-6 py-10 text-center text-neutral-400 italic text-[11px]">No hay ciclistas sin debutar que coincidan con los criterios.</td></tr>;
+                if (filtered.length === 0) return <tr className="block md:table-row"><td colSpan={3} className="px-6 py-10 text-center text-neutral-400 italic text-[11px] block md:table-cell w-full">No hay ciclistas sin debutar que coincidan con los criterios.</td></tr>;
 
                 return filtered.map((c, idx) => {
                   let isHiddenVisual = false;
@@ -250,10 +269,19 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
                   if (isHiddenVisual && isUndebutedCopying) return null;
 
                   return (
-                    <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
-                      <td className="px-4 py-1 text-neutral-600 font-medium"> {c.nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]"> [#{c.orden}]</span> </td>
-                      <td className="px-4 py-1 font-bold text-red-700"> {c.ciclista} </td>
-                      <td className={cn("px-4 py-1 text-center font-mono", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500")}> {c.ronda} </td>
+                    <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 group/row">
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2 rounded-t-xl md:rounded-none bg-neutral-50/50 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
+                        <div className="text-right md:text-left text-neutral-600 font-medium"> {c.nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]"> [#{c.orden}]</span> </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                        <div className="font-bold text-red-700 text-right md:text-left text-[12px] md:text-[11px]"> {c.ciclista} </div>
+                      </td>
+                      <td className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center font-mono tabular-nums rounded-b-xl md:rounded-none", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500 bg-neutral-50 md:bg-transparent border-t border-neutral-100 md:border-none")}>
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                        <div className="text-right md:text-center text-[13px] md:text-[11px]"> {c.ronda} </div>
+                      </td>
                     </tr>
                   );
                 });
@@ -262,6 +290,6 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
           </table>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

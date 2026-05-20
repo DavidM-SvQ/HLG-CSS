@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, ChevronDown, X } from 'lucide-react';
+import { Search, ChevronDown, X, Users } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
-import { ExportToolbar } from '../../ui/ExportToolbar';
+import { ReportCard } from '../../ui/ReportCard';
 import { useDebounce } from '../../../lib/hooks/useDebounce';
 import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useUrlState } from '../../../hooks/useUrlState';
@@ -39,8 +39,10 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   const [localSearch, setLocalSearch] = useState(draftSearchTerm);
   
   useEffect(() => {
-    setLocalSearch(draftSearchTerm);
-  }, [draftSearchTerm]);
+    if (draftSearchTerm !== localSearch) {
+      setLocalSearch(draftSearchTerm);
+    }
+  }, [draftSearchTerm, localSearch]);
   
   const debouncedSearch = useDebounce(localSearch, 300);
   
@@ -54,7 +56,23 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   const [draftTeamFilter, setDraftTeamFilter] = useUrlState<string[]>("draftTeamFilter", []);
   const [isDraftRoundFilterOpen, setIsDraftRoundFilterOpen] = useState(false);
   const [isDraftTeamFilterOpen, setIsDraftTeamFilterOpen] = useState(false);
-  const [draftStatsFilters, setDraftStatsFilters] = useUrlState<{ minPuntos?: number; minVictorias?: number; maxPuntos?: number; maxVictorias?: number; }>("draftStatsFilters", {});
+  const [draftStatsFilters, setDraftStatsFilters] = useUrlState<Record<string, number | undefined>>("draftStatsFilters", {});
+  const [localDraftStatsFilters, setLocalDraftStatsFilters] = useState<Record<string, number | undefined>>(draftStatsFilters);
+  
+  const debouncedDraftStatsFilters = useDebounce(localDraftStatsFilters, 500);
+
+  useEffect(() => {
+    if (JSON.stringify(debouncedDraftStatsFilters) !== JSON.stringify(draftStatsFilters)) {
+      setDraftStatsFilters(debouncedDraftStatsFilters);
+    }
+  }, [debouncedDraftStatsFilters, draftStatsFilters, setDraftStatsFilters]);
+  
+  useEffect(() => {
+    if (JSON.stringify(draftStatsFilters) !== JSON.stringify(localDraftStatsFilters)) {
+      setLocalDraftStatsFilters(draftStatsFilters);
+    }
+  }, [draftStatsFilters]); // This handles external pushes (like clear all)
+
   const [isDraftStatsFilterOpen, setIsDraftStatsFilterOpen] = useState(false);
   const [draftSortColumn, setDraftSortColumn] = useUrlState<string>("draftSortColumn", "Elección");
   const [draftSortDirection, setDraftSortDirection] = useUrlState<"asc" | "desc">("draftSortDirection", "asc");
@@ -132,12 +150,38 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
       let matchesStats = true;
       if (ciclista) {
         const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
+        const meta = cyclistMetadata[ciclista] || { carrerasDisputadas: 0, diasCompeticion: 0 };
+        
         const puntos = stats.puntos;
         const victorias = stats.victorias;
+        const carr = meta.carrerasDisputadas;
+        const dc = meta.diasCompeticion;
+        const ppc = carr > 0 ? puntos / carr : 0;
+        const ppd = dc > 0 ? puntos / dc : 0;
 
-        if (draftStatsFilters.minPuntos !== undefined && puntos < draftStatsFilters.minPuntos)
+        if (draftStatsFilters.minPuntos !== undefined && draftStatsFilters.minPuntos !== "" as any && puntos < draftStatsFilters.minPuntos)
           matchesStats = false;
-        if (draftStatsFilters.minVictorias !== undefined && victorias < draftStatsFilters.minVictorias)
+        if (draftStatsFilters.maxPuntos !== undefined && draftStatsFilters.maxPuntos !== "" as any && puntos > draftStatsFilters.maxPuntos)
+          matchesStats = false;
+        if (draftStatsFilters.minVictorias !== undefined && draftStatsFilters.minVictorias !== "" as any && victorias < draftStatsFilters.minVictorias)
+          matchesStats = false;
+        if (draftStatsFilters.maxVictorias !== undefined && draftStatsFilters.maxVictorias !== "" as any && victorias > draftStatsFilters.maxVictorias)
+          matchesStats = false;
+        if (draftStatsFilters.minCarr !== undefined && draftStatsFilters.minCarr !== "" as any && carr < draftStatsFilters.minCarr)
+          matchesStats = false;
+        if (draftStatsFilters.maxCarr !== undefined && draftStatsFilters.maxCarr !== "" as any && carr > draftStatsFilters.maxCarr)
+          matchesStats = false;
+        if (draftStatsFilters.minDc !== undefined && draftStatsFilters.minDc !== "" as any && dc < draftStatsFilters.minDc)
+          matchesStats = false;
+        if (draftStatsFilters.maxDc !== undefined && draftStatsFilters.maxDc !== "" as any && dc > draftStatsFilters.maxDc)
+          matchesStats = false;
+        if (draftStatsFilters.minPpc !== undefined && draftStatsFilters.minPpc !== "" as any && ppc < draftStatsFilters.minPpc)
+          matchesStats = false;
+        if (draftStatsFilters.maxPpc !== undefined && draftStatsFilters.maxPpc !== "" as any && ppc > draftStatsFilters.maxPpc)
+          matchesStats = false;
+        if (draftStatsFilters.minPpd !== undefined && draftStatsFilters.minPpd !== "" as any && ppd < draftStatsFilters.minPpd)
+          matchesStats = false;
+        if (draftStatsFilters.maxPpd !== undefined && draftStatsFilters.maxPpd !== "" as any && ppd > draftStatsFilters.maxPpd)
           matchesStats = false;
       }
 
@@ -201,170 +245,177 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Buscar ciclista..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-              />
-            </div>
-            
-            <div className="relative">
-              <Popover open={isDraftRoundFilterOpen} onOpenChange={isOpen => {
-                if (isOpen) {
-                  setIsDraftRoundFilterOpen(true);
-                  setIsDraftTeamFilterOpen(false);
-                  setIsDraftStatsFilterOpen(false);
-                } else {
-                  setIsDraftRoundFilterOpen(false);
-                }
-              }}>
-                <PopoverTrigger render={
-                  <Button variant="outline"
-                    className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
-                  >
-                    <span className="text-neutral-700">
-                      {draftRoundFilter.length === 0 ? "Todas las rondas" : `${draftRoundFilter.length} rondas`}
-                    </span>
-                    <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftRoundFilterOpen && "rotate-180")} />
-                  </Button>
-                } />
-                <PopoverContent className="w-56 p-0 rounded-xl shadow-xl z-50 py-2">
-                  <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
-                    {draftRoundFilter.length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => setDraftRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar</Button>
-                    )}
-                  </div>
-                  <div className="max-h-60 overflow-y-auto">
-                    {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Ronda"))).filter(Boolean)))
-                      .sort((a, b) => parseInt(a as string) - parseInt(b as string))
-                      .map((ronda) => (
-                        <label key={ronda as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
-                          <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftRoundFilter.includes(ronda as string)} onChange={() => {
-                            if (draftRoundFilter.includes(ronda as string)) {
-                                setDraftRoundFilter(draftRoundFilter.filter((r) => r !== ronda));
-                            } else {
-                                setDraftRoundFilter([...draftRoundFilter, ronda as string]);
-                            }
-                          }} />
-                          <span className="text-sm text-neutral-700">Ronda {ronda as string}</span>
-                        </label>
-                      ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="relative">
-              <Button variant="outline"
-                onClick={() => {
-                  setIsDraftTeamFilterOpen(!isDraftTeamFilterOpen);
-                  setIsDraftRoundFilterOpen(false);
-                  setIsDraftStatsFilterOpen(false);
-                }}
-                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[160px] justify-between cursor-pointer"
-              >
-                <span className="text-neutral-700">
-                  {draftTeamFilter.length === 0 ? "Todos los equipos" : `${draftTeamFilter.length} equipos`}
-                </span>
-                <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftTeamFilterOpen && "rotate-180")} />
-              </Button>
-
-              {isDraftTeamFilterOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
-                  <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Equipos</span>
-                    {draftTeamFilter.length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => setDraftTeamFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar</Button>
-                    )}
-                  </div>
-                  <div className="max-h-60 overflow-y-auto">
-                    {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Nombre_Equipo") || getVal(d, "Nombre_TG"))).filter(Boolean)))
-                      .sort()
-                      .map((team) => (
-                        <label key={team as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
-                          <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftTeamFilter.includes(team as string)} onChange={() => {
-                            if (draftTeamFilter.includes(team as string)) {
-                                setDraftTeamFilter(draftTeamFilter.filter((t) => t !== team));
-                            } else {
-                                setDraftTeamFilter([...draftTeamFilter, team as string]);
-                            }
-                          }} />
-                          <span className="text-sm text-neutral-700">{team as string}</span>
-                        </label>
-                      ))}
-                  </div>
-                </div>
+  const filtersUI = (
+    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+      <div className="relative flex-1 sm:w-64">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <input
+          type="text"
+          placeholder="Buscar ciclista..."
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+        />
+      </div>
+      
+      <div className="relative">
+        <Popover open={isDraftRoundFilterOpen} onOpenChange={isOpen => {
+          if (isOpen) {
+            setIsDraftRoundFilterOpen(true);
+            setIsDraftTeamFilterOpen(false);
+            setIsDraftStatsFilterOpen(false);
+          } else {
+            setIsDraftRoundFilterOpen(false);
+          }
+        }}>
+          <PopoverTrigger render={
+            <Button variant="outline"
+              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
+            >
+              <span className="text-neutral-700">
+                {draftRoundFilter.length === 0 ? "Todas las rondas" : `${draftRoundFilter.length} rondas`}
+              </span>
+              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftRoundFilterOpen && "rotate-180")} />
+            </Button>
+          } />
+          <PopoverContent className="w-56 p-0 rounded-xl shadow-xl z-50 py-2">
+            <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
+              {draftRoundFilter.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setDraftRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar</Button>
               )}
             </div>
+            <div className="max-h-60 overflow-y-auto">
+              {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Ronda"))).filter(Boolean)))
+                .sort((a, b) => parseInt(a as string) - parseInt(b as string))
+                .map((ronda) => (
+                  <label key={ronda as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftRoundFilter.includes(ronda as string)} onChange={() => {
+                      if (draftRoundFilter.includes(ronda as string)) {
+                          setDraftRoundFilter(draftRoundFilter.filter((r) => r !== ronda));
+                      } else {
+                          setDraftRoundFilter([...draftRoundFilter, ronda as string]);
+                      }
+                    }} />
+                    <span className="text-sm text-neutral-700">Ronda {ronda as string}</span>
+                  </label>
+                ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
 
-            <div className="relative">
-              <Button variant="outline"
-                onClick={() => {
-                  setIsDraftStatsFilterOpen(!isDraftStatsFilterOpen);
-                  setIsDraftTeamFilterOpen(false);
-                  setIsDraftRoundFilterOpen(false);
-                }}
-                className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
-              >
-                <span className="text-neutral-700">
-                  {Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "") ? "Est. activas" : "Estadísticas"}
-                </span>
-                <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
-              </Button>
-              {isDraftStatsFilterOpen && (
-                <div className="absolute top-full left-0 mt-1 w-96 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-3">
-                    <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Filtros de Estadísticas</span>
-                    {Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "") && (
-                      <Button variant="ghost" size="sm" onClick={() => setDraftStatsFilters({})} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar todo</Button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
-                    {[
-                      { key: "Points", label: "Puntos" },
-                      { key: "Wins", label: "Victorias (V)" },
-                      { key: "Carr", label: "Carreras (C)" },
-                      { key: "Dc", label: "Días Comp. (DC)" },
-                      { key: "Ppc", label: "Pto/Carrera (P/C)" },
-                      { key: "Ppd", label: "Pto/Día (P/D)" },
-                    ].map((stat) => (
-                      <div key={stat.key} className="space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase">{stat.label}</label>
-                        <div className="flex items-center gap-2">
-                          <input type="number" placeholder="Min" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(draftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
-                          <span className="text-neutral-400">-</span>
-                          <input type="number" placeholder="Max" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(draftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+      <div className="relative">
+        <Button variant="outline"
+          onClick={() => {
+            setIsDraftTeamFilterOpen(!isDraftTeamFilterOpen);
+            setIsDraftRoundFilterOpen(false);
+            setIsDraftStatsFilterOpen(false);
+          }}
+          className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[160px] justify-between cursor-pointer"
+        >
+          <span className="text-neutral-700">
+            {draftTeamFilter.length === 0 ? "Todos los equipos" : `${draftTeamFilter.length} equipos`}
+          </span>
+          <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftTeamFilterOpen && "rotate-180")} />
+        </Button>
+
+        {isDraftTeamFilterOpen && (
+          <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+            <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Equipos</span>
+              {draftTeamFilter.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setDraftTeamFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar</Button>
               )}
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Nombre_Equipo") || getVal(d, "Nombre_TG"))).filter(Boolean)))
+                .sort()
+                .map((team) => (
+                  <label key={team as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftTeamFilter.includes(team as string)} onChange={() => {
+                      if (draftTeamFilter.includes(team as string)) {
+                          setDraftTeamFilter(draftTeamFilter.filter((t) => t !== team));
+                      } else {
+                          setDraftTeamFilter([...draftTeamFilter, team as string]);
+                      }
+                    }} />
+                    <span className="text-sm text-neutral-700">{team as string}</span>
+                  </label>
+                ))}
             </div>
           </div>
-          
-          <ExportToolbar
-            isExpanded={isDraftTableExpanded}
-            onExpand={() => setIsDraftTableExpanded(!isDraftTableExpanded)}
-            onCopyImage={handleCopyDraftTableImage}
-            isImageCopying={isDraftTableCopying}
-            imagePageCount={Math.ceil(draftSortedData.length / 50)}
-            onDownloadImage={handleDownloadDraftTableImage}
-          />
-        </div>
-        
+        )}
+      </div>
+
+      <div className="relative">
+        <Button variant="outline"
+          onClick={() => {
+            setIsDraftStatsFilterOpen(!isDraftStatsFilterOpen);
+            setIsDraftTeamFilterOpen(false);
+            setIsDraftRoundFilterOpen(false);
+          }}
+          className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
+        >
+          <span className="text-neutral-700">
+            {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") ? "Est. activas" : "Estadísticas"}
+          </span>
+          <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
+        </Button>
+        {isDraftStatsFilterOpen && (
+          <div className="absolute top-full right-0 mt-1 w-[90vw] sm:w-[500px] bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-3">
+              <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Filtros de Estadísticas</span>
+              {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") && (
+                <Button variant="ghost" size="sm" onClick={() => setLocalDraftStatsFilters({})} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar todo</Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+              {[
+                { key: "Puntos", label: "Puntos" },
+                { key: "Victorias", label: "Victorias (V)" },
+                { key: "Carr", label: "Carreras (C)" },
+                { key: "Dc", label: "Días Comp. (DC)" },
+                { key: "Ppc", label: "Pto/Carrera (P/C)" },
+                { key: "Ppd", label: "Pto/Día (P/D)" },
+              ].map((stat) => (
+                <div key={stat.key} className="space-y-1">
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase">{stat.label}</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" placeholder="Min" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                    <span className="text-neutral-400">-</span>
+                    <input type="number" placeholder="Max" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <ReportCard
+      title="Elecciones del Draft"
+      subtitle="Catálogo completo de elecciones con estadísticas detalladas por ciclista en esta temporada."
+      icon={<Users />}
+      filename="draft-elecciones"
+      ref={draftTableRef}
+      headerExtra={filtersUI}
+      toolbarProps={{
+        isExpanded: isDraftTableExpanded,
+        onExpand: () => setIsDraftTableExpanded(!isDraftTableExpanded),
+        onCopyImage: handleCopyDraftTableImage,
+        isImageCopying: isDraftTableCopying,
+        imagePageCount: Math.ceil(draftSortedData.length / 50),
+        onDownloadImage: handleDownloadDraftTableImage
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+    >
+      <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
         {(draftRoundFilter.length > 0 || draftTeamFilter.length > 0 || Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "")) && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-100">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-500 font-medium mr-1">Filtros activos:</span>
             {draftRoundFilter.map(r => (
               <span key={'r'+r} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[11px] font-medium rounded-full border border-blue-100">
@@ -394,7 +445,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
             })}
             <Button variant="outline" 
                onClick={() => { setDraftRoundFilter([]); setDraftTeamFilter([]); setDraftStatsFilters({}); }}
-               className="text-[11px] text-neutral-500 hover:text-neutral-800 underline ml-2 transition-colors"
+               className="text-[11px] text-neutral-500 hover:text-neutral-800 underline ml-2 transition-colors border-none bg-transparent"
             >
               Limpiar todo
             </Button>
@@ -402,17 +453,11 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
         )}
       </div>
 
-      
-
-      <div className="flex justify-center mt-4">
-        <div ref={draftTableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[1200px] shadow-sm inline-block max-w-full", isDraftTableExpanded ? "fixed inset-4 z-50 max-h-none" : "")}>
-          {isDraftTableExpanded && (
-            <Button variant="ghost" size="icon" onClick={() => setIsDraftTableExpanded(false)} className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore">
-              <X className="w-6 h-6" />
-            </Button>
-          )}
-          <div ref={parentRef} className="table-responsive-wrapper overflow-auto w-full max-h-[600px] crosshair-container">
+      <div className="flex justify-center bg-neutral-50/30">
+        <div className={cn("w-full overflow-hidden relative max-h-[1200px]", isDraftTableExpanded ? "max-h-none" : "")}>
+          <div ref={parentRef} className={cn("table-responsive-wrapper overflow-auto w-full max-h-[800px] crosshair-container", isDraftTableExpanded && "max-h-none h-auto overflow-visible")}>
             <table className="w-full min-w-[1000px] text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
+
               <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10">
                 <tr>
                   {["Elección", "Nombre_Equipo", "Orden_Draft", "Ronda", "Ciclista", "Edad", "País", "Eq_Comp", "Puntos", "V", "C", "DC", "P/C", "P/D", "%"].map((col) => {
@@ -452,11 +497,11 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                       <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
                       <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
                       <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
+                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
+                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
+                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
+                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
+                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
                         {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
                       </td>
                     </tr>
@@ -468,6 +513,6 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

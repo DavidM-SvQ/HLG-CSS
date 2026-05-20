@@ -1,6 +1,6 @@
 import React from "react";
 import { Flag, X } from "lucide-react";
-import { ExportToolbar } from "../../../ui/ExportToolbar";
+import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
 import { cn } from "../../../../lib/utils";
 
@@ -18,38 +18,31 @@ export const RaceStageBreakdown = ({
   if (!(finalColumns.length > 1 || finalColumns.some((c: any) => /^\d+/.test(c.formatted)))) return null;
 
   return (
-    <div className="mt-12">
-      <div className="flex items-center justify-between border-b pb-3 mb-6">
-        <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-          <Flag className="w-5 h-5 text-blue-600" />
-          Clasificación por Etapas / Conceptos
-        </h3>
-        <ExportToolbar
-          isExpanded={isExpanded}
-          onExpand={() => setIsExpanded(!isExpanded)}
-          onCopyImage={onCopyImage}
-          isImageCopying={isCopying}
-          onDownloadImage={onDownloadImage}
-        />
-      </div>
-      <div className="flex justify-center w-full">
+    <ReportCard
+      title="Clasificación por Etapas / Conceptos"
+      icon={<Flag />}
+      iconClassName="text-blue-600"
+      filename="etapas-conceptos"
+      ref={tableRef}
+      className="mt-12"
+      toolbarProps={{
+        isExpanded: isExpanded,
+        onExpand: () => setIsExpanded(!isExpanded),
+        onCopyImage: onCopyImage,
+        isImageCopying: isCopying,
+        onDownloadImage: onDownloadImage
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+    >
+      <div className="flex justify-center w-full bg-neutral-50/30">
         <div
           id="race-breakdown-table"
-          ref={tableRef}
           className={cn(
-            "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full max-w-full",
-            isExpanded ? "fixed inset-4 z-50 max-h-none" : ""
+            "overflow-hidden relative max-h-[75vh] w-full max-w-full",
+            isExpanded ? "max-h-none" : ""
           )}
         >
-          {isExpanded && (
-            <Button variant="outline"
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          )}
-          <div className="table-responsive-wrapper overflow-auto w-full h-full">
+          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
               <thead className={cn("bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10")}>
                 <tr>
@@ -73,7 +66,7 @@ export const RaceStageBreakdown = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 italic md:not-italic">
-                {teamStagePoints.map((team: any) => {
+                {teamStagePoints.map((team: any, index: number) => {
                   const maxTotal = Math.max(
                     ...teamStagePoints.map((t: any) => t.total)
                   );
@@ -81,22 +74,32 @@ export const RaceStageBreakdown = ({
                     ...teamStagePoints.map((t: any) => t.total)
                   );
 
+                  const prevTeam = index > 0 ? teamStagePoints[index - 1] : null;
+                  const showSeparator = prevTeam && prevTeam.uniqueCyclists > 0 && team.uniqueCyclists === 0;
+
                   return (
-                    <tr
-                      key={team.jugador}
-                      className="hover:bg-blue-50/30 transition-colors group"
-                    >
-                      <td className="px-2 py-1 text-center font-mono text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
-                        {team.total > 0
-                          ? team.pos === 1
-                            ? "🥇"
-                            : team.pos === 2
-                            ? "🥈"
-                            : team.pos === 3
-                            ? "🥉"
-                            : team.pos
-                          : team.pos}
-                      </td>
+                    <React.Fragment key={team.jugador}>
+                      {showSeparator && (
+                        <tr className="bg-neutral-100/50 hover:bg-neutral-100/50" key={`separator-${team.jugador}`}>
+                          <td colSpan={finalColumns.length + 3} className="h-4 border-y border-neutral-200"></td>
+                        </tr>
+                      )}
+                      <tr
+                        className="hover:bg-blue-50/30 transition-colors group"
+                      >
+                        <td className="px-2 py-1 text-center font-mono tabular-nums text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
+                          {team.uniqueCyclists > 0
+                            ? team.total > 0
+                              ? team.pos === 1
+                                ? "🥇"
+                                : team.pos === 2
+                                ? "🥈"
+                                : team.pos === 3
+                                ? "🥉"
+                                : team.pos
+                              : team.pos
+                            : "-"}
+                        </td>
                       <td className="px-2 py-1 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px]">
                         <span>
                           {team.nombreEquipo} [#{team.orden}]
@@ -110,7 +113,7 @@ export const RaceStageBreakdown = ({
                           <td
                             key={col.formatted}
                             className={cn(
-                              "px-1.5 py-1 text-center font-mono border-r border-neutral-50 text-[10px]",
+                              "px-1.5 py-1 text-center font-mono tabular-nums border-r border-neutral-50 text-[10px]",
                               isMax
                                 ? "bg-yellow-100 font-bold text-yellow-800"
                                 : pts > 0
@@ -123,7 +126,7 @@ export const RaceStageBreakdown = ({
                         );
                       })}
                       <td
-                        className="px-2 py-1 text-center font-mono font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
+                        className="px-2 py-1 text-center font-mono tabular-nums font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
                         style={{
                           backgroundColor: `hsl(${Math.max(
                             0,
@@ -139,6 +142,7 @@ export const RaceStageBreakdown = ({
                         {team.total}
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -146,6 +150,6 @@ export const RaceStageBreakdown = ({
           </div>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

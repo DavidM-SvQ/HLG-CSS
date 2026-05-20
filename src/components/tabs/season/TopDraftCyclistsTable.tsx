@@ -1,10 +1,11 @@
 import { ChevronRight } from "lucide-react";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Trophy, Calendar, Medal, Crown, TrendingUp, BarChart3, Users, LayoutGrid, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "../../ui/button";
 import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { cn } from "../../../lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 export function TopDraftCyclistsTable(props: any) {
   const {
@@ -14,17 +15,26 @@ export function TopDraftCyclistsTable(props: any) {
     maxPpc, minPpc, maxPpd, minPpd, getFlagEmoji, getColorClass, getPuntosColor, formatNumberSpanish
   , isTopCyclistsDraftCopying } = props;
 
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   return (
     <>
-                                <div className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin", isTopCyclistsDraftExpanded ? "flex-1 min-h-0" : "max-h-[750px]")}>
-                                  <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full min-w-full md:min-w-[700px]">
-                                    <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
+                                <div className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin px-2 md:px-0", isTopCyclistsDraftExpanded ? "flex-1 min-h-0" : "max-h-[750px]")}>
+                                  <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full block md:table">
+                                    <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
                                           className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
                                           onClick={() => {
                                             if (cyclistsSortColumn === "pos") {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -50,7 +60,7 @@ export function TopDraftCyclistsTable(props: any) {
                                             if (
                                               cyclistsSortColumn === "nombre"
                                             ) {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -72,7 +82,7 @@ export function TopDraftCyclistsTable(props: any) {
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "equipo"
                                             ) {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -93,7 +103,7 @@ export function TopDraftCyclistsTable(props: any) {
                                           </div>
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "pais") {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -115,7 +125,7 @@ export function TopDraftCyclistsTable(props: any) {
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "victorias"
                                             ) {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -140,7 +150,7 @@ export function TopDraftCyclistsTable(props: any) {
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "carreras"
                                             ) {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -162,7 +172,7 @@ export function TopDraftCyclistsTable(props: any) {
                                           </div>
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Días de competición" onClick={() => { if (cyclistsSortColumn === "dias") {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -183,7 +193,7 @@ export function TopDraftCyclistsTable(props: any) {
                                           </div>
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por carreras" onClick={() => { if (cyclistsSortColumn === "ppc") {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -204,7 +214,7 @@ export function TopDraftCyclistsTable(props: any) {
                                           </div>
                                         </th>
                                         <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por día de competición" onClick={() => { if (cyclistsSortColumn === "ppd") {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -230,7 +240,7 @@ export function TopDraftCyclistsTable(props: any) {
                                             if (
                                               cyclistsSortColumn === "puntos"
                                             ) {
-                                              setCyclistsSortDirection((d) =>
+                                              setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
                                             } else {
@@ -253,7 +263,7 @@ export function TopDraftCyclistsTable(props: any) {
                                       </tr>
                                     </thead>
                                     {isTopCyclistsDraftCopying ? (
-                                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
+                                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
                                         <AnimatePresence>
                                           {sortedStats.slice(0, 50).map((s: any) => (
                                             <TopCyclistRow
@@ -281,137 +291,27 @@ export function TopDraftCyclistsTable(props: any) {
                                         items={sortedStats}
                                         scrollElementRef={topCyclistsDraftRefContainer}
                                         colSpan={10}
-                                        className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50"
+                                        estimateSize={isMobile ? 54 : 33}
+                                        className="divide-y md:divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group pt-2 md:pt-0 pb-4"
                                         renderRow={(s, idx) => {
-                                          const {
-                                            ciclista,
-                                            nombreEquipo,
-                                            ronda,
-                                            orden,
-                                            pais,
-                                            victorias,
-                                            dias,
-                                            puntos,
-                                            numCarreras,
-                                            ppc,
-                                            ppd,
-                                            originalIndex,
-                                          } = s;
                                           return (
-                                            <tr
-                                              key={ciclista}
-                                              className="hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100"
-                                            >
-                                              <td className="px-3 py-1 text-center">
-                                                <span
-                                                  className={cn(
-                                                    "w-5 h-5 mx-auto rounded-full flex items-center justify-center text-[9px] font-bold",
-                                                    originalIndex === 1
-                                                      ? "bg-yellow-100 text-yellow-700"
-                                                      : originalIndex === 2
-                                                        ? "bg-neutral-200 text-neutral-600"
-                                                        : originalIndex === 3
-                                                          ? "bg-orange-100 text-orange-700"
-                                                          : "bg-neutral-100 text-neutral-500",
-                                                  )}
-                                                >
-                                                  {originalIndex}
-                                                </span>
-                                              </td>
-                                              <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap">
-                                                {ciclista}{" "}
-                                                <span className="text-neutral-400 font-normal text-[9px]">
-                                                  &lt;{ronda || "-"}&gt;
-                                                </span>
-                                              </td>
-                                              <td className="px-4 py-1 text-neutral-600 whitespace-nowrap hidden md:table-cell">
-                                                {nombreEquipo ===
-                                                "No draft" ? (
-                                                  <span className="text-neutral-400 italic text-[10px]">
-                                                    No elegido
-                                                  </span>
-                                                ) : (
-                                                  <span className="font-medium">
-                                                    {nombreEquipo}{" "}
-                                                    <span className="text-neutral-400 font-normal text-[9px]">
-                                                      [#{orden}]
-                                                    </span>
-                                                  </span>
-                                                )}
-                                              </td>
-                                              <td className="px-3 py-1 text-base text-center hidden md:table-cell">{getFlagEmoji(pais)}</td>
-                                              <td className={cn("px-3 py-1 text-center font-mono hidden md:table-cell",
-                                                  getColorClass(
-                                                    victorias,
-                                                    maxVictorias,
-                                                    0,
-                                                    true,
-                                                  ),
-                                                )}
-                                              >
-                                                <span className="font-mono tracking-tight">{formatNumberSpanish(
-                                                  victorias,
-                                                )}</span>
-                                              </td>
-                                              <td className={cn("px-3 py-1 text-center font-mono hidden md:table-cell",
-                                                  getColorClass(
-                                                    numCarreras,
-                                                    maxCarreras,
-                                                    minCarreras,
-                                                  ),
-                                                )}
-                                              >
-                                                <span className="font-mono tracking-tight">{formatNumberSpanish(
-                                                  numCarreras,
-                                                )}</span>
-                                              </td>
-                                              <td className={cn("px-3 py-1 text-center font-mono hidden md:table-cell",
-                                                  getColorClass(
-                                                    dias,
-                                                    maxDias,
-                                                    minDias,
-                                                  ),
-                                                )}
-                                              >
-                                                <span className="font-mono tracking-tight">{formatNumberSpanish(dias)}</span>
-                                              </td>
-                                              <td className={cn("px-3 py-1 text-center font-mono hidden md:table-cell",
-                                                  getColorClass(
-                                                    ppc,
-                                                    maxPpc,
-                                                    minPpc,
-                                                  ),
-                                                )}
-                                              >
-                                                {formatNumberSpanish(
-                                                  ppc.toFixed(1),
-                                                )}
-                                              </td>
-                                              <td className={cn("px-3 py-1 text-center font-mono hidden md:table-cell",
-                                                  getColorClass(
-                                                    ppd,
-                                                    maxPpd,
-                                                    minPpd,
-                                                  ),
-                                                )}
-                                              >
-                                                {formatNumberSpanish(
-                                                  ppd.toFixed(1),
-                                                )}
-                                              </td>
-                                              <td
-                                                className="px-4 py-1 text-right font-black font-mono text-sm"
-                                                style={{
-                                                  color: getPuntosColor(
-                                                    puntos,
-                                                  ),
-                                                }}
-                                              >
-                                                <span className="font-mono tracking-tight">{formatNumberSpanish(
-                                                  puntos,
-                                                )}</span>
-                                              </td>
-                                            </tr>
+                                            <TopCyclistRow
+                                              key={s.ciclista}
+                                              s={s}
+                                              maxVictorias={maxVictorias}
+                                              maxCarreras={maxCarreras}
+                                              minCarreras={minCarreras}
+                                              maxDias={maxDias}
+                                              minDias={minDias}
+                                              maxPpc={maxPpc}
+                                              minPpc={minPpc}
+                                              maxPpd={maxPpd}
+                                              minPpd={minPpd}
+                                              getFlagEmoji={getFlagEmoji}
+                                              getColorClass={getColorClass}
+                                              getPuntosColor={getPuntosColor}
+                                              formatNumberSpanish={formatNumberSpanish}
+                                            />
                                           );
                                         }}
                                       />
@@ -430,26 +330,60 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
 
   return (
     <>
-      <motion.tr layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
-        <td className="px-4 py-3 md:px-3 md:py-1 flex md:table-cell justify-between items-center md:text-center w-full md:w-auto">
+      <motion.tr layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none hover:border-blue-200 md:hover:border-transparent", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
+        <td className="px-4 py-3 md:px-3 md:py-1 flex md:table-cell justify-between items-center md:text-center w-full md:w-auto hover:bg-neutral-50 md:hover:bg-transparent rounded-t-xl transition-colors">
           <div className="flex items-center gap-2 md:contents">
-            <span className={cn("w-5 h-5 md:mx-auto rounded-full flex items-center justify-center text-[9px] font-bold shrink-0", originalIndex === 1 ? "bg-yellow-100 text-yellow-700" : originalIndex === 2 ? "bg-neutral-200 text-neutral-600" : originalIndex === 3 ? "bg-orange-100 text-orange-700" : "bg-neutral-100 text-neutral-500")}>
+            <span className={cn("w-6 h-6 md:w-5 md:h-5 md:mx-auto rounded-full flex items-center justify-center text-[10px] md:text-[9px] font-bold shrink-0", originalIndex === 1 ? "bg-yellow-100 text-yellow-700" : originalIndex === 2 ? "bg-neutral-200 text-neutral-600" : originalIndex === 3 ? "bg-orange-100 text-orange-700" : "bg-neutral-100 text-neutral-500")}>
               {originalIndex}
             </span>
-            <span className="font-bold text-neutral-900 md:hidden">{ciclista}</span>
+            <span className="font-bold text-neutral-900 md:hidden text-sm truncate max-w-[200px]">{ciclista}</span>
           </div>
           <div className="flex items-center gap-3 md:hidden">
-            <span className="font-black font-mono text-sm" style={{ color: getPuntosColor(puntos) }}>{formatNumberSpanish(puntos)}</span>
+            <span className="font-black font-mono tabular-nums text-sm" style={{ color: getPuntosColor(puntos) }}>{formatNumberSpanish(puntos)}</span>
             <ChevronRight className={cn("w-4 h-4 text-neutral-400 transition-transform", expanded && "rotate-90")} />
           </div>
         </td>
-        <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap hidden md:table-cell">
-          {ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+        <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap hidden md:table-cell w-[250px]">
+          <Tooltip>
+            <TooltipTrigger className="flex items-center gap-1.5 cursor-help hover:text-blue-600 transition-colors w-fit text-left">
+              {ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+            </TooltipTrigger>
+            <TooltipContent className="bg-white border text-sm border-neutral-200 shadow-xl p-4 rounded-xl text-neutral-900 shadow-neutral-900/10 max-w-[240px]" side="right" sideOffset={10}>
+               <div className="flex flex-col gap-2 relative z-10">
+                 <div className="absolute -top-6 -right-6 w-16 h-16 bg-blue-100/50 rounded-full blur-[20px] pointer-events-none" />
+                 <div className="flex items-start justify-between">
+                   <p className="font-black text-base">{ciclista}</p>
+                   <span className="text-xl leading-none">{getFlagEmoji(pais)}</span>
+                 </div>
+                 
+                 <div className="flex items-center gap-2 text-xs">
+                   <Users className="w-3.5 h-3.5 text-indigo-400" />
+                   <span className="font-medium text-neutral-600">{nombreEquipo} {orden ? `(#${orden})` : ''}</span>
+                 </div>
+                 
+                 <div className="flex items-center gap-2 text-xs mt-1 bg-yellow-50 text-yellow-700 py-1.5 px-2 rounded-lg border border-yellow-100/50">
+                    <Trophy className="w-3.5 h-3.5" />
+                    <span className="font-bold">{formatNumberSpanish(puntos)} puntos</span>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-neutral-100">
+                    <div>
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold block mb-0.5">Victorias</span>
+                      <span className="font-mono">{victorias}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold block mb-0.5">Carreras</span>
+                      <span className="font-mono">{numCarreras} / {dias}d</span>
+                    </div>
+                 </div>
+               </div>
+            </TooltipContent>
+          </Tooltip>
         </td>
-        <td className={cn("px-4 py-2 md:py-1 text-neutral-600 whitespace-nowrap md:table-cell", expanded ? "block" : "hidden")}>
+        <td className={cn("px-4 py-2 md:py-1 text-neutral-600 whitespace-nowrap md:table-cell bg-neutral-50/50 md:bg-transparent border-t border-neutral-100 md:border-t-0", expanded ? "block" : "hidden")}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
-            {nombreEquipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium">{nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]">[#{orden}]</span></span>}
+            {nombreEquipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium text-blue-700 md:text-neutral-600">{nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]">[#{orden}]</span></span>}
           </div>
         </td>
         <td className={cn("px-4 py-2 md:px-3 md:py-1 text-base md:text-center md:table-cell", expanded ? "block" : "hidden")}>
@@ -458,41 +392,40 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
             <span>{getFlagEmoji(pais)}</span>
           </div>
         </td>
-        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono md:table-cell", expanded ? "block" : "hidden", getColorClass(victorias, maxVictorias, 0, true))}>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono tabular-nums md:table-cell", expanded ? "block" : "hidden", getColorClass(victorias, maxVictorias, 0, true))}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider font-sans">Victorias</span>
-            <span className="font-mono tracking-tight">{formatNumberSpanish(victorias)}</span>
+            <span className="font-mono tabular-nums tracking-tight">{formatNumberSpanish(victorias)}</span>
           </div>
         </td>
-        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono md:table-cell", expanded ? "block" : "hidden", getColorClass(numCarreras, maxCarreras, minCarreras))}>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono tabular-nums md:table-cell", expanded ? "block" : "hidden", getColorClass(numCarreras, maxCarreras, minCarreras))}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider font-sans">Carreras</span>
-            <span className="font-mono tracking-tight">{formatNumberSpanish(numCarreras)}</span>
+            <span className="font-mono tabular-nums tracking-tight">{formatNumberSpanish(numCarreras)}</span>
           </div>
         </td>
-        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono md:table-cell", expanded ? "block" : "hidden", getColorClass(dias, maxDias, minDias))}>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono tabular-nums md:table-cell", expanded ? "block" : "hidden", getColorClass(dias, maxDias, minDias))}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider font-sans">Días</span>
-            <span className="font-mono tracking-tight">{formatNumberSpanish(dias)}</span>
+            <span className="font-mono tabular-nums tracking-tight">{formatNumberSpanish(dias)}</span>
           </div>
         </td>
-        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono md:table-cell", expanded ? "block" : "hidden", getColorClass(ppc, maxPpc, minPpc))}>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono tabular-nums md:table-cell", expanded ? "block" : "hidden", getColorClass(ppc, maxPpc, minPpc))}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider font-sans">P/C</span>
             <span>{formatNumberSpanish(ppc.toFixed(1))}</span>
           </div>
         </td>
-        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono md:table-cell border-b border-neutral-100 md:border-b-0", expanded ? "block" : "hidden", getColorClass(ppd, maxPpd, minPpd))}>
+        <td className={cn("px-4 py-2 md:px-3 md:py-1 md:text-center font-mono tabular-nums md:table-cell md:border-b-0", expanded ? "block" : "hidden", getColorClass(ppd, maxPpd, minPpd))}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider font-sans">P/D</span>
             <span>{formatNumberSpanish(ppd.toFixed(1))}</span>
           </div>
         </td>
-        <td className="px-4 py-1 text-right font-black font-mono text-sm hidden md:table-cell" style={{ color: getPuntosColor(puntos) }}>
-          <span className="font-mono tracking-tight">{formatNumberSpanish(puntos)}</span>
+        <td className="px-4 py-1 text-right font-black font-mono tabular-nums text-sm hidden md:table-cell" style={{ color: getPuntosColor(puntos) }}>
+          <span className="font-mono tabular-nums tracking-tight">{formatNumberSpanish(puntos)}</span>
         </td>
       </motion.tr>
-      {expanded && <tr className="md:hidden"><td colSpan={10} className="h-2 bg-neutral-100/50"></td></tr>}
     </>
   );
 }

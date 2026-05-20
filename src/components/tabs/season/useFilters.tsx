@@ -15,10 +15,6 @@ export function useFilters(context: any) {
     historySortDirection,
   } = context;
 
-  const months = [
-    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-  ];
   const currentMonthIdx = new Date().getMonth();
 
   // 1. Team Colors
@@ -50,6 +46,10 @@ export function useFilters(context: any) {
 
   // 3. Monthly Wins Evolution Data
   const monthlyWinsEvolutionData = useMemo(() => {
+    const months = [
+      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+    ];
     const dataByMonth: any[] = months.map((m) => ({ month: m }));
     const raceMonths: Record<string, number> = {};
     
@@ -95,7 +95,7 @@ export function useFilters(context: any) {
       const hasData = Object.keys(m).some((key) => key !== "month" && m[key] > 0);
       return hasData && idx <= activeMaxMonthIdx;
     });
-  }, [months, files.carreras.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType]);
+  }, [files.carreras.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType]);
 
   // 4. Wins History Data (Filtered and Sorted)
   const filteredHistoryRaces = useMemo(() => {

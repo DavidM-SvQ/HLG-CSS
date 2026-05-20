@@ -132,7 +132,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         </Button>
       )}
 
-      {onCopyImage && renderImageButtons()}
+      {_onCopyImage && renderImageButtons()}
       {customImageButtons}
 
       {onCopyText && (
@@ -159,9 +159,9 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         </Button>
       )}
 
-      {onDownloadImage && (
+      {_onDownloadImage && (
         <Button variant="outline"
-          onClick={() => onDownloadImage()}
+          onClick={() => _onDownloadImage()}
           className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
           title="Descargar imagen"
         >

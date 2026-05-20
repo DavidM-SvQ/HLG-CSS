@@ -148,32 +148,32 @@ export const TeamCyclistsTable = ({ cyclistStats }: TeamCyclistsTableProps) => {
           <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
             {sortedStats.map((c, idx) => (
               <tr key={idx} className="hover:bg-neutral-50 transition-colors">
-                <td className={cn("px-2 py-1.5 text-center font-mono text-[10px]", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500")}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500")}>
                   {c.ronda}
                 </td>
                 <td className="px-3 py-1.5 font-bold text-neutral-900 text-[11px]">{c.ciclista}</td>
                 <td className="px-2 py-1.5 text-center text-neutral-600 text-[10px]">{c.edad}</td>
                 <td className="px-2 py-1.5 text-center text-neutral-600 text-[10px]">{c.pais}</td>
                 <td className="px-3 py-1.5 text-center text-neutral-600 text-[9px]">{c.equipoBreve}</td>
-                <td className={cn("px-2 py-1.5 text-center font-bold text-[10px]", c.puntos === 0 ? "text-red-600" : "text-blue-600")} style={{ backgroundColor: getPointsBg(c.puntos) }}>
+                <td className={cn("px-2 py-1.5 text-center font-bold font-mono tabular-nums text-[10px]", c.puntos === 0 ? "text-red-600" : "text-blue-600")} style={{ backgroundColor: getPointsBg(c.puntos) }}>
                   {c.puntos}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center text-[10px]", getStatColor(c.victorias, maxVict, minVict))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(c.victorias, maxVict, minVict))}>
                   {c.victorias}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center text-[10px]", getStatColor(c.carrerasDisputadas, maxCarr, minCarr, true, false, minNonZeroCarr))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(c.carrerasDisputadas, maxCarr, minCarr, true, false, minNonZeroCarr))}>
                   {c.carrerasDisputadas}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center text-[10px]", getStatColor(c.diasCompeticion, maxDias, minDias, true, false, minNonZeroDias))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(c.diasCompeticion, maxDias, minDias, true, false, minNonZeroDias))}>
                   {c.diasCompeticion}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center font-mono text-[10px]", getStatColor(parseFloat(c.puntosPorCarrera), maxPpc, minPpc, true, true, minNonZeroPpc))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(parseFloat(c.puntosPorCarrera), maxPpc, minPpc, true, true, minNonZeroPpc))}>
                   {c.puntosPorCarrera}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center font-mono text-[10px]", getStatColor(parseFloat(c.puntosPorDia), maxPpd, minPpd, true, true, minNonZeroPpd))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(parseFloat(c.puntosPorDia), maxPpd, minPpd, true, true, minNonZeroPpd))}>
                   {c.puntosPorDia}
                 </td>
-                <td className={cn("px-2 py-1.5 text-center font-mono text-[10px]", getStatColor(c.pointsPct, maxPct, 0, true, true, minNonZeroPct))}>
+                <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", getStatColor(c.pointsPct, maxPct, 0, true, true, minNonZeroPct))}>
                   {c.pointsPct.toFixed(1)}%
                 </td>
               </tr>

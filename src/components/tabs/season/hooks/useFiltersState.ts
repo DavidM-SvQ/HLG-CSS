@@ -13,7 +13,7 @@ export function useFiltersState() {
   const [topCyclistsLimit, setTopCyclistsLimit] = useUrlState("topCyclistsLimit", 10);
   const [noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit] = useUrlState("noDraftTopCyclistsLimit", 10);
 
-  const [topTeamsSortColumn, setTopTeamsSortColumn] = useUrlState<string>("topTeamsSortColumn", "pos");
+  const [topTeamsSortColumn, setTopTeamsSortColumn] = useUrlState<string>("topTeamsSortColumn", "originalPos");
   const [topTeamsSortDirection, setTopTeamsSortDirection] = useUrlState<"asc" | "desc">("topTeamsSortDirection", "asc");
   const [winsHistorySortColumn, setWinsHistorySortColumn] = useUrlState<string>("winsHistorySortColumn", "carrera");
   const [winsHistorySortDirection, setWinsHistorySortDirection] = useUrlState<"asc" | "desc">("winsHistorySortDirection", "asc");

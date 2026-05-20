@@ -72,7 +72,7 @@ export const AdminAnalyticsView = () => {
           Es necesario crear la tabla <code>analytics_events</code> en Supabase para registrar el uso.
         </p>
         <div className="bg-white border text-left border-red-200 rounded-lg p-4 overflow-x-auto shadow-inner relative">
-          <pre className="text-sm text-neutral-800 font-mono whitespace-pre-wrap">
+          <pre className="text-sm text-neutral-800 font-mono tabular-nums whitespace-pre-wrap">
 {`-- Ejecuta esto en el SQL Editor de Supabase:
 
 -- 1. ANALYTICS EVENTS TABLE

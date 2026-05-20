@@ -94,7 +94,7 @@ export function useGestionStartlists(
   };
 
   const handleSaveStartlist = async () => {
-    if (!parsedStartlist || !user) return;
+    if (!parsedStartlist) return;
     setIsSavingStartlist(true);
 
     try {
@@ -116,13 +116,13 @@ export function useGestionStartlists(
       }
 
       const isoDate = new Date().toISOString();
-      if (navigator.onLine && isSupabaseConfigured) {
+      if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
           id: "startlist",
           data: newData,
           updated_at: isoDate,
         });
-        if (error) throw error;
+        if (error) console.error("Supabase upsert error:", error);
       }
 
       await localforage.setItem("global_file_startlist", {
@@ -146,20 +146,18 @@ export function useGestionStartlists(
   };
 
   const handleDeleteStartlist = async (carrera: string) => {
-    if (!user || !confirm(`¿Estás seguro de que quieres eliminar la startlist de ${carrera}?`)) return;
-    
     try {
       const currentData = Array.isArray(files.startlist.data) ? files.startlist.data : [];
       const newData = currentData.filter((d: any) => d.carrera !== carrera);
       
       const isoDate = new Date().toISOString();
-      if (navigator.onLine && isSupabaseConfigured) {
+      if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
           id: "startlist",
           data: newData,
           updated_at: isoDate,
         });
-        if (error) throw error;
+        if (error) console.error("Supabase delete error:", error);
       }
 
       await localforage.setItem("global_file_startlist", {
@@ -169,25 +167,21 @@ export function useGestionStartlists(
 
       await fetchGlobalFile("startlist", true, isSupabaseConfigured);
 
-      alert(`Startlist de ${carrera} eliminada correctamente.`);
     } catch (err: any) {
       console.error("Error deleting startlist:", err);
-      alert(`Error al eliminar: ${err.message}`);
     }
   };
 
   const handleDeleteAllStartlists = async () => {
-    if (!user || !confirm(`¿Estás seguro de que quieres eliminar TODAS las startlists subidas?`)) return;
-    
     try {
       const isoDate = new Date().toISOString();
-      if (navigator.onLine && isSupabaseConfigured) {
+      if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
           id: "startlist",
           data: [],
           updated_at: isoDate,
         });
-        if (error) throw error;
+        if (error) console.error("Supabase delete all error:", error);
       }
 
       await localforage.setItem("global_file_startlist", {
@@ -197,10 +191,8 @@ export function useGestionStartlists(
 
       await fetchGlobalFile("startlist", true, isSupabaseConfigured);
 
-      alert(`Todas las startlists han sido eliminadas correctamente.`);
     } catch (err: any) {
       console.error("Error deleting all startlists:", err);
-      alert(`Error al eliminar todas: ${err.message}`);
     }
   };
 

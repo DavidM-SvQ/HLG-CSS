@@ -5,7 +5,20 @@ import { useFiltersState } from "./hooks/useFiltersState";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { cn } from "../../../lib/utils";
 import { getVal, formatNumberSpanish } from "../../../lib/data-processing";
-import { SeasonViewProps } from "../SeasonView";
+
+export interface SeasonViewProviderProps {
+  files: any;
+  playerTeamMap: Record<string, string>;
+  playerByCyclist: Record<string, string>;
+  uniqueRaces: string[];
+  leaderboard: any[];
+  raceWinners: Record<string, string>;
+  globalTeamPartialWinsCount: any;
+  globalTeamWinsCount: any;
+  cyclistMetadata: any;
+  cyclistRoundMap: Record<string, string>;
+  playerOrderMap: Record<string, string>;
+}
 
 const CyclistDetailView = lazy(() => import("../../modals/CyclistDetailView").then((m) => ({ default: m.CyclistDetailView })));
 
@@ -16,7 +29,7 @@ const LINE_COLORS = [
   "#ec4899", "#f97316",
 ];
 
-export const SeasonViewProvider: React.FC<SeasonViewProps & { children: React.ReactNode }> = ({
+export const SeasonViewProvider: React.FC<SeasonViewProviderProps & { children: React.ReactNode }> = ({
   children,
   files,
   playerTeamMap,

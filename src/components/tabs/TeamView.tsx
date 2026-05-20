@@ -8,31 +8,53 @@ import { TeamKPIs } from "./team/TeamKPIs";
 import { TeamTrophyRoom } from "./team/TeamTrophyRoom";
 import { TeamCyclistsTable } from "./team/TeamCyclistsTable";
 import { Button } from "../ui/button";
+import { useUrlState } from "../../hooks/useUrlState";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
+import { getVal } from "../../lib/data-processing";
 
-export interface TeamViewProps {
-  files: any;
-  selectedTeam: string;
-  setSelectedTeam: (val: string) => void;
-  formattedTeams: any[];
-  leaderboard: any[];
-  raceWinners: Record<string, string>;
-  globalTeamPartialWinsCount: any;
-  cyclistMetadata: any;
-}
+export const TeamView = () => {
+  const { files } = useDataStore();
+  const { 
+    leaderboard, 
+    raceWinners, 
+    globalTeamPartialWinsCount, 
+    cyclistMetadata 
+  } = useComputedStore();
 
-export const TeamView = (props: TeamViewProps) => {
-  const {
-    files,
-    selectedTeam,
-    setSelectedTeam,
-    formattedTeams,
-    leaderboard,
-    raceWinners,
-    globalTeamPartialWinsCount,
-    cyclistMetadata,
-  } = props;
+  const [selectedTeam, setSelectedTeam] = useUrlState<string>("selected_team", "");
 
   const { ref: teamGlobalRef, isCopying: isTeamGlobalCopying, handleCopyImage, handleDownloadImage } = useTableScreenshot<HTMLDivElement>();
+
+  const formattedTeams = React.useMemo(() => {
+    if (!files || !files.elecciones || !files.elecciones.data) return [];
+
+    const teamData: Record<string, string> = {}; // teamName -> order
+    const uniquePlayers = [
+      ...new Set(
+        files.elecciones.data
+          .map((r: any) => getVal(r, "Nombre_TG")?.trim())
+          .filter(Boolean),
+      ),
+    ] as string[];
+
+    files.elecciones?.data?.forEach((row: any) => {
+      const jugador = getVal(row, "Nombre_TG")?.trim();
+      const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim() || jugador;
+      if (jugador && nombreEquipo && !teamData[nombreEquipo]) {
+        const playerIdx = uniquePlayers.indexOf(jugador);
+        const order = (playerIdx + 1).toString().padStart(2, "0");
+        teamData[nombreEquipo] = order;
+      }
+    });
+
+    return Object.entries(teamData)
+      .map(([name, order]) => ({
+        label: `${name} [#${order}]`,
+        value: name,
+      }))
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }, [files]);
 
   const teamComputedData = useTeamData({
     selectedTeam,

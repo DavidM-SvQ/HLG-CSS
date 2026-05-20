@@ -139,7 +139,7 @@ export const AdminDatosLeaderboardChart = ({ leaderboard }: { leaderboard: any[]
                                   className="flex items-center justify-between text-[11px] gap-3"
                                 >
                                   <span className="text-neutral-500 font-medium truncate">
-                                    <span className="text-neutral-400 mr-1.5 font-mono text-[9px]">
+                                    <span className="text-neutral-400 mr-1.5 font-mono tabular-nums text-[9px]">
                                       #{c.ronda}
                                     </span>
                                     {c.name}

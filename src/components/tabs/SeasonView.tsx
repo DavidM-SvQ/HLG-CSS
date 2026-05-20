@@ -10,28 +10,41 @@ import { cn } from "../../lib/utils";
 import { useUrlState } from "../../hooks/useUrlState";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/button";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
 
-export interface SeasonViewProps {
-  playerTeamMap: Record<string, string>;
-  playerByCyclist: Record<string, string>;
-  uniqueRaces: string[];
-  files: any;
-  leaderboard: any[];
-  raceWinners: Record<string, string>;
-  globalTeamPartialWinsCount: any;
-  globalTeamWinsCount: any;
-  cyclistMetadata: any;
-  cyclistRoundMap: Record<string, string>;
-  playerOrderMap: Record<string, string>;
-}
+export const SeasonView = () => {
+  const { files } = useDataStore();
+  const { 
+    leaderboard, 
+    raceWinners, 
+    uniqueRaces, 
+    cyclistMetadata,
+    playerTeamMap,
+    playerByCyclist,
+    globalTeamPartialWinsCount,
+    globalTeamWinsCount,
+    cyclistRoundMap,
+    playerOrderMap
+  } = useComputedStore();
 
-export const SeasonView = (props: SeasonViewProps) => {
-  const { files, uniqueRaces, leaderboard, raceWinners, cyclistMetadata } = props;
   const [seasonSubTab, setSeasonSubTab] = useUrlState<"puntos" | "victorias" | "ciclistas">("seasonSubTab", "puntos");
 
   return (
-    <SeasonViewProvider {...props}>
+    <SeasonViewProvider 
+      files={files}
+      leaderboard={leaderboard}
+      raceWinners={raceWinners}
+      uniqueRaces={uniqueRaces}
+      cyclistMetadata={cyclistMetadata}
+      playerTeamMap={playerTeamMap}
+      playerByCyclist={playerByCyclist}
+      globalTeamPartialWinsCount={globalTeamPartialWinsCount}
+      globalTeamWinsCount={globalTeamWinsCount}
+      cyclistRoundMap={cyclistRoundMap}
+      playerOrderMap={playerOrderMap}
+    >
           <div className="space-y-8">
             <SeasonHighlights 
               leaderboard={leaderboard} 
@@ -68,10 +81,11 @@ export const SeasonView = (props: SeasonViewProps) => {
     {seasonSubTab === "puntos" && (
       <motion.div
         key="puntos"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: 10 }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: -10 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="w-full"
       >
         <SeasonPointsTab />
       </motion.div>
@@ -79,10 +93,11 @@ export const SeasonView = (props: SeasonViewProps) => {
     {seasonSubTab === "victorias" && (
       <motion.div
         key="victorias"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: 10 }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: -10 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="w-full"
       >
         <SeasonWinsTab />
       </motion.div>
@@ -90,10 +105,11 @@ export const SeasonView = (props: SeasonViewProps) => {
     {seasonSubTab === "ciclistas" && (
       <motion.div
         key="ciclistas"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: 10 }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: -10 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="w-full"
       >
         <SeasonCyclistsTab />
       </motion.div>

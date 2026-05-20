@@ -1,6 +1,6 @@
 import React from "react";
 import { Users, X } from "lucide-react";
-import { ExportToolbar } from "../../../ui/ExportToolbar";
+import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
 import { cn } from "../../../../lib/utils";
 
@@ -16,38 +16,31 @@ export const RaceCyclistsTable = ({
   tableRef,
 }: any) => {
   return (
-    <div className="mt-12">
-      <div className="flex items-center justify-between border-b pb-3 mb-4">
-        <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-600" />
-          Clasificación de Ciclistas
-        </h3>
-        <ExportToolbar
-          isExpanded={isExpanded}
-          onExpand={() => setIsExpanded(!isExpanded)}
-          onCopyImage={onCopyImage}
-          isImageCopying={isCopying}
-          onDownloadImage={onDownloadImage}
-        />
-      </div>
-      <div className="flex justify-center w-full">
+    <ReportCard
+      title="Clasificación de Ciclistas"
+      icon={<Users />}
+      iconClassName="text-blue-600"
+      filename="clasificacion-ciclistas"
+      ref={tableRef}
+      className="mt-12"
+      toolbarProps={{
+        isExpanded: isExpanded,
+        onExpand: () => setIsExpanded(!isExpanded),
+        onCopyImage: onCopyImage,
+        isImageCopying: isCopying,
+        onDownloadImage: onDownloadImage
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+    >
+      <div className="flex justify-center w-full bg-neutral-50/30">
         <div
           id="cyclists-classification-table"
-          ref={tableRef}
           className={cn(
-            "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full",
-            isExpanded ? "fixed inset-4 z-50 max-h-none" : ""
+            "overflow-hidden relative max-h-[75vh] w-full",
+            isExpanded ? "max-h-none" : ""
           )}
         >
-          {isExpanded && (
-            <Button variant="outline"
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          )}
-          <div className="table-responsive-wrapper overflow-auto w-full h-full">
+          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
               <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                 <tr>
@@ -60,7 +53,7 @@ export const RaceCyclistsTable = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                {raceCyclists.map((c: any, idx: number) => {
+                {raceCyclists.slice(0, 50).map((c: any, idx: number) => {
                   return (
                     <tr
                       key={c.ciclista}
@@ -93,7 +86,7 @@ export const RaceCyclistsTable = ({
                         )}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-center font-mono font-bold text-blue-600 text-xs"
+                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-blue-600 text-xs"
                         style={{
                           backgroundColor:
                             c.puntos > 0
@@ -117,6 +110,6 @@ export const RaceCyclistsTable = ({
           </div>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

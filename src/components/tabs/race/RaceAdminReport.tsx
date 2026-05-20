@@ -27,7 +27,7 @@ export const RaceAdminReport: React.FC<AdminReportProps> = ({
       <textarea
         readOnly
         value={textValue}
-        className="w-full h-48 text-sm font-mono p-4 border rounded-lg mb-4 bg-white"
+        className="w-full h-48 text-sm font-mono tabular-nums p-4 border rounded-lg mb-4 bg-white"
       />
       <div className="flex gap-4">
         <Button variant="outline"

@@ -8,8 +8,7 @@ import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 
 export function TeamWinsRankingChart() {
-  const context = useContext(SeasonViewContext);
-  if (!context) return null;
+  const context = useContext(SeasonViewContext)!;
 
   const {
     cn,

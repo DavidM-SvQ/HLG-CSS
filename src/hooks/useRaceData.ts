@@ -232,6 +232,7 @@ export function useRaceData(
                       total: team.totalPoints,
                       pos: team.pos,
                       isTied: team.isTied,
+                      uniqueCyclists: team.uniqueCyclists,
                       pointsByCol,
                     };
                   })

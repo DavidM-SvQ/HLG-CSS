@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
+import { useDebounce } from "../../../lib/hooks/useDebounce";
 
 export function StartlistFilters(props: any) {
   const {
@@ -21,6 +22,38 @@ export function StartlistFilters(props: any) {
     startlistFilterDebut,
     setStartlistFilterDebut,
   } = props;
+
+  const [localDiasMin, setLocalDiasMin] = useState<number | "">(startlistFilterDiasMin);
+  const [localDiasMax, setLocalDiasMax] = useState<number | "">(startlistFilterDiasMax);
+  const [localPuntosMin, setLocalPuntosMin] = useState<number | "">(startlistFilterPuntosMin);
+  const [localPuntosMax, setLocalPuntosMax] = useState<number | "">(startlistFilterPuntosMax);
+
+  const debouncedDiasMin = useDebounce(localDiasMin, 500);
+  const debouncedDiasMax = useDebounce(localDiasMax, 500);
+  const debouncedPuntosMin = useDebounce(localPuntosMin, 500);
+  const debouncedPuntosMax = useDebounce(localPuntosMax, 500);
+
+  useEffect(() => {
+    if (debouncedDiasMin !== startlistFilterDiasMin) setStartlistFilterDiasMin(debouncedDiasMin);
+  }, [debouncedDiasMin, startlistFilterDiasMin, setStartlistFilterDiasMin]);
+
+  useEffect(() => {
+    if (debouncedDiasMax !== startlistFilterDiasMax) setStartlistFilterDiasMax(debouncedDiasMax);
+  }, [debouncedDiasMax, startlistFilterDiasMax, setStartlistFilterDiasMax]);
+
+  useEffect(() => {
+    if (debouncedPuntosMin !== startlistFilterPuntosMin) setStartlistFilterPuntosMin(debouncedPuntosMin);
+  }, [debouncedPuntosMin, startlistFilterPuntosMin, setStartlistFilterPuntosMin]);
+
+  useEffect(() => {
+    if (debouncedPuntosMax !== startlistFilterPuntosMax) setStartlistFilterPuntosMax(debouncedPuntosMax);
+  }, [debouncedPuntosMax, startlistFilterPuntosMax, setStartlistFilterPuntosMax]);
+
+  // Handle external reset
+  useEffect(() => { if (startlistFilterDiasMin === "") setLocalDiasMin(""); }, [startlistFilterDiasMin]);
+  useEffect(() => { if (startlistFilterDiasMax === "") setLocalDiasMax(""); }, [startlistFilterDiasMax]);
+  useEffect(() => { if (startlistFilterPuntosMin === "") setLocalPuntosMin(""); }, [startlistFilterPuntosMin]);
+  useEffect(() => { if (startlistFilterPuntosMax === "") setLocalPuntosMax(""); }, [startlistFilterPuntosMax]);
 
   return (
     <>
@@ -49,7 +82,7 @@ export function StartlistFilters(props: any) {
           </label>
           <div className="relative">
             <div className="px-2 py-1.5 bg-white border border-neutral-200 rounded-md text-sm outline-none text-neutral-700 font-medium min-h-[34px] flex items-center overflow-hidden cursor-pointer hover:border-neutral-300">
-              {startlistFilterRondas.length === 0
+              {(!Array.isArray(startlistFilterRondas) || startlistFilterRondas.length === 0)
                 ? "Todas"
                 : startlistFilterRondas.join(", ")}
             </div>
@@ -57,7 +90,7 @@ export function StartlistFilters(props: any) {
               <label className="flex items-center gap-2 p-1 hover:bg-neutral-50 cursor-pointer rounded">
                 <input
                   type="checkbox"
-                  checked={startlistFilterRondas.length === 0}
+                  checked={!Array.isArray(startlistFilterRondas) || startlistFilterRondas.length === 0}
                   onChange={() => setStartlistFilterRondas([])}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
@@ -70,7 +103,7 @@ export function StartlistFilters(props: any) {
                 >
                   <input
                     type="checkbox"
-                    checked={startlistFilterRondas.includes(r)}
+                    checked={Array.isArray(startlistFilterRondas) && startlistFilterRondas.includes(r)}
                     onChange={() => toggleRonda(r)}
                     className="rounded text-blue-600 focus:ring-blue-500"
                   />
@@ -89,9 +122,9 @@ export function StartlistFilters(props: any) {
           <div className="flex items-center gap-2">
             <input
               type="number"
-              value={startlistFilterDiasMin}
+              value={localDiasMin}
               onChange={(e) =>
-                setStartlistFilterDiasMin(
+                setLocalDiasMin(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
@@ -101,9 +134,9 @@ export function StartlistFilters(props: any) {
             <span className="text-neutral-400">-</span>
             <input
               type="number"
-              value={startlistFilterDiasMax}
+              value={localDiasMax}
               onChange={(e) =>
-                setStartlistFilterDiasMax(
+                setLocalDiasMax(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
@@ -121,9 +154,9 @@ export function StartlistFilters(props: any) {
           <div className="flex items-center gap-2">
             <input
               type="number"
-              value={startlistFilterPuntosMin}
+              value={localPuntosMin}
               onChange={(e) =>
-                setStartlistFilterPuntosMin(
+                setLocalPuntosMin(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
@@ -133,9 +166,9 @@ export function StartlistFilters(props: any) {
             <span className="text-neutral-400">-</span>
             <input
               type="number"
-              value={startlistFilterPuntosMax}
+              value={localPuntosMax}
               onChange={(e) =>
-                setStartlistFilterPuntosMax(
+                setLocalPuntosMax(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }

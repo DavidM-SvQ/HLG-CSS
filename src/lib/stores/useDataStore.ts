@@ -43,14 +43,29 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
   fetchGlobalFile: async (id, force = false, isSupabaseConfigured = false) => {
     try {
+      const cachedEntry: any = await localforage.getItem(`global_file_${id}`);
+
       if (!isSupabaseConfigured) {
-        set((prev) => ({
-          files: { ...prev.files, [id]: { ...prev.files[id], loading: false } }
-        }));
+        if (cachedEntry) {
+          set((prev) => ({
+            files: {
+              ...prev.files,
+              [id]: {
+                ...prev.files[id],
+                data: cachedEntry.data,
+                loading: false,
+                updatedAt: cachedEntry.updated_at,
+              }
+            }
+          }));
+        } else {
+          set((prev) => ({
+            files: { ...prev.files, [id]: { ...prev.files[id], loading: false } }
+          }));
+        }
         return;
       }
       
-      const cachedEntry: any = await localforage.getItem(`global_file_${id}`);
       if (!force && cachedEntry) {
         set((prev) => ({
           files: {

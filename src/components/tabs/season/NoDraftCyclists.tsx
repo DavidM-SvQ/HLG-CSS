@@ -7,22 +7,20 @@ import { NoDraftFilters } from "./NoDraftFilters";
 import { NoDraftTable } from "./NoDraftTable";
 
 export function NoDraftCyclists() {
-  const context = useContext(SeasonViewContext);
-  if (!context) return null;
+  const context = useContext(SeasonViewContext)!;
   const { 
     files, 
     leaderboard, 
     cyclistMetadata, 
-    getVal 
+    getVal,
+    noDraftCyclistsMonthFilter: monthFilter, setNoDraftCyclistsMonthFilter: setMonthFilter,
+    noDraftCyclistsSortColumn: sortColumn, setNoDraftCyclistsSortColumn: setSortColumn,
+    noDraftCyclistsSortDirection: sortDirection, setNoDraftCyclistsSortDirection: setSortDirection,
+    noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter
   } = context;
 
-  // URL States for filters and sorting
-  const [monthFilter, setMonthFilter] = useUrlState<string>("noDraftCyclistsMonthFilter", "all");
-  const [sortColumn, setSortColumn] = useUrlState<string>("noDraftCyclistsSortColumn", "puntos");
-  const [sortDirection, setSortDirection] = useUrlState<"asc" | "desc">("noDraftCyclistsSortDirection", "desc");
-  
   // Local States
-  const [topLimit, setTopLimit] = useState<number>(10);
+  const [topLimit, setTopLimit] = useUrlState<number>("noDraftTopLimit", 10);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isCopying, setIsCopying] = useState<string | boolean>(false);
   const [isTextCopying, setIsTextCopying] = useState<boolean>(false);

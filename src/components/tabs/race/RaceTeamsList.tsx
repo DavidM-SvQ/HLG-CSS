@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Trophy, X } from "lucide-react";
-import { ExportToolbar } from "../../ui/ExportToolbar";
+import { ReportCard } from "../../ui/ReportCard";
 import { cn } from "../../../lib/utils";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
@@ -33,81 +33,162 @@ export const RaceTeamsList = ({
     isTextCopying
   } = useTableScreenshot(tableRef);
 
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  const sortedTeams = React.useMemo(() => {
+    let sortableItems = [...rankedTeams].filter(
+      (t) => t.nombreEquipo !== "No draft" && t.nombreEquipo !== "No draft [99]"
+    );
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+        
+        if (sortConfig.key === "ptosPorCic") {
+           aValue = a.uniqueCyclists > 0 ? a.totalPoints / a.uniqueCyclists : 0;
+           bValue = b.uniqueCyclists > 0 ? b.totalPoints / b.uniqueCyclists : 0;
+        } else if (sortConfig.key === "racePartialWins") {
+           aValue = a.racePartialWins || 0;
+           bValue = b.racePartialWins || 0;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [rankedTeams, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "desc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="ml-1 opacity-20 text-[10px]">↕</span>;
+    }
+    return sortConfig.direction === "asc" ? (
+      <span className="ml-1 text-[10px] text-blue-400">↑</span>
+    ) : (
+      <span className="ml-1 text-[10px] text-blue-400">↓</span>
+    );
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between border-b pb-3 mb-4">
-        <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 whitespace-nowrap">
-          <Trophy className="w-5 h-5 text-blue-600" />
-          Clasificación de la Carrera
-        </h3>
-        <ExportToolbar
-          isExpanded={isExpanded}
-          onExpand={() => setIsExpanded(!isExpanded)}
-          onCopyImage={() => handleCopyImage({ fileName: 'export.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) })}
-          isImageCopying={isCopying}
-          onDownloadImage={() => handleDownloadImage({ fileName: 'clasificacion-carrera.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) })}
-          onCopyText={handleCopyText}
-          isTextCopying={isTextCopying}
-          useClipboardIconForText={true}
-          textCopyLabel=""
-        />
-      </div>
-      <div className="flex justify-center w-full">
+    <ReportCard
+      title="Clasificación Equipos"
+      icon={<Trophy />}
+      iconClassName="text-blue-600"
+      filename="clasificacion-equipos"
+      ref={tableRef}
+      toolbarProps={{
+        isExpanded: isExpanded,
+        onExpand: () => setIsExpanded(!isExpanded),
+        onCopyImage: () => handleCopyImage({ fileName: 'export.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) }),
+        isImageCopying: isCopying,
+        onDownloadImage: () => handleDownloadImage({ fileName: 'clasificacion-carrera.png', scale: 3, style: { backgroundColor: '#ffffff', overflow: 'hidden' }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) }),
+        onCopyText: handleCopyText,
+        isTextCopying: isTextCopying,
+        useClipboardIconForText: true,
+        textCopyLabel: ""
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+    >
+      <div className="flex justify-center w-full bg-neutral-50/30">
         <div
           id="race-classification-table"
-          ref={tableRef}
           className={cn(
-            "bg-white border border-neutral-200 rounded-xl overflow-hidden relative max-h-[75vh] shadow-sm w-full",
-            isExpanded ? "fixed inset-4 z-50 max-h-none" : ""
+            "overflow-hidden relative max-h-[75vh] w-full",
+            isExpanded ? "max-h-none" : ""
           )}
         >
-          {isExpanded && (
-            <Button variant="outline"
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          )}
-          <div className="table-responsive-wrapper overflow-auto w-full h-full">
-            <table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
-              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
+          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container px-2 md:px-0">
+            <table className="w-full min-w-[500px] text-sm text-left border-collapse mx-auto">
+              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 select-none">
                 <tr>
-                  <th className="px-2 py-1.5 w-8 text-center">Pos</th>
-                  <th className="px-2 py-1.5 min-w-[120px]">Equipo</th>
-                  <th className="px-2 py-1.5 w-10 text-center">Cicl</th>
-                  <th className="px-2 py-1.5 w-16 text-center">Puntos</th>
-                  <th className="px-2 py-1.5 w-20 text-center">Ptos por cic</th>
-                  <th className="px-2 py-1.5 w-16 text-center">Vict parc</th>
+                  <th 
+                    className="px-2 py-1.5 w-8 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("pos")}
+                  >
+                    Pos {getSortIcon("pos")}
+                  </th>
+                  <th 
+                    className="px-2 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("nombreEquipo")}
+                  >
+                    Equipo {getSortIcon("nombreEquipo")}
+                  </th>
+                  <th 
+                    className="px-2 py-1.5 w-10 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("uniqueCyclists")}
+                  >
+                    Cicl {getSortIcon("uniqueCyclists")}
+                  </th>
+                  <th 
+                    className="px-2 py-1.5 w-16 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("racePartialWins")}
+                  >
+                    <span className="md:hidden">Vic parc</span>
+                    <span className="hidden md:inline">Vict parc</span> {getSortIcon("racePartialWins")}
+                  </th>
+                  <th 
+                    className="px-2 py-1.5 w-20 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("ptosPorCic")}
+                  >
+                    <span className="md:hidden">P/C</span>
+                    <span className="hidden md:inline">Ptos/Cic</span> {getSortIcon("ptosPorCic")}
+                  </th>
+                  <th 
+                    className="px-2 py-1.5 w-16 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("totalPoints")}
+                  >
+                    <span className="md:hidden">Pts</span>
+                    <span className="hidden md:inline">Puntos</span> {getSortIcon("totalPoints")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                {rankedTeams
-                  .filter(
-                    (t) =>
-                      t.nombreEquipo !== "No draft" &&
-                      t.nombreEquipo !== "No draft [99]"
-                  )
-                  .map((team) => (
-                    <tr
-                      key={team.jugador}
-                      className="hover:bg-blue-50/30 transition-colors group"
-                    >
-                      <td className="px-3 py-1.5 text-center font-mono text-xs text-neutral-400">
-                        {team.totalPoints > 0
-                          ? team.pos === 1
-                            ? "🥇"
-                            : team.pos === 2
-                            ? "🥈"
-                            : team.pos === 3
-                            ? "🥉"
-                            : team.pos
-                          : team.pos}
-                      </td>
+                {sortedTeams
+                  .map((team, index) => {
+                    const isNonParticipant = team.uniqueCyclists === 0;
+                    const showDivider = isNonParticipant && index > 0 && sortedTeams[index - 1].uniqueCyclists > 0;
+                    
+                    return (
+                      <React.Fragment key={team.jugador}>
+                        {showDivider && (
+                          <tr className="bg-neutral-100/50 h-6 pointer-events-none shadow-inner border-y-[6px] border-white copy-button-ignore">
+                            <td colSpan={6}></td>
+                          </tr>
+                        )}
+                        <tr
+                          className="hover:bg-blue-50/30 transition-colors group"
+                        >
+                          <td className="px-3 py-1.5 text-center font-mono tabular-nums text-xs text-neutral-400">
+                            {isNonParticipant 
+                              ? "-" 
+                              : team.totalPoints > 0
+                              ? team.pos === 1
+                                ? "🥇"
+                                : team.pos === 2
+                                ? "🥈"
+                                : team.pos === 3
+                                ? "🥉"
+                                : team.pos
+                              : team.pos}
+                          </td>
                       <td className="px-3 py-1.5">
                         <div className="flex flex-col">
                           <span className="font-bold text-neutral-900 leading-tight text-xs">
-                            {team.nombreEquipo} [#{team.orden}]
+                            {team.nombreEquipo} <span className="text-neutral-500 font-normal">#{team.orden}</span>
                           </span>
                         </div>
                       </td>
@@ -126,28 +207,7 @@ export const RaceTeamsList = ({
                         </span>
                       </td>
                       <td
-                        className="px-3 py-1.5 text-center font-mono font-bold text-black text-xs border-l border-neutral-100"
-                        style={{
-                          backgroundColor: `hsl(${Math.max(
-                            0,
-                            Math.min(
-                              1,
-                              (team.totalPoints - minRacePoints) /
-                                (maxRacePoints - minRacePoints || 1)
-                            )
-                          ) * 120}, 70%, 75%)`,
-                          color: "#000000",
-                        }}
-                      >
-                        {team.totalPoints}
-                      </td>
-                      <td className="px-3 py-1.5 text-center font-mono text-xs border-l border-neutral-100 text-neutral-600">
-                        {team.uniqueCyclists > 0
-                          ? (team.totalPoints / team.uniqueCyclists).toFixed(1)
-                          : "0.0"}
-                      </td>
-                      <td
-                        className="px-3 py-1.5 text-center font-mono font-bold text-xs border-l border-neutral-100"
+                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-xs border-l border-neutral-100"
                         style={
                           (team as any).racePartialWins > 0
                             ? {
@@ -171,13 +231,36 @@ export const RaceTeamsList = ({
                           ? (team as any).racePartialWins
                           : "-"}
                       </td>
+                      <td className="px-3 py-1.5 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600">
+                        {team.uniqueCyclists > 0
+                          ? (team.totalPoints / team.uniqueCyclists).toFixed(1)
+                          : "0.0"}
+                      </td>
+                      <td
+                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-black text-xs border-l border-neutral-100"
+                        style={{
+                          backgroundColor: `hsl(${Math.max(
+                            0,
+                            Math.min(
+                              1,
+                              (team.totalPoints - minRacePoints) /
+                                (maxRacePoints - minRacePoints || 1)
+                            )
+                          ) * 120}, 70%, 75%)`,
+                          color: "#000000",
+                        }}
+                      >
+                        {team.totalPoints}
+                      </td>
                     </tr>
-                  ))}
+                  </React.Fragment>
+                );
+              })}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

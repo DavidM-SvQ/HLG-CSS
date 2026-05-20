@@ -19,7 +19,7 @@ export interface TopTeamStat {
 
 export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: string, topTeamsSortColumn: string, topTeamsSortDirection: string) {
   const { files } = useDataStore();
-  const { leaderboard, raceWinners, globalTeamPartialWinsCount } = useComputedStore();
+  const { leaderboard, raceWinners, globalTeamPartialWinsCount, playerByCyclist, playerTeamMap } = useComputedStore();
 
   return useMemo(() => {
     if (!leaderboard || !files.carreras.data) {
@@ -57,6 +57,35 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       }
     });
 
+    const teamCarrerasLog = new Map<string, Set<string>>();
+    const teamDiasCount = new Map<string, number>();
+
+    if (files.resultados?.data) {
+      files.resultados.data.forEach((row) => {
+        const ciclista = getVal(row, "Ciclista")?.trim();
+        const carrera = getVal(row, "Carrera")?.trim();
+        const etapa = getVal(row, "Etapa")?.toString().trim();
+        
+        if (ciclista && carrera) {
+          if (teamsMonthFilter !== "all" && raceMonths[carrera] !== parseInt(teamsMonthFilter)) {
+            return;
+          }
+          const jugador = playerByCyclist?.[ciclista];
+          if (jugador) {
+            const teamName = playerTeamMap?.[jugador];
+            if (teamName) {
+              if (!teamCarrerasLog.has(teamName)) Object.assign(teamCarrerasLog, teamCarrerasLog.set(teamName, new Set()));
+              teamCarrerasLog.get(teamName)!.add(`${ciclista}|${carrera}`);
+              
+              if (etapa !== "CP" && etapa !== "CM") {
+                teamDiasCount.set(teamName, (teamDiasCount.get(teamName) || 0) + 1);
+              }
+            }
+          }
+        }
+      });
+    }
+
     const teamStats = filteredLeaderboard.map((team, idx) => {
       const filteredDetalles = team.detalles.filter((d) => {
         if (teamsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(teamsMonthFilter)) {
@@ -66,19 +95,8 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       });
 
       const puntos = filteredDetalles.reduce((sum, d) => sum + d.puntosObtenidos, 0);
-      const uniqueRaces = new Set(filteredDetalles.map((d) => d.carrera));
-      const numCarreras = uniqueRaces.size;
-
-      let totalDays = 0;
-      uniqueRaces.forEach((raceName) => {
-        const raceData = files.carreras.data?.find((r) => getVal(r, "Carrera")?.trim() === raceName);
-        if (raceData) {
-          const diasStr = getVal(raceData, "Días");
-          totalDays += parseInt(diasStr) || 1;
-        } else {
-          totalDays += 1;
-        }
-      });
+      const numCarreras = teamCarrerasLog.get(team.nombreEquipo)?.size || 0;
+      const totalDays = teamDiasCount.get(team.nombreEquipo) || 0;
 
       let wins = 0;
       Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {

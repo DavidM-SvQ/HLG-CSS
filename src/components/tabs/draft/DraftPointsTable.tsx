@@ -170,10 +170,9 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      ref={draftDatosTableRef as any}
       className={cn(
-        "bg-white border border-neutral-200 rounded-xl overflow-hidden relative shadow-sm",
-        isDraftDatosTableExpanded ? "fixed inset-4 z-50 p-6 shadow-2xl m-0 flex flex-col" : "w-full"
+        "bg-white rounded-xl overflow-hidden relative",
+        isDraftDatosTableExpanded ? "fixed inset-4 z-[99] p-6 shadow-2xl m-0 flex flex-col border border-neutral-200" : "w-full border border-neutral-100 shadow-sm"
       )}
     >
       {isDraftDatosTableExpanded && (
@@ -185,13 +184,13 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
         </Button>
       )}
 
-      <div className={cn("table-responsive-wrapper w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-x-auto")}>
-        <table className="w-full text-[10px] sm:text-xs text-left border-collapse">
-          <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b border-neutral-200">
+      <div className={cn("table-responsive-wrapper w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-auto max-h-[400px]")}>
+        <table className="w-full text-[9px] lg:text-[10px] text-left border-collapse min-w-[1000px]">
+          <thead className="text-[9px] lg:text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b border-neutral-200">
             <tr>
               <th
-                className="px-4 py-3 cursor-pointer hover:bg-neutral-100 group transition-colors sticky left-0 z-40 bg-neutral-50"
-                style={{ width: "60px", minWidth: "60px" }}
+                className="px-1 lg:px-2 py-2 cursor-pointer hover:bg-neutral-100 group transition-colors sticky left-0 z-40 bg-neutral-50"
+                style={{ width: "40px", minWidth: "40px" }}
                 onClick={() => {
                   if (draftDatosSortColumn === "Orden") {
                     setDraftDatosSortDirection(draftDatosSortDirection === "asc" ? "desc" : "asc");
@@ -201,21 +200,22 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                   }
                 }}
               >
-                <div className="flex items-center gap-1 font-bold">
-                  Orden
-                  <ArrowUpDown className={cn("w-3 h-3 text-neutral-300", draftDatosSortColumn === "Orden" && "text-blue-600")} />
+                <div className="flex items-center gap-0.5 font-bold">
+                  Ord
+                  <ArrowUpDown className={cn("w-2.5 h-2.5 text-neutral-300", draftDatosSortColumn === "Orden" && "text-blue-600")} />
                 </div>
               </th>
-              <th className="px-4 py-3 font-bold border-l border-neutral-200 sticky left-[60px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "150px", minWidth: "150px" }}>
+              <th className="px-1 lg:px-2 py-2 font-bold border-l border-neutral-200 sticky left-[40px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] truncate" style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}>
                 Equipo
               </th>
               {rounds.map((r, i) => (
                 <th
                   key={r}
                   className={cn(
-                    "px-2 py-3 text-center border-l border-neutral-200 cursor-pointer hover:bg-neutral-100 group transition-colors",
+                    "px-0 lg:px-0.5 py-2 text-center border-l border-neutral-200 cursor-pointer hover:bg-neutral-100 group transition-colors",
                     (i + 1) % 5 === 0 ? "bg-neutral-100/50" : ""
                   )}
+                  style={{ width: `${100/25}%` }}
                   onClick={() => {
                     const colIdx = `R${r}`;
                     if (draftDatosSortColumn === colIdx) {
@@ -227,13 +227,13 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                   }}
                 >
                   <div className="flex items-center justify-center gap-0.5">
-                    R{r}
-                    <ArrowUpDown className={cn("w-3 h-3 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity", draftDatosSortColumn === `R${r}` && "opacity-100 text-blue-600")} />
+                    {r}
+                    <ArrowUpDown className={cn("hidden lg:block w-2.5 h-2.5 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity", draftDatosSortColumn === `R${r}` && "opacity-100 text-blue-600")} />
                   </div>
                 </th>
               ))}
               <th
-                className="px-4 py-3 text-right font-black text-blue-700 bg-blue-50/90 border-l border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors sticky right-0 z-40 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)]"
+                className="px-1 lg:px-2 py-2 text-right font-black text-blue-700 bg-blue-50/90 border-l border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors sticky right-0 z-40 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)]"
                 onClick={() => {
                   if (draftDatosSortColumn === "TOTAL") {
                     setDraftDatosSortDirection(draftDatosSortDirection === "asc" ? "desc" : "asc");
@@ -243,9 +243,9 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                   }
                 }}
               >
-                <div className="flex items-center justify-end gap-1">
-                  TOTAL
-                  <ArrowUpDown className={cn("w-3 h-3", draftDatosSortColumn === "TOTAL" ? "text-blue-600" : "text-blue-300")} />
+                <div className="flex items-center justify-end gap-0.5">
+                  TOT
+                  <ArrowUpDown className={cn("w-2.5 h-2.5", draftDatosSortColumn === "TOTAL" ? "text-blue-600" : "text-blue-300")} />
                 </div>
               </th>
             </tr>
@@ -258,12 +258,12 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
 
               return (
                 <tr key={teamName} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-4 py-2 font-mono text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "60px", minWidth: "60px" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 inline-block text-center">{order}</span>
+                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 font-mono tabular-nums text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "40px", minWidth: "40px" }}>
+                    <div className="flex items-center justify-center">
+                      <span className="w-4 inline-block text-center">{order}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[60px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "150px", maxWidth: "150px", minWidth: "150px" }}>
+                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[40px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "110px", maxWidth: "110px", minWidth: "110px" }} title={teamName}>
                     {teamName}
                   </td>
                   {rounds.map((r, i) => {
@@ -298,7 +298,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                       <td
                         key={r}
                         className={cn(
-                          "px-2 py-2 text-center border-l border-neutral-100",
+                          "px-0 lg:px-0.5 py-1 lg:py-1.5 text-center border-l border-neutral-100 font-mono tracking-tighter tabular-nums",
                           isZero ? "text-red-400" : "text-neutral-900",
                           (i + 1) % 5 === 0 ? "border-r border-r-neutral-200" : ""
                         )}
@@ -306,13 +306,11 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                       >
                         {cyclistName ? (
                           <Tooltip>
-                            <TooltipTrigger render={
-                              <div className="w-full h-full flex items-center justify-center cursor-default">
-                                {pts > 0 ? pts : "0"}
-                              </div>
-                            } />
+                            <TooltipTrigger className="w-full h-full flex items-center justify-center cursor-default min-h-[20px]">
+                              {pts > 0 ? pts : "0"}
+                            </TooltipTrigger>
                             <TooltipContent side="top" className="text-left bg-neutral-900 text-white border-neutral-800 shadow-xl max-w-[280px]">
-                              <div className="flex flex-col gap-1.5 whitespace-nowrap text-xs p-1">
+                              <div className="flex flex-col gap-1.5 whitespace-nowrap text-xs p-1 font-sans">
                                 <div className="font-bold border-b border-neutral-700 pb-1 mb-0.5 whitespace-normal break-words">
                                   {cyclistName}
                                 </div>
@@ -331,10 +329,10 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                                 {(ppc > 0 || ppdc > 0) && (
                                   <div className="flex items-center gap-3 mt-1 pt-1 border-t border-neutral-700/50">
                                     <span className="text-neutral-400">
-                                      P/C: <span className="text-neutral-200 font-mono">{ppc.toFixed(1)}</span>
+                                      P/C: <span className="text-neutral-200 font-mono tabular-nums">{ppc.toFixed(1)}</span>
                                     </span>
                                     <span className="text-neutral-400">
-                                      P/D: <span className="text-neutral-200 font-mono">{ppdc.toFixed(1)}</span>
+                                      P/D: <span className="text-neutral-200 font-mono tabular-nums">{ppdc.toFixed(1)}</span>
                                     </span>
                                   </div>
                                 )}
@@ -342,12 +340,12 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <span className="cursor-default text-neutral-300">-</span>
+                          <span className="cursor-default text-neutral-300 min-h-[20px] flex items-center justify-center">-</span>
                         )}
                       </td>
                     );
                   })}
-                  <td className="px-4 py-2 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors">
+                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors font-mono tabular-nums tracking-tighter">
                     {teamTotal}
                   </td>
                 </tr>

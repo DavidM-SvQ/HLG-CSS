@@ -1,12 +1,9 @@
-import { ExportToolbar } from "../../ui/ExportToolbar";
+import { ReportCard } from "../../ui/ReportCard";
 import React from 'react';
-import { BarChart3, ChevronDown, Copy, Download, X, TrendingUp, Trophy, Activity, CheckCircle2 } from 'lucide-react';
+import { BarChart3, ChevronDown } from 'lucide-react';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, Bar } from 'recharts';
 import { cn } from '../../../lib/utils';
-import { getVal } from '../../../lib/data-processing';
-import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useDraftStats } from './hooks/useDraftStats';
-import { Button } from "../../ui/button";
 
 interface DraftRoiChartProps {
   files: any;
@@ -32,16 +29,16 @@ const CustomDraftTooltip = ({ active, payload, label }: any) => {
           {data.equipo}
         </p>
         <div className="space-y-3">
-          <div className="bg-green-50/50 p-2 rounded-lg border border-green-100/50">
-            <p className="text-xs font-bold text-green-800 flex justify-between mb-1">
+          <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+            <p className="text-xs font-bold text-blue-800 flex justify-between mb-1">
               <span>1º por ronda</span>
               <span className="font-black">
                 {data.ganador} ({data.pctGanadores}%)
               </span>
             </p>
           </div>
-          <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
-            <p className="text-xs font-bold text-blue-800 flex justify-between mb-1">
+          <div className="bg-green-50/50 p-2 rounded-lg border border-green-100/50">
+            <p className="text-xs font-bold text-green-800 flex justify-between mb-1">
               <span>Buenos (Top 2-5)</span>
               <span className="font-black">
                 {data.bueno} ({data.pctBuenos}%)
@@ -58,9 +55,17 @@ const CustomDraftTooltip = ({ active, payload, label }: any) => {
           </div>
           <div className="bg-orange-50/50 p-2 rounded-lg border border-orange-100/50">
             <p className="text-xs font-bold text-orange-800 flex justify-between mb-1">
-              <span>Malos (Top 15+ o 0pts)</span>
+              <span>Malos (Top 15+)</span>
               <span className="font-black">
                 {data.malo} ({data.pctMalos}%)
+              </span>
+            </p>
+          </div>
+          <div className="bg-red-50/50 p-2 rounded-lg border border-red-100/50">
+            <p className="text-xs font-bold text-red-800 flex justify-between mb-1">
+              <span>Ceros (Sin Puntos)</span>
+              <span className="font-black">
+                {data.nulo} ({data.pctSinPuntuar}%)
               </span>
             </p>
           </div>
@@ -123,28 +128,20 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
       pctBuenos: s.pctBuenos.toFixed(1),
       pctNormales: s.pctNormales.toFixed(1),
       pctMalos: s.pctMalos.toFixed(1),
+      pctSinPuntuar: s.totalPicks > 0 ? ((s.sinPuntuar / s.totalPicks) * 100).toFixed(1) : "0.0",
     };
   });
 
-  const { handleCopyImage: copyRoiChartImage, handleDownloadImage: downloadRoiChartImage, isCopying: isRoiChartCopying } = useTableScreenshot(draftChartRef);
-
   return (
-    <div
-      className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-hidden"
-      ref={draftChartRef as React.RefObject<HTMLDivElement>}
-    >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div className="min-w-0 pr-4">
-          <h3 className="font-semibold text-lg text-neutral-900 flex items-center gap-2 min-w-0">
-            <BarChart3 className="w-5 h-5 text-blue-600 shrink-0" />
-            <span className="truncate">Rentabilidad de Picks por Equipo</span>
-          </h3>
-          <p className="text-xs text-neutral-500 mt-1 truncate">
-            Eficiencia relativa según segmentación de rendimiento por ronda
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0 copy-button-ignore">
-          <div className="flex items-center gap-1 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
+    <ReportCard
+      title="Rentabilidad de Picks por Equipo"
+      subtitle="Eficiencia relativa según segmentación de rendimiento por ronda"
+      icon={<BarChart3 />}
+      filename="grafico_draft"
+      ref={draftChartRef}
+      toolbarProps={{
+        customImageButtons: (
+          <div className="flex items-center gap-1 bg-neutral-50 p-1 rounded-lg border border-neutral-100 mr-2">
             <span className="text-[10px] text-neutral-400 font-bold px-2 uppercase tracking-wider">
               Ordenar por:
             </span>
@@ -184,20 +181,12 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
               </div>
             </details>
           </div>
-          <ExportToolbar
-            onCopyImage={() => copyRoiChartImage({
-                fileName: "grafico_draft.png", scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
-            })}
-            isImageCopying={isRoiChartCopying}
-            onDownloadImage={() => downloadRoiChartImage({
-                fileName: `rentabilidad-picks-${new Date().toISOString().split("T")[0]}.png`, scale: 3, style: { overflow: "visible", backgroundColor: "#ffffff" }
-            })}
-          />
-        </div>
-      </div>
+        )
+      }}
+    >
       <div className="h-[500px]">
         <div className="w-full overflow-x-auto pb-4 h-full">
-          <div className="min-w-[800px] h-full">
+          <div className="min-w-[800px] h-full p-6 pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -225,15 +214,16 @@ export const DraftRoiChart: React.FC<DraftRoiChartProps> = ({
                 />
                 <RechartsTooltip content={<CustomDraftTooltip />} cursor={{ fill: "#f8fafc", opacity: 0.5 }} />
                 <Legend verticalAlign="top" align="right" iconType="square" wrapperStyle={{ fontSize: "11px", paddingBottom: "20px", fontWeight: "500" }} />
-                <Bar dataKey="ganador" stackId="a" fill="#15803d" name="1º" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="bueno" stackId="a" fill="#4ade80" name="Buenos (Top 2-5)" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="normal" stackId="a" fill="#facc15" name="Normales (Top 6-14)" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="malo" stackId="a" fill="#fb923c" name="Malos (Top 15+)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="ganador" stackId="a" fill="#3b82f6" name="1º" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="bueno" stackId="a" fill="#22c55e" name="Buenos (Top 2-5)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="normal" stackId="a" fill="#eab308" name="Normales (Top 6-14)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="malo" stackId="a" fill="#f97316" name="Malos (Top 15+)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="nulo" stackId="a" fill="#ef4444" name="Ceros (Sin Puntos)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

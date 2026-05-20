@@ -28,7 +28,13 @@ export function useStartlistData(
   cyclistRoundMap: Record<string, string>,
   playerTeamMap: Record<string, string>,
   playerOrderMap: Record<string, string>,
-  filters: StartlistFilters,
+  filterTeam: string,
+  filterRondas: string[],
+  filterDiasMin: number | '',
+  filterDiasMax: number | '',
+  filterDebut: string,
+  filterPuntosMin: number | '',
+  filterPuntosMax: number | '',
   startlistSortCol: string,
   startlistSortDir: string
 ) {
@@ -49,54 +55,62 @@ export function useStartlistData(
 
   const raceCategory = useMemo(() => {
     if (!publicStartlistRace || !files?.carreras?.data) return "";
-    const raceObj = files.carreras.data.find((c: any) => getVal(c, "Carrera") === publicStartlistRace);
+    let data = files.carreras.data;
+    if (!Array.isArray(data)) data = [data];
+    const raceObj = data.find((c: any) => getVal(c, "Carrera") === publicStartlistRace);
     return raceObj ? getVal(raceObj, "Categoría") || "" : "";
   }, [publicStartlistRace, files?.carreras?.data]);
 
   const racePoints = useMemo(() => {
     if (!raceCategory || !files?.puntos?.data) return [];
-    return files.puntos.data.filter((p: any) => getVal(p, "Categoría") === raceCategory);
+    let data = files.puntos.data;
+    if (!Array.isArray(data)) data = [data];
+    return data.filter((p: any) => getVal(p, "Categoría") === raceCategory);
   }, [raceCategory, files?.puntos?.data]);
 
   const memoizedData = useMemo(() => {
     const selectedData = startlistArray.find(
-      (d: any) => d.carrera === publicStartlistRace,
+      (d: any) => d?.carrera === publicStartlistRace,
     );
     if (!selectedData) return { filteredRows: [], teamRows: [], uniqueTeams: [], uniqueRondas: [], maxCiclistas: 0, minCiclistas: 0, minTeamPoints: 0, maxTeamPoints: 0, minTeamPointsMedios: 0, maxTeamPointsMedios: 0, maxCyclistPoints: 0, minCyclistPoints: 0, maxDias: 0, minDias: 0 };
 
     let rows: any[] = [];
-    selectedData.resultados?.forEach((res: any) => {
-      res.ciclistas?.forEach((c: any) => {
-        const nombre = typeof c === "string" ? c : c.nombre;
-        const dorsal = typeof c === "string" ? "" : c.dorsal;
+    if (Array.isArray(selectedData.resultados)) {
+      selectedData.resultados.forEach((res: any) => {
+        if (Array.isArray(res.ciclistas)) {
+          res.ciclistas.forEach((c: any) => {
+            const nombre = typeof c === "string" ? c : (c?.nombre || "");
+            const dorsal = typeof c === "string" ? "" : (c?.dorsal || "");
 
-        const jugador = res.jugador;
-        const equipoManger = playerTeamMap[jugador] || jugador;
-        const order = playerOrderMap[jugador] || DRAFT_RANK_MAP[jugador] || "99";
-        const equipoOrdered = `${equipoManger} [#${order}]`;
-        const ronda = cyclistRoundMap[nombre] || "";
-        const meta = cyclistMetadata[nombre] || {};
+            const jugador = res.jugador;
+            const equipoManger = playerTeamMap[jugador] || jugador;
+            const order = playerOrderMap[jugador] || DRAFT_RANK_MAP[jugador] || "99";
+            const equipoOrdered = `${equipoManger} [#${order}]`;
+            const ronda = cyclistRoundMap[nombre] || "";
+            const meta = cyclistMetadata[nombre] || {};
 
-        const totalPuntos = meta.puntosTotales || 0;
-        const carreraPuntos = meta.puntosPorCarrera?.[publicStartlistRace] || 0;
-        const displayPuntos = totalPuntos - carreraPuntos;
-        const dias = meta.diasCompeticion || 0;
-        const debut = dias === 0 ? "Sí" : "";
+            const totalPuntos = Number(meta.puntosTotales) || 0;
+            const carreraPuntos = Number(meta.puntosPorCarrera?.[publicStartlistRace]) || 0;
+            const displayPuntos = totalPuntos - carreraPuntos;
+            const dias = Number(meta.diasCompeticion) || 0;
+            const debut = dias === 0 ? "Sí" : "";
 
-        rows.push({
-          jugador: equipoOrdered,
-          jugadorName: jugador,
-          dorsal: dorsal || "",
-          ciclista: nombre,
-          ronda: ronda,
-          pais: meta.pais || "",
-          equipo: meta.equipoBreve || "",
-          dias,
-          puntos: displayPuntos,
-          debut,
-        });
+            rows.push({
+              jugador: equipoOrdered,
+              jugadorName: jugador,
+              dorsal: dorsal || "",
+              ciclista: nombre,
+              ronda: ronda,
+              pais: meta.pais || "",
+              equipo: meta.equipoBreve || "",
+              dias,
+              puntos: displayPuntos,
+              debut,
+            });
+          });
+        }
       });
-    });
+    }
 
     const uniqueTeams = Array.from(
       new Set(rows.map((r) => r.jugador)),
@@ -107,17 +121,17 @@ export function useStartlistData(
     ).sort() as string[];
 
     const filteredRows = rows.filter((r) => {
-      if (filters.team !== "All" && r.jugador !== filters.team) return false;
-      if (filters.rondas.length > 0 && !filters.rondas.includes(r.ronda)) return false;
+      if (filterTeam !== "All" && r.jugador !== filterTeam) return false;
+      if (Array.isArray(filterRondas) && filterRondas.length > 0 && !filterRondas.includes(r.ronda)) return false;
       
-      if (filters.diasMin !== '' && r.dias < filters.diasMin) return false;
-      if (filters.diasMax !== '' && r.dias > filters.diasMax) return false;
+      if (filterDiasMin !== '' && r.dias < filterDiasMin) return false;
+      if (filterDiasMax !== '' && r.dias > filterDiasMax) return false;
       
-      if (filters.puntosMin !== '' && r.puntos < filters.puntosMin) return false;
-      if (filters.puntosMax !== '' && r.puntos > filters.puntosMax) return false;
+      if (filterPuntosMin !== '' && r.puntos < filterPuntosMin) return false;
+      if (filterPuntosMax !== '' && r.puntos > filterPuntosMax) return false;
       
-      if (filters.debut === 'Sí' && r.debut !== 'Sí') return false;
-      if (filters.debut === 'No' && r.debut === 'Sí') return false;
+      if (filterDebut === 'Sí' && r.debut !== 'Sí') return false;
+      if (filterDebut === 'No' && r.debut === 'Sí') return false;
       
       return true;
     });
@@ -174,11 +188,11 @@ export function useStartlistData(
     });
 
     const maxTeamPoints = Math.max(1, ...teamRows.map((r) => r.puntos));
-    const minTeamPoints = Math.min(...teamRows.map((r) => r.puntos));
+    const minTeamPoints = teamRows.length === 0 ? 0 : Math.min(...teamRows.map((r) => r.puntos));
     const maxTeamPointsMedios = Math.max(1, ...teamRows.map((r) => r.puntosMedios));
-    const minTeamPointsMedios = Math.min(...teamRows.map((r) => r.puntosMedios));
+    const minTeamPointsMedios = teamRows.length === 0 ? 0 : Math.min(...teamRows.map((r) => r.puntosMedios));
     const maxCyclistPoints = Math.max(1, ...filteredRows.map((r) => r.puntos));
-    const minCyclistPoints = Math.min(...filteredRows.map((r) => r.puntos));
+    const minCyclistPoints = filteredRows.length === 0 ? 0 : Math.min(...filteredRows.map((r) => r.puntos));
 
     return {
       filteredRows,
@@ -203,7 +217,13 @@ export function useStartlistData(
     cyclistRoundMap,
     playerTeamMap,
     playerOrderMap,
-    filters,
+    filterTeam,
+    filterRondas,
+    filterDiasMin,
+    filterDiasMax,
+    filterDebut,
+    filterPuntosMin,
+    filterPuntosMax,
     startlistSortCol,
     startlistSortDir,
   ]);

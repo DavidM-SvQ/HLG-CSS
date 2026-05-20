@@ -162,7 +162,7 @@ export function useDraftStats({
           summary.totalPicks++;
           
           if (p.pts === 0) {
-             summary.malosPicks++;
+             summary.sinPuntuar++;
           } else {
              if (currentRank === 1) summary.pickGanador++;
              else if (currentRank <= 5) summary.buenosPicks++;

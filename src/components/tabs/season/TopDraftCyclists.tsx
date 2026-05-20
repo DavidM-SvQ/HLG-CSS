@@ -15,25 +15,23 @@ import { performTextCopy } from "./hooks/useExportHandlers";
 import { Button } from "../../ui/button";
 
 export function TopDraftCyclists() {
-  const context = useContext(SeasonViewContext);
-  if (!context) return null;
-  const { cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, leaderboard, allCategories, cyclistMetadata, cyclistRoundMap, playerOrderMap, selectedCyclistDetail, setSelectedCyclistDetail, formatNumberSpanish, getVal } = context;
+  const context = useContext(SeasonViewContext)!;
+  const { 
+    cn, CyclistDetailView, files, playerTeamMap, playerByCyclist, leaderboard, allCategories, cyclistMetadata, cyclistRoundMap, playerOrderMap, selectedCyclistDetail, setSelectedCyclistDetail, formatNumberSpanish, getVal,
+    topCyclistsLimit, setTopCyclistsLimit,
+    cyclistsMonthFilter, setCyclistsMonthFilter,
+    cyclistsTeamFilter, setCyclistsTeamFilter,
+    cyclistsCategoryFilter, setCyclistsCategoryFilter,
+    cyclistsRoundFilter, setCyclistsRoundFilter,
+    cyclistsNameSearch, setCyclistsNameSearch,
+    cyclistsSortColumn, setCyclistsSortColumn,
+    cyclistsSortDirection, setCyclistsSortDirection
+  } = context;
 
-  const [topCyclistsLimit, setTopCyclistsLimit] = React.useState(10);
-  const [cyclistsMonthFilter, setCyclistsMonthFilter] = useUrlState<string>("cyclistsMonthFilter", "all");
-  const [cyclistsTeamFilter, setCyclistsTeamFilter] = useUrlState<string[]>("cyclistsTeamFilter", []);
-  const [cyclistsCategoryFilter, setCyclistsCategoryFilter] = useUrlState<string[]>("cyclistsCategoryFilter", []);
-  const [cyclistsRoundFilter, setCyclistsRoundFilter] = useUrlState<string[]>("cyclistsRoundFilter", []);
-  const [cyclistsNameSearch, setCyclistsNameSearch] = useUrlState<string>("cyclistsNameSearch", "");
-  
   const [isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded] = React.useState(false);
   const [isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen] = React.useState(false);
   const [isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen] = React.useState(false);
   const [isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen] = React.useState(false);
-
-  const [cyclistsSortColumn, setCyclistsSortColumn] = useUrlState<string>("cyclistsSortColumn", "puntos");
-  const [cyclistsSortDirection, setCyclistsSortDirection] = useUrlState<"asc" | "desc">("cyclistsSortDirection", "desc");
-
   const [isTopCyclistsDraftCopying, setIsTopCyclistsDraftCopying] = React.useState<string | boolean>(false);
   const [isTopCyclistsDraftTextCopying, setIsTopCyclistsDraftTextCopying] = React.useState(false);
   const topCyclistsDraftRef = useRef<HTMLDivElement>(null);

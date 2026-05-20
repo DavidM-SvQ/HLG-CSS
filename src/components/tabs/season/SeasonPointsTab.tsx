@@ -6,8 +6,7 @@ import { TopTeamsTable } from "./TopTeamsTable";
 import { HotStreakTeams } from "./HotStreakTeams";
 
 export function SeasonPointsTab() {
-  const context = useContext(SeasonViewContext);
-  if (!context) return null;
+  const context = useContext(SeasonViewContext)!;
 
   return (
     <>

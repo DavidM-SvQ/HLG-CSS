@@ -1,8 +1,8 @@
 import { getFlagEmoji } from "../../lib/data-processing";
-import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
+import { copyTextToClipboard } from "../../lib/clipboard";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { useSeasonReportData } from "./season_report/hooks/useSeasonReportData";
-import { domToDataUrl } from "modern-screenshot";
+import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { flushSync } from "react-dom";
 import { useCrosshair } from '../../hooks/useCrosshair';
 import { useUrlState } from "../../hooks/useUrlState";
@@ -37,6 +37,8 @@ import { BestPicksReport } from "./season_report/BestPicksReport";
 import { UnscoredCyclistsReport } from "./season_report/UnscoredCyclistsReport";
 import { UndebutedCyclistsReport } from "./season_report/UndebutedCyclistsReport";
 import { Button } from "../ui/button";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
 interface ScoreDetail {
   carrera: string;
@@ -54,22 +56,6 @@ interface PlayerScore {
   nombreEquipo: string;
   puntos: number;
   detalles: ScoreDetail[];
-}
-
-interface SeasonReportViewProps {
-  files: {
-    carreras: any;
-    puntos: any;
-    elecciones: any;
-    resultados: any;
-    ciclistas?: any;
-    equipos?: any;
-    startlist?: any;
-  };
-  leaderboard: any[] | null;
-  cyclistRoundMap?: Record<string, string>;
-  cyclistMetadata?: Record<string, any>;
-  playerOrderMap?: Record<string, string>;
 }
 
 const monthNames = [
@@ -92,177 +78,20 @@ const formatNumberSpanish = (val: number | string) => {
   return val.toString().replace(".", ",");
 };
 
-
-
-
-const ExportToolbar = ({ targetRef, filename }: { targetRef: React.RefObject<HTMLElement>, filename: string }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopyingImage, setIsCopyingImage] = useState(false);
-  const [isCopyingText, setIsCopyingText] = useState(false);
-
-  const toggleExpand = () => {
-    if (!targetRef.current) return;
-    const scrollContainers = targetRef.current.querySelectorAll('.overflow-full, .overflow-y-auto, .overflow-x-auto, [style*="max-height"]');
-    scrollContainers.forEach((node: any) => {
-      if (isExpanded) {
-        node.style.maxHeight = node.dataset.originalMaxHeight || '';
-        node.style.overflowY = node.dataset.originalOverflowY || '';
-        node.style.overflowX = node.dataset.originalOverflowX || '';
-        node.dataset.expanded = 'false';
-      } else {
-        node.dataset.originalMaxHeight = node.style.maxHeight;
-        node.dataset.originalOverflowY = node.style.overflowY;
-        node.dataset.originalOverflowX = node.style.overflowX;
-        node.style.setProperty('max-height', 'none', 'important');
-        node.style.setProperty('overflow-y', 'visible', 'important');
-        node.style.setProperty('overflow-x', 'visible', 'important');
-        node.dataset.expanded = 'true';
-      }
-    });
-    setIsExpanded(!isExpanded);
-  };
-
-  const handleCopyText = async () => {
-    if (!targetRef.current) return;
-    setIsCopyingText(true);
-    let text = "";
-    const tables = targetRef.current.querySelectorAll("table");
-    if (tables.length > 0) {
-      tables.forEach(table => {
-        const rows = table.querySelectorAll("tr");
-        rows.forEach(row => {
-          const cols = row.querySelectorAll("th, td");
-          const rowData = Array.from(cols).map((c: any) => c.innerText.trim()).join("\t");
-          text += rowData + "\n";
-        });
-        text += "\n";
-      });
-    } else {
-      text = targetRef.current.innerText;
-    }
-    try {
-      await await copyTextToClipboard(text, 'export.txt');
-    } catch(e) {}
-    setTimeout(() => setIsCopyingText(false), 2000);
-  };
-
-  const handleCopyImage = async () => {
-    if (!targetRef.current) return;
-    setIsCopyingImage(true);
-    const container = targetRef.current;
-    
-    // Si ya está expandido manualmente por el botón "Ampliar", lo dejamos
-    // Puesto que expandNodeForCapture expande "a lo bestia" todo
-    let restore = () => {};
-    if (!isExpanded) {
-        restore = expandNodeForCapture(container);
-    }
-
-    try {
-      
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(container, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        return blob;
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                
-              }
-              
-    } catch(e) {
-        console.error(e);
-    } finally {
-      if (!isExpanded) {
-         restore();
-      }
-      setTimeout(() => setIsCopyingImage(false), 2000);
-    }
-  };
-
-  const handleDownloadImage = async () => {
-    if (!targetRef.current) return;
-    const container = targetRef.current;
-    let restore = () => {};
-    if (!isExpanded) {
-        restore = expandNodeForCapture(container);
-    }
-
-    try {
-      const dataUrl = await domToDataUrl(container, { scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),  backgroundColor: "#ffffff" });
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename + ".png";
-      link.click();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      if (!isExpanded) {
-         restore();
-      }
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-1.5 ml-auto shrink-0 copy-button-ignore">
-      <Button variant="ghost" size="icon"
-        onClick={handleCopyText}
-        className={cn(
-          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border",
-          isCopyingText
-            ? "bg-blue-50 text-blue-700 border-blue-200"
-            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100"
-        )}
-        title="Copiar texto"
-      >
-        {isCopyingText ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <ClipboardList className="w-4 h-4" />}
-      </Button>
-      
-      <Button variant="ghost" size="sm"
-        onClick={toggleExpand}
-        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-        title="Ampliar"
-      >
-        {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-      </Button>
-
-      <Button variant="ghost" size="icon"
-        onClick={handleCopyImage}
-        className={cn(
-          "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border",
-          isCopyingImage
-            ? "bg-green-50 text-green-600 border-green-200"
-            : "bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100"
-        )}
-        title="Copiar imagen"
-      >
-        {isCopyingImage ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-      </Button>
-
-      <Button variant="ghost" size="sm"
-        onClick={handleDownloadImage}
-        className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-        title="Descargar imagen"
-      >
-        <UploadCloud className="w-4 h-4 rotate-180" />
-      </Button>
-    </div>
-  );
-};
-export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
-  cyclistRoundMap = {},
-  cyclistMetadata = {},
-  playerOrderMap = {},
-  files,
-  leaderboard,
-}) => {
+export const SeasonReportView = () => {
+  const { files } = useDataStore();
+  const { 
+    leaderboard,
+    cyclistRoundMap,
+    cyclistMetadata,
+    playerOrderMap
+  } = useComputedStore();
   
   const ref1 = React.useRef<HTMLDivElement>(null);
   const ref2 = React.useRef<HTMLDivElement>(null);
   const ref3 = React.useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyHistoryImage, handleDownloadImage: downloadHistoryImage } = useTableScreenshot(ref2);
   const ref4 = React.useRef<HTMLDivElement>(null);
   const ref5 = React.useRef<HTMLDivElement>(null);
   const ref6 = React.useRef<HTMLDivElement>(null);
@@ -300,56 +129,31 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
   };
 
   const handleCopyHistory = async (subset?: "full" | string) => {
-    if (!ref2.current || isHistoryCopying) return;
-    
-    flushSync(() => {
-      setIsHistoryCopying(subset || "full");
-    });
-    
-    const tableContainer = ref2.current;
-    const restore = expandNodeForCapture(tableContainer);
-
     try {
-      
-              {
-                const processCopy = async () => {
-                  const dataUrl = await domToDataUrl(tableContainer, {
-          scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-          backgroundColor: '#ffffff',
-          style: { overflow: "visible", textRendering: "optimizeLegibility" },
-        });
-        const response = await fetch(dataUrl);
-        return await response.blob();
-                };
-                await copyImageToClipboard(processCopy(), "export.png");
-                setTimeout(() => setIsHistoryCopying(null), 2000);
-              }
-              
-    } catch (err) {
-    console.warn("Error during copy fallback", err);
-  } finally {
-      restore();
+      setIsHistoryCopying(subset || "p1");
+      await copyHistoryImage({
+        scale: 3,
+        backgroundColor: "#ffffff",
+        style: { overflow: "visible", textRendering: "optimizeLegibility" },
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      });
+    } finally {
+      setIsHistoryCopying(null);
     }
   };
 
   const handleDownloadHistory = async (subset?: "full" | string) => {
-    if (!ref2.current) return;
-    const tableContainer = ref2.current;
-    const restore = expandNodeForCapture(tableContainer);
     try {
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-        backgroundColor: '#ffffff',
+      setIsHistoryCopying(subset || "p1");
+      await downloadHistoryImage({
+        fileName: `historial-ganadores${subset && subset !== "full" ? `-${subset}` : ""}.png`,
+        scale: 3,
+        backgroundColor: "#ffffff",
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
       });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      const suffix = subset && subset !== "full" ? `-${subset}` : "";
-      link.download = `historial-ganadores${suffix}.png`;
-      link.click();
-    } catch (err) {
     } finally {
-      restore();
+      setIsHistoryCopying(null);
     }
   };
 
@@ -473,18 +277,8 @@ export const SeasonReportView: React.FC<SeasonReportViewProps> = ({
         <div className="space-y-12">
                     <TopTeamsReport
             monthReportData={monthReportData}
-            monthsText={monthsText}
             availableMonths={availableMonths}
-            monthNames={monthNames}
-            maxTeamStageWins={maxTeamStageWins}
-            getTeamPuntosColor={getTeamPuntosColor}
-            formatNumberSpanish={formatNumberSpanish as any}
-            isHistoryExpanded={isHistoryExpanded}
-            setIsHistoryExpanded={setIsHistoryExpanded}
-            isHistoryCopying={isHistoryCopying}
-            handleCopyHistory={handleCopyHistory}
-            isHistoryTextCopying={isHistoryTextCopying}
-            handleCopyHistoryText={handleCopyHistoryText}
+            monthsText={monthsText}
           />
 
                     <TopCyclistsReport

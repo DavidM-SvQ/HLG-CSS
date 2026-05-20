@@ -7,23 +7,20 @@ import { UnscoredFilters } from "./UnscoredFilters";
 import { UnscoredTable } from "./UnscoredTable";
 
 export function UnscoredCyclists() {
-  const context = useContext(SeasonViewContext);
-  if (!context) return null;
+  const context = useContext(SeasonViewContext)!;
   const { 
     files, 
     leaderboard, 
     cyclistMetadata, 
     cyclistRoundMap, 
     playerOrderMap, 
-    getVal 
+    getVal,
+    unscoredCyclistsTeamFilter: teamFilter, setUnscoredCyclistsTeamFilter: setTeamFilter,
+    unscoredCyclistsRoundFilter: roundFilter, setUnscoredCyclistsRoundFilter: setRoundFilter,
+    unscoredCyclistsSortColumn: sortColumn, setUnscoredCyclistsSortColumn: setSortColumn,
+    unscoredCyclistsSortDirection: sortDirection, setUnscoredCyclistsSortDirection: setSortDirection
   } = context;
 
-  // URL States
-  const [teamFilter, setTeamFilter] = useUrlState<string>("unscoredCyclistsTeamFilter", "all");
-  const [roundFilter, setRoundFilter] = useUrlState<string[]>("unscoredCyclistsRoundFilter", []);
-  const [sortColumn, setSortColumn] = useUrlState<string>("unscoredCyclistsSortColumn", "ronda");
-  const [sortDirection, setSortDirection] = useUrlState<"asc" | "desc">("unscoredCyclistsSortDirection", "asc");
-  
   // Local States
   const [isRoundFilterOpen, setIsRoundFilterOpen] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);

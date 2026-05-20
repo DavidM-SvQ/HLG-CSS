@@ -8,9 +8,8 @@ import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 
 export function MonthlyEvolutionChart() {
-  const context = useContext(SeasonViewContext);
+  const context = useContext(SeasonViewContext)!;
   const [hoveredTeam, setHoveredTeam] = React.useState<string | null>(null);
-  if (!context) return null;
   const {
     cn,
     filteredLeaderboard,

@@ -5,22 +5,27 @@ import { RacePodium } from "./race/RacePodium";
 import { RaceTeamsList } from "./race/RaceTeamsList";
 import { RaceStats } from "./race/RaceStats";
 import React from "react";
+import { useUrlState } from "../../hooks/useUrlState";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
 export interface RaceViewProps {
-  files: any;
-  selectedRace: string;
-  setSelectedRace: (val: string) => void;
-  uniqueRaces: string[];
-  leaderboard: any[];
-  globalTeamPartialWinsCount: { totals: Record<string, number>; byRace: Record<string, Record<string, string[]>> };
   isAdminReport?: boolean;
-  raceWinners: Record<string, string>;
-  globalTeamWinsCount: Record<string, number>;
-  cyclistMetadata: Record<string, any>;
 }
 
 export const RaceView = (props: RaceViewProps) => {
-  const { files, selectedRace, setSelectedRace, uniqueRaces, leaderboard, globalTeamPartialWinsCount, isAdminReport = false, raceWinners, globalTeamWinsCount, cyclistMetadata } = props;
+  const { isAdminReport = false } = props;
+  const { files } = useDataStore();
+  const { 
+    leaderboard, 
+    raceWinners, 
+    uniqueRaces, 
+    cyclistMetadata,
+    globalTeamPartialWinsCount,
+    globalTeamWinsCount
+  } = useComputedStore();
+
+  const [selectedRace, setSelectedRace] = useUrlState<string>("race", "");
 
   const raceDataObj = useRaceData(
     selectedRace, 

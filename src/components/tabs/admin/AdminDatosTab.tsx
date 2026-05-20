@@ -2,22 +2,18 @@ import React from "react";
 import { AppState } from "../../../lib/types";
 import { AdminDatosFileList } from "./admin_datos/AdminDatosFileList";
 import { AdminDatosLeaderboardChart } from "./admin_datos/AdminDatosLeaderboardChart";
+import { useDataStore } from "../../../lib/stores/useDataStore";
+import { useComputedStore } from "../../../lib/stores/useComputedStore";
+import { useAuth } from "../../../lib/auth/AuthContext";
+import { useFileUpload } from "../../../lib/hooks/useFileUpload";
+import { FILE_TYPES } from "../../../lib/config/fileTypes";
 
-interface AdminDatosTabProps {
-  files: any; // We'll type this better if possible
-  user: any;
-  FILE_TYPES: any[];
-  handleFileUpload: (id: keyof AppState, file: File) => void;
-  leaderboard: any[] | null;
-}
+export const AdminDatosTab = () => {
+  const { files } = useDataStore();
+  const { leaderboard } = useComputedStore();
+  const { user, isSupabaseConfigured } = useAuth();
+  const { handleFileUpload } = useFileUpload(isSupabaseConfigured);
 
-export const AdminDatosTab: React.FC<AdminDatosTabProps> = ({
-  files,
-  user,
-  FILE_TYPES,
-  handleFileUpload,
-  leaderboard
-}) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Sidebar: File Uploads (Only for Admin) */}

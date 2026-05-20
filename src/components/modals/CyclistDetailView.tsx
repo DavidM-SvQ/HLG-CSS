@@ -1,9 +1,11 @@
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect } from "react";
+import { useUrlState } from "../../hooks/useUrlState";
 import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
+import { useDebounce } from "../../lib/hooks/useDebounce";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "../ui/button";
@@ -31,26 +33,72 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   playerOrderMap,
   playerTeamMap,
 }) => {
-  const [cyclistSearchTerm, setCyclistSearchTerm] = useState("");
+  const [cyclistSearchTerm, setCyclistSearchTerm] = useUrlState("cyclistSearchTerm", "");
   
+  const [localSearch, setLocalSearch] = useState(cyclistSearchTerm);
+  const debouncedSearch = useDebounce(localSearch, 300);
+
+  useEffect(() => {
+    if (debouncedSearch !== cyclistSearchTerm) {
+      setCyclistSearchTerm(debouncedSearch);
+    }
+  }, [debouncedSearch, cyclistSearchTerm, setCyclistSearchTerm]);
+
   useEffect(() => {
     if (selectedCyclistDetail && selectedCyclistDetail !== cyclistSearchTerm) {
+      setLocalSearch(selectedCyclistDetail);
       setCyclistSearchTerm(selectedCyclistDetail);
     }
-  }, [selectedCyclistDetail]);
+  }, [selectedCyclistDetail, cyclistSearchTerm, setCyclistSearchTerm]);
+  
+  useEffect(() => {
+     if (cyclistSearchTerm !== localSearch && debouncedSearch === cyclistSearchTerm) {
+         setLocalSearch(cyclistSearchTerm);
+     }
+  }, [cyclistSearchTerm]);
 
-  const [cyclistDetailSortCol, setCyclistDetailSortCol] = useState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("fecha");
-  const [cyclistDetailSortDir, setCyclistDetailSortDir] = useState<"asc"|"desc">("asc");
-  const [filterMode, setFilterMode] = useState<"quick" | "daily" | "monthly" | "yearly">("quick");
-  const [dateRange, setDateRange] = useState<"all" | "24h" | "7d" | "30d" | "year">("all");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [cyclistDetailCategoryFilter, setCyclistDetailCategoryFilter] = useState<string[]>([]);
-  const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useState<string[]>([]);
-  const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useState<{ op: string; val: string }>({ op: "<=", val: "" });
-  const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useState<{ op: string; val: string }>({ op: ">=", val: "" });
+  const [cyclistDetailSortCol, setCyclistDetailSortCol] = useUrlState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("cyclistDetailSortCol", "fecha");
+  const [cyclistDetailSortDir, setCyclistDetailSortDir] = useUrlState<"asc"|"desc">("cyclistDetailSortDir", "asc");
+  const [filterMode, setFilterMode] = useUrlState<"quick" | "daily" | "monthly" | "yearly">("cyclistDetailFilterMode", "quick");
+  const [dateRange, setDateRange] = useUrlState<"all" | "24h" | "7d" | "30d" | "year">("cyclistDetailDateRange", "all");
+  const [startDate, setStartDate] = useUrlState<string>("cyclistDetailStartDate", "");
+  const [endDate, setEndDate] = useUrlState<string>("cyclistDetailEndDate", "");
+  const [selectedMonth, setSelectedMonth] = useUrlState<string>("cyclistDetailSelectedMonth", "");
+  const [selectedYear, setSelectedYear] = useUrlState<string>("cyclistDetailSelectedYear", new Date().getFullYear().toString());
+  const [cyclistDetailCategoryFilter, setCyclistDetailCategoryFilter] = useUrlState<string[]>("cyclistDetailCategoryFilter", []);
+  const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useUrlState<string[]>("cyclistDetailTypeFilter", []);
+  const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useUrlState<{ op: string; val: string }>("cyclistDetailPosFilter", { op: "<=", val: "" });
+  const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useUrlState<{ op: string; val: string }>("cyclistDetailPointsFilterAdv", { op: ">=", val: "" });
+
+  const [localPosFilter, setLocalPosFilter] = useState<{ op: string; val: string }>(cyclistDetailPosFilter);
+  const [localPointsFilterAdv, setLocalPointsFilterAdv] = useState<{ op: string; val: string }>(cyclistDetailPointsFilterAdv);
+
+  const debouncedPosFilter = useDebounce(localPosFilter, 400);
+  const debouncedPointsFilterAdv = useDebounce(localPointsFilterAdv, 400);
+
+  useEffect(() => {
+    if (JSON.stringify(debouncedPosFilter) !== JSON.stringify(cyclistDetailPosFilter)) {
+      setCyclistDetailPosFilter(debouncedPosFilter);
+    }
+  }, [debouncedPosFilter, cyclistDetailPosFilter, setCyclistDetailPosFilter]);
+
+  useEffect(() => {
+    if (JSON.stringify(debouncedPointsFilterAdv) !== JSON.stringify(cyclistDetailPointsFilterAdv)) {
+      setCyclistDetailPointsFilterAdv(debouncedPointsFilterAdv);
+    }
+  }, [debouncedPointsFilterAdv, cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv]);
+
+  useEffect(() => {
+    if (JSON.stringify(cyclistDetailPosFilter) !== JSON.stringify(localPosFilter)) {
+      setLocalPosFilter(cyclistDetailPosFilter);
+    }
+  }, [cyclistDetailPosFilter]);
+
+  useEffect(() => {
+    if (JSON.stringify(cyclistDetailPointsFilterAdv) !== JSON.stringify(localPointsFilterAdv)) {
+      setLocalPointsFilterAdv(cyclistDetailPointsFilterAdv);
+    }
+  }, [cyclistDetailPointsFilterAdv]);
 
   const handleSort = (col: any) => {
     if (cyclistDetailSortCol === col) {
@@ -60,6 +108,18 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
       setCyclistDetailSortDir("asc");
     }
   };
+
+  const {
+    ref: cyclistDetailRef,
+    isExpanded: isCyclistDetailExpanded,
+    setIsExpanded: setIsCyclistDetailExpanded,
+    isCopying: isCyclistDetailCopying,
+    isDownloading: isCyclistDetailDownloading,
+    isTextCopying: isCyclistDetailTextCopying,
+    handleCopyImage,
+    handleDownloadImage,
+    handleCopyText
+  } = useTableScreenshot<HTMLDivElement>();
 
   return (
     <div className="space-y-8">
@@ -82,9 +142,9 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               placeholder="Buscar ciclista..." 
               list="all-cyclists-list" 
               className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-              value={cyclistSearchTerm}
+              value={localSearch}
               onChange={(e) => {
-                setCyclistSearchTerm(e.target.value);
+                setLocalSearch(e.target.value);
                 const valid = cyclistMetadata[e.target.value];
                 if (valid) {
                   setSelectedCyclistDetail(e.target.value);
@@ -246,18 +306,6 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
           const filterOptionsCat = Array.from(new Set(allItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: c, label: c}));
           const filterOptionsType = Array.from(new Set(allItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: t, label: t}));
-
-          const {
-            ref: cyclistDetailRef,
-            isExpanded: isCyclistDetailExpanded,
-            setIsExpanded: setIsCyclistDetailExpanded,
-            isCopying: isCyclistDetailCopying,
-            isDownloading: isCyclistDetailDownloading,
-            isTextCopying: isCyclistDetailTextCopying,
-            handleCopyImage,
-            handleDownloadImage,
-            handleCopyText
-          } = useTableScreenshot<HTMLDivElement>();
 
           return (
             <div 
@@ -513,27 +561,27 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Posición</span>
                   <div className="flex items-center shadow-sm rounded-md">
-                    <select value={cyclistDetailPosFilter.op} onChange={(e) => setCyclistDetailPosFilter({ ...cyclistDetailPosFilter, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
+                    <select value={localPosFilter.op} onChange={(e) => setLocalPosFilter({ ...localPosFilter, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
                       <option value="=">=</option>
                       <option value="<">&lt;</option>
                       <option value=">">&gt;</option>
                       <option value="<=">&le;</option>
                       <option value=">=">&ge;</option>
                     </select>
-                    <input type="text" value={cyclistDetailPosFilter.val} onChange={(e) => setCyclistDetailPosFilter({ ...cyclistDetailPosFilter, val: e.target.value })} placeholder="Ej: 1" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
+                    <input type="text" value={localPosFilter.val} onChange={(e) => setLocalPosFilter({ ...localPosFilter, val: e.target.value })} placeholder="Ej: 1" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Puntos</span>
                   <div className="flex items-center shadow-sm rounded-md">
-                    <select value={cyclistDetailPointsFilterAdv.op} onChange={(e) => setCyclistDetailPointsFilterAdv({ ...cyclistDetailPointsFilterAdv, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
+                    <select value={localPointsFilterAdv.op} onChange={(e) => setLocalPointsFilterAdv({ ...localPointsFilterAdv, op: e.target.value })} className="px-2 py-1.5 border border-r-0 border-neutral-200 rounded-l-md text-sm bg-neutral-50 text-neutral-700 focus:outline-none focus:bg-white w-12 hover:bg-neutral-100 cursor-pointer">
                       <option value="=">=</option>
                       <option value="<">&lt;</option>
                       <option value=">">&gt;</option>
                       <option value="<=">&le;</option>
                       <option value=">=">&ge;</option>
                     </select>
-                    <input type="number" value={cyclistDetailPointsFilterAdv.val} onChange={(e) => setCyclistDetailPointsFilterAdv({ ...cyclistDetailPointsFilterAdv, val: e.target.value })} placeholder="Ej: 10" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
+                    <input type="number" value={localPointsFilterAdv.val} onChange={(e) => setLocalPointsFilterAdv({ ...localPointsFilterAdv, val: e.target.value })} placeholder="Ej: 10" className="px-3 py-1.5 border border-neutral-200 rounded-r-md text-sm w-20 outline-none focus:ring-2 focus:ring-blue-500 hover:border-neutral-300" />
                   </div>
                 </div>
                 <div className="ml-auto flex items-center">
@@ -585,18 +633,18 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                       <tr key={idx} className="transition-colors group text-neutral-800 hover:brightness-95" style={getCategoryColorStyle(it!.categoria)}>
                         <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
                         <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
-                        <td className="px-4 py-2.5 font-mono text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
+                        <td className="px-4 py-2.5 font-mono tabular-nums text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
                         <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
                         <td className="px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
                         <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
                         <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
-                        <td className="px-4 py-2.5 text-[11px] text-center font-mono font-bold">
+                        <td className="px-4 py-2.5 text-[11px] text-center font-mono tabular-nums font-bold">
                           <div className="flex items-center justify-center gap-1">
                             <span>{it!.pos}</span>
                             {medal && <span className="text-[12px] leading-none drop-shadow-sm">{medal}</span>}
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-[13px] text-right font-mono text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
+                        <td className="px-4 py-2.5 text-[13px] text-right font-mono tabular-nums text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
                           {it!.puntos > 0 ? it!.puntos : "-"}
                         </td>
                       </tr>

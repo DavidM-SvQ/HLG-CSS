@@ -78,20 +78,21 @@ export const RaceStats = ({
         scale: 3,
         style: { textRendering: "optimizeLegibility" },
         onBeforeCapture: (container) => {
-          const cards = container.querySelectorAll(".team-card-breakdown");
+          const cards = container.querySelectorAll("[data-team-card]");
           if (subset) {
-            cards.forEach((card, idx) => {
-              const num = idx + 1;
+            cards.forEach((card) => {
+              const num = parseInt(card.getAttribute("data-team-index") || "0");
               if (subset === "first" && num > 12) card.classList.add("hidden");
               if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
               if (subset === "third" && num <= 24) card.classList.add("hidden");
             });
           }
-          container.className = cn("grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]", subset ? "" : "grid-cols-3");
         },
         onAfterCapture: (container) => {
-          const cards = container.querySelectorAll(".team-card-breakdown");
-          cards.forEach((card) => card.classList.remove("hidden"));
+          const cards = container.querySelectorAll("[data-team-card]");
+          cards.forEach((card) => {
+            card.classList.remove("hidden");
+          });
         }
       });
     } finally {
@@ -106,20 +107,21 @@ export const RaceStats = ({
         scale: 3,
         style: { textRendering: "optimizeLegibility" },
         onBeforeCapture: (container) => {
-          const cards = container.querySelectorAll(".team-card-breakdown");
+          const cards = container.querySelectorAll("[data-team-card]");
           if (subset) {
-            cards.forEach((card, idx) => {
-              const num = idx + 1;
+            cards.forEach((card) => {
+              const num = parseInt(card.getAttribute("data-team-index") || "0");
               if (subset === "first" && num > 12) card.classList.add("hidden");
               if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
               if (subset === "third" && num <= 24) card.classList.add("hidden");
             });
           }
-          container.className = cn("grid grid-cols-3 gap-5 bg-white p-6 rounded-xl w-[1200px]", subset ? "" : "grid-cols-3");
         },
         onAfterCapture: (container) => {
-          const cards = container.querySelectorAll(".team-card-breakdown");
-          cards.forEach((card) => card.classList.remove("hidden"));
+          const cards = container.querySelectorAll("[data-team-card]");
+          cards.forEach((card) => {
+            card.classList.remove("hidden");
+          });
         }
       });
     } finally {

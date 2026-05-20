@@ -1,7 +1,8 @@
 import React, { useState, useRef, useMemo } from "react";
+import { useUrlState } from "../../../hooks/useUrlState";
 import { UserMinus, ChevronDown, ChevronUp, Copy, CheckCircle2, Minimize2, Maximize2, Download, FileText } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { ExportToolbar } from "../../ui/ExportToolbar";
+import { ReportCard } from "../../ui/ReportCard";
 import { copyImageToClipboard, copyTextToClipboard } from "../../../lib/clipboard";
 import { flushSync } from "react-dom";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
@@ -29,14 +30,14 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
   const unscoredTableRef = useRef<HTMLDivElement>(null);
   const { handleCopyImage: copyUnscoredImage, handleDownloadImage: downloadUnscoredImage, isCopying: isUnscoredTableCopyingState } = useTableScreenshot(unscoredTableRef);
   
-  const [unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn] = useState<string>("jugador");
-  const [unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection] = useState<"asc" | "desc">("asc");
+  const [unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn] = useUrlState<string>("unscoredSort", "jugador");
+  const [unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection] = useUrlState<"asc" | "desc">("unscoredDir", "asc");
   const [isUnscoredExpanded, setIsUnscoredExpanded] = useState(false);
   const [isUnscoredCopying, setIsUnscoredCopying] = useState<string | null>(null);
   const [isUnscoredTextCopying, setIsUnscoredTextCopying] = useState(false);
   
-  const [unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter] = useState<string>("all");
-  const [unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter] = useState<string[]>([]);
+  const [unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter] = useUrlState<string>("unscoredTeam", "all");
+  const [unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter] = useUrlState<string[]>("unscoredRounds", []);
   const [isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen] = useState(false);
 
   const unscoredList = useMemo(() => {
@@ -145,117 +146,115 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
     });
   };
 
-  return (
-    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-8">
-      <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
-        <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 ">
-          <UserMinus className="w-5 h-5 text-neutral-400" />
-          Ciclistas sin puntuar ({countFiltered})
-        </h3>
-        <p className="text-xs text-neutral-500 ">
-          Corredores elegidos en el draft que aún no han sumado puntos.
-        </p>
-        <div className="flex flex-wrap items-center gap-3 mt-1">
-          <ExportToolbar 
-            isExpanded={isUnscoredExpanded}
-            onExpand={() => setIsUnscoredExpanded(!isUnscoredExpanded)}
-            
-            onCopyText={handleCopyUnscoredText}
-            isTextCopying={isUnscoredTextCopying}
-            
-            onCopyImage={(range) => handleCopyUnscored(range)}
-            isImageCopying={isUnscoredCopying}
-            imagePageCount={Math.ceil(countFiltered / 50)}
-            
-            onDownloadImage={(range) => handleDownloadUnscored(range)}
-          />
-
-          {/* Round Multi-select Filter */}
-          <div className="relative">
-            <Button variant="outline"
-              onClick={() => setIsUnscoredRoundFilterOpen(!isUnscoredRoundFilterOpen)}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
-            >
-              <span className="truncate">
-                {unscoredCyclistsRoundFilter.length === 0
-                  ? "Todas las rondas"
-                  : `${unscoredCyclistsRoundFilter.length} rondas`}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "w-4 h-4 text-neutral-400 transition-transform",
-                  isUnscoredRoundFilterOpen && "rotate-180",
-                )}
-              />
-            </Button>
-
-            {isUnscoredRoundFilterOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsUnscoredRoundFilterOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">
-                      Rondas
-                    </span>
-                    {unscoredCyclistsRoundFilter.length > 0 && (
-                      <Button variant="outline"
-                        onClick={() => setUnscoredCyclistsRoundFilter([])}
-                        className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Limpiar
-                      </Button>
-                    )}
-                  </div>
-                  {Array.from(new Set(Object.values(cyclistRoundMap) as string[]))
-                    .filter(Boolean)
-                    .sort((a, b) => a.localeCompare(b))
-                    .map((ronda) => (
-                      <label
-                        key={ronda}
-                        className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                          checked={unscoredCyclistsRoundFilter.includes(ronda)}
-                          onChange={(e) => {
-                            if (e.target.checked) setUnscoredCyclistsRoundFilter([...unscoredCyclistsRoundFilter, ronda,]);
-                            else setUnscoredCyclistsRoundFilter(unscoredCyclistsRoundFilter.filter((r) => r !== ronda));
-                          }}
-                        />
-                        <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
-                      </label>
-                    ))}
-                </div>
-              </>
+  const filtersUI = (
+    <div className="flex flex-wrap items-center gap-3 mt-1">
+      {/* Round Multi-select Filter */}
+      <div className="relative">
+        <Button variant="outline"
+          onClick={() => setIsUnscoredRoundFilterOpen(!isUnscoredRoundFilterOpen)}
+          className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]"
+        >
+          <span className="truncate">
+            {unscoredCyclistsRoundFilter.length === 0
+              ? "Todas las rondas"
+              : `${unscoredCyclistsRoundFilter.length} rondas`}
+          </span>
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-neutral-400 transition-transform",
+              isUnscoredRoundFilterOpen && "rotate-180",
             )}
-          </div>
+          />
+        </Button>
 
-          <select
-            value={unscoredCyclistsTeamFilter}
-            onChange={(e) => setUnscoredCyclistsTeamFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="all">Todos los equipos</option>
-            {leaderboard?.map((p) => (
-              <option key={p.nombreEquipo} value={p.nombreEquipo}>{p.nombreEquipo}</option>
-            ))}
-          </select>
-        </div>
+        {isUnscoredRoundFilterOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setIsUnscoredRoundFilterOpen(false)}
+            />
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-2 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+              <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                  Rondas
+                </span>
+                {unscoredCyclistsRoundFilter.length > 0 && (
+                  <Button variant="outline"
+                    onClick={() => setUnscoredCyclistsRoundFilter([])}
+                    className="text-[10px] text-blue-600 hover:text-blue-700 font-medium border-none p-0 h-auto bg-transparent"
+                  >
+                    Limpiar
+                  </Button>
+                )}
+              </div>
+              {Array.from(new Set(Object.values(cyclistRoundMap) as string[]))
+                .filter(Boolean)
+                .sort((a, b) => a.localeCompare(b))
+                .map((ronda) => (
+                  <label
+                    key={ronda}
+                    className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                      checked={unscoredCyclistsRoundFilter.includes(ronda)}
+                      onChange={(e) => {
+                        if (e.target.checked) setUnscoredCyclistsRoundFilter([...unscoredCyclistsRoundFilter, ronda,]);
+                        else setUnscoredCyclistsRoundFilter(unscoredCyclistsRoundFilter.filter((r) => r !== ronda));
+                      }}
+                    />
+                    <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
+                  </label>
+                ))}
+            </div>
+          </>
+        )}
       </div>
+
+      <select
+        value={unscoredCyclistsTeamFilter}
+        onChange={(e) => setUnscoredCyclistsTeamFilter(e.target.value)}
+        className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      >
+        <option value="all">Todos los equipos</option>
+        {leaderboard?.map((p) => (
+          <option key={p.nombreEquipo} value={p.nombreEquipo}>{p.nombreEquipo}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  return (
+    <ReportCard
+      title={`Ciclistas sin puntuar (${countFiltered})`}
+      subtitle="Corredores elegidos en el draft que aún no han sumado puntos."
+      icon={<UserMinus />}
+      filename="ciclistas-sin-puntuar"
+      ref={unscoredTableRef}
+      headerExtra={filtersUI}
+      toolbarProps={{
+        isExpanded: isUnscoredExpanded,
+        onExpand: () => setIsUnscoredExpanded(!isUnscoredExpanded),
+        onCopyText: handleCopyUnscoredText,
+        isTextCopying: isUnscoredTextCopying,
+        onCopyImage: handleCopyUnscored,
+        isImageCopying: isUnscoredCopying,
+        imagePageCount: Math.ceil(countFiltered / 50),
+        onDownloadImage: handleDownloadUnscored
+      }}
+      bodyClassName="p-0 border-t border-neutral-100"
+      className="mt-8"
+    >
       <div
-        ref={unscoredTableRef}
         className={cn(
-          "overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 scrollbar-thin",
+          "overflow-x-auto overflow-y-auto bg-white scrollbar-thin",
           isUnscoredExpanded ? "max-h-none" : "h-[800px]",
         )}
       >
-        <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
-          <table className="min-w-full text-xs text-left bg-white rounded-xl shadow-sm rounded-lg">
-            <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100">
+        <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container md:px-0 px-2 pt-2">
+          <table className="w-full text-xs text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none md:rounded-lg block md:table border-collapse">
+            <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
               <tr className="divide-x divide-neutral-100">
                 <th
                   className="sticky top-0 z-30 bg-neutral-50 px-4 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
@@ -316,12 +315,12 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
+            <tbody className="md:divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
               {(() => {
                 const maxCarreras = Math.max(...filtered.map((c) => c.carreras), 0);
                 const maxDias = Math.max(...filtered.map((c) => c.dias), 0);
 
-                if (filtered.length === 0) return <tr><td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic text-[11px]">No hay ciclistas sin puntuar que coincidan con los criterios.</td></tr>;
+                if (filtered.length === 0) return <tr className="block md:table-row"><td colSpan={5} className="px-6 py-10 text-center text-neutral-400 italic text-[11px] block md:table-cell w-full">No hay ciclistas sin puntuar que coincidan con los criterios.</td></tr>;
 
                 return filtered.map((c, idx) => {
                   let isHiddenVisual = false;
@@ -338,12 +337,27 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
                   if (isHiddenVisual && isUnscoredCopying) return null;
 
                   return (
-                    <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] divide-x divide-neutral-100">
-                      <td className="px-4 py-1 text-neutral-600"><span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span></td>
-                      <td className="px-4 py-1 font-bold text-neutral-900">{c.ciclista}</td>
-                      <td className={cn("px-4 py-1 text-center font-mono", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500")}>{c.ronda}</td>
-                      <td className={cn("px-4 py-1 text-center font-mono", c.carreras === 0 ? "text-red-600 font-bold" : c.carreras === maxCarreras && maxCarreras > 0 ? "text-green-600 font-bold" : "text-neutral-600")}>{c.carreras}</td>
-                      <td className={cn("px-4 py-1 text-center font-mono", c.dias === 0 ? "text-red-600 font-bold" : c.dias === maxDias && maxDias > 0 ? "text-green-600 font-bold" : "text-neutral-600")}>{c.dias}</td>
+                    <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 group/row">
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2 rounded-t-xl md:rounded-none bg-neutral-50/50 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
+                        <div className="text-right md:text-left text-neutral-600"><span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span></div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                        <div className="font-bold text-neutral-900 text-right md:text-left text-[12px] md:text-[11px]">{c.ciclista}</div>
+                      </td>
+                      <td className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center font-mono tabular-nums", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500 bg-neutral-50 md:bg-transparent border-t border-neutral-100 md:border-none")}>
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                        <div className="text-right md:text-center text-[13px] md:text-[11px]">{c.ronda}</div>
+                      </td>
+                      <td className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center font-mono tabular-nums", c.carreras === 0 ? "text-red-600 font-bold" : c.carreras === maxCarreras && maxCarreras > 0 ? "text-green-600 font-bold" : "text-neutral-600 bg-neutral-50 md:bg-transparent border-t border-neutral-100 md:border-none")}>
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carreras</span>
+                        <div className="text-right md:text-center text-[13px] md:text-[11px]">{c.carreras}</div>
+                      </td>
+                      <td className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center font-mono tabular-nums rounded-b-xl md:rounded-none", c.dias === 0 ? "text-red-600 font-bold" : c.dias === maxDias && maxDias > 0 ? "text-green-600 font-bold" : "text-neutral-600 bg-neutral-50 md:bg-transparent border-t border-neutral-100 md:border-none")}>
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                        <div className="text-right md:text-center text-[13px] md:text-[11px]">{c.dias}</div>
+                      </td>
                     </tr>
                   );
                 });
@@ -352,6 +366,6 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
           </table>
         </div>
       </div>
-    </div>
+    </ReportCard>
   );
 };

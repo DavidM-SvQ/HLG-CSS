@@ -1,9 +1,11 @@
+import { InfoPointsTable } from "./info/InfoPointsTable";
+import { InfoRacesTable } from "./info/InfoRacesTable";
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { ExportToolbar } from "../ui/ExportToolbar";
+import { ReportCard } from "../ui/ReportCard";
 import { getVal, formatNumberSpanish } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -11,16 +13,15 @@ import { useDebounce } from "../../lib/hooks/useDebounce";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
+import { useTableScreenshot } from "../../hooks/useTableScreenshot";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
-export interface InfoViewProps {
-  raceWinners: Record<string, string>;
-  files: any;
-  infoSubTab: "menu" | "puntuaciones" | "carreras" | string;
-  setInfoSubTab: React.Dispatch<React.SetStateAction<"menu" | "puntuaciones" | "carreras">>;
-}
+export const InfoView = () => {
+  const { files } = useDataStore();
+  const { raceWinners } = useComputedStore();
 
-export const InfoView = (props: InfoViewProps) => {
-  const { files, infoSubTab, setInfoSubTab, raceWinners } = props;
+  const [infoSubTab, setInfoSubTab] = useUrlState<"menu" | "puntuaciones" | "carreras">("infoSubTab", "menu");
 
   const [isPointsExpanded, setIsPointsExpanded] = useState(false);
   const [isPointsTextCopying, setIsPointsTextCopying] = useState(false);
@@ -34,8 +35,10 @@ export const InfoView = (props: InfoViewProps) => {
   const [localRaceSearch, setLocalRaceSearch] = useState<string>("");
   
   useEffect(() => {
-    setLocalRaceSearch(pointsRaceSearch);
-  }, [pointsRaceSearch]);
+    if (pointsRaceSearch !== localRaceSearch) {
+      setLocalRaceSearch(pointsRaceSearch);
+    }
+  }, [pointsRaceSearch, localRaceSearch]);
   
   const debouncedRaceSearch = useDebounce(localRaceSearch, 300);
   
@@ -43,7 +46,7 @@ export const InfoView = (props: InfoViewProps) => {
     if (debouncedRaceSearch !== pointsRaceSearch) {
       setPointsRaceSearch(debouncedRaceSearch);
     }
-  }, [debouncedRaceSearch, pointsRaceSearch]);
+  }, [debouncedRaceSearch, pointsRaceSearch, setPointsRaceSearch]);
   
   const [isPointsCopying, setIsPointsCopying] = useState(false);
   const [isPointsImageCopying, setIsPointsImageCopying] = useState(false);
@@ -58,6 +61,17 @@ export const InfoView = (props: InfoViewProps) => {
 
   const pointsTableRef = useRef<HTMLDivElement>(null);
   const infoCarrerasTableRef = useRef<HTMLDivElement>(null);
+  
+  const { handleCopyImage: copyPointsImageOrig, handleDownloadImage: downloadPointsImageOrig, isCopying: isPointsImageCopyingHook } = useTableScreenshot(pointsTableRef);
+  const { handleCopyImage: copyRacesImageOrig, handleDownloadImage: downloadRacesImageOrig, isCopying: isRacesImageCopyingHook } = useTableScreenshot(racesTableRef);
+
+  useEffect(() => {
+    setIsPointsImageCopying(!!isPointsImageCopyingHook);
+  }, [isPointsImageCopyingHook]);
+
+  useEffect(() => {
+    setIsRacesImageCopying(!!isRacesImageCopyingHook);
+  }, [isRacesImageCopyingHook]);
 
   const memoizedPointsData = React.useMemo(() => {
     let filteredPoints = files.puntos?.data || [];
@@ -170,69 +184,21 @@ export const InfoView = (props: InfoViewProps) => {
   };
 
   const handleCopyPointsImage = async () => {
-    if (!pointsTableRef.current || isPointsImageCopying) return;
-    setIsPointsImageCopying(true);
-    const tableContainer = pointsTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("max-h-[600px]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      
-      const dataUrlPromise = domToDataUrl(tableContainer, {
-        scale: 1.5, 
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const blobPromise = dataUrlPromise.then(url => fetch(url).then(r => r.blob()));
-      
-      await copyImageToClipboard(blobPromise, "detalle-puntos.png", dataUrlPromise);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
-    } finally {
-      setTimeout(() => setIsPointsImageCopying(false), 1000);
-      restore();
-      tableContainer.className = originalClass;
-    }
+    await copyPointsImageOrig({
+        fileName: "detalle-puntos.png",
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+    });
   };
 
   const handleDownloadPointsImage = async () => {
-    if (!pointsTableRef.current) return;
-    const tableContainer = pointsTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("max-h-[600px]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 1.5, 
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "detalle-puntos.png";
-      link.click();
-    } catch (err) {
-      console.error("Error downloading table:", err);
-    } finally {
-      restore();
-      tableContainer.className = originalClass;
-    }
+    await downloadPointsImageOrig({
+        fileName: "detalle-puntos.png",
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+    });
   };
 
   const handleCopyRaces = async () => {
@@ -252,70 +218,21 @@ export const InfoView = (props: InfoViewProps) => {
   };
 
   const handleCopyRacesImage = async () => {
-    if (!racesTableRef.current || isRacesImageCopying) return;
-    setIsRacesImageCopying(true);
-    const tableContainer = racesTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("h-[600px]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      
-      const dataUrlPromise = domToDataUrl(tableContainer, {
-        scale: 1.5, 
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const blobPromise = dataUrlPromise.then(url => fetch(url).then(r => r.blob()));
-      
-      await copyImageToClipboard(blobPromise, "detalle-carreras.png", dataUrlPromise);
-    } catch (err) {
-      console.warn("Error during copy fallback", err);
-    } finally {
-      setTimeout(() => setIsRacesImageCopying(false), 1000);
-      restore();
-      tableContainer.className = originalClass;
-    }
+    await copyRacesImageOrig({
+        fileName: "detalle-carreras.png",
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+    });
   };
 
   const handleDownloadRacesImage = async () => {
-    if (!racesTableRef.current) return;
-    const tableContainer = racesTableRef.current;
-    const originalClass = tableContainer.className;
-    tableContainer.className = originalClass
-      .replace("h-[600px]", "")
-      .replace("overflow-y-auto", "")
-      .replace("overflow-x-auto", "");
-    const restore = expandNodeForCapture(tableContainer);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      const elHeight = tableContainer.scrollHeight;
-      const elWidth = tableContainer.scrollWidth;
-      
-      const dataUrl = await domToDataUrl(tableContainer, {
-        scale: 1.5, 
-        width: elWidth,
-        height: elHeight,
-        backgroundColor: '#ffffff',
-        style: { overflow: "visible", margin: "0" },
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "detalle-carreras.png";
-      link.click();
-    } catch (err) {
-      console.error("Error downloading table:", err);
-    } finally {
-      restore();
-      tableContainer.className = originalClass;
-    }
+    await downloadRacesImageOrig({
+        fileName: "detalle-carreras.png",
+        scale: 3,
+        filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+        backgroundColor: "#ffffff",
+    });
   };
 
   
@@ -324,9 +241,9 @@ export const InfoView = (props: InfoViewProps) => {
               <div className="space-y-8">
                 {infoSubTab === "menu" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-8">
-                    <Button variant="outline"
+                    <button
                       onClick={() => setInfoSubTab("puntuaciones")}
-                      className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group"
+                      className="h-auto whitespace-normal bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group text-left w-full"
                     >
                       <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <FileSpreadsheet className="w-8 h-8" />
@@ -338,11 +255,11 @@ export const InfoView = (props: InfoViewProps) => {
                         Consulta los puntos que otorga cada carrera según su
                         categoría y tipo de resultado.
                       </p>
-                    </Button>
+                    </button>
 
-                    <Button variant="outline"
+                    <button
                       onClick={() => setInfoSubTab("carreras")}
-                      className="bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group"
+                      className="h-auto whitespace-normal bg-white border border-neutral-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-blue-300 hover:shadow-md transition-all group text-left w-full"
                     >
                       <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Flag className="w-8 h-8" />
@@ -354,332 +271,54 @@ export const InfoView = (props: InfoViewProps) => {
                         Calendario de carreras, estado actual y ganadores de las
                         pruebas ya disputadas.
                       </p>
-                    </Button>
+                    </button>
                   </div>
                 )}
 
                 {infoSubTab === "puntuaciones" && (
-                  <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline"
-                          onClick={() => setInfoSubTab("menu")}
-                          className="text-neutral-400 hover:text-neutral-900 transition-colors"
-                        >
-                          <ChevronUp className="w-5 h-5 -rotate-90" />
-                        </Button>
-                        <h3 className="font-semibold text-lg text-neutral-900">
-                          Detalle de puntos
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ExportToolbar 
-                          isExpanded={isPointsExpanded} 
-                          onExpand={() => setIsPointsExpanded(!isPointsExpanded)} 
-                          onCopyText={handleCopyPoints} 
-                          isTextCopying={isPointsTextCopying} 
-                          onCopyImage={handleCopyPointsImage} 
-                          isImageCopying={isPointsImageCopying} 
-                          onDownloadImage={handleDownloadPointsImage} 
-                        />
-                        <Input
-                          type="text"
-                          placeholder="Buscar carrera..."
-                          value={localRaceSearch}
-                          onChange={(e) => setLocalRaceSearch(e.target.value)}
-                          className="w-48 bg-white border-neutral-300 focus-visible:ring-blue-500 rounded-lg"
-                        />
-                        <Select
-                          value={pointsCategoryFilter}
-                          onValueChange={(value) =>
-                            setPointsCategoryFilter(value === "all" ? "" : value)
-                          }
-                        >
-                          <SelectTrigger className="w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
-                            <SelectValue placeholder="Todas las categorías" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todas las categorías</SelectItem>
-                            {[
-                              ...new Set(
-                                files.puntos.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
-                              ),
-                            ]
-                              .filter(Boolean)
-                              .map((c) => (
-                                <SelectItem key={c as string} value={c as string}>
-                                  {c as string}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div
-                      ref={pointsTableRef}
-                      className={cn(
-                        "relative bg-white flex flex-col",
-                        isPointsExpanded
-                          ? "fixed inset-4 z-50 p-4 shadow-2xl rounded-xl m-0 h-auto"
-                          : "h-[600px]",
-                      )}
-                    >
-                      {isPointsExpanded && (
-                        <Button variant="outline"
-                          onClick={() => setIsPointsExpanded(false)}
-                          className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                        >
-                          <X className="w-6 h-6" />
-                        </Button>
-                      )}
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <div className="table-responsive-wrapper overflow-y-auto w-full h-full pb-4">
-                          <table className="w-full min-w-[600px] text-sm text-left">
-                          <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0 z-10 shadow-sm">
-                            <tr>
-                              <th className="px-6 py-3">Categoría</th>
-                              <th className="px-6 py-3">Tipo</th>
-                              <th className="px-6 py-3">Posición</th>
-                              <th className="px-6 py-3 text-right">Puntos</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white">
-                            {(() => {
-                              const displayPoints = memoizedPointsData;
-
-                              return displayPoints.map((r, idx) => (
-                                <tr
-                                  key={idx}
-                                  className="border-b border-neutral-100 hover:bg-neutral-50"
-                                >
-                                  <td className="px-6 py-2.5 font-medium text-neutral-900">
-                                    {getVal(r, "Categoría")}
-                                  </td>
-                                  <td className="px-6 py-2.5 text-neutral-600">
-                                    {getVal(r, "Tipo")}
-                                  </td>
-                                  <td className="px-6 py-2.5 text-neutral-600">
-                                    {getVal(r, "Posición")}
-                                  </td>
-                                  <td className="px-6 py-2.5 text-right font-bold text-blue-600">
-                                    {getVal(r, "Puntos")}
-                                  </td>
-                                </tr>
-                              ));
-                            })()}
-                          </tbody>
-                        </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <InfoPointsTable
+                    setInfoSubTab={setInfoSubTab}
+                    pointsTableRef={pointsTableRef}
+                    isPointsExpanded={isPointsExpanded}
+                    setIsPointsExpanded={setIsPointsExpanded}
+                    handleCopyPoints={handleCopyPoints}
+                    isPointsTextCopying={isPointsTextCopying}
+                    handleCopyPointsImage={handleCopyPointsImage}
+                    isPointsImageCopying={isPointsImageCopying}
+                    handleDownloadPointsImage={handleDownloadPointsImage}
+                    localRaceSearch={localRaceSearch}
+                    setLocalRaceSearch={setLocalRaceSearch}
+                    pointsCategoryFilter={pointsCategoryFilter}
+                    setPointsCategoryFilter={setPointsCategoryFilter}
+                    files={files}
+                    memoizedPointsData={memoizedPointsData}
+                  />
                 )}
 
                 {infoSubTab === "carreras" && (
-                  <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline"
-                          onClick={() => setInfoSubTab("menu")}
-                          className="text-neutral-400 hover:text-neutral-900 transition-colors"
-                        >
-                          <ChevronUp className="w-5 h-5 -rotate-90" />
-                        </Button>
-                        <h3 className="font-semibold text-lg text-neutral-900">
-                          Detalle de carreras
-                        </h3>
-                      </div>
-                      <Select
-                        value={racesFilter}
-                        onValueChange={(value) => setRacesFilter(value as any)}
-                      >
-                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
-                          <SelectValue placeholder="Todas las carreras" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas las carreras</SelectItem>
-                          <SelectItem value="finished">Ya disputadas</SelectItem>
-                          <SelectItem value="upcoming">Por disputar</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={racesCategoryFilter}
-                        onValueChange={(value) => setRacesCategoryFilter(value === "all" ? "" : value)}
-                      >
-                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
-                          <SelectValue placeholder="Todas las categorías" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas las categorías</SelectItem>
-                          {[
-                            ...new Set(
-                              files.carreras.data?.map((r: any) =>
-                                getVal(r, "Categoría")?.trim(),
-                              ),
-                            ),
-                          ]
-                            .filter(Boolean)
-                            .map((c) => (
-                              <SelectItem key={c as string} value={c as string}>
-                                {c as string}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={racesMonthFilter}
-                        onValueChange={(value) => setRacesMonthFilter(value === "all" ? "" : value)}
-                      >
-                        <SelectTrigger className="w-full sm:w-48 bg-white border-neutral-300 focus:ring-blue-500 rounded-lg">
-                          <SelectValue placeholder="Todos los meses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos los meses</SelectItem>
-                          {[
-                            "Enero",
-                            "Febrero",
-                            "Marzo",
-                            "Abril",
-                            "Mayo",
-                            "Junio",
-                            "Julio",
-                            "Agosto",
-                            "Septiembre",
-                            "Octubre",
-                            "Noviembre",
-                            "Diciembre",
-                          ].map((m, i) => (
-                            <SelectItem
-                              key={m}
-                              value={(i + 1).toString().padStart(2, "0")}
-                            >
-                              {m}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex items-center gap-2">
-                        <ExportToolbar 
-                          isExpanded={isRacesExpanded} 
-                          onExpand={() => setIsRacesExpanded(!isRacesExpanded)} 
-                          onCopyText={handleCopyRaces} 
-                          isTextCopying={isRacesTextCopying} 
-                          onCopyImage={handleCopyRacesImage} 
-                          isImageCopying={isRacesImageCopying} 
-                          onDownloadImage={handleDownloadRacesImage} 
-                        />
-                      </div>
-                    </div>
-                    <div
-                      ref={racesTableRef}
-                      className={cn(
-                        "relative bg-white flex flex-col",
-                        isRacesExpanded
-                          ? "fixed inset-4 z-50 p-4 shadow-2xl rounded-xl m-0 h-auto"
-                          : "h-[600px]",
-                      )}
-                    >
-                      {isRacesExpanded && (
-                        <Button variant="outline"
-                          onClick={() => setIsRacesExpanded(false)}
-                          className="absolute top-6 right-6 p-2 bg-white rounded-full shadow-lg z-10 copy-button-ignore"
-                        >
-                          <X className="w-6 h-6" />
-                        </Button>
-                      )}
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <div className="table-responsive-wrapper overflow-y-auto w-full h-full pb-4">
-                          <table className="w-full min-w-[600px] text-sm text-left">
-                          <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 border-b border-neutral-100 sticky top-0 z-10 shadow-sm">
-                          <tr>
-                            <th className="px-6 py-3">Carrera</th>
-                            <th className="px-6 py-3">Categoría</th>
-                            <th 
-                              className="px-6 py-3 cursor-pointer hover:bg-neutral-100 select-none transition-colors"
-                              onClick={() => setInfoCarrerasSortDir(d => d === "asc" ? "desc" : "asc")}
-                            >
-                              Fecha <span className="text-neutral-400">{infoCarrerasSortDir === "asc" ? "↑" : "↓"}</span>
-                            </th>
-                            <th className="px-6 py-3 text-right">Ganador</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white">
-                          {(() => {
-                            const now = new Date().getTime();
-
-                            const resultObj = memoizedRacesData;
-
-                            return resultObj
-                              ?.map((r, idx) => {
-                                const fechaFin = getVal(r, "Fecha");
-                                const parts = fechaFin?.toString().split(/[-/]/) || [];
-                                let date: Date | null = null;
-                                let isFinished = false;
-                                if (parts.length === 3) {
-                                  if (parts[0].length === 4) {
-                                    date = new Date(
-                                      parseInt(parts[0]),
-                                      parseInt(parts[1]) - 1,
-                                      parseInt(parts[2]),
-                                    );
-                                  } else {
-                                    date = new Date(
-                                      parseInt(parts[2]),
-                                      parseInt(parts[1]) - 1,
-                                      parseInt(parts[0]),
-                                    );
-                                  }
-                                  isFinished = date.getTime() < now;
-                                }
-                                const raceName = getVal(r, "Carrera");
-                                const winner = raceWinners[raceName];
-
-                                return (
-                                  <tr
-                                    key={idx}
-                                    className={cn(
-                                      "border-b border-neutral-100 hover:bg-neutral-50",
-                                      isFinished
-                                        ? "bg-neutral-50/50 text-neutral-400"
-                                        : "",
-                                    )}
-                                  >
-                                    <td
-                                      className={cn(
-                                        "px-6 py-2.5 font-medium",
-                                        isFinished
-                                          ? "text-neutral-500"
-                                          : "text-neutral-900",
-                                      )}
-                                    >
-                                      {raceName}
-                                    </td>
-                                    <td className="px-6 py-2.5">
-                                      <span
-                                        className={cn(
-                                          "px-2 py-1 rounded-md text-xs font-semibold",
-                                          isFinished
-                                            ? "bg-neutral-200 text-neutral-500"
-                                            : "bg-neutral-100 text-neutral-600",
-                                        )}
-                                      >
-                                        {getVal(r, "Categoría")}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-2.5 font-mono text-sm">{fechaFin}</td>
-                                    <td className="px-6 py-2.5 text-right font-bold text-blue-600">
-                                      {winner || "-"}
-                                    </td>
-                                  </tr>
-                                );
-                              });
-                          })()}
-                        </tbody>
-                      </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <InfoRacesTable
+                    setInfoSubTab={setInfoSubTab}
+                    racesTableRef={racesTableRef}
+                    isRacesExpanded={isRacesExpanded}
+                    setIsRacesExpanded={setIsRacesExpanded}
+                    handleCopyRaces={handleCopyRaces}
+                    isRacesTextCopying={isRacesTextCopying}
+                    handleCopyRacesImage={handleCopyRacesImage}
+                    isRacesImageCopying={isRacesImageCopying}
+                    handleDownloadRacesImage={handleDownloadRacesImage}
+                    racesFilter={racesFilter}
+                    setRacesFilter={setRacesFilter}
+                    racesCategoryFilter={racesCategoryFilter}
+                    setRacesCategoryFilter={setRacesCategoryFilter}
+                    racesMonthFilter={racesMonthFilter}
+                    setRacesMonthFilter={setRacesMonthFilter}
+                    files={files}
+                    setInfoCarrerasSortDir={setInfoCarrerasSortDir}
+                    infoCarrerasSortDir={infoCarrerasSortDir}
+                    memoizedRacesData={memoizedRacesData}
+                    raceWinners={raceWinners}
+                    now={new Date().getTime()}
+                  />
                 )}
               </div>
   );

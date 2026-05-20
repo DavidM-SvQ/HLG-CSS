@@ -4,28 +4,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DraftElections } from './draft/DraftElections';
 import { DraftDatos } from './draft/DraftDatos';
 import { cn } from '../../lib/utils';
-import { getVal } from '../../lib/data-processing';
+import { getVal, getFlagEmoji } from '../../lib/data-processing';
 import { Button } from "../ui/button";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
-export interface DraftViewProps {
-  leaderboard: any;
-  getFlagEmoji: any;
-  teamToPlayerMap: any;
-  playerOrderMap: any;
-  files: any;
-    cyclistMetadata: any;
-  playerTeamMap: any;
-        }
 
-export const DraftView: React.FC<DraftViewProps> = ({
-  files,
+export const DraftView = () => {
+  const { files } = useDataStore();
+  const { 
     cyclistMetadata,
-  playerTeamMap,
-          leaderboard,
-  getFlagEmoji,
-  teamToPlayerMap,
-  playerOrderMap
-}) => {
+    leaderboard,
+    teamToPlayerMap,
+    playerOrderMap
+  } = useComputedStore();
+
   const [draftSubTab, setDraftSubTab] = useUrlState<"elecciones" | "datos">("draftSubTab", "elecciones");
 
   const draftCyclistStats = useMemo(() => {

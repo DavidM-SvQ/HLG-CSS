@@ -1,49 +1,21 @@
-import { copyImageToClipboard, copyTextToClipboard } from "./lib/clipboard";
-import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
-import { useGestionStartlists } from "./lib/hooks/useGestionStartlists";
-import { useFileUpload } from "./lib/hooks/useFileUpload";
-import { FILE_TYPES } from "./lib/config/fileTypes";
-import { useUrlState } from "./hooks/useUrlState";
-import { motion, AnimatePresence } from "motion/react";
-import { Toaster, toast } from "sonner";
-import Papa from "papaparse";
-import localforage from "localforage";
+import React, { useState, useEffect } from "react";
+import { Toaster } from "sonner";
 import { useDataStore } from "./lib/stores/useDataStore";
-import { useComputedStore } from "./lib/stores/useComputedStore";
 import { useAppComputations } from "./lib/hooks/useAppComputations";
 import { AlertCircle } from "lucide-react";
 import { PublicLayout } from "./components/layouts/PublicLayout";
 import { AdminLayout } from "./components/layouts/AdminLayout";
 import { AppHeader } from "./components/AppHeader";
-import { AdminNav } from "./components/AdminNav";
-import { TableSkeleton } from "./components/ui/Skeleton";
-import { Routes, Route, Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { OfflineIndicator } from "./components/ui/OfflineIndicator";
+import { useLocation } from "react-router-dom";
 
-
-
-
-import { cn } from "./lib/utils";
 import { supabase } from "./supabase";
 import { useAuth } from "./lib/auth/AuthContext";
 
 import { AppState, FileState } from "./lib/types";
 
-import { formatNumberSpanish, normalizeStr, getVal, getCategoryColorStyle } from "./lib/data-processing";
-import { expandNodeForCapture } from "./lib/dom-utils";
-
 import { usePageView } from "./lib/analytics/usePageView";
 import { Button } from "./components/ui/button";
-
-
-
-// --- Constants ---
-
-
-
-
-// --- Helpers ---
-
-// MultiSelect is now imported from components/ui/multi-select
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog";
 
 export default function App() {
@@ -105,21 +77,7 @@ export default function App() {
 
   // Info tab states
   
-  const { files, setFiles, fetchGlobalFile, initializeGlobalFiles } = useDataStore();
-  const { handleFileUpload } = useFileUpload(isSupabaseConfigured);
-  const { 
-    leaderboard, 
-    raceWinners, 
-    globalTeamWinsCount, 
-    globalTeamPartialWinsCount, 
-    uniqueRaces,
-    cyclistMetadata,
-    playerOrderMap,
-    playerByCyclist,
-    playerTeamMap,
-    teamToPlayerMap,
-    cyclistRoundMap 
-  } = useComputedStore();
+  const { files, fetchGlobalFile, initializeGlobalFiles } = useDataStore();
 
   useAppComputations();
   const currentTabName = location.pathname.split("/")[1] || "season";
@@ -139,14 +97,6 @@ export default function App() {
     else setView("public");
   }, [isAdmin]);
 
-  const { 
-    startlistText, setStartlistText, 
-    startlistRace, setStartlistRace, 
-    parsedStartlist, isSavingStartlist, 
-    handleParseStartlist, handleSaveStartlist,
-    handleDeleteStartlist, handleDeleteAllStartlists
-  } = useGestionStartlists(files, user, playerByCyclist, playerTeamMap, isSupabaseConfigured, fetchGlobalFile);
-
   const essentialFiles = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados"];
   const allFilesUploaded = essentialFiles.every(
     (key) => files[key as keyof AppState].data !== null,
@@ -156,21 +106,12 @@ export default function App() {
 
   // Supabase sync for global files
   useEffect(() => {
+    // Always initialize to load any cached localforage data
+    initializeGlobalFiles(isSupabaseConfigured);
+
     if (!isAuthReady || !isSupabaseConfigured) {
-      if (!isSupabaseConfigured) {
-        // Set loading to false if not configured to avoid permanent "Sincronizando"
-        setFiles((prev) => {
-          const next = { ...prev };
-          Object.keys(next).forEach((key) => {
-            (next[key as keyof AppState] as any).loading = false;
-          });
-          return next;
-        });
-      }
       return;
     }
-
-    initializeGlobalFiles(isSupabaseConfigured);
 
     // Real-time subscription
     const channel = supabase
@@ -241,132 +182,15 @@ export default function App() {
       ? new Date(Math.max(...lastUpdatedDates))
       : null;
 
-  // --- Helpers ---
-  const getFlagEmoji = (countryName: string) => {
-    if (!countryName) return "";
-    const country = countryName.trim().toLowerCase();
-    const flags: Record<string, string> = {
-      spain: "🇪🇸",
-      españa: "🇪🇸",
-      france: "🇫🇷",
-      francia: "🇫🇷",
-      italy: "🇮🇹",
-      italia: "🇮🇹",
-      belgium: "🇧🇪",
-      bélgica: "🇧🇪",
-      netherlands: "🇳🇱",
-      "países bajos": "🇳🇱",
-      holanda: "🇳🇱",
-      slovenia: "🇸🇮",
-      eslovenia: "🇸🇮",
-      denmark: "🇩🇰",
-      dinamarca: "🇩🇰",
-      "great britain": "🇬🇧",
-      "gran bretaña": "🇬🇧",
-      "united kingdom": "🇬🇧",
-      "reino unido": "🇬🇧",
-      australia: "🇦🇺",
-      usa: "🇺🇸",
-      "united states": "🇺🇸",
-      eeuu: "🇺🇸",
-      "estados unidos": "🇺🇸",
-      colombia: "🇨🇴",
-      ecuador: "🇪🇨",
-      norway: "🇳🇴",
-      noruega: "🇳🇴",
-      germany: "🇩🇪",
-      alemania: "🇩🇪",
-      switzerland: "🇨🇭",
-      suiza: "🇨🇭",
-      portugal: "🇵🇹",
-      austria: "🇦🇹",
-      ireland: "🇮🇪",
-      irlanda: "🇮🇪",
-      canada: "🇨🇦",
-      canadá: "🇨🇦",
-      "new zealand": "🇳🇿",
-      "nueva zelanda": "🇳🇿",
-      eritrea: "🇪🇷",
-      kazakhstan: "🇰🇿",
-      kazajistán: "🇰🇿",
-      poland: "🇵🇱",
-      polonia: "🇵🇱",
-      "czech republic": "🇨🇿",
-      "república checa": "🇨🇿",
-      slovakia: "🇸🇰",
-      eslovaquia: "🇸🇰",
-      hungary: "🇭🇺",
-      hungría: "🇭🇺",
-      luxembourg: "🇱🇺",
-      luxemburgo: "🇱🇺",
-      "south africa": "🇿🇦",
-      sudáfrica: "🇿🇦",
-      latvia: "🇱🇻",
-      letonia: "🇱🇻",
-      estonia: "🇪🇪",
-      lithuania: "🇱🇹",
-      lituania: "🇱🇹",
-      israel: "🇮🇱",
-      japan: "🇯🇵",
-      japón: "🇯🇵",
-      china: "🇨🇳",
-      russia: "🇷🇺",
-      rusia: "🇷🇺",
-      ukraine: "🇺🇦",
-      ucrania: "🇺🇦",
-      belarus: "🇧🇾",
-      bielorrusia: "🇧🇾",
-      mexico: "🇲🇽",
-      méxico: "🇲🇽",
-      argentina: "🇦🇷",
-      brazil: "🇧🇷",
-      brasil: "🇧🇷",
-      venezuela: "🇻🇪",
-      "costa rica": "🇨🇷",
-      panama: "🇵🇦",
-      panamá: "🇵🇦",
-    };
-    return flags[country] || countryName;
-  };
-
-  const formattedTeams = React.useMemo(() => {
-    if (!files.elecciones.data) return [];
-
-    const teamData: Record<string, string> = {}; // teamName -> order
-    const uniquePlayers = [
-      ...new Set(
-        files.elecciones.data
-          .map((r) => getVal(r, "Nombre_TG")?.trim())
-          .filter(Boolean),
-      ),
-    ] as string[];
-
-    files.elecciones?.data?.forEach((row) => {
-      const jugador = getVal(row, "Nombre_TG")?.trim();
-      const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim() || jugador;
-      if (jugador && nombreEquipo && !teamData[nombreEquipo]) {
-        const playerIdx = uniquePlayers.indexOf(jugador);
-        const order = (playerIdx + 1).toString().padStart(2, "0");
-        teamData[nombreEquipo] = order;
-      }
-    });
-
-    return Object.entries(teamData)
-      .map(([name, order]) => ({
-        label: `${name} [#${order}]`,
-        value: name,
-      }))
-      .sort((a, b) => a.value.localeCompare(b.value));
-  }, [files.elecciones.data]);
-
   
 
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200">
       <Toaster position="top-center" richColors />
-      
-      <Dialog open={showFrameWarning} onOpenChange={setShowFrameWarning}>
+      <OfflineIndicator />
+        
+        <Dialog open={showFrameWarning} onOpenChange={setShowFrameWarning}>
         <DialogContent className="sm:max-w-md border-none shadow-xl rounded-2xl">
           <DialogTitle className="sr-only">Autenticación pausada</DialogTitle>
           <div className="flex flex-col">
@@ -427,47 +251,9 @@ export default function App() {
         )}
 
         {view === "admin" ? (
-          <AdminLayout 
-            files={files}
-            user={user}
-            handleFileUpload={handleFileUpload}
-            leaderboard={leaderboard}
-            uniqueRaces={uniqueRaces}
-            globalTeamPartialWinsCount={globalTeamPartialWinsCount}
-            raceWinners={raceWinners}
-            globalTeamWinsCount={globalTeamWinsCount}
-            cyclistMetadata={cyclistMetadata}
-            cyclistRoundMap={cyclistRoundMap}
-            playerOrderMap={playerOrderMap}
-            playerTeamMap={playerTeamMap}
-            startlistRace={startlistRace}
-            setStartlistRace={setStartlistRace}
-            startlistText={startlistText}
-            setStartlistText={setStartlistText}
-            handleParseStartlist={handleParseStartlist}
-            parsedStartlist={parsedStartlist}
-            isSavingStartlist={isSavingStartlist}
-            handleSaveStartlist={handleSaveStartlist}
-            handleDeleteStartlist={handleDeleteStartlist}
-            handleDeleteAllStartlists={handleDeleteAllStartlists}
-          />
+          <AdminLayout />
         ) : (
-          <PublicLayout 
-            files={files}
-            leaderboard={leaderboard}
-            raceWinners={raceWinners}
-            globalTeamPartialWinsCount={globalTeamPartialWinsCount}
-            globalTeamWinsCount={globalTeamWinsCount}
-            cyclistMetadata={cyclistMetadata}
-            cyclistRoundMap={cyclistRoundMap}
-            playerOrderMap={playerOrderMap}
-            playerTeamMap={playerTeamMap}
-            playerByCyclist={playerByCyclist}
-            uniqueRaces={uniqueRaces}
-            formattedTeams={formattedTeams}
-            getFlagEmoji={getFlagEmoji}
-            teamToPlayerMap={teamToPlayerMap}
-          />
+          <PublicLayout />
         )}
       </main>
     </div>

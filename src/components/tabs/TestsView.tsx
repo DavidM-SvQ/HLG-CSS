@@ -9,17 +9,19 @@ import { TestsIdeasTracker } from './tests/TestsIdeasTracker';
 import { TestsCalendarHeatmap } from './tests/TestsCalendarHeatmap';
 
 import { CyclistMetadata } from '../../lib/stores/useComputedStore';
+import { useDataStore } from '../../lib/stores/useDataStore';
+import { useComputedStore } from '../../lib/stores/useComputedStore';
 
-interface TestsViewProps {
-  cyclistMetadata: Record<string, CyclistMetadata>;
-  playerOrderMap: Record<string, string>;
-  playerTeamMap: Record<string, string>;
-  cyclistRoundMap: Record<string, string>;
-  files: any;
-  leaderboard?: any[];
-}
 
-export function TestsView({ leaderboard, cyclistMetadata, playerOrderMap, playerTeamMap, cyclistRoundMap, files }: TestsViewProps) {
+export function TestsView() {
+  const { files } = useDataStore();
+  const { 
+    leaderboard,
+    cyclistMetadata,
+    playerOrderMap,
+    playerTeamMap,
+    cyclistRoundMap
+  } = useComputedStore();
   
   const [dependencyTopCount, setDependencyTopCount] = useState<number>(3);
   

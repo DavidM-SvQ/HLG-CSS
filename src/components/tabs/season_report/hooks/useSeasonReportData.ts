@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { DRAFT_RANK_MAP } from "../../../../lib/constants";
 
 export const getVal = (row: any, key: string) => {
   if (!row) return "";
@@ -37,37 +38,14 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       return new Set<string>();
     }
     if (selectedMonths && selectedMonths.length > 0) {
-      return new Set(Object.keys(raceMonths).filter(race => selectedMonths.includes(raceMonths[race])));
+      const selected = selectedMonths.map(Number);
+      return new Set(Object.keys(raceMonths).filter(race => selected.includes(raceMonths[race])));
     }
     return new Set(Object.keys(raceMonths));
   }, [raceMonths, selectedMonths, requireSelectedMonths]);
 
   const monthReportData = useMemo(() => {
     if (requireSelectedMonths && (!selectedMonths || selectedMonths.length === 0)) return null;
-    
-
-    const DRAFT_RANK_MAP: Record<string, string> = {
-      "Xauli": "01",
-      "Iker": "02",
-      "Celita Líder Trek": "03",
-      "King Remco": "04",
-      "Javito's Cojostars": "05",
-      "diegocruga": "06",
-      "JF": "07",
-      "Madafaca": "08",
-      "Adrián M.": "09",
-      "Xemita el cagalera": "10",
-      "Pantic": "11",
-      "carloscampas": "12",
-      "Salva CSS": "13",
-      "K": "14",
-      "RedBluff IsraelHP": "15",
-      "monty team": "16",
-      "IbaiWRT": "17",
-      "Osintron Fachafranco": "18",
-      "Colotto": "19",
-      "Pandis": "20",
-    };
 
     const allCyclistPoints: Record<string, number> = {};
     const cyclistTeamMap: Record<string, string> = {};
@@ -91,6 +69,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
     const teamCyclistsPoints: Record<string, Record<string, number>> = {}; // [team][cyclist] -> points
     const teamWins: Record<string, number> = {};
+    const teamUniqueRaces: Record<string, Set<string>> = {};
     const roundCyclistsPoints: Record<string, Record<string, number>> = {}; // [round][cyclist] -> points
 
     const panenkitaTeamPoints: Record<string, number> = {};
@@ -117,6 +96,11 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
       player?.detalles?.forEach((d) => {
         if (!visibleRaces.has(d.carrera)) return;
+
+        if (isDraft) {
+          if (!teamUniqueRaces[team]) teamUniqueRaces[team] = new Set();
+          teamUniqueRaces[team].add(d.carrera);
+        }
 
         const isPos01 = d.posicion === "01" || d.posicion === "1";
         const isValidType = [
@@ -159,6 +143,10 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
           teamPoints[team] += pts;
           teamCyclistsPoints[team][d.ciclista] =
             (teamCyclistsPoints[team][d.ciclista] || 0) + pts;
+
+          if (!isDraft) {
+            noDraftCyclistPoints[d.ciclista] = (noDraftCyclistPoints[d.ciclista] || 0) + pts;
+          }
 
           if (roundStr) {
             if (!roundTeamPoints[roundStr]) roundTeamPoints[roundStr] = {};
@@ -228,21 +216,46 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
     const topTeams = Object.entries(teamPoints)
       .sort((a, b) => b[1] - a[1])
-      .map(([team, pts], currentPos) => {
-        const draftRankNum = DRAFT_RANK_MAP[team] || "-";
+      .map(([teamName, pts], currentPos) => {
+        const draftRankNum = DRAFT_RANK_MAP[teamName] || "-";
         const dif = (draftRankNum !== "-" ? parseInt(draftRankNum, 10) : 999) - (currentPos + 1);
-        const wins = raceWinners.filter((rw) => rw.winnerTeam === team).length;
-        const stageWins = teamWins[team] || 0;
+        const wins = raceWinners.filter((rw) => rw.winnerTeam === teamName).length;
+        const stageWins = teamWins[teamName] || 0;
+        
+        const racesSet = teamUniqueRaces[teamName] || new Set();
+        const numCarreras = racesSet.size;
+        
+        let totalDays = 0;
+        racesSet.forEach((raceName) => {
+          const raceData = files?.carreras?.data?.find((r: any) => getVal(r, "Carrera")?.trim() === raceName);
+          if (raceData) {
+            const diasStr = getVal(raceData, "Días");
+            totalDays += parseInt(diasStr) || 1;
+          } else {
+            totalDays += 1;
+          }
+        });
+
+        const ppc = numCarreras > 0 ? parseFloat((pts / numCarreras).toFixed(1)) : 0;
+        const ppd = totalDays > 0 ? parseFloat((pts / totalDays).toFixed(1)) : 0;
         
         return {
-          team,
+          team: teamName, // Keep 'team' for backward compatibility in MonthlyReport/SeasonReport
+          nombreEquipo: teamName, // Map to TopTeamsTableContent
           pts,
-          originalPos: draftRankNum,
+          puntos: pts, // Map to TopTeamsTableContent
+          originalPos: draftRankNum !== "-" ? parseInt(draftRankNum, 10) : 999, // Map to TopTeamsTableContent (draft Pos)
           currentPos: currentPos + 1,
-          dif,
+          dif, // Keep 'dif'
+          diff: dif, // Map to TopTeamsTableContent
           wins,
           stageWins,
-          monthlyPoints: teamMonthlyPoints[team] || {}
+          partialWins: stageWins, // Map to TopTeamsTableContent
+          numCarreras,
+          totalDays,
+          ppc,
+          ppd,
+          monthlyPoints: teamMonthlyPoints[teamName] || {}
         };
       });
 
@@ -358,10 +371,18 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         const teamNameWithDraftRank = `${team} [#${draftRank}]`;
         const totalTeamPts = teamPoints[team] || 0;
         
+        let zeroPointsCount = 0;
+        Object.entries(cyclistTeamMap).forEach(([c, t]) => {
+           if (t === teamNameWithDraftRank && (!allCyclistPoints[c] || allCyclistPoints[c] === 0)) {
+               zeroPointsCount++;
+           }
+        });
+
         return {
           team: teamNameWithDraftRank,
           draftRank: draftRank !== "-" ? parseInt(draftRank, 10) : 999,
           pts: totalTeamPts,
+          zeroPoints: zeroPointsCount,
           best: sorted.length > 0 ? [`${sorted[0][0]} <${cyclistRondaMap[sorted[0][0]] || "-"}>`, sorted[0][1]] : null,
           worst: sorted.length > 0 ? [`${sorted[sorted.length - 1][0]} <${cyclistRondaMap[sorted[sorted.length - 1][0]] || "-"}>`, sorted[sorted.length - 1][1]] : null,
         };
@@ -371,8 +392,17 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const minMaxRound = Object.entries(roundCyclistsPoints)
       .map(([round, cMap]) => {
         const sorted = Object.entries(cMap).sort((a, b) => b[1] - a[1]);
+        
+        let zeroPointsCount = 0;
+        Object.entries(cyclistRondaMap).forEach(([c, r]) => {
+           if (r === round && (!allCyclistPoints[c] || allCyclistPoints[c] === 0)) {
+               zeroPointsCount++;
+           }
+        });
+
         return {
           round,
+          zeroPoints: zeroPointsCount,
           best: sorted.length > 0 ? [`${sorted[0][0]} (${monthlyCyclistTeamMap[sorted[0][0]] || ""})`, sorted[0][1]] : null,
           worst: sorted.length > 0 ? [`${sorted[sorted.length - 1][0]} (${monthlyCyclistTeamMap[sorted[sorted.length - 1][0]] || ""})`, sorted[sorted.length - 1][1]] : null,
         };

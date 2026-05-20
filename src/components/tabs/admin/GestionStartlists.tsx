@@ -3,36 +3,24 @@ import { Save, Search, Users, Trash } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { getVal } from "../../../lib/data-processing";
 import { Button } from "../../ui/button";
+import { useGestionStartlists } from "../../../lib/hooks/useGestionStartlists";
+import { useDataStore } from "../../../lib/stores/useDataStore";
+import { useComputedStore } from "../../../lib/stores/useComputedStore";
+import { useAuth } from "../../../lib/auth/AuthContext";
 
-interface GestionStartlistsProps {
-  files: any;
-  user: any;
-  startlistRace: string;
-  setStartlistRace: (val: string) => void;
-  startlistText: string;
-  setStartlistText: (val: string) => void;
-  handleParseStartlist: () => void;
-  parsedStartlist: any;
-  isSavingStartlist: boolean;
-  handleSaveStartlist: () => void;
-  handleDeleteStartlist?: (carrera: string) => void;
-  handleDeleteAllStartlists?: () => void;
-}
+export const GestionStartlists = () => {
+  const { files, fetchGlobalFile } = useDataStore();
+  const { playerByCyclist, playerTeamMap } = useComputedStore();
+  const { user, isSupabaseConfigured } = useAuth();
+  
+  const { 
+    startlistText, setStartlistText, 
+    startlistRace, setStartlistRace, 
+    parsedStartlist, isSavingStartlist, 
+    handleParseStartlist, handleSaveStartlist,
+    handleDeleteStartlist, handleDeleteAllStartlists
+  } = useGestionStartlists(files, user, playerByCyclist, playerTeamMap, isSupabaseConfigured, fetchGlobalFile);
 
-export const GestionStartlists: React.FC<GestionStartlistsProps> = ({
-  files,
-  user,
-  startlistRace,
-  setStartlistRace,
-  startlistText,
-  setStartlistText,
-  handleParseStartlist,
-  parsedStartlist,
-  isSavingStartlist,
-  handleSaveStartlist,
-  handleDeleteStartlist,
-  handleDeleteAllStartlists,
-}) => {
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden min-h-[600px] flex flex-col">
       <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -102,7 +90,7 @@ export const GestionStartlists: React.FC<GestionStartlistsProps> = ({
               value={startlistText}
               onChange={(e) => setStartlistText(e.target.value)}
               placeholder="Pega el listado directamente desde FirstCycling..."
-              className="w-full flex-1 p-4 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono text-xs text-neutral-600 bg-neutral-50/50"
+              className="w-full flex-1 p-4 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono tabular-nums text-xs text-neutral-600 bg-neutral-50/50"
             />
           </div>
           <Button onClick={handleParseStartlist} variant="outline" className="flex items-center justify-center gap-2">
@@ -142,7 +130,7 @@ export const GestionStartlists: React.FC<GestionStartlistsProps> = ({
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-bold text-neutral-900">
-                        {row.jugador}
+                        {playerTeamMap[row.jugador] || row.jugador}
                       </span>
                       <span className="text-xs font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
                         {row.ciclistas.length} seleccionados
@@ -182,8 +170,6 @@ export const GestionStartlists: React.FC<GestionStartlistsProps> = ({
               onClick={() => {
                 if (handleDeleteAllStartlists) {
                   handleDeleteAllStartlists();
-                } else if (confirm("¿Estás seguro de que quieres borrar TODAS las startlists subidas? Esta acción no se puede deshacer.")) {
-                  // Fallback if not injected
                 }
               }}
               className="text-red-600 border-red-200 hover:bg-red-50"
@@ -225,7 +211,7 @@ export const GestionStartlists: React.FC<GestionStartlistsProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center font-mono text-xs">
+                      <td className="px-4 py-3 text-center font-mono tabular-nums text-xs">
                         {fechaCarrera}
                       </td>
                       <td className="px-4 py-3 text-center">

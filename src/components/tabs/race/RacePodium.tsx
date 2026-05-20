@@ -42,7 +42,7 @@ export const RacePodium = ({ rankedTeams }: RacePodiumProps) => {
              <div key={team.jugador} className="flex flex-col items-center w-28 md:w-36 animate-in fade-in slide-in-from-bottom-8 duration-700" style={{ animationDelay: `${position * 150}ms` }}>
                 <div className="text-center mb-2 w-full">
                    <div className="font-bold text-sm md:text-base leading-tight w-full truncate px-1 text-slate-800" title={team.nombreEquipo}>{team.nombreEquipo}</div>
-                   <div className="text-xs font-mono font-semibold text-slate-500">{team.totalPoints} pts</div>
+                   <div className="text-xs font-mono tabular-nums font-semibold text-slate-500">{team.totalPoints} pts</div>
                 </div>
                 <div className={cn("w-full rounded-t-xl bg-gradient-to-t border-t-2 flex flex-col justify-start items-center pt-2 shadow-inner", height, bgClass)}>
                    <span className={cn("text-3xl font-black opacity-30 mt-2", numColor)}>

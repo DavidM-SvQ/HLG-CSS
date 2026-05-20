@@ -4,6 +4,7 @@ import { useSeasonReportData } from "./season_report/hooks/useSeasonReportData";
 import { domToDataUrl } from "modern-screenshot";
 import { useCrosshair } from '../../hooks/useCrosshair';
 import React, { useState, useMemo } from "react";
+import { useUrlState } from "../../hooks/useUrlState";
 import {
   Trophy,
   BarChart3,
@@ -30,8 +31,9 @@ import { TopCyclistsReport } from "./season_report/TopCyclistsReport";
 import { PointsPerRoundReport } from "./season_report/PointsPerRoundReport";
 import { MinMaxReport } from "./season_report/MinMaxReport";
 import { PanenkitaReport } from "./season_report/PanenkitaReport";
-import { ExportToolbar } from "../ui/ExportToolbar";
 import { Button } from "../ui/button";
+import { useDataStore } from "../../lib/stores/useDataStore";
+import { useComputedStore } from "../../lib/stores/useComputedStore";
 
 interface ScoreDetail {
   carrera: string;
@@ -53,11 +55,6 @@ interface PlayerScore {
 
 import { VirtualizedTableBody } from '../ui/VirtualizedTableBody';
 
-interface MonthlyReportViewProps {
-  files: any;
-  leaderboard: PlayerScore[];
-}
-
 const monthNames = [
   "Enero",
   "Febrero",
@@ -78,14 +75,13 @@ const monthNames = [
 
 
 
-export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
-  files,
-  leaderboard,
-}) => {
+export const MonthlyReportView = () => {
+  const { files } = useDataStore();
+  const { leaderboard } = useComputedStore();
   
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([]);
-  const [cyclistsSortColumn, setCyclistsSortColumn] = useState<string>("pos");
-  const [cyclistsSortDirection, setCyclistsSortDirection] = useState<"asc" | "desc">("asc");
+  const [selectedMonths, setSelectedMonths] = useUrlState<number[]>("monthly_v_months", []);
+  const [cyclistsSortColumn, setCyclistsSortColumn] = useUrlState<string>("monthly_v_sortCol", "pos");
+  const [cyclistsSortDirection, setCyclistsSortDirection] = useUrlState<"asc" | "desc">("monthly_v_sortDir", "asc");
 
   // 1. Map races to their respective months based on "Fecha"
   const { availableMonths, monthReportData } = useSeasonReportData({
@@ -96,10 +92,11 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   });
   
   const toggleMonth = (m: number) => {
-    if (selectedMonths.includes(m)) {
-      setSelectedMonths(selectedMonths.filter((x) => x !== m));
+    const currentList = selectedMonths.map(Number);
+    if (currentList.includes(m)) {
+      setSelectedMonths(currentList.filter((x) => x !== m));
     } else {
-      setSelectedMonths([...selectedMonths, m]);
+      setSelectedMonths([...currentList, m]);
     }
   };
 
@@ -219,7 +216,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
             onClick={() => toggleMonth(m)}
             className={cn(
               "px-4 py-2 rounded-full border text-sm font-medium transition-all shadow-sm",
-              selectedMonths.includes(m)
+              selectedMonths.map(Number).includes(m)
                 ? "bg-purple-600 border-purple-600 text-white"
                 : "bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50",
             )}
@@ -231,24 +228,28 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
       {monthReportData ? (
         <div className="space-y-12">
-          <TopTeamsReport monthReportData={monthReportData} monthsText={monthsText} />
+          <TopTeamsReport availableMonths={availableMonths} monthReportData={monthReportData} monthsText={monthsText} isMonthlyReport={true} />
           <TopCyclistsReport 
+            sortedStats={sortedStats}
             monthReportData={monthReportData} 
             cyclistsSortColumn={cyclistsSortColumn}
             setCyclistsSortColumn={setCyclistsSortColumn}
             cyclistsSortDirection={cyclistsSortDirection}
             setCyclistsSortDirection={setCyclistsSortDirection}
             monthsText={monthsText}
-            isNoDraft={false}
-          />
-          <TopCyclistsReport 
-            monthReportData={monthReportData} 
-            cyclistsSortColumn={cyclistsSortColumn}
-            setCyclistsSortColumn={setCyclistsSortColumn}
-            cyclistsSortDirection={cyclistsSortDirection}
-            setCyclistsSortDirection={setCyclistsSortDirection}
-            monthsText={monthsText}
-            isNoDraft={true}
+            getColorClass={getColorClass}
+            getPuntosColor={getPuntosColor}
+            getFlagEmoji={getFlagEmoji}
+            formatNumberSpanish={formatNumberSpanish}
+            maxVictorias={maxVictorias}
+            maxCarreras={maxCarreras}
+            minCarreras={minCarreras}
+            maxDias={maxDias}
+            minDias={minDias}
+            maxPpc={maxPpc}
+            minPpc={minPpc}
+            maxPpd={maxPpd}
+            minPpd={minPpd}
           />
           <PointsPerRoundReport monthReportData={monthReportData} monthsText={monthsText} />
           <MinMaxReport monthReportData={monthReportData} monthsText={monthsText} />

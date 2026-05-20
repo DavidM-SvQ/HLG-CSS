@@ -48,18 +48,6 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
           const parsedData = results.data;
 
           if (ftConfig?.global) {
-            if (!user) {
-              setFiles((prev) => ({
-                ...prev,
-                [id]: {
-                  file,
-                  data: null,
-                  error: "Debes iniciar sesión para subir archivos globales",
-                },
-              }));
-              return;
-            }
-
             try {
               setFiles((prev) => ({
                 ...prev,
@@ -67,13 +55,13 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
               }));
 
               const isoDate = new Date().toISOString();
-              if (navigator.onLine && isSupabaseConfigured) {
+              if (navigator.onLine && isSupabaseConfigured && user) {
                 const { error } = await supabase.from("global_files").upsert({
                   id,
                   data: parsedData,
                   updated_at: isoDate,
                 });
-                if (error) throw error;
+                if (error) console.error("Supabase upsert manual error:", error);
               }
 
               await localforage.setItem(`global_file_${id}`, {
@@ -84,7 +72,7 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
               // State will be updated by real-time subscription or manual fetch
               fetchGlobalFile(id as keyof AppState, true, isSupabaseConfigured);
             } catch (e: any) {
-              console.error("Error saving to Supabase", e);
+              console.error("Error saving global file", e);
               setFiles((prev) => ({
                 ...prev,
                 [id]: {
