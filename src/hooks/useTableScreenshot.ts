@@ -32,13 +32,16 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     if (onBeforeCapture) onBeforeCapture(tableContainer);
     const restore = expandNodeForCapture(tableContainer);
     
+    // We measure scrollWidth after expanding
+    const computedWidth = width || tableContainer.scrollWidth;
+    
     try {
       const processCopy = async () => {
         const dataUrl = await domToDataUrl(tableContainer, {
           scale,
           backgroundColor,
           style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
-          width,
+          width: computedWidth,
           filter
         });
         return await (await fetch(dataUrl)).blob();
@@ -53,7 +56,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
           scale,
           backgroundColor,
           style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
-          width,
+          width: computedWidth,
           filter
         });
         const link = document.createElement("a");
@@ -79,12 +82,14 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     if (onBeforeCapture) onBeforeCapture(tableContainer);
     const restore = expandNodeForCapture(tableContainer);
     
+    const computedWidth = width || tableContainer.scrollWidth;
+    
     try {
       const dataUrl = await domToDataUrl(tableContainer, {
         scale,
         backgroundColor,
         style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
-        width,
+        width: computedWidth,
         filter
       });
       const link = document.createElement("a");
