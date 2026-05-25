@@ -144,7 +144,7 @@ export function InfoRacesTable({
           </Button>
         )}
         <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="table-responsive-wrapper overflow-auto w-full md:px-0 px-2 pt-2 h-full pb-4 max-w-full">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full md:px-0 px-2 pt-2 h-full pb-4 max-w-full">
             <table className="w-full text-sm text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none md:rounded-lg block md:table border-collapse">
               <thead className="text-xs text-neutral-500 uppercase border-b border-neutral-100 sticky top-0 z-10 shadow-sm hidden md:table-header-group bg-neutral-50 opacity-100">
                 <tr className="bg-neutral-50">
@@ -215,9 +215,7 @@ export function InfoRacesTable({
                                 ? "bg-neutral-200 text-neutral-500"
                                 : "bg-neutral-100 text-neutral-600",
                             )}
-                          >
-                            {getVal(r, "Categoría")}
-                          </span>
+                          >{getVal(r, "Categoría")}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 md:py-2.5 font-mono tabular-nums flex justify-between items-center md:table-cell gap-2 border-t border-neutral-100 md:border-none">

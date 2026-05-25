@@ -103,44 +103,44 @@ export const TeamCyclistsTable = ({ cyclistStats }: TeamCyclistsTableProps) => {
 
   return (
     <div className="table-container-for-capture bg-white border border-neutral-200 rounded-xl overflow-x-auto overflow-y-auto shadow-sm flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <div className="table-responsive-wrapper overflow-auto w-full h-full">
+      <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full">
         <table className="w-full text-xs text-left whitespace-nowrap border-collapse mx-auto">
           <thead className="bg-[#1e293b] text-white border-b border-neutral-100 text-[9px] tracking-tight uppercase font-bold sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-2 text-center cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Ronda de elección" onClick={() => handleSort("ronda", "asc")}>
+              <th className="px-4 py-3 text-center cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Ronda de elección" onClick={() => handleSort("ronda", "asc")}>
                 <div className="flex items-center justify-center gap-1">Rnd <SortIcon column="ronda" /></div>
               </th>
-              <th className="px-3 py-2 font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("ciclista", "asc")}>
+              <th className="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("ciclista", "asc")}>
                 <div className="flex items-center gap-1">Ciclista <SortIcon column="ciclista" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("edad", "asc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("edad", "asc")}>
                 <div className="flex items-center justify-center gap-1">Ed. <SortIcon column="edad" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("pais", "asc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("pais", "asc")}>
                 <div className="flex items-center justify-center gap-1">País <SortIcon column="pais" /></div>
               </th>
-              <th className="px-3 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("equipo", "asc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("equipo", "asc")}>
                 <div className="flex items-center justify-center gap-1">Equipo <SortIcon column="equipo" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("puntos", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" onClick={() => handleSort("puntos", "desc")}>
                 <div className="flex items-center justify-center gap-1">Pts <SortIcon column="puntos" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Victorias" onClick={() => handleSort("victorias", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Victorias" onClick={() => handleSort("victorias", "desc")}>
                 <div className="flex items-center justify-center gap-1">V. <SortIcon column="victorias" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Carreras" onClick={() => handleSort("carreras", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Carreras" onClick={() => handleSort("carreras", "desc")}>
                 <div className="flex items-center justify-center gap-1">C. <SortIcon column="carreras" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Días de competición" onClick={() => handleSort("dias", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Días de competición" onClick={() => handleSort("dias", "desc")}>
                 <div className="flex items-center justify-center gap-1">DC <SortIcon column="dias" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por carreras" onClick={() => handleSort("ppc", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por carreras" onClick={() => handleSort("ppc", "desc")}>
                 <div className="flex items-center justify-center gap-1">P/C <SortIcon column="ppc" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por día de competición" onClick={() => handleSort("ppd", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Puntos por día de competición" onClick={() => handleSort("ppd", "desc")}>
                 <div className="flex items-center justify-center gap-1">P/D <SortIcon column="ppd" /></div>
               </th>
-              <th className="px-2 py-2 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="% de puntos sobre el total del equipo" onClick={() => handleSort("pct", "desc")}>
+              <th className="px-4 py-3 text-center font-semibold cursor-pointer hover:bg-slate-700 select-none transition-colors" title="% de puntos sobre el total del equipo" onClick={() => handleSort("pct", "desc")}>
                 <div className="flex items-center justify-center gap-1">% <SortIcon column="pct" /></div>
               </th>
             </tr>
@@ -151,10 +151,10 @@ export const TeamCyclistsTable = ({ cyclistStats }: TeamCyclistsTableProps) => {
                 <td className={cn("px-2 py-1.5 text-center font-mono tabular-nums text-[10px]", ["01", "02", "03", "1", "2", "3"].includes(c.ronda) ? "bg-yellow-50 text-yellow-700 font-bold" : "text-neutral-500")}>
                   {c.ronda}
                 </td>
-                <td className="px-3 py-1.5 font-bold text-neutral-900 text-[11px]">{c.ciclista}</td>
-                <td className="px-2 py-1.5 text-center text-neutral-600 text-[10px]">{c.edad}</td>
-                <td className="px-2 py-1.5 text-center text-neutral-600 text-[10px]">{c.pais}</td>
-                <td className="px-3 py-1.5 text-center text-neutral-600 text-[9px]">{c.equipoBreve}</td>
+                <td className="px-4 py-3 font-bold text-neutral-900 text-[11px]">{c.ciclista}</td>
+                <td className="px-4 py-3.5 text-center text-neutral-600 text-[10px]">{c.edad}</td>
+                <td className="px-4 py-3.5 text-center text-neutral-600 text-[10px]">{c.pais}</td>
+                <td className="px-4 py-3 text-center text-neutral-600 text-[9px]">{c.equipoBreve}</td>
                 <td className={cn("px-2 py-1.5 text-center font-bold font-mono tabular-nums text-[10px]", c.puntos === 0 ? "text-red-600" : "text-blue-600")} style={{ backgroundColor: getPointsBg(c.puntos) }}>
                   {c.puntos}
                 </td>

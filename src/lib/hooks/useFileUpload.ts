@@ -11,9 +11,15 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
   const { user } = useAuth();
 
   const handleFileUpload = (id: keyof AppState, file: File) => {
+    setFiles((prev) => ({
+      ...prev,
+      [id]: { file, data: null, error: null, loading: true },
+    }));
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      worker: true,
       complete: async (results) => {
         const ftConfig = FILE_TYPES.find((f) => f.id === id);
         const expectedCols = ftConfig?.expectedCols || [];

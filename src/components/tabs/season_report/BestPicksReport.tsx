@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Star } from "lucide-react";
 import { ReportCard } from "../../ui/ReportCard";
+import { EmptyState } from "../../ui/EmptyState";
 import { cn } from "../../../lib/utils";
 
 interface BestPicksReportProps {
@@ -53,7 +54,7 @@ export const BestPicksReport: React.FC<BestPicksReportProps> = ({
            );
          })}
          {monthReportData.bestPicks.length === 0 && (
-           <p className="text-sm text-neutral-500 italic">No hay datos suficientes de rondas.</p>
+           <EmptyState title="Sin picks destacados" description="No hay datos suficientes de rondas." />
          )}
       </div>
     </ReportCard>

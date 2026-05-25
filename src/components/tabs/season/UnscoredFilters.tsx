@@ -1,3 +1,4 @@
+import { PlayerScore } from '../../../lib/types';
 import React from "react";
 import { cn } from "../../../lib/utils";
 import { UserMinus, Maximize2, Minimize2, CheckCircle2, Copy, FileText, Download, ChevronDown } from "lucide-react";
@@ -18,7 +19,7 @@ interface UnscoredFiltersProps {
   handleCopyUnscored: (mode?: string) => void;
   handleCopyUnscoredText: () => void;
   handleDownloadUnscored: (mode?: string) => void;
-  leaderboard: any[];
+  leaderboard: PlayerScore[];
   cyclistRoundMap: Record<string, string>;
 }
 

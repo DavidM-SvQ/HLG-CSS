@@ -67,6 +67,7 @@ export const RaceView = (props: RaceViewProps) => {
               raceCyclists,
               maxCyclistRacePoints,
               minCyclistRacePoints,
+              maxCyclistPointsByCol,
               __textValue,
               retiredCyclists
             } = raceDataObj;
@@ -95,6 +96,7 @@ export const RaceView = (props: RaceViewProps) => {
                   raceCyclists={raceCyclists}
                   minCyclistRacePoints={minCyclistRacePoints}
                   maxCyclistRacePoints={maxCyclistRacePoints}
+                  maxCyclistPointsByCol={maxCyclistPointsByCol}
                   finalColumns={finalColumns}
                   teamStagePoints={teamStagePoints}
                   maxPointsByCol={maxPointsByCol}

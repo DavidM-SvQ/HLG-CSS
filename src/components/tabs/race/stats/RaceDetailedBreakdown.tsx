@@ -124,10 +124,9 @@ export const RaceDetailedBreakdown = ({
                 {/* Team Header */}
                 <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-200 flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="font-bold text-neutral-900 leading-tight truncate max-w-[200px]" title={team.nombreEquipo}>
-                      {team.nombreEquipo}
+                    <span className="font-bold text-neutral-900 leading-tight truncate max-w-[240px]" title={`${team.nombreEquipo} [#${team.orden}]`}>
+                      {team.nombreEquipo} <span className="font-mono text-neutral-500 opacity-80 font-normal">[{'#'}{team.orden}]</span>
                     </span>
-                    <span className="text-xs text-neutral-500 font-medium">#{team.orden}</span>
                   </div>
                   <div className="bg-blue-100 text-blue-800 font-bold font-mono px-3 py-1 rounded-full text-sm">
                     {team.totalPoints} pts

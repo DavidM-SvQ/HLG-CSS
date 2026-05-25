@@ -67,7 +67,7 @@ export function NoDraftTable({
     >
       <div 
         ref={responsiveWrapperRef}
-        className="table-responsive-wrapper overflow-auto w-full max-h-[600px] scrollbar-thin pb-6"
+        className="table-responsive-wrapper min-h-[300px] overflow-auto w-full max-h-[600px] scrollbar-thin pb-6"
       >
         <table className="w-full text-xs text-left block md:table min-w-0 md:min-w-[700px]">
           <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">

@@ -1,9 +1,10 @@
+import { AppState, CyclistMetadata } from '../../lib/types';
 import { useMemo } from 'react';
 import { getVal } from '../data-processing';
 
 export function useHotStreaks(
-  files: any, 
-  cyclistMetadata: any, 
+  files: AppState, 
+  cyclistMetadata: Record<string, CyclistMetadata>, 
   playerTeamMap: Record<string, string>, 
   playerOrderMap: Record<string, string>, 
   cyclistRoundMap: Record<string, string>,
@@ -112,8 +113,8 @@ export function useHotStreaks(
 }
 
 export function useHotStreaksTeams(
-  files: any, 
-  cyclistMetadata: any, 
+  files: AppState, 
+  cyclistMetadata: Record<string, CyclistMetadata>, 
   playerTeamMap: Record<string, string>, 
   playerOrderMap: Record<string, string>, 
   hotStreakLastNWeeks: number,

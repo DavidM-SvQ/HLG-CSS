@@ -1,3 +1,4 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../../lib/types';
 import { useMemo } from "react";
 import { getVal } from "../../../../lib/data-processing";
 
@@ -11,12 +12,12 @@ export function useTeamData({
   cyclistMetadata,
 }: {
   selectedTeam: string;
-  leaderboard: any[];
+  leaderboard: PlayerScore[];
   raceWinners: Record<string, string>;
   globalTeamPartialWinsCount: any;
-  files: any;
+  files: AppState;
   formattedTeams: any[];
-  cyclistMetadata: any;
+  cyclistMetadata: Record<string, CyclistMetadata>;
 }) {
   return useMemo(() => {
     if (!selectedTeam) return null;

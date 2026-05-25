@@ -1,18 +1,20 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import React, { useState, useRef, useMemo } from 'react';
 import { useUrlState } from '../../../hooks/useUrlState';
-import { ChevronDown, BarChart3 } from 'lucide-react';
+import { ChevronDown, BarChart3, Database } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
 import { ReportCard } from '../../ui/ReportCard';
+import { EmptyState } from "../../ui/EmptyState";
 import { DraftPointsTable } from './DraftPointsTable';
 import { DraftPerformanceSummary } from './DraftPerformanceSummary';
 import { DraftRoiChart } from './DraftRoiChart';
 import { Button } from "../../ui/button";
 
 export interface DraftDatosProps {
-  files: any;
-  leaderboard: any;
-  cyclistMetadata: any;
+  files: AppState;
+  leaderboard: PlayerScore[];
+  cyclistMetadata: Record<string, CyclistMetadata>;
   teamToPlayerMap: any;
   playerOrderMap: any;
 }
@@ -66,7 +68,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
           />
         </Button>
         {isDraftDatosMonthFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase">
                 Meses
@@ -133,7 +135,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
           />
         </Button>
         {isDraftDatosCategoryFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase">
                 Categorías
@@ -214,7 +216,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
           />
         </Button>
         {isDraftDatosTeamFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase">
                 Equipos
@@ -272,9 +274,7 @@ export const DraftDatos: React.FC<DraftDatosProps> = ({
     <>
       <div className="space-y-6">
         {!files.elecciones?.data ? (
-          <div className="text-center py-20 text-neutral-500 italic">
-            No hay datos del draft cargados.
-          </div>
+          <EmptyState icon={Database} title="Sin datos de draft" description="No hay datos del draft cargados para visualizar los datos estadísticos." />
         ) : (
           <>
             <ReportCard

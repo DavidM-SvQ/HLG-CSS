@@ -1,3 +1,4 @@
+import { AppState, PlayerScore } from '../../../lib/types';
 import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronUp, ChevronDown, X, ArrowUpDown } from 'lucide-react';
@@ -8,8 +9,8 @@ import { Button } from "../../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 interface DraftPointsTableProps {
-  files: any;
-  leaderboard: any;
+  files: AppState;
+  leaderboard: PlayerScore[];
   draftDatosMonthFilter: string[];
   draftDatosCategoryFilter: string[];
   draftDatosTeamFilter: string[];
@@ -184,7 +185,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
         </Button>
       )}
 
-      <div className={cn("table-responsive-wrapper w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-auto max-h-[400px]")}>
+      <div className={cn("table-responsive-wrapper min-h-[300px] w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-auto max-h-[400px]")}>
         <table className="w-full text-[9px] lg:text-[10px] text-left border-collapse min-w-[1000px]">
           <thead className="text-[9px] lg:text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b border-neutral-200">
             <tr>
@@ -205,7 +206,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                   <ArrowUpDown className={cn("w-2.5 h-2.5 text-neutral-300", draftDatosSortColumn === "Orden" && "text-blue-600")} />
                 </div>
               </th>
-              <th className="px-1 lg:px-2 py-2 font-bold border-l border-neutral-200 sticky left-[40px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] truncate" style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}>
+              <th className="px-4 py-3 font-bold border-l border-neutral-200 sticky left-[40px] z-40 bg-neutral-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] truncate" style={{ width: "110px", minWidth: "110px", maxWidth: "110px" }}>
                 Equipo
               </th>
               {rounds.map((r, i) => (
@@ -258,12 +259,12 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
 
               return (
                 <tr key={teamName} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 font-mono tabular-nums text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "40px", minWidth: "40px" }}>
+                  <td className="px-4 py-3 lg:py-1.5 font-mono tabular-nums text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "40px", minWidth: "40px" }}>
                     <div className="flex items-center justify-center">
                       <span className="w-4 inline-block text-center">{order}</span>
                     </div>
                   </td>
-                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[40px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "110px", maxWidth: "110px", minWidth: "110px" }} title={teamName}>
+                  <td className="px-4 py-3 lg:py-1.5 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[40px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "110px", maxWidth: "110px", minWidth: "110px" }} title={teamName}>
                     {teamName}
                   </td>
                   {rounds.map((r, i) => {
@@ -345,7 +346,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
                       </td>
                     );
                   })}
-                  <td className="px-1 lg:px-2 py-1 lg:py-1.5 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors font-mono tabular-nums tracking-tighter">
+                  <td className="px-4 py-3 lg:py-1.5 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors font-mono tabular-nums tracking-tighter">
                     {teamTotal}
                   </td>
                 </tr>

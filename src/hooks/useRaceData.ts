@@ -1,13 +1,14 @@
+import { AppState, PlayerScore } from '../lib/types';
 import { useMemo } from 'react';
 import { getVal } from '../lib/data-processing';
 
 export function useRaceData(
   selectedRace: string,
-  leaderboard: any[],
+  leaderboard: PlayerScore[],
   globalTeamPartialWinsCount: Record<string, any>,
   globalTeamWinsCount: Record<string, number>,
   raceWinners: Record<string, string>,
-  files: any,
+  files: AppState,
   cyclistMetadata?: Record<string, any>
 ) {
   return useMemo(() => {
@@ -260,6 +261,7 @@ export function useRaceData(
                     orden: string;
                     puntos: number;
                     victorias: number;
+                    pointsByCol: Record<string, number>;
                   }
                 >();
     
@@ -273,11 +275,28 @@ export function useRaceData(
                         orden: team.orden,
                         puntos: 0,
                         victorias: 0,
+                        pointsByCol: {}
                       });
                     }
                     const c = raceCyclistsMap.get(d.ciclista)!;
                     c.jugador = team.nombreEquipo; // Ensure it uses the team name if updated
                     c.puntos += d.puntosObtenidos;
+
+                    const dFormatted = formatTipoResultado(d.tipoResultado);
+                    const dStageNum = d.etapa || dFormatted;
+                    finalColumns.forEach(col => {
+                      const colIsStage = /^\d+[a-zA-Z]?$/.test(col.formatted);
+                      const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa";
+                      if (colIsStage && dIsStage) {
+                        if (dStageNum.toString().trim() === col.formatted.toString().trim()) {
+                          c.pointsByCol[col.formatted] = (c.pointsByCol[col.formatted] || 0) + d.puntosObtenidos;
+                        }
+                      } else {
+                        if (dFormatted.toString().trim() === col.formatted.toString().trim() || d.tipoResultado.toString().trim() === col.originalTipo?.toString().trim()) {
+                          c.pointsByCol[col.formatted] = (c.pointsByCol[col.formatted] || 0) + d.puntosObtenidos;
+                        }
+                      }
+                    });
     
                     const isVictory =
                       (d.posicion === "1" || d.posicion === "01") &&
@@ -301,6 +320,16 @@ export function useRaceData(
                   ...raceCyclists.map((c) => c.puntos),
                   0,
                 );
+    
+                const maxCyclistPointsByCol: Record<string, number> = {};
+                finalColumns.forEach((col) => {
+                  maxCyclistPointsByCol[col.formatted] = Math.max(
+                    ...raceCyclists.map(
+                      (c) => c.pointsByCol[col.formatted] || 0,
+                    ),
+                    0
+                  );
+                });
     
                 const __raceWinnerTeam = raceWinners?.[selectedRace];
                 const __winnerPlayer = __raceWinnerTeam
@@ -467,6 +496,7 @@ export function useRaceData(
       raceCyclists,
       maxCyclistRacePoints,
       minCyclistRacePoints,
+      maxCyclistPointsByCol,
       __textValue,
       retiredCyclists
     };

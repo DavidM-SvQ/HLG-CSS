@@ -39,18 +39,18 @@ export function StartlistTeamsTable(props: any) {
     >
       <div
         className={cn(
-          "table-responsive-wrapper overflow-auto w-full px-2 md:px-0 pb-4 md:pb-0",
+          "table-responsive-wrapper min-h-[300px] overflow-auto w-full px-2 md:px-0 pb-4 md:pb-0",
           isStartlistTeamsTableExpanded ? "max-h-none" : "max-h-[600px]"
         )}
       >
         <table className="w-full text-[13px] text-left block md:table min-w-0 md:min-w-[400px] mt-2 md:mt-0">
           <thead className="text-[11px] text-neutral-500 uppercase sticky top-0 z-10 bg-neutral-50 shadow-[0_1px_0_0_#e5e5e5] hidden md:table-header-group">
             <tr>
-              <th className="px-2 py-1 sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]">
+              <th className="px-4 py-3 sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]">
                 Equipo
               </th>
               <th
-                className="px-2 py-1 text-center w-px whitespace-nowrap"
+                className="px-3 py-2 text-center w-px whitespace-nowrap"
                 title="Desviación respecto a la media"
               >
                 <span className="border-b border-dashed border-neutral-300">
@@ -58,7 +58,7 @@ export function StartlistTeamsTable(props: any) {
                 </span>
               </th>
               <th
-                className="px-2 py-1 text-center w-px"
+                className="px-3 py-2 text-center w-px"
                 title="Puntos Totales (Excluyendo esta carrera)"
               >
                 <span className="border-b border-dashed border-neutral-300">
@@ -66,7 +66,7 @@ export function StartlistTeamsTable(props: any) {
                 </span>
               </th>
               <th
-                className="px-2 py-1 text-center w-px"
+                className="px-3 py-2 text-center w-px"
                 title="Puntos Medios"
               >
                 <span className="border-b border-dashed border-neutral-300">

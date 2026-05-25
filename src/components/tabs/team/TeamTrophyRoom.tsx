@@ -1,3 +1,4 @@
+import { AppState } from '../../../lib/types';
 import React from "react";
 import { Trophy } from "lucide-react";
 import { getVal } from "../../../lib/data-processing";
@@ -7,7 +8,7 @@ interface TeamTrophyRoomProps {
   raceWinners: Record<string, string>;
   selectedTeam: string;
   teamPlayer: any;
-  files: any;
+  files: AppState;
 }
 
 export const TeamTrophyRoom = ({

@@ -1,3 +1,4 @@
+import { AppState } from '../../../lib/types';
 import React, { useState, useEffect } from "react";
 import { CheckCircle2, ChevronDown, ChevronUp, Clock, FileCheck } from "lucide-react";
 import { supabase } from "../../../supabase";
@@ -6,7 +7,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Button } from "../../ui/button";
 
 interface PublishedRacesTrackerProps {
-  files: any;
+  files: AppState;
   uniqueRaces: string[];
 }
 

@@ -4,7 +4,7 @@ import localforage from "localforage";
 import { AppState } from "../types";
 
 export function useGestionStartlists(
-  files: any, 
+  files: AppState, 
   user: any, 
   playerByCyclist: Record<string, string>, 
   playerTeamMap: Record<string, string>,

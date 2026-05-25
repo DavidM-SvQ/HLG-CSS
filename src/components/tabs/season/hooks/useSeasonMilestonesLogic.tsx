@@ -1,8 +1,9 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../../lib/types';
 import React, { useMemo } from "react";
 import { formatNumberSpanish, getVal } from "../../../../lib/data-processing";
 import { Award, Trophy, Crown, Globe, Users, Medal } from "lucide-react";
 
-export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: any[]; files: any; cyclistMetadata: any; raceWinners?: Record<string, string> }) => {
+export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: PlayerScore[]; files: AppState; cyclistMetadata: Record<string, CyclistMetadata>; raceWinners?: Record<string, string> }) => {
   const { teamMilestones, cyclistMilestones } = useMemo(() => {
     if (!files.resultados?.data || !files.carreras?.data || !leaderboard) return { teamMilestones: [], cyclistMilestones: [] };
 
@@ -59,7 +60,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     };
 
     const getCyclistFormatted = (cyclistName: string) => {
-      const meta = cyclistMetadata?.[cyclistName] || {};
+      const meta = (cyclistMetadata?.[cyclistName] || {}) as Partial<import("../../../../lib/types").CyclistMetadata>;
       if (meta.ronda) {
         return `${cyclistName} <${meta.ronda}> (${meta.eleccion})`;
       }
@@ -79,8 +80,27 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
         const carreraKey = d.carrera?.trim().toLowerCase();
         const meta = raceMeta[carreraKey];
         if (meta) {
-          teamPointsOverTime[team].push({ date: meta.dateObj, pts: d.puntosObtenidos });
-          allResults.push({ team: team, date: meta.dateObj, cyclist: d.ciclista, points: d.puntosObtenidos, raceName: d.carrera, type: d.tipoResultado, rank: d.posicion });
+          let eventDateObj = meta.dateObj;
+          if (typeof d.fecha === "string" && d.fecha.trim().length > 0) {
+            const parts = d.fecha.split(/[-/]/);
+            if (parts.length >= 3) {
+              let day = parseInt(parts[0], 10);
+              let month = parseInt(parts[1], 10) - 1;
+              let year = parseInt(parts[2], 10);
+              if (year < 100) year += 2000;
+              if (parts[0].length === 4) {
+                 year = parseInt(parts[0], 10);
+                 day = parseInt(parts[2], 10);
+              }
+              const pDate = new Date(year, month, day);
+              if (!isNaN(pDate.getTime())) {
+                 eventDateObj = pDate;
+              }
+            }
+          }
+
+          teamPointsOverTime[team].push({ date: eventDateObj, pts: d.puntosObtenidos });
+          allResults.push({ team: team, date: eventDateObj, cyclist: d.ciclista, points: d.puntosObtenidos, raceName: d.carrera, type: d.tipoResultado, rank: d.posicion });
           if (String(d.posicion) === '1') {
              const type = d.tipoResultado?.toLowerCase() || "";
              const isGeneral = type.includes("general");
@@ -88,7 +108,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
              const isSecondary = type.includes("montaña") || type.includes("puntos") || type.includes("joven") || type.includes("regularidad");
              
              if (isGeneral || (!isStage && !isSecondary)) {
-               allWins.push({ team: team, date: meta.dateObj, cyclist: d.ciclista, raceName: d.carrera, category: meta.category, points: d.puntosObtenidos, type: type });
+               allWins.push({ team: team, date: eventDateObj, cyclist: d.ciclista, raceName: d.carrera, category: meta.category, points: d.puntosObtenidos, type: type });
              }
           }
         }
@@ -411,7 +431,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
       
       for (const th of lateRoundThresholds) {
          if (cyclistPointsCount[res.cyclist] >= th) {
-             const meta = cyclistMetadata?.[res.cyclist] || {};
+             const meta = (cyclistMetadata?.[res.cyclist] || {}) as Partial<import("../../../../lib/types").CyclistMetadata>;
              const isLibre = !meta.ronda || meta.ronda.toLowerCase().includes("libre");
              const rNum = meta.ronda ? parseInt(meta.ronda.replace(/\D/g, ''), 10) : 99; // 99 for libre
              const compareNum = isNaN(rNum) ? (isLibre ? 99 : 1) : rNum;
@@ -441,7 +461,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
       
       // 2. El Robo del Draft
       if (!draftStealFound && cyclistPointsCount[res.cyclist] >= 2000) {
-          const meta = cyclistMetadata?.[res.cyclist] || {};
+          const meta = (cyclistMetadata?.[res.cyclist] || {}) as Partial<import("../../../../lib/types").CyclistMetadata>;
           let isLate = true;
           if (meta.ronda) {
               const rNum = parseInt(meta.ronda.replace(/\D/g, ''), 10);

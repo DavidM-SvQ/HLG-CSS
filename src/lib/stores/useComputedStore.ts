@@ -1,38 +1,10 @@
+import { PlayerScore, CyclistMetadata } from '../types';
 import { create } from 'zustand';
 
-export interface PlayerScore {
-  jugador: string;
-  nombreEquipo: string;
-  orden: string;
-  puntos: number;
-  detalles: {
-    ciclista: string;
-    ronda: string;
-    carrera: string;
-    tipoResultado: string;
-    etapa?: string;
-    posicion: string | number;
-    puntosObtenidos: number;
-    fecha?: string;
-  }[];
-}
 
-export interface CyclistMetadata {
-  edad: string;
-  nacido: string;
-  pais: string;
-  paisLetras: string;
-  equipoBreve: string;
-  ronda: string;
-  eleccion: number;
-  carrerasDisputadas: number;
-  diasCompeticion: number;
-  victorias: number;
-  puntosTotales?: number;
-  puntosPorCarrera?: Record<string, number>;
-}
 
 interface ComputedStore {
+  isComputing: boolean;
   leaderboard: PlayerScore[];
   raceWinners: Record<string, string>;
   globalTeamWinsCount: Record<string, number>;
@@ -46,9 +18,11 @@ interface ComputedStore {
   cyclistRoundMap: Record<string, string>;
   
   setComputedData: (data: Partial<ComputedStore>) => void;
+  setIsComputing: (val: boolean) => void;
 }
 
 export const useComputedStore = create<ComputedStore>((set) => ({
+  isComputing: false,
   leaderboard: [],
   raceWinners: {},
   globalTeamWinsCount: {},
@@ -62,4 +36,5 @@ export const useComputedStore = create<ComputedStore>((set) => ({
   cyclistRoundMap: {},
 
   setComputedData: (data) => set((state) => ({ ...state, ...data })),
+  setIsComputing: (val) => set({ isComputing: val }),
 }));

@@ -1,3 +1,4 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import { useSeasonMilestonesLogic } from "./hooks/useSeasonMilestonesLogic";
 import React, { useMemo, useRef, useState } from "react";
 import { formatNumberSpanish, getVal } from "../../../lib/data-processing";
@@ -8,7 +9,7 @@ import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 import { motion } from "motion/react";
 
-export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: any[]; files: any; cyclistMetadata: any; raceWinners?: Record<string, string> }) => {
+export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: PlayerScore[]; files: AppState; cyclistMetadata: Record<string, CyclistMetadata>; raceWinners?: Record<string, string> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(containerRef);

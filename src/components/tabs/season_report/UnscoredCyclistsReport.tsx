@@ -1,3 +1,4 @@
+import { AppState, PlayerScore } from '../../../lib/types';
 import React, { useState, useRef, useMemo } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { UserMinus, ChevronDown, ChevronUp, Copy, CheckCircle2, Minimize2, Maximize2, Download, FileText } from "lucide-react";
@@ -9,8 +10,8 @@ import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 
 interface UnscoredCyclistsReportProps {
-  files: any;
-  leaderboard: any[] | null;
+  files: AppState;
+  leaderboard: PlayerScore[] | null;
   cyclistRoundMap: Record<string, string>;
   cyclistMetadata: Record<string, any>;
   playerOrderMap: Record<string, string>;
@@ -252,7 +253,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
           isUnscoredExpanded ? "max-h-none" : "h-[800px]",
         )}
       >
-        <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container md:px-0 px-2 pt-2">
+        <div className="table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container md:px-0 px-2 pt-2">
           <table className="w-full text-xs text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none md:rounded-lg block md:table border-collapse">
             <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
               <tr className="divide-x divide-neutral-100">
@@ -340,7 +341,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
                     <tr key={idx} className="hover:bg-neutral-50 transition-colors text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 group/row">
                       <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2 rounded-t-xl md:rounded-none bg-neutral-50/50 md:bg-transparent">
                         <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
-                        <div className="text-right md:text-left text-neutral-600"><span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span></div>
+                        <div className="text-right md:text-left text-neutral-600"><span className="font-medium">{c.nombreEquipo}</span> <span className="text-neutral-400 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span></div>
                       </td>
                       <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2">
                         <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>

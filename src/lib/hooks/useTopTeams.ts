@@ -1,21 +1,8 @@
+import { TopTeamStat } from '../types';
 import { useMemo } from "react";
 import { useDataStore } from "../stores/useDataStore";
 import { useComputedStore } from "../stores/useComputedStore";
 import { getVal } from "../data-processing";
-
-export interface TopTeamStat {
-  jugador: string;
-  nombreEquipo: string;
-  orden: string;
-  puntos: number;
-  originalPos: number;
-  wins: number;
-  partialWins: number;
-  ppc: number;
-  ppd: number;
-  numCarreras: number;
-  totalDays: number;
-}
 
 export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: string, topTeamsSortColumn: string, topTeamsSortDirection: string) {
   const { files } = useDataStore();

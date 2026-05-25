@@ -34,19 +34,19 @@ export function StartlistFilters(props: any) {
   const debouncedPuntosMax = useDebounce(localPuntosMax, 500);
 
   useEffect(() => {
-    if (debouncedDiasMin !== startlistFilterDiasMin) setStartlistFilterDiasMin(debouncedDiasMin);
+    if (String(debouncedDiasMin) !== String(startlistFilterDiasMin)) setStartlistFilterDiasMin(debouncedDiasMin);
   }, [debouncedDiasMin, startlistFilterDiasMin, setStartlistFilterDiasMin]);
 
   useEffect(() => {
-    if (debouncedDiasMax !== startlistFilterDiasMax) setStartlistFilterDiasMax(debouncedDiasMax);
+    if (String(debouncedDiasMax) !== String(startlistFilterDiasMax)) setStartlistFilterDiasMax(debouncedDiasMax);
   }, [debouncedDiasMax, startlistFilterDiasMax, setStartlistFilterDiasMax]);
 
   useEffect(() => {
-    if (debouncedPuntosMin !== startlistFilterPuntosMin) setStartlistFilterPuntosMin(debouncedPuntosMin);
+    if (String(debouncedPuntosMin) !== String(startlistFilterPuntosMin)) setStartlistFilterPuntosMin(debouncedPuntosMin);
   }, [debouncedPuntosMin, startlistFilterPuntosMin, setStartlistFilterPuntosMin]);
 
   useEffect(() => {
-    if (debouncedPuntosMax !== startlistFilterPuntosMax) setStartlistFilterPuntosMax(debouncedPuntosMax);
+    if (String(debouncedPuntosMax) !== String(startlistFilterPuntosMax)) setStartlistFilterPuntosMax(debouncedPuntosMax);
   }, [debouncedPuntosMax, startlistFilterPuntosMax, setStartlistFilterPuntosMax]);
 
   // Handle external reset
@@ -57,8 +57,8 @@ export function StartlistFilters(props: any) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-end copy-button-ignore bg-neutral-50 p-3 rounded-md border border-neutral-200">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap gap-4 items-end copy-button-ignore bg-neutral-50 p-4 rounded-xl border border-neutral-200">
+        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
           <label className="text-xs font-semibold text-neutral-500 uppercase">
             Equipo
           </label>
@@ -76,7 +76,7 @@ export function StartlistFilters(props: any) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1 relative group">
+        <div className="flex flex-col gap-1 relative group flex-1 min-w-[140px]">
           <label className="text-xs font-semibold text-neutral-500 uppercase">
             Rondas
           </label>
@@ -86,7 +86,7 @@ export function StartlistFilters(props: any) {
                 ? "Todas"
                 : startlistFilterRondas.join(", ")}
             </div>
-            <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-50 hidden group-hover:block p-2 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 w-max min-w-full max-w-xs bg-white border border-neutral-200 rounded-md shadow-lg z-50 hidden group-hover:block p-2 max-h-48 overflow-y-auto">
               <label className="flex items-center gap-2 p-1 hover:bg-neutral-50 cursor-pointer rounded">
                 <input
                   type="checkbox"
@@ -114,7 +114,7 @@ export function StartlistFilters(props: any) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-xs font-semibold text-neutral-500 uppercase flex gap-1 items-center">
             Días{" "}
             <span className="text-neutral-400 font-normal">(Min - Max)</span>
@@ -146,7 +146,7 @@ export function StartlistFilters(props: any) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-xs font-semibold text-neutral-500 uppercase flex gap-1 items-center">
             Puntos{" "}
             <span className="text-neutral-400 font-normal">(Min - Max)</span>
@@ -178,7 +178,7 @@ export function StartlistFilters(props: any) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
           <label className="text-xs font-semibold text-neutral-500 uppercase">
             Debut
           </label>

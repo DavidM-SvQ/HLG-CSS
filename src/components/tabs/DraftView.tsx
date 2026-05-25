@@ -3,6 +3,7 @@ import { useUrlState } from '../../hooks/useUrlState';
 import { motion, AnimatePresence } from 'motion/react';
 import { DraftElections } from './draft/DraftElections';
 import { DraftDatos } from './draft/DraftDatos';
+import { DraftFantasmaView } from './draft/DraftFantasmaView';
 import { cn } from '../../lib/utils';
 import { getVal, getFlagEmoji } from '../../lib/data-processing';
 import { Button } from "../ui/button";
@@ -16,10 +17,11 @@ export const DraftView = () => {
     cyclistMetadata,
     leaderboard,
     teamToPlayerMap,
+    playerTeamMap,
     playerOrderMap
   } = useComputedStore();
 
-  const [draftSubTab, setDraftSubTab] = useUrlState<"elecciones" | "datos">("draftSubTab", "elecciones");
+  const [draftSubTab, setDraftSubTab] = useUrlState<"elecciones" | "datos" | "fantasma">("draftSubTab", "elecciones");
 
   const draftCyclistStats = useMemo(() => {
     const stats: Record<string, { puntos: number; victorias: number }> = {};
@@ -144,6 +146,17 @@ export const DraftView = () => {
         >
           Datos
         </Button>
+        <Button variant="outline"
+          onClick={() => setDraftSubTab("fantasma")}
+          className={cn(
+            "px-4 py-2 rounded-md text-sm font-medium transition-all",
+            draftSubTab === "fantasma"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-neutral-600 hover:text-neutral-900",
+          )}
+        >
+          Draft fantasma
+        </Button>
       </div>
     </div>
     <AnimatePresence mode="wait">
@@ -180,6 +193,23 @@ export const DraftView = () => {
           leaderboard={leaderboard}
           cyclistMetadata={cyclistMetadata}
           teamToPlayerMap={teamToPlayerMap}
+          playerOrderMap={playerOrderMap}
+        />
+      </motion.div>
+    )}
+
+    {draftSubTab === "fantasma" && (
+      <motion.div
+        key="fantasma"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <DraftFantasmaView 
+          files={files}
+          cyclistMetadata={cyclistMetadata}
+          playerTeamMap={playerTeamMap}
           playerOrderMap={playerOrderMap}
         />
       </motion.div>

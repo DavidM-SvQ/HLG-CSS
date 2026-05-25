@@ -169,7 +169,7 @@ export function MonthlyWinsEvolutionChart() {
 
           <div className="h-[400px] w-full">
             {monthlyWinsEvolutionData.length > 0 ? (
-              <div className="w-full overflow-x-auto h-full">
+              <div className="w-full overflow-x-auto h-full min-h-[300px]">
                 <div className="min-w-[800px] h-full">
                   <ResponsiveContainer width="100%" height="99%">
                     <LineChart
@@ -249,7 +249,7 @@ export function MonthlyWinsEvolutionChart() {
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
-                <div className="w-full overflow-x-auto h-full">
+                <div className="w-full overflow-x-auto h-full min-h-[300px]">
                   <div className="min-w-[800px] h-full">
                     <ResponsiveContainer width="100%" height="99%">
                       <LineChart

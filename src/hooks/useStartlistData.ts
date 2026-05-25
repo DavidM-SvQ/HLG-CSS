@@ -1,14 +1,8 @@
+import { AppState } from '../lib/types';
 import { useMemo, useEffect } from 'react';
 import { DRAFT_RANK_MAP } from '../lib/constants';
 import { getVal } from '../lib/data-processing';
 
-export interface StartlistTeamRow {
-  orden: string;
-  equipo: string;
-  numCiclistas: number;
-  puntos: number;
-  puntosMedios: number;
-}
 
 export interface StartlistFilters {
   team: string;
@@ -21,7 +15,7 @@ export interface StartlistFilters {
 }
 
 export function useStartlistData(
-  files: any,
+  files: AppState,
   publicStartlistRace: string,
   setPublicStartlistRace: (val: string) => void,
   cyclistMetadata: Record<string, any>,
@@ -156,7 +150,7 @@ export function useStartlistData(
     const nonZeroDias = filteredRows.map((r) => r.dias).filter(d => d > 0);
     const minDias = nonZeroDias.length > 0 ? Math.min(...nonZeroDias) : 0;
 
-    const teamRows: StartlistTeamRow[] = [];
+    const teamRows: any[] = [];
     let maxCiclistas = 0;
     let minCiclistas = 999;
 

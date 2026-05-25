@@ -71,7 +71,7 @@ export const PointsPerRoundReport: React.FC<PointsPerRoundReportProps> = ({
       }}
       bodyClassName="p-0 border-t border-neutral-100"
     >
-      <div className={cn("table-responsive-wrapper overflow-auto w-full crosshair-container", !isExpanded && "max-h-[600px]")}>
+      <div className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container", !isExpanded && "max-h-[600px]")}>
         <table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
           <thead>
             <tr>

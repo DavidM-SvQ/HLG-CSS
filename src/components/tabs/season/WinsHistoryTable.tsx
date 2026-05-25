@@ -239,7 +239,7 @@ export function WinsHistoryTable() {
           </div>
         </div>
         <div className="overflow-x-auto overflow-y-auto max-h-[75vh] px-2 md:px-0">
-          <div ref={responsiveWrapperRef} className="table-responsive-wrapper overflow-auto w-full h-full pb-4">
+          <div ref={responsiveWrapperRef} className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full pb-4">
             <table className="w-full text-sm text-left block md:table min-w-0 md:min-w-[600px]">
               <thead className="text-xs text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10 hidden md:table-header-group">
                 <tr>
@@ -386,7 +386,7 @@ export function WinsHistoryTable() {
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-neutral-50/20">
-              <div ref={expandedWrapperRef} className="table-responsive-wrapper overflow-auto w-full h-full max-h-[70vh]">
+              <div ref={expandedWrapperRef} className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full max-h-[70vh]">
                 <table className="w-full text-base text-left block md:table">
                   <thead className="text-sm text-neutral-500 uppercase bg-neutral-50 sticky top-0 z-10 hidden md:table-header-group">
                     <tr>

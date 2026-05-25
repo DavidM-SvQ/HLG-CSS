@@ -27,7 +27,7 @@ export function TopDraftCyclistsTable(props: any) {
   return (
     <>
                                 <div className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin px-2 md:px-0", isTopCyclistsDraftExpanded ? "flex-1 min-h-0" : "max-h-[750px]")}>
-                                  <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full block md:table">
+                                  <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full block md:table">
                                     <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                                       <tr className="divide-x divide-neutral-100">
                                         <th
@@ -102,7 +102,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "pais") {
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "pais") {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
@@ -123,7 +123,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "victorias"
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "victorias"
                                             ) {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
@@ -148,7 +148,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "carreras"
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" onClick={() => { if (cyclistsSortColumn === "carreras"
                                             ) {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
@@ -171,7 +171,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Días de competición" onClick={() => { if (cyclistsSortColumn === "dias") {
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Días de competición" onClick={() => { if (cyclistsSortColumn === "dias") {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
@@ -192,7 +192,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por carreras" onClick={() => { if (cyclistsSortColumn === "ppc") {
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por carreras" onClick={() => { if (cyclistsSortColumn === "ppc") {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
@@ -213,7 +213,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               ))}
                                           </div>
                                         </th>
-                                        <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por día de competición" onClick={() => { if (cyclistsSortColumn === "ppd") {
+                                        <th className="px-4 py-3 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200 hidden md:table-cell" title="Puntos por día de competición" onClick={() => { if (cyclistsSortColumn === "ppd") {
                                               setCyclistsSortDirection((d: string) =>
                                                 d === "asc" ? "desc" : "asc",
                                               );
@@ -332,8 +332,8 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
     <>
       <motion.tr layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none hover:border-blue-200 md:hover:border-transparent", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
         <td className="px-4 py-3 md:px-3 md:py-1 flex md:table-cell justify-between items-center md:text-center w-full md:w-auto hover:bg-neutral-50 md:hover:bg-transparent rounded-t-xl transition-colors">
-          <div className="flex items-center gap-2 md:contents">
-            <span className={cn("w-6 h-6 md:w-5 md:h-5 md:mx-auto rounded-full flex items-center justify-center text-[10px] md:text-[9px] font-bold shrink-0", originalIndex === 1 ? "bg-yellow-100 text-yellow-700" : originalIndex === 2 ? "bg-neutral-200 text-neutral-600" : originalIndex === 3 ? "bg-orange-100 text-orange-700" : "bg-neutral-100 text-neutral-500")}>
+          <div className="flex items-center gap-3 md:contents">
+            <span className={cn("w-7 h-7 md:w-6 md:h-6 md:mx-auto rounded-full flex items-center justify-center text-[11px] md:text-[10px] font-black shrink-0 shadow-sm border", originalIndex === 1 ? "bg-gradient-to-br from-amber-100 to-yellow-200 text-yellow-800 border-yellow-300/50" : originalIndex === 2 ? "bg-gradient-to-br from-neutral-100 to-neutral-200 text-neutral-700 border-neutral-300/50" : originalIndex === 3 ? "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800 border-orange-300/50" : "bg-neutral-50 text-neutral-500 border-neutral-200")}>
               {originalIndex}
             </span>
             <span className="font-bold text-neutral-900 md:hidden text-sm truncate max-w-[200px]">{ciclista}</span>
@@ -383,7 +383,7 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
         <td className={cn("px-4 py-2 md:py-1 text-neutral-600 whitespace-nowrap md:table-cell bg-neutral-50/50 md:bg-transparent border-t border-neutral-100 md:border-t-0", expanded ? "block" : "hidden")}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
-            {nombreEquipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium text-blue-700 md:text-neutral-600">{nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]">[#{orden}]</span></span>}
+            {nombreEquipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium text-blue-700 md:text-neutral-600">{nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span></span>}
           </div>
         </td>
         <td className={cn("px-4 py-2 md:px-3 md:py-1 text-base md:text-center md:table-cell", expanded ? "block" : "hidden")}>

@@ -32,7 +32,7 @@ export function TopTeamRow({
 
   return (
     <>
-      <td className="px-3 py-2 text-center whitespace-nowrap bg-neutral-50/50">
+      <td className="px-4 py-3 text-center whitespace-nowrap bg-neutral-50/50">
         <div className="flex items-center justify-center">
           <span className={cn(
             "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border border-neutral-100",
@@ -46,10 +46,10 @@ export function TopTeamRow({
         </div>
       </td>
       <td className="px-4 py-2 font-bold text-neutral-900 group-hover/row:text-blue-700 transition-colors text-sm">
-        {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[#{team.originalPos}]</span>}
+        {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span>}
       </td>
       {!hideDifColumn && (
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn(
           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
           diff > 0 ? "bg-green-100 text-green-700" : 
@@ -60,32 +60,32 @@ export function TopTeamRow({
         </span>
       </td>
       )}
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.wins, maxWins, minWins))}>
           {team.wins}
         </span>
       </td>
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.partialWins, maxPartialWins, minPartialWins))}>
           {team.partialWins}
         </span>
       </td>
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.numCarreras, maxCarreras, minCarreras))}>
           {team.numCarreras}
         </span>
       </td>
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.ppc, maxPpc, minPpc))}>
           {team.ppc.toFixed(1)}
         </span>
       </td>
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.totalDays, maxDays, minDays))}>
           {team.totalDays}
         </span>
       </td>
-      <td className="px-3 py-2 text-center whitespace-nowrap">
+      <td className="px-4 py-3 text-center whitespace-nowrap">
         <span className={cn("font-mono tabular-nums text-sm", getStatColor(team.ppd, maxPpd, minPpd))}>
           {team.ppd.toFixed(1)}
         </span>
@@ -151,7 +151,7 @@ export function TopTeamsTableContent({
   const internalRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={scrollRef || internalRef} className={cn("table-responsive-wrapper overflow-auto w-full scrollbar-thin px-2 md:px-0", isExpanded ? "max-h-none" : dense ? "max-h-[80vh]" : "max-h-[600px]")}>
+    <div ref={scrollRef || internalRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full scrollbar-thin px-2 md:px-0", isExpanded ? "max-h-none" : dense ? "max-h-[80vh]" : "max-h-[600px]")}>
     <table className="w-full min-w-[900px] text-sm text-left border-collapse">
       <thead className="sticky top-0 z-10 bg-neutral-50 shadow-sm border-b-2 border-neutral-200">
         <tr>

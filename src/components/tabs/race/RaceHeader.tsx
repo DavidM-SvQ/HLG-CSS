@@ -1,10 +1,11 @@
+import { AppState } from '../../../lib/types';
 import React from "react";
 import { PublishedRacesTracker } from "./PublishedRacesTracker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 
 interface RaceHeaderProps {
   isAdminReport: boolean;
-  files: any;
+  files: AppState;
   uniqueRaces: string[];
   selectedRace: string;
   setSelectedRace: (val: string) => void;

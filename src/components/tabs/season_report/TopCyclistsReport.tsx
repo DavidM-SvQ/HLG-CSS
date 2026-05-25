@@ -83,7 +83,7 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         bodyClassName="p-0 border-t border-neutral-100"
       >
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div ref={containerRef} className={cn("table-responsive-wrapper overflow-auto w-full crosshair-container pb-4 px-2 md:px-0 mt-2 md:mt-0", !isTopCyclistsExpanded && "max-h-[600px]")}>
+          <div ref={containerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container pb-4 px-2 md:px-0 mt-2 md:mt-0", !isTopCyclistsExpanded && "max-h-[600px]")}>
             <table className="w-full text-xs text-left block md:table min-w-0 md:min-w-[700px] mx-auto bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none rounded-lg border-collapse">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                 <tr className="divide-x divide-neutral-100">
@@ -191,15 +191,15 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         bodyClassName="p-0 border-t border-neutral-100"
       >
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div ref={noDraftContainerRef} className={cn("table-responsive-wrapper overflow-auto w-full crosshair-container px-2 md:px-0 mt-2 md:mt-0 pb-4", !isNoDraftExpanded && "max-h-[600px]")}>
+          <div ref={noDraftContainerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container px-2 md:px-0 mt-2 md:mt-0 pb-4", !isNoDraftExpanded && "max-h-[600px]")}>
             <table className="w-full text-xs text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none rounded-lg block md:table min-w-0 md:min-w-[700px] mx-auto border-collapse">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                 <tr className="divide-x divide-neutral-100">
-                  <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">Pos</th>
-                  <th className="sticky top-0 left-0 z-40 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 shadow-[1px_0_0_0_#e5e5e5]">Ciclista</th>
-                  <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200">EQ</th>
-                  <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-center">País</th>
-                  <th className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold border-b border-neutral-200 text-right">Puntos</th>
+                  <th className="px-4 py-3 font-bold border-b border-neutral-200 text-center">Pos</th>
+                  <th className="px-4 py-3 font-bold border-b border-neutral-200 shadow-[1px_0_0_0_#e5e5e5]">Ciclista</th>
+                  <th className="px-4 py-3 font-bold border-b border-neutral-200">EQ</th>
+                  <th className="px-4 py-3 font-bold border-b border-neutral-200 text-center">País</th>
+                  <th className="px-4 py-3 font-bold border-b border-neutral-200 text-right">Puntos</th>
                 </tr>
               </thead>
               <tbody className="divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 bg-transparent md:bg-white block md:table-row-group">

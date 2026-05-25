@@ -51,53 +51,59 @@ export const SeasonHighlights = ({
       className="flex flex-col gap-6"
     >
       {/* KPIs Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-100/50 rounded-full blur-2xl group-hover:bg-blue-200/50 transition-colors" />
-          <div className="p-3.5 bg-blue-500/10 text-blue-600 rounded-2xl shrink-0 z-10 block backdrop-blur-md">
-            <Trophy className="w-7 h-7" />
-          </div>
-          <div className="z-10">
-            <p className="text-[11px] font-bold text-blue-500/80 uppercase tracking-widest mb-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-blue-50/80 to-white/90 backdrop-blur-xl border border-blue-100/60 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col gap-6 relative overflow-hidden group">
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-blue-100/50 rounded-full blur-[40px] group-hover:bg-blue-200/50 transition-colors duration-500" />
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-blue-500/10 text-blue-600 rounded-2xl shrink-0 z-10 block backdrop-blur-md">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <p className="text-xs font-bold text-blue-600/80 uppercase tracking-[0.2em] z-10 truncate">
               Carreras Term.
             </p>
-            <p className="text-3xl font-black text-neutral-900 tracking-tight">
-              {uniqueRaces?.length || 0} <span className="text-sm font-semibold text-neutral-400">/ {files?.carreras?.data?.length || 0}</span>
+          </div>
+          <div className="z-10 mt-auto">
+            <p className="text-4xl font-black text-neutral-900 tracking-tight flex items-baseline gap-2">
+              {uniqueRaces?.length || 0} <span className="text-xl font-bold text-neutral-400">/ {files?.carreras?.data?.length || 0}</span>
             </p>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
-           <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-100/50 rounded-full blur-2xl group-hover:bg-amber-200/50 transition-colors" />
-          <div className="p-3.5 bg-amber-500/10 text-amber-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
-            <Crown className="w-7 h-7" />
-          </div>
-          <div className="z-10">
-            <p className="text-[11px] font-bold text-amber-500/80 uppercase tracking-widest mb-1">
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-amber-50/80 to-white/90 backdrop-blur-xl border border-amber-100/60 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col gap-6 relative overflow-hidden group">
+           <div className="absolute -right-8 -top-8 w-40 h-40 bg-amber-100/50 rounded-full blur-[40px] group-hover:bg-amber-200/50 transition-colors duration-500" />
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-amber-500/10 text-amber-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
+              <Crown className="w-6 h-6" />
+            </div>
+            <p className="text-xs font-bold text-amber-600/80 uppercase tracking-[0.2em] z-10 truncate">
               Líder Actual
             </p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1">
+          </div>
+          <div className="z-10 mt-auto">
+            <p className="text-2xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1 mb-1">
               {leaderNames || "-"}
             </p>
-            <p className="text-sm font-semibold text-amber-600/80 mt-0.5">
+            <p className="text-base font-bold text-amber-600/80">
               {maxPoints || 0} pts
             </p>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-3xl p-6 shadow-sm flex items-center gap-5 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-100/50 rounded-full blur-2xl group-hover:bg-emerald-200/50 transition-colors" />
-          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
-            <Medal className="w-7 h-7" />
-          </div>
-          <div className="z-10">
-            <p className="text-[11px] font-bold text-emerald-500/80 uppercase tracking-widest mb-1">
+        <motion.div variants={itemVariants} whileHover={{ y: -4 }} className="bg-gradient-to-br from-emerald-50/80 to-white/90 backdrop-blur-xl border border-emerald-100/60 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col gap-6 relative overflow-hidden group">
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-emerald-100/50 rounded-full blur-[40px] group-hover:bg-emerald-200/50 transition-colors duration-500" />
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-2xl shrink-0 z-10 backdrop-blur-md">
+              <Medal className="w-6 h-6" />
+            </div>
+            <p className="text-xs font-bold text-emerald-600/80 uppercase tracking-[0.2em] z-10 truncate">
               Más Victorias
             </p>
-            <p className="text-xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1">
+          </div>
+          <div className="z-10 mt-auto">
+            <p className="text-2xl font-black text-neutral-900 tracking-tight leading-tight line-clamp-1 mb-1">
               {winnerNames || "-"}
             </p>
-            <p className="text-sm font-semibold text-emerald-600/80 mt-0.5">
+            <p className="text-base font-bold text-emerald-600/80">
               {maxWins} wins
             </p>
           </div>

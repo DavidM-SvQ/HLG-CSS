@@ -41,7 +41,7 @@ export function StartlistTable(props: any) {
       <div
         ref={startlistScrollRef}
         className={cn(
-          "table-responsive-wrapper overflow-auto border-0 md:border md:border-neutral-200 rounded-lg flex-1 crosshair-container w-full h-full",
+          "table-responsive-wrapper min-h-[300px] overflow-auto border-0 md:border md:border-neutral-200 rounded-lg flex-1 crosshair-container w-full h-full",
           isExpanded ? "max-h-none" : "max-h-[800px]"
         )}
       >
@@ -58,14 +58,14 @@ export function StartlistTable(props: any) {
                     (startlistSortDir === "asc" ? "↑" : "↓")}
                 </span>
               </th>
-              <th className="px-3 py-2 w-12 text-center text-neutral-400 font-medium">
+              <th className="px-4 py-3 w-12 text-center text-neutral-400 font-medium">
                 Dor
               </th>
-              <th className="px-3 py-2 text-neutral-800 font-semibold w-[35%]">
+              <th className="px-4 py-3 text-neutral-800 font-semibold w-[35%]">
                 Ciclista
               </th>
-              <th className="px-3 py-2 text-center w-[12%]">País</th>
-              <th className="px-3 py-2 text-center w-[12%]">Eq</th>
+              <th className="px-4 py-3 text-center w-[12%]">País</th>
+              <th className="px-4 py-3 text-center w-[12%]">Eq</th>
               <th
                 className="px-3 py-2 text-center cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-16"
                 onClick={() => toggleSort("ronda")}
@@ -87,7 +87,7 @@ export function StartlistTable(props: any) {
                     (startlistSortDir === "asc" ? "↑" : "↓")}
                 </span>
               </th>
-              <th className="px-3 py-2 text-center w-[10%]">Debut</th>
+              <th className="px-4 py-3 text-center w-[10%]">Debut</th>
               <th
                 className="px-3 py-2 text-right cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-20"
                 onClick={() => toggleSort("puntos")}
@@ -184,15 +184,15 @@ export function StartlistTable(props: any) {
                       <span className="truncate">{r.jugador}</span>
                     </td>
                     
-                    <td className="w-1/4 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col md:table-cell items-center gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell items-center gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Dor</span>
                       <span className="text-neutral-500 font-mono tabular-nums text-sm md:text-[11px]">{r.dorsal}</span>
                     </td>
-                    <td className="w-2/4 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
                       <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
                     </td>
-                    <td className="w-1/4 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq</span>
                       <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
                     </td>
@@ -205,7 +205,7 @@ export function StartlistTable(props: any) {
                       <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
                     </td>
                     
-                    <td className="w-1/3 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
                       <div className="flex-1 flex items-center justify-center">
                         <span className={cn(
@@ -216,7 +216,7 @@ export function StartlistTable(props: any) {
                         </span>
                       </div>
                     </td>
-                    <td className="w-1/3 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
                       <div className="flex-1 flex items-center justify-center">
                         <span className={cn(
@@ -230,7 +230,7 @@ export function StartlistTable(props: any) {
                         </span>
                       </div>
                     </td>
-                    <td className="w-1/3 md:w-auto px-2 py-2 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center gap-1 content-center bg-white md:bg-transparent">
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center gap-1 content-center bg-white md:bg-transparent">
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Debut</span>
                       <div className="flex-1 flex items-center justify-center">
                         {r.debut === "Sí" ? (

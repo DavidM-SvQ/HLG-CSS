@@ -3,7 +3,7 @@ import { Globe, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { AppState } from "../../../../lib/types";
 
-export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user }: any) => {
+export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user, isComputing }: any) => {
   return (
     <div className="space-y-6">
       <div>
@@ -27,10 +27,20 @@ export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user }
         </div>
       )}
 
+      {isComputing && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 shadow-sm animate-pulse">
+           <div className="flex gap-3 items-center text-indigo-700">
+             <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shrink-0" />
+             <span className="text-sm font-bold">Procesando motores y simuladores...</span>
+           </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {FILE_TYPES.filter((ft: any) => !ft.hiddenInAdmin).map((ft: any) => {
           const state = files[ft.id as keyof AppState];
           const Icon = ft.icon;
+          const isLoadingFile = state.loading;
 
           return (
             <div
@@ -40,7 +50,7 @@ export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user }
                 state.data
                   ? "bg-green-50 border-green-200"
                   : "bg-white border-neutral-200 hover:border-blue-300",
-                state.loading && "animate-pulse opacity-70",
+                (isLoadingFile || isComputing) && "opacity-70 pointer-events-none",
               )}
             >
               <div className="flex items-start justify-between gap-4">
@@ -51,9 +61,10 @@ export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user }
                       state.data
                         ? "bg-green-100 text-green-700"
                         : "bg-neutral-100 text-neutral-600",
+                      isLoadingFile && "bg-blue-100 text-blue-600"
                     )}
                   >
-                    <Icon className="w-5 h-5" />
+                    {isLoadingFile ? <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Icon className="w-5 h-5" />}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
@@ -67,8 +78,8 @@ export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user }
                       )}
                     </div>
                     <p className="text-xs text-neutral-500 mt-0.5">
-                      {state.loading
-                        ? "Sincronizando..."
+                      {isLoadingFile
+                        ? "Cargando archivo..."
                         : state.data
                           ? ft.global
                             ? "Sincronizado en la nube"

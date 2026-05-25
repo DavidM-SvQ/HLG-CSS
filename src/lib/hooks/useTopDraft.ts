@@ -1,24 +1,9 @@
+import { TopDraftStat } from '../types';
 import { useMemo } from "react";
 import { useComputedStore } from "../stores/useComputedStore";
 import { useDataStore } from "../stores/useDataStore";
 import { getVal } from "../data-processing";
 
-export interface TopDraftStat {
-  ciclista: string;
-  puntos: number;
-  jugador: string;
-  nombreEquipo: string;
-  orden: string;
-  ronda: string;
-  pais: string;
-  victorias: number;
-  carreras: Set<string>;
-  dias: number;
-  numCarreras: number;
-  ppc: number;
-  ppd: number;
-  originalIndex: number;
-}
 
 export function useTopDraft(
   cyclistsMonthFilter: string, 

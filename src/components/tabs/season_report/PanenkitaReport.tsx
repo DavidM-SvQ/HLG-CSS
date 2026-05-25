@@ -34,7 +34,7 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           titleClassName="text-pink-800 text-sm"
           bodyClassName="p-0 border-t border-pink-100"
         >
-          <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container">
             <table className="w-full text-sm text-left table-fixed">
               <tbody>
                 {monthReportData.panenkitaTopTeams.map((t: any, idx: number) => (
@@ -72,7 +72,7 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           titleClassName="text-pink-800 text-sm"
           bodyClassName="p-0 border-t border-pink-100"
         >
-          <div className={cn("table-responsive-wrapper overflow-y-auto w-full crosshair-container", !isTopCyclistsExpanded && "max-h-[300px]")}>
+          <div className={cn("table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container", !isTopCyclistsExpanded && "max-h-[300px]")}>
             <table className="w-full text-sm text-left table-fixed">
               <tbody>
                 {monthReportData.panenkitaTopCyclists.map((c: any, idx: number) => (
@@ -112,7 +112,7 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           titleClassName="text-pink-800 text-sm truncate"
           bodyClassName="p-0 border-t border-pink-100"
         >
-          <div className={cn("table-responsive-wrapper overflow-y-auto w-full crosshair-container", !isTeamPicksExpanded && "max-h-[300px]")}>
+          <div className={cn("table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container", !isTeamPicksExpanded && "max-h-[300px]")}>
             <table className="w-full text-sm text-left table-fixed">
               <tbody>
                 {monthReportData.bestPanenkitaTeamPicks.map((c: any, idx: number) => (

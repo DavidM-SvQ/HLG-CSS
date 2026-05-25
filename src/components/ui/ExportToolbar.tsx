@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList } from "lucide-react";
+import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList, Camera } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "./button";
@@ -91,7 +91,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           )}
           title={imagePageCount > 1 ? "Copiar imagen completa" : "Copiar imagen"}
         >
-          {_isImageCopying === 'full' || _isImageCopying === true || (imagePageCount <= 1 && !!_isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {_isImageCopying === 'full' || _isImageCopying === true || (imagePageCount <= 1 && !!_isImageCopying) ? <CheckCircle2 className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
         </Button>
 
         {imagePageCount > 1 && (
@@ -110,7 +110,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
                 )}
                 title={`Copiar ${p}`}
               >
-                {_isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {_isImageCopying === p ? <CheckCircle2 className="w-3 h-3" /> : <Camera className="w-3 h-3" />}
                 {p}
               </Button>
             ))}

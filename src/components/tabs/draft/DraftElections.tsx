@@ -1,3 +1,4 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, ChevronDown, X, Users } from 'lucide-react';
@@ -7,13 +8,16 @@ import { ReportCard } from '../../ui/ReportCard';
 import { useDebounce } from '../../../lib/hooks/useDebounce';
 import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useUrlState } from '../../../hooks/useUrlState';
+import { useDraftElectionsState } from './hooks/useDraftElectionsState';
+import { useDraftElectionsExports } from './hooks/useDraftElectionsExports';
+import { useDraftElectionsLogic } from './hooks/useDraftElectionsLogic';
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { Button } from "../../ui/button";
 
 export interface DraftElectionsProps {
-  files: any;
-  cyclistMetadata: any;
-  leaderboard: any;
+  files: AppState;
+  cyclistMetadata: Record<string, CyclistMetadata>;
+  leaderboard: PlayerScore[];
   getFlagEmoji: any;
   teamTotalPoints: Record<string, number>;
   draftCyclistStats: Record<string, { puntos: number; victorias: number }>;
@@ -35,32 +39,36 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   draftCyclistStats,
   draftComputedData,
 }) => {
-  const [draftSearchTerm, setDraftSearchTerm] = useUrlState("draftSearchTerm", "");
-  const [localSearch, setLocalSearch] = useState(draftSearchTerm);
   
-  useEffect(() => {
-    if (draftSearchTerm !== localSearch) {
-      setLocalSearch(draftSearchTerm);
-    }
-  }, [draftSearchTerm, localSearch]);
-  
+  const {
+    draftSearchTerm, setDraftSearchTerm,
+    localSearch, setLocalSearch,
+    draftRoundFilter, setDraftRoundFilter,
+    draftTeamFilter, setDraftTeamFilter,
+    isDraftRoundFilterOpen, setIsDraftRoundFilterOpen,
+    isDraftTeamFilterOpen, setIsDraftTeamFilterOpen,
+    isDraftStatsFilterOpen, setIsDraftStatsFilterOpen,
+    draftStatsFilters, setDraftStatsFilters,
+    localDraftStatsFilters, setLocalDraftStatsFilters,
+    draftSortColumn, setDraftSortColumn,
+    draftSortDirection, setDraftSortDirection,
+    isDraftTableExpanded, setIsDraftTableExpanded,
+  } = useDraftElectionsState();
+
   const debouncedSearch = useDebounce(localSearch, 300);
-  
   useEffect(() => {
     if (debouncedSearch !== draftSearchTerm) {
       setDraftSearchTerm(debouncedSearch);
     }
   }, [debouncedSearch, draftSearchTerm, setDraftSearchTerm]);
 
-  const [draftRoundFilter, setDraftRoundFilter] = useUrlState<string[]>("draftRoundFilter", []);
-  const [draftTeamFilter, setDraftTeamFilter] = useUrlState<string[]>("draftTeamFilter", []);
-  const [isDraftRoundFilterOpen, setIsDraftRoundFilterOpen] = useState(false);
-  const [isDraftTeamFilterOpen, setIsDraftTeamFilterOpen] = useState(false);
-  const [draftStatsFilters, setDraftStatsFilters] = useUrlState<Record<string, number | undefined>>("draftStatsFilters", {});
-  const [localDraftStatsFilters, setLocalDraftStatsFilters] = useState<Record<string, number | undefined>>(draftStatsFilters);
-  
-  const debouncedDraftStatsFilters = useDebounce(localDraftStatsFilters, 500);
+  useEffect(() => {
+    if (draftSearchTerm !== localSearch) {
+      setLocalSearch(draftSearchTerm);
+    }
+  }, [draftSearchTerm, localSearch]);
 
+  const debouncedDraftStatsFilters = useDebounce(localDraftStatsFilters, 500);
   useEffect(() => {
     if (JSON.stringify(debouncedDraftStatsFilters) !== JSON.stringify(draftStatsFilters)) {
       setDraftStatsFilters(debouncedDraftStatsFilters);
@@ -71,160 +79,28 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     if (JSON.stringify(draftStatsFilters) !== JSON.stringify(localDraftStatsFilters)) {
       setLocalDraftStatsFilters(draftStatsFilters);
     }
-  }, [draftStatsFilters]); // This handles external pushes (like clear all)
-
-  const [isDraftStatsFilterOpen, setIsDraftStatsFilterOpen] = useState(false);
-  const [draftSortColumn, setDraftSortColumn] = useUrlState<string>("draftSortColumn", "Elección");
-  const [draftSortDirection, setDraftSortDirection] = useUrlState<"asc" | "desc">("draftSortDirection", "asc");
-  const [isDraftTableExpanded, setIsDraftTableExpanded] = useState(false);
+  }, [draftStatsFilters]);
 
   const draftTableRef = useRef<HTMLDivElement>(null);
-  const { handleCopyImage: copyDraftTableImage, handleDownloadImage: downloadDraftTableImage, isCopying: isDraftTableCopyingState } = useTableScreenshot(draftTableRef);
 
-  const [isDraftTableCopying, setIsDraftTableCopying] = useState<string | false>(false);
-  
-  const prepareTableForCopy = (container: HTMLElement, subset?: string) => {
-    const rows = container.querySelectorAll(".draft-row");
-    if (subset) {
-      const start = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"].indexOf(subset) * 50;
-      const end = start + 50;
-      rows.forEach((row, idx) => {
-        if (idx + 1 <= start || idx + 1 > end) row.classList.add("hidden");
-      });
-    }
-    container.className = "bg-white border border-neutral-200 rounded-xl overflow-visible shadow-sm inline-block w-auto min-w-full";
-  };
-  
-  const resetTableAfterCopy = (container: HTMLElement, originalClass: string) => {
-    container.className = originalClass;
-    container.querySelectorAll(".draft-row").forEach((row) => row.classList.remove("hidden"));
-  };
+  const {
+    isDraftTableCopyingState,
+    isDraftTableCopying, setIsDraftTableCopying,
+    handleCopyDraftTableImage,
+    handleDownloadDraftTableImage
+  } = useDraftElectionsExports(draftTableRef);
 
-  const handleCopyDraftTableImage = async (subset?: string) => {
-    setIsDraftTableCopying(subset || "full");
-    const container = draftTableRef.current;
-    if (!container) return;
-    const originalClass = container.className;
-    try {
-      await copyDraftTableImage({
-        fileName: "export.png",
-        scale: 3,
-        style: { overflow: "visible" },
-        onBeforeCapture: (el) => prepareTableForCopy(el, subset),
-        onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
-      });
-    } finally {
-      setIsDraftTableCopying(false);
-    }
-  };
-  
-  const handleDownloadDraftTableImage = async (subset?: string) => {
-    const container = draftTableRef.current;
-    if (!container) return;
-    const originalClass = container.className;
-    await downloadDraftTableImage({
-      fileName: `draft-elecciones${subset ? `-${subset}` : ""}.png`,
-      scale: 3,
-      style: { overflow: "visible" },
-      onBeforeCapture: (el) => prepareTableForCopy(el, subset),
-      onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
-    });
-  };
-
-  const draftFilteredData = useMemo(() => {
-    if (!files?.elecciones?.data) return [];
-    return files.elecciones.data.filter((row: any) => {
-      const ciclista = getVal(row, "Ciclista") as string;
-      const matchesSearch = ciclista
-        ?.toLowerCase()
-        .includes(draftSearchTerm.toLowerCase());
-      const matchesRound =
-        draftRoundFilter.length === 0 ||
-        draftRoundFilter.includes(String(getVal(row, "Ronda")));
-      const matchesTeam =
-        draftTeamFilter.length === 0 ||
-        draftTeamFilter.includes(
-          String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG"))
-        );
-
-      let matchesStats = true;
-      if (ciclista) {
-        const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
-        const meta = cyclistMetadata[ciclista] || { carrerasDisputadas: 0, diasCompeticion: 0 };
-        
-        const puntos = stats.puntos;
-        const victorias = stats.victorias;
-        const carr = meta.carrerasDisputadas;
-        const dc = meta.diasCompeticion;
-        const ppc = carr > 0 ? puntos / carr : 0;
-        const ppd = dc > 0 ? puntos / dc : 0;
-
-        if (draftStatsFilters.minPuntos !== undefined && draftStatsFilters.minPuntos !== "" as any && puntos < draftStatsFilters.minPuntos)
-          matchesStats = false;
-        if (draftStatsFilters.maxPuntos !== undefined && draftStatsFilters.maxPuntos !== "" as any && puntos > draftStatsFilters.maxPuntos)
-          matchesStats = false;
-        if (draftStatsFilters.minVictorias !== undefined && draftStatsFilters.minVictorias !== "" as any && victorias < draftStatsFilters.minVictorias)
-          matchesStats = false;
-        if (draftStatsFilters.maxVictorias !== undefined && draftStatsFilters.maxVictorias !== "" as any && victorias > draftStatsFilters.maxVictorias)
-          matchesStats = false;
-        if (draftStatsFilters.minCarr !== undefined && draftStatsFilters.minCarr !== "" as any && carr < draftStatsFilters.minCarr)
-          matchesStats = false;
-        if (draftStatsFilters.maxCarr !== undefined && draftStatsFilters.maxCarr !== "" as any && carr > draftStatsFilters.maxCarr)
-          matchesStats = false;
-        if (draftStatsFilters.minDc !== undefined && draftStatsFilters.minDc !== "" as any && dc < draftStatsFilters.minDc)
-          matchesStats = false;
-        if (draftStatsFilters.maxDc !== undefined && draftStatsFilters.maxDc !== "" as any && dc > draftStatsFilters.maxDc)
-          matchesStats = false;
-        if (draftStatsFilters.minPpc !== undefined && draftStatsFilters.minPpc !== "" as any && ppc < draftStatsFilters.minPpc)
-          matchesStats = false;
-        if (draftStatsFilters.maxPpc !== undefined && draftStatsFilters.maxPpc !== "" as any && ppc > draftStatsFilters.maxPpc)
-          matchesStats = false;
-        if (draftStatsFilters.minPpd !== undefined && draftStatsFilters.minPpd !== "" as any && ppd < draftStatsFilters.minPpd)
-          matchesStats = false;
-        if (draftStatsFilters.maxPpd !== undefined && draftStatsFilters.maxPpd !== "" as any && ppd > draftStatsFilters.maxPpd)
-          matchesStats = false;
-      }
-
-      return matchesSearch && matchesRound && matchesTeam && matchesStats;
-    });
-  }, [files?.elecciones?.data, draftSearchTerm, draftRoundFilter, draftTeamFilter, draftStatsFilters, draftCyclistStats, cyclistMetadata]);
-
-  const draftSortedData = useMemo(() => {
-    return [...draftFilteredData].sort((a, b) => {
-      if (draftSortColumn === "Puntos") {
-        const ptsA = draftCyclistStats[getVal(a, "Ciclista") || ""]?.puntos || 0;
-        const ptsB = draftCyclistStats[getVal(b, "Ciclista") || ""]?.puntos || 0;
-        return draftSortDirection === "asc" ? ptsA - ptsB : ptsB - ptsA;
-      }
-      if (draftSortColumn === "V") {
-        const vicA = draftCyclistStats[getVal(a, "Ciclista") || ""]?.victorias || 0;
-        const vicB = draftCyclistStats[getVal(b, "Ciclista") || ""]?.victorias || 0;
-        return draftSortDirection === "asc" ? vicA - vicB : vicB - vicA;
-      }
-      if (draftSortColumn === "C") {
-        const cA = cyclistMetadata[getVal(a, "Ciclista") || ""]?.carrerasDisputadas || 0;
-        const cB = cyclistMetadata[getVal(b, "Ciclista") || ""]?.carrerasDisputadas || 0;
-        return draftSortDirection === "asc" ? cA - cB : cB - cA;
-      }
-      if (draftSortColumn === "DC") {
-        const dcA = cyclistMetadata[getVal(a, "Ciclista") || ""]?.diasCompeticion || 0;
-        const dcB = cyclistMetadata[getVal(b, "Ciclista") || ""]?.diasCompeticion || 0;
-        return draftSortDirection === "asc" ? dcA - dcB : dcB - dcA;
-      }
-      const valA = getVal(a, draftSortColumn);
-      const valB = getVal(b, draftSortColumn);
-      if (!valA) return 1;
-      if (!valB) return -1;
-      const numA = parseFloat(valA);
-      const numB = parseFloat(valB);
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return draftSortDirection === "asc" ? numA - numB : numB - numA;
-      }
-      return draftSortDirection === "asc"
-        ? String(valA).localeCompare(String(valB))
-        : String(valB).localeCompare(String(valA));
-    });
-  }, [draftFilteredData, draftSortColumn, draftSortDirection, draftCyclistStats, cyclistMetadata]);
+  const { draftFilteredData, draftSortedData } = useDraftElectionsLogic(
+    files,
+    draftSearchTerm,
+    draftRoundFilter,
+    draftTeamFilter,
+    draftStatsFilters,
+    draftCyclistStats,
+    cyclistMetadata,
+    draftSortColumn,
+    draftSortDirection
+  );
 
   const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
@@ -321,7 +197,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
         </Button>
 
         {isDraftTeamFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-sm bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Equipos</span>
               {draftTeamFilter.length > 0 && (
@@ -363,7 +239,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
           <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
         </Button>
         {isDraftStatsFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-[90vw] sm:w-[500px] bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-md border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2 bg-white origin-top-right">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-3">
               <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Filtros de Estadísticas</span>
               {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") && (
@@ -455,7 +331,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
       <div className="flex justify-center bg-neutral-50/30">
         <div className={cn("w-full overflow-hidden relative max-h-[1200px]", isDraftTableExpanded ? "max-h-none" : "")}>
-          <div ref={parentRef} className={cn("table-responsive-wrapper overflow-auto w-full max-h-[800px] crosshair-container", isDraftTableExpanded && "max-h-none h-auto overflow-visible")}>
+          <div ref={parentRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full max-h-[800px] crosshair-container", isDraftTableExpanded && "max-h-none h-auto overflow-visible")}>
             <table className="w-full min-w-[1000px] text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
 
               <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10">

@@ -42,15 +42,15 @@ export const RaceStageBreakdown = ({
             isExpanded ? "max-h-none" : ""
           )}
         >
-          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
               <thead className={cn("bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10")}>
                 <tr>
-                  <th className="px-2 py-1.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px]">
+                  <th className="px-4 py-3.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px]">
                     Pos
                   </th>
-                  <th className="px-2 py-1.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700">
-                    Equipo
+                  <th className="px-4 py-3.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700 w-48">
+                    Equipo [#Orden]
                   </th>
                   {finalColumns.map((col: any) => (
                     <th
@@ -60,7 +60,7 @@ export const RaceStageBreakdown = ({
                       {col.formatted}
                     </th>
                   ))}
-                  <th className="px-2 py-1.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
+                  <th className="px-4 py-3.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
                     Puntos
                   </th>
                 </tr>
@@ -87,7 +87,7 @@ export const RaceStageBreakdown = ({
                       <tr
                         className="hover:bg-blue-50/30 transition-colors group"
                       >
-                        <td className="px-2 py-1 text-center font-mono tabular-nums text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
+                        <td className="px-4 py-3 text-center font-mono tabular-nums text-xs text-neutral-400 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[32px]">
                           {team.uniqueCyclists > 0
                             ? team.total > 0
                               ? team.pos === 1
@@ -100,9 +100,9 @@ export const RaceStageBreakdown = ({
                               : team.pos
                             : "-"}
                         </td>
-                      <td className="px-2 py-1 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px]">
+                      <td className="px-4 py-3 font-bold text-neutral-900 sticky left-[32px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px] w-48 truncate">
                         <span>
-                          {team.nombreEquipo} [#{team.orden}]
+                          {team.nombreEquipo} [<span className="font-mono tabular-nums opacity-60">#{team.orden}</span>]
                         </span>
                       </td>
                       {finalColumns.map((col: any) => {
@@ -126,7 +126,7 @@ export const RaceStageBreakdown = ({
                         );
                       })}
                       <td
-                        className="px-2 py-1 text-center font-mono tabular-nums font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
+                        className="px-3 py-2 text-center font-mono tabular-nums font-bold sticky right-0 z-10 border-l border-neutral-100 text-[11px]"
                         style={{
                           backgroundColor: `hsl(${Math.max(
                             0,

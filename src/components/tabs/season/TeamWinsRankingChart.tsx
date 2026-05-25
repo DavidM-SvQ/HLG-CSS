@@ -71,7 +71,7 @@ export function TeamWinsRankingChart() {
           </div>
         </div>
         <div className="h-[500px] w-full mt-4">
-          <div className="w-full overflow-x-auto h-full">
+          <div className="w-full overflow-x-auto h-full min-h-[300px]">
             <div className="min-w-[800px] h-full">
               <ResponsiveContainer width="100%" height="99%">
                 <BarChart
@@ -116,7 +116,7 @@ export function TeamWinsRankingChart() {
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
-                <div className="w-full overflow-x-auto h-full">
+                <div className="w-full overflow-x-auto h-full min-h-[300px]">
                   <div className="min-w-[800px] h-full">
                     <ResponsiveContainer width="100%" height="99%">
                       <BarChart

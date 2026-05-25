@@ -1,103 +1,171 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
+import { getVal } from '../data-processing';
 
 export function useGhostDraft(
   eleccionesData: any[] | undefined,
   cyclistMetadata: Record<string, { puntosTotales: number; eleccion?: number; [key: string]: any }>,
   playerTeamMap: Record<string, string>,
-  playerOrderMap: Record<string, string>
+  playerOrderMap: Record<string, string>,
+  mode: 'puntos' | 'rondas' = 'puntos'
 ) {
   return useMemo(() => {
     if (!eleccionesData || !eleccionesData.length) return [];
 
-    // 1. Build a list of all cyclists and their actual draft pick overall number
-    const allCyclists: { name: string; points: number; actualPickNumber: number }[] = [];
-    
-    // Some cyclists are in metadata but were never drafted (isUndrafted = 0 or infinite pick).
-    // Let's first map actual picks from elecciones
     let pickCounter = 1;
-    const actualPickMap: Record<string, number> = {};
-    const playerPicks: Record<string, { name: string; pickNumber: number; actualPoints: number }[]> = {};
+
+    // Collect all picks globally
+    const allPicks: { name: string; pickNumber: number; actualPoints: number; round: string; roundNum: number; jugador: string }[] = [];
 
     eleccionesData.forEach((row) => {
-      const ciclista = (row["Ciclista"] || "").toString().trim();
-      const jugador = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
+      const ciclista = (getVal(row, 'Ciclista') || '').toString().trim();
+      const jugador = (getVal(row, 'Jugador') || getVal(row, 'Nombre_TG') || '').toString().trim();
+      const round = (getVal(row, 'Ronda') || '').toString().trim();
+      const roundNum = parseInt(round.replace(/\D/g, '')) || 99;
       
-      if (ciclista) {
-        // If it's a drafted pick, assign a pick number
-        if (jugador && jugador !== "No draft" && jugador !== "Libre") {
-          actualPickMap[ciclista] = pickCounter;
-          
-          if (!playerPicks[jugador]) {
-            playerPicks[jugador] = [];
-          }
-          playerPicks[jugador].push({
-            name: ciclista,
-            pickNumber: pickCounter,
-            actualPoints: cyclistMetadata[ciclista]?.puntosTotales || 0,
-          });
-
-          pickCounter++;
-        }
+      let pickNumStr = getVal(row, 'Elección#') || getVal(row, 'Elección') || getVal(row, 'Pick');
+      let pickNum = parseInt(pickNumStr);
+      if (isNaN(pickNum)) pickNum = pickCounter;
+      
+      if (ciclista && jugador && jugador !== 'No draft' && jugador !== 'Libre') {
+        allPicks.push({
+          name: ciclista,
+          pickNumber: pickNum,
+          actualPoints: cyclistMetadata[ciclista]?.puntosTotales || 0,
+          round: round || '1',
+          roundNum,
+          jugador
+        });
+        pickCounter++;
+      } else if (ciclista) {
+        pickCounter++;
       }
     });
 
+    // Sort all picks by pick number ascending
+    allPicks.sort((a, b) => a.pickNumber - b.pickNumber);
+
+    const playerPicks: Record<string, any[]> = {};
+    
+    // Collect all cyclists and sort by total points descending
+    const allCyclists: { name: string; points: number }[] = [];
     Object.entries(cyclistMetadata).forEach(([name, meta]) => {
       allCyclists.push({
         name,
         points: meta.puntosTotales || 0,
-        // If they were not picked by a real player, their pick number is Infinity (always available)
-        actualPickNumber: actualPickMap[name] || Infinity,
       });
     });
-
-    // 2. Perform the Ghost Draft per team
-    const results: any[] = [];
-
-    for (const [jugador, picks] of Object.entries(playerPicks)) {
-      // Sort team's picks descending by pickNumber (starting from their last pick)
-      const sortedPicks = [...picks].sort((a, b) => b.pickNumber - a.pickNumber);
-      
-      let ghostPoints = 0;
-      let actualTeamPoints = 0;
-      const ghostRoster: { original: string; pickNumber: number; ghost: string; ghostPoints: number }[] = [];
+    allCyclists.sort((a, b) => b.points - a.points);
+    
+    if (mode === 'rondas') {
       const usedCyclists = new Set<string>();
 
-      for (const pick of sortedPicks) {
-        actualTeamPoints += pick.actualPoints;
+      // Pre-calculate points and sort globally once
+      const allPicksWithPoints = allPicks.map(p => ({
+        name: p.name,
+        roundNum: p.roundNum,
+        points: cyclistMetadata[p.name]?.puntosTotales || 0
+      })).sort((a, b) => b.points - a.points);
 
-        // Find the best available cyclist for this pick
-        // Must be available at `pick.pickNumber` and not already used
-        let bestGhost: string | null = null;
-        let maxPoints = -1;
+      const draftedCyclistsSet = new Set<string>();
 
-        for (const cyclist of allCyclists) {
-          if (!usedCyclists.has(cyclist.name)) {
-             if (cyclist.actualPickNumber >= pick.pickNumber) {
-               if (cyclist.points > maxPoints) {
-                 maxPoints = cyclist.points;
-                 bestGhost = cyclist.name;
-               }
-             }
+      allPicks.forEach((pick, index) => {
+        draftedCyclistsSet.add(pick.name);
+
+        const missedOpportunities = allCyclists
+          .filter(c => !draftedCyclistsSet.has(c.name) && c.points > pick.actualPoints)
+          .slice(0, 5) // already sorted globally
+          .map(candidate => {
+            const laterPick = allPicks.find(p => p.name === candidate.name);
+            return {
+              name: candidate.name,
+              points: candidate.points,
+              pickedBy: laterPick ? (playerTeamMap[laterPick.jugador] || laterPick.jugador) : "Nadie (Libre)",
+              pickedAtPick: laterPick ? laterPick.pickNumber : "-",
+              pickedAtRound: laterPick ? laterPick.round : "-"
+            };
+          });
+
+        let ghostCyclist = null;
+        for (let i = 0; i < allPicksWithPoints.length; i++) {
+          const candidate = allPicksWithPoints[i];
+          if (candidate.roundNum <= pick.roundNum && !usedCyclists.has(candidate.name)) {
+            ghostCyclist = candidate;
+            break;
           }
         }
 
-        if (bestGhost) {
-          usedCyclists.add(bestGhost);
-          ghostPoints += maxPoints;
-          ghostRoster.push({
-            original: pick.name,
-            pickNumber: pick.pickNumber,
-            ghost: bestGhost,
-            ghostPoints: maxPoints
-          });
+        if (ghostCyclist) {
+          usedCyclists.add(ghostCyclist.name);
         }
+        
+        if (!playerPicks[pick.jugador]) {
+          playerPicks[pick.jugador] = [];
+        }
+        
+        playerPicks[pick.jugador].push({
+          original: pick.name,
+          pickNumber: pick.pickNumber,
+          ghost: ghostCyclist ? ghostCyclist.name : '?',
+          ghostPoints: ghostCyclist ? ghostCyclist.points : 0,
+          originalPoints: pick.actualPoints,
+          round: pick.round,
+          missedOpportunities
+        });
+      });
+    } else {
+      const draftedCyclistsSet = new Set<string>();
+
+      // Now simply match cyclst i to pick i
+      allPicks.forEach((pick, index) => {
+        draftedCyclistsSet.add(pick.name);
+
+        const missedOpportunities = allCyclists
+          .filter(c => !draftedCyclistsSet.has(c.name) && c.points > pick.actualPoints)
+          .slice(0, 5) // already sorted globally
+          .map(candidate => {
+            const laterPick = allPicks.find(p => p.name === candidate.name);
+            return {
+              name: candidate.name,
+              points: candidate.points,
+              pickedBy: laterPick ? (playerTeamMap[laterPick.jugador] || laterPick.jugador) : "Nadie (Libre)",
+              pickedAtPick: laterPick ? laterPick.pickNumber : "-",
+              pickedAtRound: laterPick ? laterPick.round : "-"
+            };
+          });
+
+        const ghostCyclist = allCyclists[index]; // The i-th best cyclist overall
+        
+        if (!playerPicks[pick.jugador]) {
+          playerPicks[pick.jugador] = [];
+        }
+        
+        playerPicks[pick.jugador].push({
+          original: pick.name,
+          pickNumber: pick.pickNumber,
+          ghost: ghostCyclist ? ghostCyclist.name : '?',
+          ghostPoints: ghostCyclist ? ghostCyclist.points : 0,
+          originalPoints: pick.actualPoints,
+          round: pick.round,
+          missedOpportunities
+        });
+      });
+    }
+
+    const results: any[] = [];
+
+    for (const [jugador, picks] of Object.entries(playerPicks)) {
+      let ghostPoints = 0;
+      let actualTeamPoints = 0;
+
+      for (const pick of picks) {
+        actualTeamPoints += pick.originalPoints;
+        ghostPoints += pick.ghostPoints;
       }
 
       const teamName = playerTeamMap[jugador] || jugador;
-      const order = playerOrderMap[jugador] || "?";
+      const order = playerOrderMap[jugador] || '?';
 
-      // Re-sort ghost roster back to ascending pick number for display
-      ghostRoster.sort((a, b) => a.pickNumber - b.pickNumber);
+      picks.sort((a, b) => a.pickNumber - b.pickNumber);
 
       results.push({
         jugador,
@@ -105,10 +173,10 @@ export function useGhostDraft(
         actualTeamPoints,
         ghostPoints,
         diff: ghostPoints - actualTeamPoints,
-        ghostRoster
+        ghostRoster: picks
       });
     }
 
     return results.sort((a, b) => b.diff - a.diff);
-  }, [eleccionesData, cyclistMetadata, playerTeamMap, playerOrderMap]);
+  }, [eleccionesData, cyclistMetadata, playerTeamMap, playerOrderMap, mode]);
 }

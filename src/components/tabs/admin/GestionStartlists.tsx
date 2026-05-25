@@ -1,5 +1,5 @@
 import React from "react";
-import { Save, Search, Users, Trash } from "lucide-react";
+import { Save, Search, Users, Trash, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { getVal } from "../../../lib/data-processing";
 import { Button } from "../../ui/button";
@@ -201,6 +201,33 @@ export const GestionStartlists = () => {
                   const statusCarrera = matchCarrera ? getVal(matchCarrera, "Tipo") : "";
                   const isFinished = statusCarrera?.match(/Clasificaci[oó]n final|CG/i);
 
+                  let isRacePastDate = false;
+                  if (fechaCarrera && fechaCarrera !== "-") {
+                     const parts = fechaCarrera.split(/[-/]/);
+                     if (parts.length >= 3) {
+                       let day = parseInt(parts[0], 10);
+                       let month = parseInt(parts[1], 10) - 1;
+                       let year = parseInt(parts[2], 10);
+                       if (year < 100) year += 2000;
+                       if (parts[0].length === 4) {
+                         year = parseInt(parts[0], 10);
+                         day = parseInt(parts[2], 10);
+                       }
+                       const raceDate = new Date(year, month, day);
+                       const today = new Date();
+                       today.setHours(0, 0, 0, 0);
+                       isRacePastDate = raceDate < today;
+                     }
+                  }
+
+                  let isUpdatedToday = false;
+                  const updatedAtStr = s.updatedAt || s.updated_at;
+                  if (updatedAtStr) {
+                    const d = new Date(updatedAtStr);
+                    const today = new Date();
+                    isUpdatedToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+                  }
+
                   return (
                     <tr key={i} className="hover:bg-neutral-50 transition-colors">
                       <td className="px-4 py-3 font-semibold text-neutral-900">
@@ -212,7 +239,12 @@ export const GestionStartlists = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center font-mono tabular-nums text-xs">
-                        {fechaCarrera}
+                        <div className="flex items-center justify-center gap-1.5">
+                          {fechaCarrera}
+                          {isRacePastDate && !isFinished && (
+                            <AlertCircle className="w-4 h-4 text-red-500" title="La fecha de la carrera ya ha pasado" />
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="inline-block bg-blue-50 text-blue-700 font-bold px-2 py-1 rounded-md text-xs">
@@ -220,13 +252,18 @@ export const GestionStartlists = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-xs text-neutral-500">
-                        {s.updated_at ? new Date(s.updated_at).toLocaleString("es-ES", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }) : "-"}
+                        <div className="flex items-center justify-center gap-1.5">
+                          {updatedAtStr ? new Date(updatedAtStr).toLocaleString("es-ES", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }) : "-"}
+                          {isUpdatedToday && (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Actualizado hoy" />
+                          )}
+                        </div>
                       </td>
                       {handleDeleteStartlist && (
                         <td className="px-4 py-3 text-right">

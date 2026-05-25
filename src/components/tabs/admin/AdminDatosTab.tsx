@@ -10,7 +10,7 @@ import { FILE_TYPES } from "../../../lib/config/fileTypes";
 
 export const AdminDatosTab = () => {
   const { files } = useDataStore();
-  const { leaderboard } = useComputedStore();
+  const { leaderboard, isComputing } = useComputedStore();
   const { user, isSupabaseConfigured } = useAuth();
   const { handleFileUpload } = useFileUpload(isSupabaseConfigured);
 
@@ -18,7 +18,7 @@ export const AdminDatosTab = () => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Sidebar: File Uploads (Only for Admin) */}
       <div className="lg:col-span-4 space-y-6">
-        <AdminDatosFileList files={files} user={user} FILE_TYPES={FILE_TYPES} handleFileUpload={handleFileUpload} />
+        <AdminDatosFileList files={files} user={user} FILE_TYPES={FILE_TYPES} handleFileUpload={handleFileUpload} isComputing={isComputing} />
       </div>
 
       {/* Main Content: Leaderboard */}

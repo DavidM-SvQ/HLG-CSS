@@ -1,3 +1,4 @@
+import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import React, { useMemo, lazy } from "react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useUIState } from "./hooks/useUIState";
@@ -7,15 +8,15 @@ import { cn } from "../../../lib/utils";
 import { getVal, formatNumberSpanish } from "../../../lib/data-processing";
 
 export interface SeasonViewProviderProps {
-  files: any;
+  files: AppState;
   playerTeamMap: Record<string, string>;
   playerByCyclist: Record<string, string>;
   uniqueRaces: string[];
-  leaderboard: any[];
+  leaderboard: PlayerScore[];
   raceWinners: Record<string, string>;
   globalTeamPartialWinsCount: any;
   globalTeamWinsCount: any;
-  cyclistMetadata: any;
+  cyclistMetadata: Record<string, CyclistMetadata>;
   cyclistRoundMap: Record<string, string>;
   playerOrderMap: Record<string, string>;
 }

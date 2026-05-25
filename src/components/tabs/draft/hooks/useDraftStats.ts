@@ -1,9 +1,10 @@
+import { AppState, PlayerScore } from '../../../../lib/types';
 import { useMemo } from 'react';
 import { getVal } from '../../../../lib/data-processing';
 
 export interface DraftStatsParams {
-  files: any;
-  leaderboard: any;
+  files: AppState;
+  leaderboard: PlayerScore[];
   draftDatosMonthFilter: string[];
   draftDatosCategoryFilter: string[];
   draftDatosTeamFilter: string[];

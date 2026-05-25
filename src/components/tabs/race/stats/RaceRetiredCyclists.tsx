@@ -49,15 +49,15 @@ export const RaceRetiredCyclists = ({
             isExpanded ? "max-h-none" : ""
           )}
         >
-          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
               <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-1.5 min-w-[140px]">Ciclista &lt;Ronda&gt;</th>
-                  <th className="px-3 py-1.5 min-w-[140px]">Equipo [#Orden]</th>
-                  <th className="px-3 py-1.5 text-center">Estado</th>
-                  <th className="px-3 py-1.5 text-center">Ptos Temp.</th>
-                  <th className="px-3 py-1.5 text-center">Ptos Carrera</th>
+                  <th className="px-4 py-3 min-w-[140px]">Ciclista &lt;Ronda&gt;</th>
+                  <th className="px-4 py-3 min-w-[140px]">Equipo [#Orden]</th>
+                  <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3 text-center">Ptos Temp.</th>
+                  <th className="px-4 py-3 text-center">Ptos Carrera</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
@@ -65,7 +65,7 @@ export const RaceRetiredCyclists = ({
                   const ptosColor = getRetiredPointsColor(typeof c.racePoints === 'number' ? c.racePoints : 0);
                   return (
                     <tr key={idx} className="hover:bg-red-50/30 transition-colors">
-                      <td className="px-3 py-1.5">
+                      <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="font-bold text-neutral-900 leading-tight text-xs">
                             {c.ciclista}{" "}
@@ -75,20 +75,20 @@ export const RaceRetiredCyclists = ({
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-1.5 pr-8">
+                      <td className="px-4 py-3 pr-8">
                         <div className="flex flex-col">
                           <span className="text-neutral-700 font-medium leading-tight text-xs">
-                            {c.equipo} [#{c.orden}]
+                            {c.equipo} [<span className="font-mono tabular-nums opacity-60">#{c.orden}</span>]
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-1.5 text-center">
+                      <td className="px-4 py-3 text-center">
                         <span className="inline-flex items-center justify-center bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">
                           {c.status}
                         </span>
                         {c.etapa && <span className="text-[10px] text-neutral-500 ml-1">({c.etapa})</span>}
                       </td>
-                      <td className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-neutral-600 text-xs">
+                      <td className="px-4 py-3 text-center font-mono tabular-nums font-bold text-neutral-600 text-xs">
                         {c.tempPoints}
                       </td>
                       <td 

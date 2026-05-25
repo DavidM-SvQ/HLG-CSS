@@ -1,3 +1,4 @@
+import { PlayerScore, PlayerScoreDetail } from '../../lib/types';
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { useSeasonReportData } from "./season_report/hooks/useSeasonReportData";
@@ -24,6 +25,7 @@ import {
 
 import { Copy, FileText, Download, CheckCircle2, Maximize2, Minimize2, ClipboardList, UploadCloud } from "lucide-react";
 
+import { EmptyState } from "../ui/EmptyState";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle, formatNumberSpanish, getFlagEmoji } from "../../lib/data-processing";
 import { TopTeamsReport } from "./season_report/TopTeamsReport";
@@ -35,23 +37,7 @@ import { Button } from "../ui/button";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
 
-interface ScoreDetail {
-  carrera: string;
-  ciclista: string;
-  posicion: string | number;
-  puntosObtenidos: number;
-  tipoResultado?: string;
-  etapa?: string;
-  ronda?: string;
-}
 
-interface PlayerScore {
-  pos?: number;
-  jugador: string;
-  nombreEquipo: string;
-  puntos: number;
-  detalles: ScoreDetail[];
-}
 
 import { VirtualizedTableBody } from '../ui/VirtualizedTableBody';
 
@@ -194,17 +180,19 @@ export const MonthlyReportView = () => {
     : "";
 
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 w-full">
-      <div className="flex items-center gap-3 mb-8 pb-4 border-b">
-        <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-          <Calendar className="w-5 h-5 text-purple-600" />
+    <div className="bg-gradient-to-br from-purple-50/80 to-white/90 backdrop-blur-xl border border-purple-100/60 rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 sm:p-8 w-full relative overflow-hidden group">
+      <div className="absolute -right-10 -top-10 w-60 h-60 bg-purple-100/40 rounded-full blur-[50px] pointer-events-none group-hover:bg-purple-200/40 transition-colors duration-700" />
+      
+      <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-8 pb-6 border-b border-purple-100/50 relative z-10">
+        <div className="p-4 bg-purple-500/10 text-purple-700 rounded-2xl shrink-0 backdrop-blur-md self-start">
+          <Calendar className="w-8 h-8" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-neutral-900">
+          <h2 className="text-2xl font-black text-neutral-900 tracking-tight">
             Reporte Mensual
           </h2>
-          <p className="text-sm text-neutral-500">
-            Selecciona uno o más meses para generar el informe
+          <p className="text-sm text-neutral-600 mt-2 max-w-2xl leading-relaxed">
+            Selecciona uno o más meses para generar el informe. Puedes visualizar el rendimiento de ciclistas, el informe "Cara a Cara" y diversos reportes comparativos.
           </p>
         </div>
       </div>
@@ -256,12 +244,7 @@ export const MonthlyReportView = () => {
           <PanenkitaReport monthReportData={monthReportData} monthsText={monthsText} />
         </div>
       ) : (
-        <div className="text-center py-12 bg-neutral-50 rounded-xl border border-neutral-200 border-dashed">
-          <Calendar className="w-8 h-8 mx-auto text-neutral-300 mb-3" />
-          <p className="text-neutral-500">
-            Selecciona al menos un mes para ver el reporte interactivo.
-          </p>
-        </div>
+        <EmptyState icon={Calendar} title="Informes mensuales" description="Selecciona al menos un mes para ver el reporte interactivo." />
       )}
     </div>
   );

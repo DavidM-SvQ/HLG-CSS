@@ -3,6 +3,7 @@ import { useUrlState } from "../../../hooks/useUrlState";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
 import { copyImageToClipboard } from "../../../lib/clipboard";
+import { EmptyState } from "../../ui/EmptyState";
 import { useHotStreaksTeams } from "../../../lib/hooks/useHotStreaks";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
@@ -27,11 +28,11 @@ export function HotStreakTeams() {
   const debouncedMaxPoints = useDebounce(localMaxPoints, 400);
   
   useEffect(() => {
-    if (debouncedMinPoints !== hotStreakMinPoints) setHotStreakMinPoints(debouncedMinPoints);
+    if (String(debouncedMinPoints) !== String(hotStreakMinPoints)) setHotStreakMinPoints(debouncedMinPoints);
   }, [debouncedMinPoints, hotStreakMinPoints, setHotStreakMinPoints]);
   
   useEffect(() => {
-    if (debouncedMaxPoints !== hotStreakMaxPoints) setHotStreakMaxPoints(debouncedMaxPoints);
+    if (String(debouncedMaxPoints) !== String(hotStreakMaxPoints)) setHotStreakMaxPoints(debouncedMaxPoints);
   }, [debouncedMaxPoints, hotStreakMaxPoints, setHotStreakMaxPoints]);
   
   useEffect(() => {
@@ -195,7 +196,9 @@ export function HotStreakTeams() {
              </div>
             </motion.div>
           )) : (
-            <div className="text-neutral-400 italic text-sm py-4 col-span-full">No hay datos suficientes recientes o no cumplen los filtros de puntos.</div>
+            <div className="col-span-full">
+              <EmptyState title="No hay rachas destacadas" description="No hay datos suficientes recientes o no cumplen los filtros de puntos." />
+            </div>
           )}
         </motion.div>
       </div>

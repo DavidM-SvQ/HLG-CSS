@@ -7,8 +7,9 @@ import { GhostDraftView } from './tests/GhostDraftView';
 import { TestsIdeasTracker } from './tests/TestsIdeasTracker';
 
 import { TestsCalendarHeatmap } from './tests/TestsCalendarHeatmap';
+import { EmptyState } from '../ui/EmptyState';
 
-import { CyclistMetadata } from '../../lib/stores/useComputedStore';
+import { CyclistMetadata } from '../../lib/types';
 import { useDataStore } from '../../lib/stores/useDataStore';
 import { useComputedStore } from '../../lib/stores/useComputedStore';
 
@@ -309,12 +310,7 @@ export function TestsView() {
     <div className="space-y-6">
       <TestsIdeasTracker />
       
-      <GhostDraftView 
-        files={files} 
-        cyclistMetadata={cyclistMetadata} 
-        playerTeamMap={playerTeamMap} 
-        playerOrderMap={playerOrderMap} 
-      />
+      
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <TestsCalendarHeatmap files={files} playerTeamMap={playerTeamMap} leaderboard={leaderboard} />
@@ -473,7 +469,7 @@ export function TestsView() {
                     <span className="font-bold bg-white px-2 py-1 rounded shadow-sm border border-neutral-200 text-neutral-700">{Math.round(c.points)} pts</span>
                   </div>
                 )) : (
-                  <div className="text-neutral-400 italic text-sm py-4">No hay datos suficientes recientes.</div>
+                  <EmptyState title="Sin ciclistas en forma" description="No hay datos suficientes recientes." />
                 )}
               </div>
             </div>
@@ -489,7 +485,7 @@ export function TestsView() {
                     <span className="font-bold bg-white px-2 py-1 rounded shadow-sm border border-neutral-200 text-neutral-700">{Math.round(t.points)} pts</span>
                   </div>
                 )) : (
-                  <div className="text-neutral-400 italic text-sm py-4">No hay datos suficientes recientes.</div>
+                  <EmptyState title="Sin equipos en forma" description="No hay datos suficientes recientes." />
                 )}
               </div>
             </div>

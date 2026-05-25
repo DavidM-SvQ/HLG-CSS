@@ -1,3 +1,4 @@
+import { PlayerScore } from '../../../lib/types';
 import React, { useRef, useState } from "react";
 import { copyTextToClipboard } from "../../../lib/clipboard";
 import { cn } from "../../../lib/utils";
@@ -11,19 +12,21 @@ interface RaceStatsProps {
   raceCyclists: any[];
   minCyclistRacePoints: number;
   maxCyclistRacePoints: number;
+  maxCyclistPointsByCol: any;
   finalColumns: any[];
   teamStagePoints: any[];
   maxPointsByCol: any;
   retiredCyclists: any[];
   raceTeams: any[];
   selectedRace: string;
-  leaderboard: any[];
+  leaderboard: PlayerScore[];
 }
 
 export const RaceStats = ({
   raceCyclists,
   minCyclistRacePoints,
   maxCyclistRacePoints,
+  maxCyclistPointsByCol,
   finalColumns,
   teamStagePoints,
   maxPointsByCol,
@@ -196,6 +199,8 @@ export const RaceStats = ({
         raceCyclists={raceCyclists}
         minCyclistRacePoints={minCyclistRacePoints}
         maxCyclistRacePoints={maxCyclistRacePoints}
+        finalColumns={finalColumns}
+        maxPointsByCol={maxCyclistPointsByCol}
         isExpanded={isCyclistsExpanded}
         setIsExpanded={setIsCyclistsExpanded}
         onCopyImage={handleCopyCyclists}

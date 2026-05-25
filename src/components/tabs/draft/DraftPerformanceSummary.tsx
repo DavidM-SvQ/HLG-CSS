@@ -1,3 +1,4 @@
+import { AppState, PlayerScore } from '../../../lib/types';
 import { ReportCard } from "../../ui/ReportCard";
 import React from 'react';
 import { Activity, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
@@ -7,8 +8,8 @@ import { Button } from "../../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 interface DraftPerformanceSummaryProps {
-  files: any;
-  leaderboard: any;
+  files: AppState;
+  leaderboard: PlayerScore[];
   draftDatosMonthFilter: string[];
   draftDatosCategoryFilter: string[];
   draftDatosTeamFilter: string[];
@@ -113,14 +114,14 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
           <table className="w-full text-left border-collapse min-w-[700px]">
             <thead className="select-none">
               <tr className="bg-neutral-50/80 border-b border-neutral-200 text-[10px] uppercase text-neutral-500 font-bold tracking-wider">
-                <th className="px-3 py-2 border-r border-neutral-100 w-10 text-center">#</th>
-                <th className="px-3 py-2 border-r border-neutral-100 min-w-[120px] cursor-pointer hover:bg-neutral-100/80 transition-colors group" onClick={() => handleSort("team")}>
+                <th className="px-4 py-3 border-r border-neutral-100 w-10 text-center">#</th>
+                <th className="px-4 py-3 border-r border-neutral-100 min-w-[120px] cursor-pointer hover:bg-neutral-100/80 transition-colors group" onClick={() => handleSort("team")}>
                   Equipo {getSortIcon("team")}
                 </th>
-                <th className="px-2 py-2 text-center text-blue-800 bg-blue-50/50 cursor-pointer hover:bg-blue-100/50 transition-colors group" onClick={() => handleSort("pickGanador")}>
+                <th className="px-4 py-3 text-center text-blue-800 bg-blue-50/50 cursor-pointer hover:bg-blue-100/50 transition-colors group" onClick={() => handleSort("pickGanador")}>
                   1º {getSortIcon("pickGanador")}
                 </th>
-                <th className="px-2 py-2 text-center text-green-800 bg-green-50/50 cursor-pointer hover:bg-green-100/50 transition-colors group" onClick={() => handleSort("buenosPicks")}>
+                <th className="px-4 py-3 text-center text-green-800 bg-green-50/50 cursor-pointer hover:bg-green-100/50 transition-colors group" onClick={() => handleSort("buenosPicks")}>
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-center w-full focus:outline-none">
                         Buenos {getSortIcon("buenosPicks")}
@@ -130,7 +131,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     </TooltipContent>
                   </Tooltip>
                 </th>
-                <th className="px-2 py-2 text-center text-yellow-800 bg-yellow-50/50 cursor-pointer hover:bg-yellow-100/50 transition-colors group" onClick={() => handleSort("normalesPicks")}>
+                <th className="px-4 py-3 text-center text-yellow-800 bg-yellow-50/50 cursor-pointer hover:bg-yellow-100/50 transition-colors group" onClick={() => handleSort("normalesPicks")}>
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-center w-full focus:outline-none">
                         Normales {getSortIcon("normalesPicks")}
@@ -140,7 +141,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     </TooltipContent>
                   </Tooltip>
                 </th>
-                <th className="px-2 py-2 text-center text-orange-800 bg-orange-50/50 cursor-pointer hover:bg-orange-100/50 transition-colors group" onClick={() => handleSort("malosPicks")}>
+                <th className="px-4 py-3 text-center text-orange-800 bg-orange-50/50 cursor-pointer hover:bg-orange-100/50 transition-colors group" onClick={() => handleSort("malosPicks")}>
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-center w-full focus:outline-none">
                         Malos {getSortIcon("malosPicks")}
@@ -150,7 +151,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     </TooltipContent>
                   </Tooltip>
                 </th>
-                <th className="px-2 py-2 text-center text-red-800 bg-red-50/50 cursor-pointer hover:bg-red-100/50 transition-colors group" onClick={() => handleSort("sinPuntuar")}>
+                <th className="px-4 py-3 text-center text-red-800 bg-red-50/50 cursor-pointer hover:bg-red-100/50 transition-colors group" onClick={() => handleSort("sinPuntuar")}>
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-center w-full focus:outline-none">
                         Ceros {getSortIcon("sinPuntuar")}
@@ -160,7 +161,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     </TooltipContent>
                   </Tooltip>
                 </th>
-                <th className="px-2 py-2 text-center text-green-800 bg-green-50/80 border-x border-neutral-100 w-24 cursor-pointer hover:bg-green-100/80 transition-colors group" onClick={() => handleSort("eficiencia")}>
+                <th className="px-4 py-3 text-center text-green-800 bg-green-50/80 border-x border-neutral-100 w-24 cursor-pointer hover:bg-green-100/80 transition-colors group" onClick={() => handleSort("eficiencia")}>
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-center w-full focus:outline-none">
                         Eficiencia {getSortIcon("eficiencia")}
@@ -170,7 +171,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     </TooltipContent>
                   </Tooltip>
                 </th>
-                <th className="px-3 py-2 text-right cursor-pointer hover:bg-neutral-100/80 transition-colors group" onClick={() => handleSort("totalPoints")}>
+                <th className="px-4 py-3 text-right cursor-pointer hover:bg-neutral-100/80 transition-colors group" onClick={() => handleSort("totalPoints")}>
                   Pts Totales {getSortIcon("totalPoints")}
                 </th>
               </tr>
@@ -187,7 +188,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                     <td className="px-3 py-1 border-r border-neutral-100 font-bold text-neutral-900 text-xs">
                       {summary.team}
                     </td>
-                    <td className="px-2 py-1 text-center bg-blue-50/30">
+                    <td className="px-4 py-3 text-center bg-blue-50/30">
                       <div className="flex flex-col items-center justify-center">
                         <span className="font-bold text-blue-700 text-xs">
                           {summary.pickGanador}
@@ -197,7 +198,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 text-center bg-green-50/30">
+                    <td className="px-4 py-3 text-center bg-green-50/30">
                       <div className="flex flex-col items-center justify-center">
                         <span className="font-bold text-green-700 text-xs">
                           {summary.buenosPicks}
@@ -207,7 +208,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 text-center bg-yellow-50/30">
+                    <td className="px-4 py-3 text-center bg-yellow-50/30">
                       <div className="flex flex-col items-center justify-center">
                         <span className="font-bold text-yellow-700 text-xs">
                           {summary.normalesPicks}
@@ -217,7 +218,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 text-center bg-orange-50/30">
+                    <td className="px-4 py-3 text-center bg-orange-50/30">
                       <div className="flex flex-col items-center justify-center">
                         <span className="font-bold text-orange-700 text-xs">
                           {summary.malosPicks}
@@ -227,7 +228,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 text-center bg-red-50/30 border-r border-neutral-100/50">
+                    <td className="px-4 py-3 text-center bg-red-50/30 border-r border-neutral-100/50">
                       <div className="flex flex-col items-center justify-center">
                         <span className="font-bold text-red-700 text-xs">
                           {summary.sinPuntuar}
@@ -237,7 +238,7 @@ export const DraftPerformanceSummary: React.FC<DraftPerformanceSummaryProps> = (
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-1 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
+                    <td className="px-4 py-3 text-center text-sm font-bold text-green-800 bg-green-50 border-x border-neutral-100/80">
                       {summary.totalPicks > 0 ? ((summary.pickGanador + summary.buenosPicks) / summary.totalPicks * 100).toFixed(1) : 0}%
                     </td>
                     <td

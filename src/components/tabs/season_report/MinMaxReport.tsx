@@ -32,7 +32,7 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
-        <div className={cn("table-responsive-wrapper w-full crosshair-container", !isTeamExpanded && "overflow-auto max-h-[600px]", isTeamExpanded && "overflow-x-auto")}>
+        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container", !isTeamExpanded && "overflow-auto max-h-[600px]", isTeamExpanded && "overflow-x-auto")}>
           <table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap">
             <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
               <tr className="border-b">
@@ -90,7 +90,7 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
                   </td>
                   <td className="py-2.5 text-center pr-4 font-mono tabular-nums">
                     <span 
-                      className="px-2 py-1 rounded-md text-xs font-bold"
+                      className="px-3 py-2 rounded-md text-xs font-bold"
                       style={{ backgroundColor: `hsl(${hue}, 85%, 90%)`, color: `hsl(${hue}, 85%, 25%)` }}
                     >
                       {t.zeroPoints || 0}
@@ -114,7 +114,7 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
-        <div className={cn("table-responsive-wrapper w-full crosshair-container", !isRoundExpanded && "overflow-auto max-h-[600px]", isRoundExpanded && "overflow-x-auto")}>
+        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container", !isRoundExpanded && "overflow-auto max-h-[600px]", isRoundExpanded && "overflow-x-auto")}>
           <table className="w-full min-w-[600px] text-sm text-left">
             <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
               <tr className="border-b">
@@ -172,7 +172,7 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
                   </td>
                   <td className="py-2.5 text-center pr-4 font-mono tabular-nums">
                     <span 
-                      className="px-2 py-1 rounded-md text-xs font-bold"
+                      className="px-3 py-2 rounded-md text-xs font-bold"
                       style={{ backgroundColor: `hsl(${hue}, 85%, 90%)`, color: `hsl(${hue}, 85%, 25%)` }}
                     >
                       {r.zeroPoints || 0}

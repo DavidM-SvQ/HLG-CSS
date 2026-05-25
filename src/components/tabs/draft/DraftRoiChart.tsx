@@ -1,3 +1,4 @@
+import { AppState, PlayerScore } from '../../../lib/types';
 import { ReportCard } from "../../ui/ReportCard";
 import React from 'react';
 import { BarChart3, ChevronDown } from 'lucide-react';
@@ -6,8 +7,8 @@ import { cn } from '../../../lib/utils';
 import { useDraftStats } from './hooks/useDraftStats';
 
 interface DraftRoiChartProps {
-  files: any;
-  leaderboard: any;
+  files: AppState;
+  leaderboard: PlayerScore[];
   draftDatosMonthFilter: string[];
   draftDatosCategoryFilter: string[];
   draftDatosTeamFilter: string[];

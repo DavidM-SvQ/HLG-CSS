@@ -6,6 +6,7 @@ import { getVal, getFlagEmoji } from '../data-processing';
 export function useAppComputations() {
   const { files } = useDataStore();
   const setComputedData = useComputedStore((s) => s.setComputedData);
+  const setIsComputing = useComputedStore((s) => s.setIsComputing);
 
   useEffect(() => {
     const allFilesUploaded = Object.values(files).every(
@@ -14,14 +15,18 @@ export function useAppComputations() {
 
     if (!allFilesUploaded) return;
 
-    const { carreras, puntos, elecciones, resultados } = files;
+    setIsComputing(true);
 
-    const playerByCyclist: Record<string, string> = {};
-    const playerOrderMap: Record<string, string> = {};
-    const cyclistRoundMap: Record<string, string> = {};
-    const playerTeamMap: Record<string, string> = {};
-    const teamToPlayerMap: Record<string, string> = {};
-    const cyclistMetadata: Record<string, any> = {};
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const { carreras, puntos, elecciones, resultados } = files;
+
+        const playerByCyclist: Record<string, string> = {};
+        const playerOrderMap: Record<string, string> = {};
+        const cyclistRoundMap: Record<string, string> = {};
+        const playerTeamMap: Record<string, string> = {};
+        const teamToPlayerMap: Record<string, string> = {};
+        const cyclistMetadata: Record<string, any> = {};
 
     const uniquePlayers = [
       ...new Set(
@@ -213,6 +218,7 @@ export function useAppComputations() {
       const tipoResultado = getVal(row, "Tipo")?.trim();
       const etapa = getVal(row, "Etapa")?.toString().trim();
       const posicion = getVal(row, "Pos")?.toString().trim() || "";
+      const fechaEspecifica = getVal(row, "Fecha")?.trim();
 
       if (!ciclista || !carrera || !tipoResultado) return;
 
@@ -251,7 +257,7 @@ export function useAppComputations() {
         etapa,
         posicion,
         puntosObtenidos,
-        fecha: raceDateByName[carrera],
+        fecha: fechaEspecifica && fechaEspecifica.length > 0 ? fechaEspecifica : raceDateByName[carrera],
       });
     });
 
@@ -389,6 +395,10 @@ export function useAppComputations() {
       globalTeamWinsCount,
       globalTeamPartialWinsCount,
     });
+    
+    setIsComputing(false);
+      }, 10);
+    });
 
-  }, [files, setComputedData]);
+  }, [files, setComputedData, setIsComputing]);
 }

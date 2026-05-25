@@ -511,7 +511,7 @@ export function MonthlyEvolutionChart() {
           </div>
 
           <div className="h-[600px] w-full mt-4 border-t border-neutral-100 pt-6">
-            <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
+            <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
               <LineChart
                 data={evolutionData}
                 margin={{
@@ -623,7 +623,7 @@ export function MonthlyEvolutionChart() {
             </div>
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
-                <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
+                <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
                   <LineChart
                     data={evolutionData}
                     margin={{

@@ -1,3 +1,4 @@
+import { PlayerScore, PlayerScoreDetail } from '../../lib/types';
 import { getFlagEmoji } from "../../lib/data-processing";
 import { copyTextToClipboard } from "../../lib/clipboard";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -40,23 +41,7 @@ import { Button } from "../ui/button";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
 
-interface ScoreDetail {
-  carrera: string;
-  ciclista: string;
-  posicion: string | number;
-  puntosObtenidos: number;
-  tipoResultado?: string;
-  etapa?: string;
-  ronda?: string;
-}
 
-interface PlayerScore {
-  pos?: number;
-  jugador: string;
-  nombreEquipo: string;
-  puntos: number;
-  detalles: ScoreDetail[];
-}
 
 const monthNames = [
   "Enero",

@@ -111,7 +111,7 @@ export const RaceTeamsList = ({
             isExpanded ? "max-h-none" : ""
           )}
         >
-          <div className="table-responsive-wrapper overflow-auto w-full h-full crosshair-container px-2 md:px-0">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container px-2 md:px-0">
             <table className="w-full min-w-[500px] text-sm text-left border-collapse mx-auto">
               <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 select-none">
                 <tr>
@@ -125,7 +125,7 @@ export const RaceTeamsList = ({
                     className="px-2 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-700 transition-colors"
                     onClick={() => requestSort("nombreEquipo")}
                   >
-                    Equipo {getSortIcon("nombreEquipo")}
+                    Equipo [#Orden] {getSortIcon("nombreEquipo")}
                   </th>
                   <th 
                     className="px-2 py-1.5 w-10 text-center cursor-pointer hover:bg-slate-700 transition-colors"
@@ -172,7 +172,7 @@ export const RaceTeamsList = ({
                         <tr
                           className="hover:bg-blue-50/30 transition-colors group"
                         >
-                          <td className="px-3 py-1.5 text-center font-mono tabular-nums text-xs text-neutral-400">
+                          <td className="px-4 py-3 text-center font-mono tabular-nums text-xs text-neutral-400">
                             {isNonParticipant 
                               ? "-" 
                               : team.totalPoints > 0
@@ -185,14 +185,14 @@ export const RaceTeamsList = ({
                                 : team.pos
                               : team.pos}
                           </td>
-                      <td className="px-3 py-1.5">
+                      <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="font-bold text-neutral-900 leading-tight text-xs">
-                            {team.nombreEquipo} <span className="text-neutral-500 font-normal">#{team.orden}</span>
+                            {team.nombreEquipo} [<span className="font-mono tabular-nums opacity-60">#{team.orden}</span>]
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-1.5 text-center">
+                      <td className="px-4 py-3 text-center">
                         <span
                           className={cn(
                             "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
@@ -231,7 +231,7 @@ export const RaceTeamsList = ({
                           ? (team as any).racePartialWins
                           : "-"}
                       </td>
-                      <td className="px-3 py-1.5 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600">
+                      <td className="px-4 py-3 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600">
                         {team.uniqueCyclists > 0
                           ? (team.totalPoints / team.uniqueCyclists).toFixed(1)
                           : "0.0"}

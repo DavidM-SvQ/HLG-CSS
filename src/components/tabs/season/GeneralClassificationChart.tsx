@@ -97,7 +97,7 @@ export function GeneralClassificationChart() {
             ),
           }}
         >
-          <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+          <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
             <BarChart
               data={chartData}
               layout="vertical"
@@ -253,7 +253,7 @@ export function GeneralClassificationChart() {
                   ),
                 }}
               >
-                <div className="w-full overflow-x-auto h-full"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+                <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
                   <BarChart
                     data={chartData}
                     layout="vertical"

@@ -1,3 +1,4 @@
+import { AppState } from '../../../lib/types';
 import React, { useMemo, useState } from 'react';
 import { Button } from "../../ui/button";
 
@@ -11,7 +12,7 @@ function getISOWeek(date: Date) {
 }
 
 interface TestsCalendarHeatmapProps {
-  files: any;
+  files: AppState;
   playerTeamMap: Record<string, string>;
   leaderboard?: any[];
 }

@@ -1,8 +1,9 @@
+import { PlayerScore } from '../../../../lib/types';
 import React from "react";
 import { ResponsiveContainer, BarChart, Bar, LabelList, Cell, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import { UploadCloud } from "lucide-react";
 
-export const AdminDatosLeaderboardChart = ({ leaderboard }: { leaderboard: any[] | null }) => {
+export const AdminDatosLeaderboardChart = ({ leaderboard }: { leaderboard: PlayerScore[] | null }) => {
   if (!leaderboard) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">

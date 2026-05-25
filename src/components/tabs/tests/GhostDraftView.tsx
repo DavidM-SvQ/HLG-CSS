@@ -1,167 +1,229 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useGhostDraft } from "../../../lib/hooks/useGhostDraft";
-import { Ghost, TrendingUp, Trophy, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Ghost, ChevronDown, Trophy } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../ui/button";
+import { useUrlState } from "../../../hooks/useUrlState";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import { EmptyState } from "../../ui/EmptyState";
+import { getVal } from "../../../lib/data-processing";
+import { GhostDraftClassificationTable } from "../draft/components/GhostDraftClassificationTable";
+import { GhostDraftRosterTable } from "../draft/components/GhostDraftRosterTable";
 
 export const GhostDraftView = ({
   files,
   cyclistMetadata,
   playerTeamMap,
-  playerOrderMap
+  playerOrderMap,
+  mode = 'puntos'
 }: any) => {
-  const ghostData = useGhostDraft(
+  const ghostDataRaw = useGhostDraft(
     files.elecciones.data,
     cyclistMetadata,
     playerTeamMap,
-    playerOrderMap
+    playerOrderMap,
+    mode
   );
 
-  const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
+  const [ghostTeamFilter, setGhostTeamFilter] = useUrlState<string[]>("ghostTeamFilter", []);
+  const [isTeamFilterOpen, setIsTeamFilterOpen] = useState(false);
 
-  if (!ghostData || ghostData.length === 0) {
-    return <div className="text-neutral-500 text-sm py-4">No hay datos suficientes para el Draft Fantasma.</div>;
+  const uniqueRounds = useMemo(() => {
+    if (!files.elecciones?.data) return [];
+    const rnds = new Set<string>();
+    files.elecciones.data.forEach((d: any) => {
+      const r = getVal(d, "Ronda");
+      if (r) rnds.add(String(r));
+    });
+    return Array.from(rnds).sort((a,b) => parseInt(a) - parseInt(b));
+  }, [files.elecciones?.data]);
+
+  const maxAvailableRound = useMemo(() => {
+    return Math.max(...uniqueRounds.map(Number), 1);
+  }, [uniqueRounds]);
+
+  const [currentRoundLimit, setCurrentRoundLimit] = useState<number | null>(null);
+  const effectiveRoundLimit = currentRoundLimit ?? maxAvailableRound;
+
+  const ghostData = useMemo(() => {
+    if (!ghostDataRaw) return [];
+    
+    return ghostDataRaw.map((team: any) => {
+      // Filter roster based on round limit slider
+      const filteredRoster = team.ghostRoster.filter((r: any) => {
+         return Number(r.round) <= effectiveRoundLimit;
+      });
+
+      const actualTeamPoints = filteredRoster.reduce((sum: number, r: any) => sum + r.originalPoints, 0);
+      const ghostPoints = filteredRoster.reduce((sum: number, r: any) => sum + r.ghostPoints, 0);
+
+      return {
+        ...team,
+        ghostRoster: filteredRoster,
+        actualTeamPoints,
+        ghostPoints,
+        diff: ghostPoints - actualTeamPoints
+      };
+    }).filter((team: any) => {
+      // Return true if team passes the team filter and has any valid roster items
+      if (team.ghostRoster.length === 0) return false;
+      const tName = team.teamName.replace(/ \[.*\]$/, '').trim();
+      if (ghostTeamFilter.length > 0 && !ghostTeamFilter.includes(team.jugador) && !ghostTeamFilter.includes(tName)) return false;
+      return true;
+    }).sort((a: any, b: any) => b.diff - a.diff);
+  }, [ghostDataRaw, effectiveRoundLimit, ghostTeamFilter]);
+
+  const uniqueTeams = useMemo(() => {
+    if (!files.elecciones?.data) return [];
+    const ts = new Set<string>();
+    files.elecciones.data.forEach((d: any) => {
+      const j = getVal(d, "Jugador") || getVal(d, "Nombre_TG");
+      if (j && playerTeamMap[j]) ts.add(String(playerTeamMap[j]));
+      else if (j) ts.add(String(j));
+    });
+    return Array.from(ts).sort();
+  }, [files.elecciones?.data, playerTeamMap]);
+
+  const classificationData = useMemo(() => {
+    if (!ghostData) return [];
+    
+    // Compute actual rankings
+    const actualSorted = [...ghostData].sort((a: any, b: any) => b.actualTeamPoints - a.actualTeamPoints);
+    const actualRanks = new Map<string, number>();
+    actualSorted.forEach((team, index) => {
+      actualRanks.set(team.jugador, index + 1);
+    });
+
+    // Compute ghost rankings
+    const ghostSorted = [...ghostData].sort((a: any, b: any) => b.ghostPoints - a.ghostPoints);
+    
+    return ghostSorted.map((team, index) => {
+      const ghostR = index + 1;
+      const actualR = actualRanks.get(team.jugador) || 0;
+      return {
+        ...team,
+        ghostRank: ghostR,
+        actualRank: actualR,
+        rankDiff: actualR - ghostR
+      };
+    });
+  }, [ghostData]);
+
+  const flatRows = useMemo(() => {
+    if (!ghostDataRaw) return [];
+    const rows: any[] = [];
+    
+    ghostDataRaw.forEach((team: any) => {
+        const tName = team.teamName.replace(/ \[.*\]$/, '').trim();
+        if (ghostTeamFilter.length > 0 && !ghostTeamFilter.includes(team.jugador) && !ghostTeamFilter.includes(tName)) {
+          return;
+        }
+
+        team.ghostRoster.forEach((r: any) => {
+           if (Number(r.round) > effectiveRoundLimit) {
+             return;
+           }
+
+            rows.push({
+               teamName: tName,
+               jugador: team.jugador,
+               orderDraft: team.teamName.match(/\[#([^\]]+)\]/)?.[1] || "?",
+               pickNumber: r.pickNumber,
+               round: r.round,
+               original: r.original,
+               originalPoints: r.originalPoints,
+               ghost: r.ghost,
+               ghostPoints: r.ghostPoints,
+               diff: r.ghostPoints - r.originalPoints,
+               missedOpportunities: r.missedOpportunities
+            });
+        });
+    });
+
+    return rows.sort((a, b) => a.pickNumber - b.pickNumber);
+  }, [ghostDataRaw, ghostTeamFilter, effectiveRoundLimit]);
+
+  if (!ghostDataRaw || ghostDataRaw.length === 0) {
+    return <EmptyState icon={Ghost} title="No hay datos suficientes" description="No hay selecciones válidas para procesar el motor del Draft Fantasma." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-500/20">
-            <Ghost className="w-6 h-6" />
+      <div className="bg-gradient-to-br from-indigo-50/80 to-white/90 backdrop-blur-xl border border-indigo-100/60 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <div className="absolute -right-8 -top-8 w-40 h-40 bg-indigo-100/50 rounded-full blur-[40px] group-hover:bg-indigo-200/50 transition-colors duration-500" />
+        <div className="flex flex-col sm:flex-row sm:items-start gap-6 relative z-10">
+          <div className="p-4 bg-indigo-500/10 text-indigo-700 rounded-2xl shrink-0 backdrop-blur-md self-start">
+            <Ghost className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-indigo-900">El "Draft Fantasma" (El Qué hubiera pasado)</h3>
-            <p className="text-sm text-indigo-700/80 mt-1 max-w-3xl">
-              ¿Qué puntuación tendría tu equipo si, en tu turno, en lugar de elegir a tu corredor, hubieras elegido al <strong>mejor ciclista que estaba libre</strong> en ese momento? 
+            <h3 className="text-2xl font-black text-neutral-900 tracking-tight">El "Draft Fantasma"</h3>
+            <p className="text-sm text-neutral-600 mt-2 max-w-3xl leading-relaxed">
+              ¿Qué puntuación tendría tu equipo si, en tu turno, en lugar de elegir a tu corredor, hubieras elegido al <strong className="text-indigo-700">mejor ciclista que estaba libre</strong> en ese momento? 
               Los mánagers están ordenados por la diferencia de puntos "perdidos" (los puntos que se dejaron sobre la mesa).
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {ghostData.map((team) => {
-          const isExpanded = expandedTeam === team.jugador;
-          
-          return (
-            <div 
-              key={team.jugador}
-              className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+      <div className="flex flex-col lg:flex-row lg:items-center gap-6 border-b pb-4">
+        {/* State Slider */}
+        <div className="flex-1 min-w-[250px] bg-white border border-neutral-200 rounded-xl p-3 shadow-sm">
+          <div className="flex justify-between items-center text-sm font-bold text-neutral-600 mb-2">
+            <span>Evolución del Draft</span>
+            <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">Hasta Ronda {effectiveRoundLimit}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-neutral-400 font-medium">1</span>
+            <input 
+              type="range" 
+              min={1} 
+              max={maxAvailableRound} 
+              value={effectiveRoundLimit} 
+              onChange={(e) => setCurrentRoundLimit(Number(e.target.value))}
+              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+            <span className="text-xs text-neutral-400 font-medium">{maxAvailableRound}</span>
+          </div>
+        </div>
+
+        {/* Team Filter */}
+        <Popover open={isTeamFilterOpen} onOpenChange={setIsTeamFilterOpen}>
+          <PopoverTrigger render={
+            <Button variant="outline"
+              className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm text-neutral-700 flex items-center gap-2 cursor-pointer max-w-[200px] truncate shadow-sm h-[64px]"
             >
-              <div 
-                className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
-                onClick={() => setExpandedTeam(isExpanded ? null : team.jugador)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm border-2 border-white shadow-sm ring-1 ring-neutral-100">
-                    {team.teamName.match(/\[#([^\]]+)\]/)?.[1] || "?"}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-neutral-900">{team.teamName.replace(/ \[#.*\]$/, '')}</h4>
-                    <p className="text-xs text-neutral-500">{team.jugador}</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-8">
-                  <div className="text-center">
-                    <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Puntos Reales</p>
-                    <p className="font-medium text-neutral-700">{team.actualTeamPoints.toLocaleString()}</p>
-                  </div>
-                  
-                  <ArrowRight className="w-4 h-4 text-neutral-300 hidden md:block" />
-
-                  <div className="text-center">
-                    <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Draft Fantasma</p>
-                    <p className="font-bold text-indigo-700">{team.ghostPoints.toLocaleString()}</p>
-                  </div>
-
-                  <div className="bg-red-50 text-red-700 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-red-100 min-w-[120px] justify-center">
-                    <TrendingUp className="w-4 h-4" />
-                    <span className="font-bold text-sm">+{team.diff.toLocaleString()} pts</span>
-                  </div>
-
-                  <Button variant="ghost" size="sm" className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-400">
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </Button>
-                </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Filtro</span>
+                <span>Equipos: {ghostTeamFilter.length === 0 ? "Todos" : `${ghostTeamFilter.length} sel.`}</span>
               </div>
-
-              {isExpanded && (
-                <div className="bg-neutral-50 border-t border-neutral-100 p-5 p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-neutral-100/50 text-neutral-500 text-xs uppercase font-medium">
-                        <tr>
-                          <th className="px-4 py-3 whitespace-nowrap">Elección General</th>
-                          <th className="px-4 py-3">Elección Real</th>
-                          <th className="px-4 py-3 text-indigo-700 bg-indigo-50/50">Elección Fantasma</th>
-                          <th className="px-4 py-3 text-right">Diferencia</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                        {team.ghostRoster.map((roster: any, idx: number) => {
-                          const realMeta = cyclistMetadata[roster.original] || {};
-                          const ghostMeta = cyclistMetadata[roster.ghost] || {};
-                          
-                          const realPoints = realMeta.puntosTotales || 0;
-                          const diff = roster.ghostPoints - realPoints;
-
-                          const formatNameAndPick = (name: string, meta: any) => {
-                            if (meta.ronda && meta.eleccion) {
-                              return `${name} <${meta.ronda}> (${meta.eleccion})`;
-                            }
-                            return `${name} <Libre>`;
-                          };
-                          
-                          return (
-                            <tr key={idx} className="hover:bg-neutral-50/80 transition-colors">
-                              <td className="px-4 py-3">
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-neutral-200 text-neutral-600 text-xs font-bold mr-2">
-                                  {roster.pickNumber}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div>
-                                  <p className="font-medium text-neutral-800">{formatNameAndPick(roster.original, realMeta)}</p>
-                                  <p className="text-xs text-neutral-500">{realPoints.toLocaleString()} pts</p>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 bg-indigo-50/30">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                  <div>
-                                    <p className="font-bold text-indigo-900">{formatNameAndPick(roster.ghost, ghostMeta)}</p>
-                                    <p className="text-xs text-indigo-700/70">{roster.ghostPoints.toLocaleString()} pts</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <div className="flex-1 max-w-[80px] h-1.5 bg-neutral-100 rounded-full overflow-hidden flex justify-end">
-                                    {diff > 0 && (
-                                      <div className="h-full bg-gradient-to-l from-red-500 to-red-400 rounded-full" style={{ width: `${Math.min((diff / 1000) * 100, 100)}%` }} />
-                                    )}
-                                  </div>
-                                  <span className={cn(
-                                    "text-xs font-bold w-12 text-right",
-                                    diff > 0 ? "text-red-600" : diff < 0 ? "text-emerald-600" : "text-neutral-400"
-                                  )}>
-                                    {diff > 0 ? "+" : ""}{diff.toLocaleString()}
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+              <ChevronDown className={cn("w-4 h-4 ml-auto text-neutral-400 transition-transform", isTeamFilterOpen && "rotate-180")} />
+            </Button>
+          } />
+          <PopoverContent className="w-56 p-0 rounded-xl shadow-xl z-50 py-2">
+            <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase">Equipos</span>
+              {ghostTeamFilter.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setGhostTeamFilter([])} className="text-[10px] text-indigo-600 hover:text-indigo-700 font-bold h-6">Limpiar</Button>
               )}
             </div>
-          );
-        })}
+            <div className="max-h-60 overflow-y-auto">
+              {uniqueTeams.map((t) => (
+                <label key={t} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
+                  <input type="checkbox" className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500/20" checked={ghostTeamFilter.includes(t)} onChange={() => {
+                    setGhostTeamFilter(ghostTeamFilter.includes(t) ? ghostTeamFilter.filter((x) => x !== t) : [...ghostTeamFilter, t]);
+                  }} />
+                  <span className="text-sm text-neutral-700 truncate">{t}</span>
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <GhostDraftRosterTable flatRows={flatRows} />
+
+      <div className="mt-10">
+        <GhostDraftClassificationTable classificationData={classificationData} />
       </div>
     </div>
   );

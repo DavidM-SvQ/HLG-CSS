@@ -31,7 +31,7 @@ export function UndebutedCyclistsTable({
         isUndebutedExpanded ? "max-h-none" : "max-h-[750px] px-2 md:px-0",
       )}
     >
-      <div ref={undebutedRefContainer} className="table-responsive-wrapper overflow-auto w-full max-h-[600px] pb-4">
+      <div ref={undebutedRefContainer} className="table-responsive-wrapper min-h-[300px] overflow-auto w-full max-h-[600px] pb-4">
         <table className="min-w-full text-xs text-left block md:table">
           <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
             <tr className="divide-x divide-neutral-100">
@@ -133,7 +133,7 @@ export function UndebutedCyclistsTable({
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
                       <div className="flex items-baseline gap-1">
                         <span className="font-semibold md:font-medium text-neutral-800 md:text-neutral-600 truncate">{c.nombreEquipo}</span>{" "}
-                        <span className="text-neutral-400 font-normal text-[9px]">[#{c.orden}]</span>
+                        <span className="text-neutral-400 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1">

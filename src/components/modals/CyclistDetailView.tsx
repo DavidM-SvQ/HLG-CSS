@@ -1,5 +1,6 @@
+import { AppState } from '../../lib/types';
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
 import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -13,7 +14,7 @@ import { Button } from "../ui/button";
 import { MultiSelect } from "../ui/multi-select";
 
 export interface CyclistDetailViewProps {
-  files: any;
+  files: AppState;
   selectedCyclistDetail: string;
   setSelectedCyclistDetail: (val: string) => void;
   cyclistMetadata: Record<string, any>;
@@ -154,7 +155,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               }}
             />
             <datalist id="all-cyclists-list">
-              {Object.keys(cyclistMetadata).sort().map(c => <option key={c} value={c} />)}
+              /* @ts-ignore */
+{useMemo(() => Object.keys(cyclistMetadata).sort().map(c => <option key={c} value={c} />), [cyclistMetadata])}
             </datalist>
           </div>
         </div>
@@ -601,7 +603,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               </div>
             </div>
 
-              <div className="table-responsive-wrapper overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg">
+              <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg">
                 <table className="w-full text-sm text-left table-fixed min-w-[900px]">
                   <thead className="text-xs text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200">
                     <tr>
@@ -635,7 +637,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                         <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
                         <td className="px-4 py-2.5 font-mono tabular-nums text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
                         <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
-                        <td className="px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
+                        <td className="font-mono tabular-nums tracking-tight px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
                         <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
                         <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
                         <td className="px-4 py-2.5 text-[11px] text-center font-mono tabular-nums font-bold">

@@ -1,3 +1,4 @@
+import { StartlistTeamRow } from '../../lib/types';
 import { StartlistFilters } from "./season/StartlistFilters";
 import { StartlistTable } from "./season/StartlistTable";
 import { StartlistTeamsTable } from "./season/StartlistTeamsTable";
@@ -23,21 +24,16 @@ import {
   getVal,
 } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
+import { calculatePages } from "./season/hooks/useStartlistUtils";
+import { useStartlistExports } from "./season/hooks/useStartlistExports";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
 import { useStartlistData } from "../../hooks/useStartlistData";
-import { useUrlState } from "../../hooks/useUrlState";
+import { useStartlistState } from "./season/hooks/useStartlistState";
 import { Button } from "../ui/button";
 import { ReportCard } from "../ui/ReportCard";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
 
-export interface StartlistTeamRow {
-  orden: string;
-  equipo: string;
-  numCiclistas: number;
-  puntos: number;
-  puntosMedios: number;
-}
 
 const colorScale = (val: number, max: number, inverted?: boolean) => {
   const t = max === 0 ? 0 : Math.max(0, Math.min(1, val / max));
@@ -54,58 +50,41 @@ export const StartlistView = () => {
     playerOrderMap
   } = useComputedStore();
 
-  const [publicStartlistRace, setPublicStartlistRace] = useUrlState<string>("startlist_race", "");
+  const {
+    publicStartlistRace, setPublicStartlistRace,
+    startlistSortCol, setStartlistSortCol,
+    startlistSortDir, setStartlistSortDir,
+    startlistFilterTeam, setStartlistFilterTeam,
+    startlistFilterRondas, setStartlistFilterRondas,
+    startlistFilterDiasMin, setStartlistFilterDiasMin,
+    startlistFilterDiasMax, setStartlistFilterDiasMax,
+    startlistFilterDebut, setStartlistFilterDebut,
+    startlistFilterPuntosMin, setStartlistFilterPuntosMin,
+    startlistFilterPuntosMax, setStartlistFilterPuntosMax,
+    isStartlistTableExpanded, setIsStartlistTableExpanded,
+    isStartlistTeamsTableExpanded, setIsStartlistTeamsTableExpanded,
+    isPointsExpanded, setIsPointsExpanded
+  } = useStartlistState();
 
-  const [startlistSortCol, setStartlistSortCol] = useUrlState<
-    "jugador" | "ronda" | "puntos" | "dias"
-  >("sort_col", "jugador");
-  const [startlistSortDir, setStartlistSortDir] = useUrlState<"asc" | "desc">(
-    "sort_dir",
-    "asc",
+  const { startlistArray, raceCategory, racePoints, memoizedData } = useStartlistData(
+    files,
+    publicStartlistRace, setPublicStartlistRace,
+    cyclistMetadata,
+    cyclistRoundMap,
+    playerTeamMap,
+    playerOrderMap,
+    startlistFilterTeam,
+    startlistFilterRondas,
+    startlistFilterDiasMin,
+    startlistFilterDiasMax,
+    startlistFilterDebut,
+    startlistFilterPuntosMin,
+    startlistFilterPuntosMax,
+    startlistSortCol,
+    startlistSortDir
   );
-  const [startlistFilterTeam, setStartlistFilterTeam] = useUrlState<string>(
-    "team",
-    "All",
-  );
-  const [startlistFilterRondas, setStartlistFilterRondas] = useUrlState<
-    string[]
-  >("rondas", []);
-  const [startlistFilterDiasMin, setStartlistFilterDiasMin] = useUrlState<
-    number | ""
-  >("dias_min", "");
-  const [startlistFilterDiasMax, setStartlistFilterDiasMax] = useUrlState<
-    number | ""
-  >("dias_max", "");
-  const [startlistFilterDebut, setStartlistFilterDebut] = useUrlState<string>(
-    "debut",
-    "Todos",
-  );
-  const [startlistFilterPuntosMin, setStartlistFilterPuntosMin] = useUrlState<
-    number | ""
-  >("puntos_min", "");
-  const [startlistFilterPuntosMax, setStartlistFilterPuntosMax] = useUrlState<
-    number | ""
-  >("puntos_max", "");
 
-  const [isStartlistTableExpanded, setIsStartlistTableExpanded] =
-    useState(false);
-  const [isStartlistTeamsTableExpanded, setIsStartlistTeamsTableExpanded] =
-    useState(false);
-  const [isStartlistCopying, setIsStartlistCopying] = useState<string | null>(
-    null,
-  );
-  const [isStartlistTeamsCopying, setIsStartlistTeamsCopying] = useState<
-    string | null
-  >(null);
-  const [isStartlistTextCopying, setIsStartlistTextCopying] = useState(false);
-  const [isStartlistTeamsTextCopying, setIsStartlistTeamsTextCopying] =
-    useState(false);
 
-  const [isPointsExpanded, setIsPointsExpanded] = useState(false);
-  const [isPointsTextCopying, setIsPointsTextCopying] = useState(false);
-  const [isPointsImageCopying, setIsPointsImageCopying] = useState<
-    string | null
-  >(null);
 
   const startlistTableRef = useRef<HTMLDivElement>(null);
   const startlistScrollRef = useRef<HTMLDivElement>(null);
@@ -113,204 +92,28 @@ export const StartlistView = () => {
   const pointsTableRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   
-  const { handleCopyImage: copyStartlistImage, handleDownloadImage: downloadStartlistImage } = useTableScreenshot(startlistTableRef);
-  const { handleCopyImage: copyStartlistTeamsImage, handleDownloadImage: downloadStartlistTeamsImage } = useTableScreenshot(startlistTeamsTableRef);
-  const { handleCopyImage: copyPointsImage, handleDownloadImage: downloadPointsImage } = useTableScreenshot(pointsTableRef);
-
-  const { startlistArray, raceCategory, racePoints, memoizedData } =
-    useStartlistData(
-      files,
-      publicStartlistRace,
-      setPublicStartlistRace,
-      cyclistMetadata,
-      cyclistRoundMap,
-      playerTeamMap,
-      playerOrderMap,
-      startlistFilterTeam,
-      startlistFilterRondas,
-      startlistFilterDiasMin,
-      startlistFilterDiasMax,
-      startlistFilterDebut,
-      startlistFilterPuntosMin,
-      startlistFilterPuntosMax,
-      startlistSortCol,
-      startlistSortDir,
-    );
-
-  const handleCopyStartlist = async (subset?: string) => {
-    setIsStartlistCopying(subset || "p1");
-    try {
-      await copyStartlistImage({
-        fileName: `startlist_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-    } finally {
-      setIsStartlistCopying(null);
-    }
-  };
-
-  const handleDownloadStartlist = async (subset?: string) => {
-    try {
-      await downloadStartlistImage({
-        fileName: `startlist_${publicStartlistRace}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-    } finally {
-      setIsStartlistCopying(null);
-    }
-  };
-
-  const handleCopyStartlistText = async () => {
-    if (!startlistTableRef.current || isStartlistTextCopying) return;
-    setIsStartlistTextCopying(true);
-    const table = startlistTableRef.current.querySelector("table");
-    if (table) {
-      const rows = Array.from(
-        table.rows as HTMLCollectionOf<HTMLTableRowElement>,
-      );
-      const text = rows
-        .map((row) =>
-          Array.from(row.cells as HTMLCollectionOf<HTMLTableCellElement>)
-            .map((cell) => cell.innerText.trim())
-            .join("\t"),
-        )
-        .join("\n");
-      await copyTextToClipboard(
-        text,
-        `startlist_${publicStartlistRace || "export"}.txt`,
-      );
-    }
-    setTimeout(() => setIsStartlistTextCopying(false), 2000);
-  };
-
-  const handleCopyStartlistTeams = async (subset?: string) => {
-    setIsStartlistTeamsCopying(subset || "p1");
-    try {
-      await copyStartlistTeamsImage({
-        fileName: `startlist_teams_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-    } finally {
-      setIsStartlistTeamsCopying(null);
-    }
-  };
-
-  const handleDownloadStartlistTeams = async (subset?: string) => {
-    try {
-      await downloadStartlistTeamsImage({
-        fileName: `startlist_teams_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible", textRendering: "optimizeLegibility" },
-      });
-    } finally {
-      setIsStartlistTeamsCopying(null);
-    }
-  };
-
-  const handleCopyStartlistTeamsText = async () => {
-    if (!startlistTeamsTableRef.current || isStartlistTeamsTextCopying) return;
-    setIsStartlistTeamsTextCopying(true);
-    const table = startlistTeamsTableRef.current.querySelector("table");
-    if (table) {
-      const rows = Array.from(
-        table.rows as HTMLCollectionOf<HTMLTableRowElement>,
-      );
-      const text = rows
-        .map((row) =>
-          Array.from(row.cells as HTMLCollectionOf<HTMLTableCellElement>)
-            .map((cell) => cell.innerText.trim())
-            .join("\t"),
-        )
-        .join("\n");
-      await copyTextToClipboard(
-        text,
-        `startlist_teams_${publicStartlistRace || "export"}.txt`,
-      );
-    }
-    setTimeout(() => setIsStartlistTeamsTextCopying(false), 2000);
-  };
-
-  const handleCopyPoints = async () => {
-    if (!pointsTableRef.current || isPointsTextCopying) return;
-    setIsPointsTextCopying(true);
-    const table = pointsTableRef.current.querySelector("table");
-    if (table) {
-      const rows = Array.from(
-        table.rows as HTMLCollectionOf<HTMLTableRowElement>,
-      );
-      const text = rows
-        .map((row) =>
-          Array.from(row.cells as HTMLCollectionOf<HTMLTableCellElement>)
-            .map((cell) => cell.innerText.trim())
-            .join("\t"),
-        )
-        .join("\n");
-      await copyTextToClipboard(
-        text,
-        `points_${publicStartlistRace || "export"}.txt`,
-      );
-    }
-    setTimeout(() => setIsPointsTextCopying(false), 2000);
-  };
-
-  const handleCopyPointsImage = async (subset?: string) => {
-    setIsPointsImageCopying(subset || "p1");
-    try {
-      await copyPointsImage({
-        fileName: `puntos_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible" },
-        onBeforeCapture: (el: HTMLElement) => {
-          el.className = el.className.replace("overflow-x-auto", "");
-        }
-      });
-    } finally {
-      setIsPointsImageCopying(null);
-    }
-  };
-
-  const handleDownloadPointsImage = async (subset?: string) => {
-    try {
-      await downloadPointsImage({
-        fileName: `puntos_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
-        style: { overflow: "visible" },
-        onBeforeCapture: (el: HTMLElement) => {
-          el.className = el.className.replace("overflow-x-auto", "");
-        }
-      });
-    } finally {
-      setIsPointsImageCopying(null);
-    }
-  };
-
-  const calculatePages = (
-    rows: any[],
-    targetSize: number,
-    groupKey?: string,
-  ) => {
-    const pages: number[] = [];
-    let currentPage = 1;
-    let currentSize = 0;
-    let prevGroup = null;
-    rows.forEach((r) => {
-      const groupVal = groupKey && r ? r[groupKey] : null;
-      const shouldBreak = groupKey
-        ? currentSize >= targetSize && groupVal !== prevGroup
-        : currentSize >= targetSize;
-      if (currentSize > 0 && shouldBreak) {
-        currentPage++;
-        currentSize = 0;
-      }
-      pages.push(currentPage);
-      currentSize++;
-      prevGroup = groupVal;
-    });
-    return { pages, totalPages: Math.max(1, currentPage) };
-  };
+  const {
+    isStartlistCopying,
+    isStartlistTeamsCopying,
+    isStartlistTextCopying,
+    isStartlistTeamsTextCopying,
+    isPointsTextCopying,
+    isPointsImageCopying,
+    handleCopyStartlist,
+    handleDownloadStartlist,
+    handleCopyStartlistText,
+    handleCopyStartlistTeams,
+    handleDownloadStartlistTeams,
+    handleCopyStartlistTeamsText,
+    handleCopyPoints,
+    handleCopyPointsImage,
+    handleDownloadPointsImage
+  } = useStartlistExports(
+    startlistTableRef,
+    startlistTeamsTableRef,
+    pointsTableRef,
+    publicStartlistRace
+  );
 
   const pointsPagination = calculatePages(racePoints, 50);
 
@@ -441,6 +244,28 @@ export const StartlistView = () => {
 
             return (
               <div className="space-y-6">
+
+                <div className={cn("copy-button-ignore", isStartlistTableExpanded && "hidden")}>
+                  <StartlistFilters
+                    startlistFilterTeam={startlistFilterTeam}
+                    setStartlistFilterTeam={setStartlistFilterTeam}
+                    uniqueTeams={uniqueTeams}
+                    startlistFilterRondas={startlistFilterRondas}
+                    setStartlistFilterRondas={setStartlistFilterRondas}
+                    uniqueRondas={uniqueRondas}
+                    toggleRonda={toggleRonda}
+                    startlistFilterDiasMin={startlistFilterDiasMin}
+                    setStartlistFilterDiasMin={setStartlistFilterDiasMin}
+                    startlistFilterDiasMax={startlistFilterDiasMax}
+                    setStartlistFilterDiasMax={setStartlistFilterDiasMax}
+                    startlistFilterPuntosMin={startlistFilterPuntosMin}
+                    setStartlistFilterPuntosMin={setStartlistFilterPuntosMin}
+                    startlistFilterPuntosMax={startlistFilterPuntosMax}
+                    setStartlistFilterPuntosMax={setStartlistFilterPuntosMax}
+                    startlistFilterDebut={startlistFilterDebut}
+                    setStartlistFilterDebut={setStartlistFilterDebut}
+                  />
+                </div>
                 <ReportCard
                   title={`Ciclistas Participantes (${filteredRows.length})`}
                   filename="startlist-ciclistas"
@@ -461,33 +286,7 @@ export const StartlistView = () => {
                     onDownloadImage: handleDownloadStartlist
                   }}
                   bodyClassName="p-0 border-t border-neutral-100"
-                  headerExtra={
-                    !isStartlistTableExpanded && (
-                      <StartlistFilters
-                        startlistFilterTeam={startlistFilterTeam}
-                        setStartlistFilterTeam={setStartlistFilterTeam}
-                        uniqueTeams={uniqueTeams}
-                        startlistFilterRondas={startlistFilterRondas}
-                        setStartlistFilterRondas={setStartlistFilterRondas}
-                        uniqueRondas={uniqueRondas}
-                        toggleRonda={toggleRonda}
-                        startlistFilterDiasMin={startlistFilterDiasMin}
-                        setStartlistFilterDiasMin={setStartlistFilterDiasMin}
-                        startlistFilterDiasMax={startlistFilterDiasMax}
-                        setStartlistFilterDiasMax={setStartlistFilterDiasMax}
-                        startlistFilterPuntosMin={startlistFilterPuntosMin}
-                        setStartlistFilterPuntosMin={
-                          setStartlistFilterPuntosMin
-                        }
-                        startlistFilterPuntosMax={startlistFilterPuntosMax}
-                        setStartlistFilterPuntosMax={
-                          setStartlistFilterPuntosMax
-                        }
-                        startlistFilterDebut={startlistFilterDebut}
-                        setStartlistFilterDebut={setStartlistFilterDebut}
-                      />
-                    )
-                  }
+                  
                 >
                   <StartlistTable
                     startlistScrollRef={startlistScrollRef}
