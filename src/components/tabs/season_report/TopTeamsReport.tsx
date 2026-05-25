@@ -291,7 +291,6 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
           toolbarProps={{
             isExpanded: isHistoryExpanded,
             onExpand: () => setIsHistoryExpanded(!isHistoryExpanded),
-            imagePageCount: Math.ceil(monthReportData.raceWinners.length / 50),
             onCopyImage: handleCopyHistory,
             isImageCopying: isHistoryCopying,
             onDownloadImage: handleDownloadHistory

@@ -33,40 +33,69 @@ export function NoDraftFilters({
   allStatsCount
 }: NoDraftFiltersProps) {
   
+  const [isBlocksOpen, setIsBlocksOpen] = React.useState(false);
+  const blocksRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (blocksRef.current && !blocksRef.current.contains(event.target as Node)) {
+        setIsBlocksOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const renderPartialCopyButtons = () => {
     if (allStatsCount <= 50) return null;
     
     const pages = Math.ceil(allStatsCount / 50);
     return (
-      <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
-        {Array.from({ length: pages }).map((_, i) => {
-          const s = "p" + (i + 1);
-          const isCopyingThis = isCopying === s;
-          const start = i * 50 + 1;
-          const end = (i + 1) * 50;
-          return (
-            <Button
-              variant="outline"
-              key={s}
-              onClick={() => handleCopy(s)}
-              disabled={!!isCopying}
-              className={cn(
-                "px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                isCopyingThis
-                  ? "bg-green-50 text-green-700 border-green-200"
-                  : "bg-white",
-                isCopying && !isCopyingThis && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {isCopyingThis ? (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              ) : (
-                <Copy className="w-3.5 h-3.5" />
-              )}
-              {start}-{end}
-            </Button>
-          );
-        })}
+      <div className="relative flex items-center ml-1" ref={blocksRef}>
+        <Button
+          variant="outline"
+          className="rounded-md border border-neutral-200 shadow-sm px-2 py-1.5 h-auto bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors flex items-center gap-1.5 text-xs"
+          onClick={() => setIsBlocksOpen(!isBlocksOpen)}
+          disabled={!!isCopying}
+          title="Copiar por bloques"
+        >
+          <span>Partes</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("w-3.5 h-3.5 transition-transform", isBlocksOpen && "rotate-180")}><path d="m6 9 6 6 6-6"/></svg>
+        </Button>
+        
+        {isBlocksOpen && (
+          <div className="absolute top-full right-0 lg:left-0 lg:right-auto mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 py-1.5 animate-in fade-in slide-in-from-top-2">
+            <div className="px-3 py-1.5 border-b border-neutral-100 mb-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Copiar Partes</span>
+            </div>
+            <div className="max-h-60 overflow-y-auto w-full flex flex-col">
+              {Array.from({ length: pages }).map((_, i) => {
+                const s = "p" + (i + 1);
+                const isCopyingThis = isCopying === s;
+                const start = i * 50 + 1;
+                const end = Math.min((i + 1) * 50, allStatsCount);
+                return (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setIsBlocksOpen(false);
+                      handleCopy(s);
+                    }}
+                    disabled={!!isCopying}
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between",
+                      isCopyingThis ? "bg-green-50 text-green-700" : "hover:bg-neutral-50 text-neutral-700",
+                      isCopying && !isCopyingThis && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <span className="font-mono">Rango {start}-{end}</span>
+                    {isCopyingThis && <CheckCircle2 className="w-3 h-3 text-green-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

@@ -39,7 +39,7 @@ export function UnscoredCyclists() {
     try {
       await handleCopyImage({ 
         fileName: "unscored-export.png", 
-        scale: 3, 
+        scale: 2, 
         filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), 
         backgroundColor: "#ffffff" 
       });
@@ -55,7 +55,7 @@ export function UnscoredCyclists() {
   const handleDownload = async (mode?: string) => {
     await handleDownloadImage({ 
       fileName: `ciclistas-sin-puntuar${mode && mode !== "full" ? `-${mode}` : ""}.png`, 
-      scale: 3, 
+      scale: 2, 
       filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), 
       backgroundColor: "#ffffff" 
     });

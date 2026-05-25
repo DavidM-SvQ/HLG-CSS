@@ -45,7 +45,6 @@ export function StartlistPointsTable(props: any) {
             isTextCopying: isPointsTextCopying,
             onCopyImage: handleCopyPointsImage,
             isImageCopying: isPointsImageCopying,
-            imagePageCount: pointsPagination.totalPages,
             onDownloadImage: handleDownloadPointsImage
           }}
           bodyClassName="p-0 border-t border-neutral-100"

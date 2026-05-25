@@ -104,6 +104,70 @@ export function UnscoredTable({
                   No hay ciclistas sin puntuar que coincidan con los criterios.
                 </td>
               </tr>
+            ) : isUnscoredCopying ? (
+              // BYPASS VIRTUALIZER PARA LA CAPTURA DE IMAGEN
+              (isUnscoredCopying === "full" ? filteredAndSortedData : typeof isUnscoredCopying === 'string' && isUnscoredCopying.startsWith('p') ? filteredAndSortedData.slice((parseInt(isUnscoredCopying.substring(1)) - 1) * 50, parseInt(isUnscoredCopying.substring(1)) * 50) : filteredAndSortedData).map((c, idx) => (
+                    <tr 
+                      key={idx} 
+                      data-index={idx}
+                      className="hover:bg-neutral-50 transition-colors text-[11px] md:divide-x md:divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100"
+                    >
+                      <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1 bg-neutral-50/50 md:bg-transparent rounded-t-xl md:rounded-none">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Jugador</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-semibold md:font-medium text-neutral-800 md:text-neutral-600 truncate">{c.nombreEquipo}</span>{" "}
+                          <span className="text-neutral-400 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                        <span className="font-bold text-neutral-900 truncate text-sm md:text-[11px]">{c.ciclista}</span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums",
+                            ["01", "02", "03", "1", "2", "3"].includes(c.ronda)
+                              ? "bg-yellow-50 md:bg-transparent text-yellow-700 font-bold px-2 py-0.5 rounded md:p-0"
+                              : "text-neutral-500"
+                          )}
+                        >
+                          {c.ronda}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carreras</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums text-sm md:text-[11px]",
+                            c.carreras === 0
+                              ? "text-red-600 font-bold"
+                              : c.carreras === maxCarreras && maxCarreras > 0
+                              ? "text-green-600 font-bold"
+                              : "text-neutral-600"
+                          )}
+                        >
+                          {c.carreras}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-neutral-50/30 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums text-sm md:text-[11px]",
+                            c.dias === 0
+                              ? "text-red-600 font-bold"
+                              : c.dias === maxDias && maxDias > 0
+                              ? "text-green-600 font-bold"
+                              : "text-neutral-600"
+                          )}
+                        >
+                          {c.dias}
+                        </span>
+                      </td>
+                    </tr>
+              ))
             ) : (
               <>
                 {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={5} /></tr>}

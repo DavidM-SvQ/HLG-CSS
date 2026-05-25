@@ -21,11 +21,11 @@ export function useStartlistExports(
 
 
   const handleCopyStartlist = async (subset?: string) => {
-    setIsStartlistCopying(subset || "p1");
+    setIsStartlistCopying(subset || "full");
     try {
       await copyStartlistImage({
         fileName: `startlist_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
       });
     } finally {
@@ -34,10 +34,11 @@ export function useStartlistExports(
   };
 
   const handleDownloadStartlist = async (subset?: string) => {
+    setIsStartlistCopying(subset || "full");
     try {
       await downloadStartlistImage({
         fileName: `startlist_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
       });
     } finally {
@@ -69,11 +70,11 @@ export function useStartlistExports(
   };
 
   const handleCopyStartlistTeams = async (subset?: string) => {
-    setIsStartlistTeamsCopying(subset || "p1");
+    setIsStartlistTeamsCopying(subset || "full");
     try {
       await copyStartlistTeamsImage({
         fileName: `startlist_teams_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
       });
     } finally {
@@ -82,10 +83,11 @@ export function useStartlistExports(
   };
 
   const handleDownloadStartlistTeams = async (subset?: string) => {
+    setIsStartlistTeamsCopying(subset || "full");
     try {
       await downloadStartlistTeamsImage({
         fileName: `startlist_teams_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible", textRendering: "optimizeLegibility" },
       });
     } finally {
@@ -140,11 +142,11 @@ export function useStartlistExports(
   };
 
   const handleCopyPointsImage = async (subset?: string) => {
-    setIsPointsImageCopying(subset || "p1");
+    setIsPointsImageCopying(subset || "full");
     try {
       await copyPointsImage({
         fileName: `puntos_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible" },
         onBeforeCapture: (el: HTMLElement) => {
           el.className = el.className.replace("overflow-x-auto", "");
@@ -156,10 +158,11 @@ export function useStartlistExports(
   };
 
   const handleDownloadPointsImage = async (subset?: string) => {
+    setIsPointsImageCopying(subset || "full");
     try {
       await downloadPointsImage({
         fileName: `puntos_${publicStartlistRace || "export"}${subset ? `_${subset}` : ""}.png`,
-        scale: 3,
+        scale: 2,
         style: { overflow: "visible" },
         onBeforeCapture: (el: HTMLElement) => {
           el.className = el.className.replace("overflow-x-auto", "");

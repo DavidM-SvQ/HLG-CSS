@@ -284,8 +284,8 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
         onExpand: () => setIsDraftTableExpanded(!isDraftTableExpanded),
         onCopyImage: handleCopyDraftTableImage,
         isImageCopying: isDraftTableCopying,
-        imagePageCount: Math.ceil(draftSortedData.length / 50),
-        onDownloadImage: handleDownloadDraftTableImage
+        onDownloadImage: handleDownloadDraftTableImage,
+        numBlocks
       }}
       bodyClassName="p-0 border-t border-neutral-100"
     >
@@ -330,8 +330,8 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
       </div>
 
       <div className="flex justify-center bg-neutral-50/30">
-        <div className={cn("w-full overflow-hidden relative max-h-[1200px]", isDraftTableExpanded ? "max-h-none" : "")}>
-          <div ref={parentRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full max-h-[800px] crosshair-container", isDraftTableExpanded && "max-h-none h-auto overflow-visible")}>
+        <div className={cn("w-full relative", isDraftTableExpanded || isDraftTableCopyingState ? "max-h-none overflow-visible" : "overflow-hidden max-h-[1200px]")}>
+          <div ref={parentRef} className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container", isDraftTableExpanded || isDraftTableCopyingState ? "max-h-none h-auto overflow-visible" : "overflow-auto max-h-[800px]")}>
             <table className="w-full min-w-[1000px] text-[11px] text-left whitespace-nowrap border-collapse mx-auto">
 
               <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10">
@@ -353,37 +353,77 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={15} /></tr>}
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const row = draftSortedData[virtualRow.index]; const idx = virtualRow.index;
-                  const ciclista = getVal(row, "Ciclista") || "";
-                  const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
-                  let pointsStyle = {};
-                  if (stats.puntos === 0) { pointsStyle = { backgroundColor: "#fee2e2", color: "#b91c1c" }; } else { const ratio = stats.puntos / maxPuntos; const hue = 45 + ratio * (142 - 45); pointsStyle = { backgroundColor: `hsl(${hue}, 80%, 85%)`, color: `hsl(${hue}, 90%, 25%)` }; }
+                {isDraftTableCopyingState ? (
+                  // BYPASS VIRTUALIZER PARA LA CAPTURA DE IMAGEN
+                  (() => {
+                    let itemsToRender = draftSortedData;
+                    if (typeof isDraftTableCopyingState === 'string' && isDraftTableCopyingState.startsWith('p')) {
+                      itemsToRender = draftSortedData.slice((parseInt(isDraftTableCopyingState.substring(1)) - 1) * 50, parseInt(isDraftTableCopyingState.substring(1)) * 50);
+                    }
+                    return itemsToRender.map((row, idx) => {
+                      const ciclista = getVal(row, "Ciclista") || "";
+                      const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
+                      let pointsStyle = {};
+                      if (stats.puntos === 0) { pointsStyle = { backgroundColor: "#fee2e2", color: "#b91c1c" }; } else { const ratio = stats.puntos / maxPuntos; const hue = 45 + ratio * (142 - 45); pointsStyle = { backgroundColor: `hsl(${hue}, 80%, 85%)`, color: `hsl(${hue}, 90%, 25%)` }; }
 
-                  return (
-                    <tr key={idx} className="draft-row hover:bg-neutral-50 transition-colors h-6">
-                      <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
-                      <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
-                      <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
-                      <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
-                      <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>
-                      <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
-                      <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
-                      <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
-                      <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
-                      <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
-                      <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
-                        {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }} colSpan={15} /></tr>}
+                      return (
+                        <tr key={idx} className="draft-row bg-white h-6">
+                          <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
+                          <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
+                          <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
+                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
+                          <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>
+                          <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
+                          <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
+                          <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
+                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
+                          <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
+                            {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()
+                ) : (
+                  <>
+                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={15} /></tr>}
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const row = draftSortedData[virtualRow.index]; const idx = virtualRow.index;
+                      const ciclista = getVal(row, "Ciclista") || "";
+                      const stats = draftCyclistStats[ciclista] || { puntos: 0, victorias: 0 };
+                      let pointsStyle = {};
+                      if (stats.puntos === 0) { pointsStyle = { backgroundColor: "#fee2e2", color: "#b91c1c" }; } else { const ratio = stats.puntos / maxPuntos; const hue = 45 + ratio * (142 - 45); pointsStyle = { backgroundColor: `hsl(${hue}, 80%, 85%)`, color: `hsl(${hue}, 90%, 25%)` }; }
+
+                      return (
+                        <tr key={idx} className="draft-row hover:bg-neutral-50 transition-colors h-6">
+                          <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
+                          <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
+                          <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
+                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
+                          <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>
+                          <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
+                          <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
+                          <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
+                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
+                          <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
+                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
+                            {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }} colSpan={15} /></tr>}
+                  </>
+                )}
               </tbody>
             </table>
           </div>

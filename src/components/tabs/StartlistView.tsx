@@ -282,8 +282,8 @@ export const StartlistView = () => {
                     isTextCopying: isStartlistTextCopying,
                     onCopyImage: handleCopyStartlist,
                     isImageCopying: isStartlistCopying,
-                    imagePageCount: filteredRowPagination.totalPages,
-                    onDownloadImage: handleDownloadStartlist
+                    onDownloadImage: handleDownloadStartlist,
+                    numBlocks: Math.ceil(filteredRows.length / 50)
                   }}
                   bodyClassName="p-0 border-t border-neutral-100"
                   

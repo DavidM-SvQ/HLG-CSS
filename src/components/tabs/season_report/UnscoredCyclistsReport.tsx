@@ -241,7 +241,6 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
         isTextCopying: isUnscoredTextCopying,
         onCopyImage: handleCopyUnscored,
         isImageCopying: isUnscoredCopying,
-        imagePageCount: Math.ceil(countFiltered / 50),
         onDownloadImage: handleDownloadUnscored
       }}
       bodyClassName="p-0 border-t border-neutral-100"

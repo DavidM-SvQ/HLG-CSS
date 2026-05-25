@@ -59,7 +59,7 @@ export function TopDraftCyclists() {
     setIsTopCyclistsDraftCopying(type || "full");
     try {
       await copyTopCyclistsImage({
-        fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        fileName: "export.png", scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
         onBeforeCapture: (el) => prepareTableForCopy(el, type),
         onAfterCapture: (el) => resetTableAfterCopy(el)
       });
@@ -73,7 +73,7 @@ export function TopDraftCyclists() {
   const handleDownloadTopCyclistsDraft = async (type?: string) => {
     await downloadTopCyclistsImage({
       fileName: `top-ciclistas-draft${type && type !== "full" ? `-${type}` : ""}.png`,
-      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+      scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
       onBeforeCapture: (el) => prepareTableForCopy(el, type),
       onAfterCapture: (el) => resetTableAfterCopy(el)
     });

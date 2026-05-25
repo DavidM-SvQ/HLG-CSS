@@ -157,7 +157,6 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
         isTextCopying: isUndebutedTextCopying,
         onCopyImage: handleCopyUndebuted,
         isImageCopying: isUndebutedCopying,
-        imagePageCount: Math.ceil(countFiltered / 50),
         onDownloadImage: handleDownloadUndebuted,
         customFilters: (
           <div className="flex flex-wrap items-center gap-1.5 ml-1 pt-1 sm:pt-0">

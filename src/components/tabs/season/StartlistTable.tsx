@@ -134,22 +134,113 @@ export function StartlistTable(props: any) {
                   </div>
                 </td>
               </tr>
+            ) : isStartlistCopying ? (
+              // BYPASS VIRTUALIZER PARA LA CAPTURA DE IMAGEN
+              (isStartlistCopying === "full" ? filteredRows : typeof isStartlistCopying === 'string' && isStartlistCopying.startsWith('p') ? filteredRows.slice((parseInt(isStartlistCopying.substring(1)) - 1) * 50, parseInt(isStartlistCopying.substring(1)) * 50) : filteredRows).map((r, i) => {
+                const getCyclistPointsColorStyle = (punt: number) => {
+                  if (punt === 0 && memoizedData.maxCyclistPoints === 0)
+                    return {};
+                  const min = memoizedData.minCyclistPoints;
+                  const max = memoizedData.maxCyclistPoints;
+                  const range = max - min;
+                  const val = punt - min;
+                  const t =
+                    range === 0 ? 1 : Math.max(0, Math.min(1, val / range));
+                  return {
+                    backgroundColor: `hsla(${t * 120}, 70%, 50%, 0.15)`,
+                    color: `hsla(${t * 120}, 80%, 35%, 1)`,
+                  };
+                };
+
+                return (
+                  <tr
+                    key={i}
+                    data-index={i}
+                    className="group flex flex-row flex-wrap md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100"
+                  >
+                  <td
+                    className="w-full px-4 py-3 md:px-3 md:py-2 font-medium text-neutral-800 truncate sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50 flex justify-between items-center md:table-cell rounded-t-xl md:rounded-none border-b border-neutral-100 md:border-b-0"
+                    title={r.jugador}
+                  >
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                    <span className="truncate">{r.jugador}</span>
+                  </td>
+                  
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell items-center gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Dor</span>
+                    <span className="text-neutral-500 font-mono tabular-nums text-sm md:text-[11px]">{r.dorsal}</span>
+                  </td>
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
+                    <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
+                  </td>
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq</span>
+                    <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
+                  </td>
+                  
+                  <td
+                    className="w-full px-4 py-3 md:px-3 md:py-2 font-semibold text-neutral-900 truncate flex flex-col md:table-cell gap-1 bg-white border-t md:border-t-0 border-neutral-100 text-center md:text-left"
+                    title={r.ciclista}
+                  >
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                    <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
+                  </td>
+                  
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={cn(
+                        "font-mono tabular-nums text-sm md:text-[11px] px-2 py-0.5 rounded",
+                        (r.ronda === "01" || r.ronda === "02" || r.ronda === "03") ? "bg-yellow-100 text-yellow-800 font-bold" : "text-neutral-600"
+                      )}>
+                        {r.ronda}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={cn(
+                        "font-mono tabular-nums text-sm md:text-[11px] px-2 py-0.5 rounded",
+                        r.dias === 0 && "bg-red-100 text-red-700 font-bold",
+                        r.dias > 0 && r.dias === memoizedData?.maxDias && "bg-green-100 text-green-700 font-bold",
+                        r.dias > 0 && r.dias === memoizedData?.minDias && r.dias !== memoizedData?.maxDias && "bg-orange-100 text-orange-800 font-bold",
+                        r.dias > 0 && r.dias !== memoizedData?.maxDias && r.dias !== memoizedData?.minDias && "text-neutral-600"
+                      )}>
+                        {r.dias}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center gap-1 content-center bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Debut</span>
+                    <div className="flex-1 flex items-center justify-center">
+                      {r.debut === "Sí" ? (
+                        <span className="bg-blue-100 text-blue-700 border border-blue-300 shadow-sm px-2 py-0.5 md:px-1.5 md:py-0.5 rounded uppercase tracking-wider relative text-xs md:text-[10px] font-bold">
+                          Sí
+                        </span>
+                      ) : <span className="text-neutral-400 md:hidden">-</span>}
+                    </div>
+                  </td>
+                  
+                  <td
+                    className="w-full px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-right border-t md:border-t-0 border-neutral-100"
+                    style={
+                      r.puntos > 0 ? getCyclistPointsColorStyle(r.puntos) : {}
+                    }
+                  >
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: "inherit", opacity: 0.7}}>Puntos Previos</span>
+                    <span className="">{formatNumberSpanish(r.puntos)}</span>
+                  </td>
+                  </tr>
+                );
+              })
             ) : (
               <>
                 {paddingTop > 0 && <tr className="block md:table-row"><td style={{height: `${paddingTop}px`, display: "block"}} colSpan={9} /></tr>}
                 {virtualItems.map((virtualRow) => {
                   const i = virtualRow.index;
                   const r = filteredRows[i];
-                  const page = filteredRowPagination.pages[i];
-                  let isHiddenVisual = false;
-                  if (isStartlistCopying) {
-                    if (
-                      isStartlistCopying !== "full" &&
-                      isStartlistCopying !== `p${page}`
-                    ) {
-                      isHiddenVisual = true;
-                    }
-                  }
 
                   const getCyclistPointsColorStyle = (punt: number) => {
                     if (punt === 0 && memoizedData.maxCyclistPoints === 0)
@@ -171,10 +262,7 @@ export function StartlistTable(props: any) {
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className={cn(
-                        "group hover:bg-blue-50/50 transition-colors flex flex-row flex-wrap md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100",
-                        isHiddenVisual && "hidden",
-                      )}
+                      className="group hover:bg-blue-50/50 transition-colors flex flex-row flex-wrap md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100"
                     >
                     <td
                       className="w-full px-4 py-3 md:px-3 md:py-2 font-medium text-neutral-800 truncate sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50 flex justify-between items-center md:table-cell rounded-t-xl md:rounded-none border-b border-neutral-100 md:border-b-0"

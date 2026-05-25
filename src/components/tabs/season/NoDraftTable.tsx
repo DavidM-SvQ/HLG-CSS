@@ -12,6 +12,7 @@ interface NoDraftTableProps {
   sortedStats: any[];
   maxPuntos: number;
   minPuntos: number;
+  isCopying?: string | boolean | null;
 }
 
 export function NoDraftTable({
@@ -22,7 +23,8 @@ export function NoDraftTable({
   onSort,
   sortedStats,
   maxPuntos,
-  minPuntos
+  minPuntos,
+  isCopying
 }: NoDraftTableProps) {
   const [isMobile, setIsMobile] = useState(false);
   
@@ -104,6 +106,103 @@ export function NoDraftTable({
                   No hay ciclistas no elegidos que coincidan con los criterios.
                 </td>
               </tr>
+            ) : isCopying ? (
+              // BYPASS VIRTUALIZER PARA LA CAPTURA DE IMAGEN
+              (isCopying === "full" ? sortedStats : typeof isCopying === 'string' && isCopying.startsWith('p') ? sortedStats.slice((parseInt(isCopying.substring(1)) - 1) * 50, parseInt(isCopying.substring(1)) * 50) : sortedStats).map((s, idx) => (
+                    <tr
+                      key={s.name}
+                      data-index={idx}
+                      className="no-draft-row hover:bg-neutral-50 transition-colors text-[11px] md:divide-x md:divide-neutral-100 flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100"
+                    >
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell gap-2 rounded-t-xl md:rounded-none bg-neutral-50/50 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Posición Original</span>
+                        <div className="flex justify-center md:block">
+                          <span
+                            className={cn(
+                              "w-6 h-6 md:w-5 md:h-5 rounded-full flex items-center justify-center text-xs md:text-[9px] font-bold shadow-sm md:shadow-none",
+                              s.originalPos === 1
+                                ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                                : s.originalPos === 2
+                                ? "bg-neutral-200 text-neutral-700 border border-neutral-300"
+                                : s.originalPos === 3
+                                ? "bg-orange-100 text-orange-700 border border-orange-200"
+                                : "bg-neutral-100 text-neutral-500"
+                            )}
+                          >
+                            {s.originalPos}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex flex-col md:table-cell gap-1">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
+                        <span className="font-bold text-neutral-900 text-[13px] md:text-[11px] truncate md:whitespace-nowrap">{s.name}</span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                        <div className="flex justify-center flex-1 md:block">
+                          <span
+                            className={cn(
+                              "font-mono tabular-nums",
+                              s.ronda === "01" || s.ronda === "02" || s.ronda === "03" || s.ronda === "1" || s.ronda === "2" || s.ronda === "3"
+                                ? "bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded shadow-sm border border-yellow-200"
+                                : "text-neutral-500"
+                            )}
+                          >
+                            {s.ronda}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Edad</span>
+                        <span className="font-mono tabular-nums opacity-80">{s.edad}</span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
+                        <span className="text-xl md:text-lg leading-none" title={s.paisLetras || s.pais}>{s.pais}</span>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq Comp</span>
+                        <span className="font-semibold text-neutral-700 text-sm md:text-[11px]">{s.equipo}</span>
+                      </td>
+
+                      <td
+                        className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell border-t md:border-t-0 border-neutral-100 rounded-b-xl md:rounded-none order-last md:order-none", s.puntos > 0 ? "bg-blue-50/50 md:bg-transparent" : "bg-neutral-50/50 md:bg-transparent")}
+                      >
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: s.puntos > 0 ? "inherit" : undefined, opacity: s.puntos > 0 ? 0.7 : undefined}}>Puntos</span>
+                        <div className="flex flex-col items-center flex-1  md:block">
+                          <span
+                            className={cn(
+                              "font-mono tabular-nums text-sm md:text-sm tracking-tight",
+                              s.puntos > 0 ? "font-bold" : "text-red-500 font-bold"
+                            )}
+                            style={s.puntos > 0 ? {
+                                color: (() => {
+                                  if (maxPuntos === minPuntos) return `hsl(142, 70%, 35%)`;
+                                  const ratio = (s.puntos - minPuntos) / (maxPuntos - minPuntos);
+                                  const hue = 45 + ratio * (142 - 45);
+                                  return `hsl(${hue}, 80%, 35%)`;
+                                })()
+                            } : undefined}
+                          >
+                            {s.puntos}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center relative border-b md:border-b-0 border-neutral-100 bg-neutral-50/30 md:bg-transparent">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Top %</span>
+                        <div className="w-full flex justify-center">
+                          <div className="w-24 md:w-16 h-2 md:h-1.5 bg-neutral-100 rounded-full overflow-hidden flex shadow-inner">
+                            <div
+                              className="h-full rounded-full transition-all duration-500 ease-out shrink-0"
+                              style={{ width: `${s.puntos > 0 ? Math.max(5, (s.puntos / maxPuntos) * 100) : 0}%`,
+                              backgroundColor: s.puntos > 0 ? (() => { if(maxPuntos===minPuntos)return`hsl(142,60%,40%)`;const ratio=(s.puntos-minPuntos)/(maxPuntos-minPuntos);const hue=45+ratio*(142-45);return`hsl(${hue},70%,45%)`;})() : 'transparent'
+                               }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+              ))
             ) : (
               <>
                 {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={8} /></tr>}

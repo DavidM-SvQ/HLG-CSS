@@ -37,7 +37,7 @@ export function NoDraftCyclists() {
     try {
       await handleCopyImage({ 
         fileName: "no-draft-export.png", 
-        scale: 3, 
+        scale: 2, 
         filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), 
         backgroundColor: "#ffffff" 
       });
@@ -53,7 +53,7 @@ export function NoDraftCyclists() {
   const handleDownload = async (mode?: string) => {
     await handleDownloadImage({ 
       fileName: `top-ciclistas-no-elegidos${mode && mode !== "full" ? `-${mode}` : ""}.png`, 
-      scale: 3, 
+      scale: 2, 
       filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), 
       backgroundColor: "#ffffff" 
     });
@@ -189,6 +189,7 @@ export function NoDraftCyclists() {
           sortedStats={processedData.sortedStats}
           maxPuntos={processedData.maxPuntos}
           minPuntos={processedData.minPuntos}
+          isCopying={isCopying}
         />
       </div>
     </div>

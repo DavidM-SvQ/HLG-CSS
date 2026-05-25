@@ -32,7 +32,6 @@ export function StartlistTeamsTable(props: any) {
         isTextCopying: isStartlistTeamsTextCopying,
         onCopyImage: handleCopyStartlistTeams,
         isImageCopying: isStartlistTeamsCopying,
-        imagePageCount: teamRowPagination.totalPages,
         onDownloadImage: handleDownloadStartlistTeams
       }}
       bodyClassName="p-0 border-t border-neutral-100"

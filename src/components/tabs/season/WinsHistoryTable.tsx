@@ -6,6 +6,7 @@ import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { performTextCopy } from "./hooks/useExportHandlers";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 import { Button } from "../../ui/button";
 
 export function WinsHistoryTable() {
@@ -58,7 +59,7 @@ export function WinsHistoryTable() {
     setIsWinsHistoryCopying(type || "full");
     try {
       await copyWinsImage({
-        fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        fileName: "export.png", scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
         onBeforeCapture: (el) => prepareTableForCopy(el, type),
         onAfterCapture: (el) => resetTableAfterCopy(el)
       });
@@ -70,12 +71,17 @@ export function WinsHistoryTable() {
     performTextCopy(winsHistoryRef, setIsWinsHistoryTextCopying, "winsHistoryTable");
   };
   const handleDownloadWinsHistory = async (type?: string) => {
-    await downloadWinsImage({
-      fileName: `historial-ganadores${type && type !== "full" ? `-${type}` : ""}.png`,
-      scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
-      onBeforeCapture: (el) => prepareTableForCopy(el, type),
-      onAfterCapture: (el) => resetTableAfterCopy(el)
-    });
+    setIsWinsHistoryCopying(type || "full");
+    try {
+      await downloadWinsImage({
+        fileName: `historial-ganadores${type && type !== "full" ? `-${type}` : ""}.png`,
+        scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        onBeforeCapture: (el) => prepareTableForCopy(el, type),
+        onAfterCapture: (el) => resetTableAfterCopy(el)
+      });
+    } finally {
+      setIsWinsHistoryCopying(false);
+    }
   };
 
   const { filteredHistoryRaces } = useFilters({
@@ -129,78 +135,19 @@ export function WinsHistoryTable() {
             Relación cronológica de las victorias obtenidas por los equipos en cada carrera.
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
-            <div className="copy-button-ignore flex items-center gap-2 flex-wrap">
-              <Button variant="outline"
-                onClick={() => setIsWinsHistoryExpanded(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Ampliar tabla"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <Button variant="outline"
-                onClick={() => handleCopyWinsHistory("full")}
-                disabled={!!isWinsHistoryCopying}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                  isWinsHistoryCopying === "full"
-                    ? "bg-green-50 text-green-700 border border-green-200"
-                    : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
-                )}
-                title={isWinsHistoryCopying === "full" ? "Copiado" : "Copiar tabla como imagen"}
-              >
-                {isWinsHistoryCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </Button>
-              {numBlocks > 1 && (
-                <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1 flex-wrap">
-                  {Array.from({ length: numBlocks }).map((_, i) => {
-                    const s = `p${i + 1}`;
-                    const start = i * 50 + 1;
-                    const end = Math.min((i + 1) * 50, filteredHistoryRaces.length);
-                    const label = `${start}-${end}`;
-                    const isCopyingThis = isWinsHistoryCopying === s;
-                    return (
-                      <Button variant="outline"
-                        key={s}
-                        onClick={() => handleCopyWinsHistory(s as any)}
-                        disabled={!!isWinsHistoryCopying}
-                        className={cn(
-                          "px-2 py-1 text-[10px] font-bold rounded-md border shadow-sm flex items-center gap-1 transition-all",
-                          isCopyingThis
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                          isWinsHistoryCopying && !isCopyingThis && "opacity-50 cursor-not-allowed"
-                        )}
-                        title={`Copiar rango ${label}`}
-                      >
-                        {isCopyingThis ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              )}
-              <Button variant="ghost" size="icon"
-                onClick={handleCopyWinsHistoryText}
-                disabled={isWinsHistoryTextCopying}
-                className={cn(
-                  "flex items-center justify-center px-3 h-8 rounded-lg transition-all shadow-sm text-sm font-medium",
-                  isWinsHistoryTextCopying
-                    ? "bg-green-50 text-green-600 border border-green-200"
-                    : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
-                )}
-                title="Copiar como texto"
-              >
-                {isWinsHistoryTextCopying ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <ClipboardList className="w-4 h-4 mr-1.5" />}
-                Texto
-              </Button>
-              <Button variant="outline"
-                onClick={() => handleDownloadWinsHistory("full")}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Descargar tabla como imagen"
-              >
-                <UploadCloud className="w-4 h-4 rotate-180" />
-              </Button>
-            </div>
+            <ExportToolbar
+              isExpanded={false}
+              onExpand={() => setIsWinsHistoryExpanded(true)}
+              onCopyImage={handleCopyWinsHistory}
+              isImageCopying={isWinsHistoryCopying}
+              onDownloadImage={handleDownloadWinsHistory}
+              onCopyText={handleCopyWinsHistoryText}
+              isTextCopying={isWinsHistoryTextCopying}
+              textCopyLabel="Texto"
+              useClipboardIconForText={true}
+              filename="historial-ganadores"
+              numBlocks={numBlocks}
+            />
             <div className="flex gap-2 flex-wrap">
               <select
                 value={historyTeamFilter}
@@ -312,6 +259,44 @@ export function WinsHistoryTable() {
                       No hay carreras que coincidan con los filtros.
                     </td>
                   </tr>
+                ) : isWinsHistoryCopying ? (
+                    // BYPASS VIRTUALIZER
+                    (isWinsHistoryCopying === "full" ? filteredHistoryRaces : typeof isWinsHistoryCopying === 'string' && isWinsHistoryCopying.startsWith('p') ? filteredHistoryRaces.slice((parseInt(isWinsHistoryCopying.substring(1)) - 1) * 50, parseInt(isWinsHistoryCopying.substring(1)) * 50) : filteredHistoryRaces).map((item, idx) => {
+                      const { race, winnerTeamName, winnerDisplayName, winnerPoints, date } = item;
+                      return (
+                        <tr key={race} data-index={idx} className="hover:bg-neutral-50 transition-colors wins-history-row flex flex-col md:table-row bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none divide-y md:divide-y-0 divide-neutral-100">
+                          <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell gap-4 rounded-t-xl md:rounded-none bg-neutral-50/50 md:bg-transparent">
+                            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Fecha</span>
+                            <span className="text-neutral-500 font-mono tabular-nums text-sm md:text-xs bg-white md:bg-transparent px-2 py-1 md:p-0 rounded border md:border-0 border-neutral-200 shrink-0">{date}</span>
+                          </td>
+                          <td className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:table-cell gap-1">
+                            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carrera</span>
+                            <span className="font-semibold md:font-medium text-neutral-900 line-clamp-2">{race}</span>
+                          </td>
+                          <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell text-right">
+                            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo Ganador</span>
+                            {winnerTeamName ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 md:px-2.5 md:py-1 rounded-full bg-yellow-50 text-yellow-700 font-bold text-xs border border-yellow-100 shadow-sm md:shadow-none whitespace-nowrap overflow-hidden text-ellipsis truncate max-w-[200px] md:max-w-none">
+                                <Trophy className="w-3.5 h-3.5 shrink-0" />
+                                {winnerDisplayName || winnerTeamName}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-400 italic">Desierto</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell text-right rounded-b-xl md:rounded-none">
+                            <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Puntos</span>
+                            {winnerPoints > 0 ? (
+                              <span className="font-mono text-lg md:text-sm font-bold text-neutral-900 tracking-tight">
+                                {formatNumberSpanish(winnerPoints)}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-300">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                 ) : (
                   <>
                     {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={4} /></tr>}

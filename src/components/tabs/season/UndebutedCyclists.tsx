@@ -47,7 +47,7 @@ export function UndebutedCyclists() {
     setIsUndebutedCopying(mode || "full");
     try {
       await copyUndebutedImage({ 
-        fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        fileName: "export.png", scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
         onBeforeCapture: (el) => prepareTableForCopy(el, mode),
         onAfterCapture: (el) => resetTableAfterCopy(el)
       });
@@ -59,8 +59,8 @@ export function UndebutedCyclists() {
     performTextCopy(undebutedTableRef, setIsUndebutedTextCopying, "undebutedCyclists");
   };
   const handleDownloadUndebuted = async (mode?: string) => {
-    await downloadUndebutedImage({ 
-      fileName: `ciclistas-sin-debutar${mode && mode !== "full" ? `-${mode}` : ""}.png`, scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+    await downloadUndebutedImage({
+      fileName: `ciclistas-sin-debutar${mode && mode !== "full" ? `-${mode}` : ""}.png`, scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
       onBeforeCapture: (el) => prepareTableForCopy(el, mode),
       onAfterCapture: (el) => resetTableAfterCopy(el)
     });
