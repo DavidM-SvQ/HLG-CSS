@@ -93,6 +93,19 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (downloadRef.current && !downloadRef.current.contains(event.target as Node)) {
+        setIsDownloadOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleBlockCopy = (blockId: string) => {
     setIsBlocksOpen(false);
     if (onCopyImageBlock) {
@@ -175,6 +188,70 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
     );
   };
 
+  const renderDownloadButtons = () => {
+    const hasBlocks = numBlocks && numBlocks > 1;
+
+    return (
+      <div className="flex flex-wrap items-center gap-1 border-l border-neutral-200 pl-1.5 ml-1" ref={downloadRef}>
+        <div className={cn("flex items-center", hasBlocks ? "rounded-md border shadow-sm border-neutral-200" : "")}>
+          <Button variant="outline"
+            onClick={() => _onDownloadImage?.(undefined)}
+            className={cn(
+              "transition-colors bg-white hover:bg-neutral-50 text-neutral-600",
+              hasBlocks ? "border-0 shadow-none rounded-r-none border-r border-r-neutral-200 px-2 py-1.5 h-auto text-xs" : "p-1.5 rounded-md border shadow-sm text-sm border-neutral-200"
+            )}
+            title="Descargar imagen"
+          >
+            <UploadCloud className="w-4 h-4" />
+          </Button>
+
+          {hasBlocks && (
+            <div className="relative flex">
+              <Button
+                variant="outline"
+                className="rounded-l-none border-0 shadow-none px-1.5 py-1.5 h-auto bg-white text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                onClick={() => setIsDownloadOpen(!isDownloadOpen)}
+                title="Descargar por partes"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </Button>
+
+              {isDownloadOpen && (
+                <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 py-1.5 animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3 py-1.5 border-b border-neutral-100 mb-1">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Descargar Partes</span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto w-full flex flex-col">
+                    {Array.from({ length: numBlocks }).map((_, i) => {
+                      const s = `p${i + 1}`;
+                      const start = i * 50 + 1;
+                      const end = (i + 1) * 50;
+                      const label = `${start}-${end}`;
+
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setIsDownloadOpen(false);
+                            _onDownloadImage?.(s);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-neutral-50 text-neutral-700 flex items-center justify-between"
+                        >
+                          <span className="font-mono">Rango {label}</span>
+                          <UploadCloud className="w-3 h-3 text-neutral-400" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1.5 copy-button-ignore">
       {onExpand && (
@@ -214,17 +291,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         </Button>
       )}
 
-      {_onDownloadImage && (
-        <div className="flex flex-wrap items-center gap-1 border-l border-neutral-200 pl-1.5 ml-1">
-          <Button variant="outline"
-            onClick={() => _onDownloadImage(undefined)}
-            className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
-            title="Descargar imagen"
-          >
-            <UploadCloud className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {_onDownloadImage && renderDownloadButtons()}
     </div>
   );
 };

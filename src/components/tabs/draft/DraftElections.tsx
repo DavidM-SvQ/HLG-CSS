@@ -357,8 +357,8 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                   // BYPASS VIRTUALIZER PARA LA CAPTURA DE IMAGEN
                   (() => {
                     let itemsToRender = draftSortedData;
-                    if (typeof isDraftTableCopyingState === 'string' && isDraftTableCopyingState.startsWith('p')) {
-                      itemsToRender = draftSortedData.slice((parseInt(isDraftTableCopyingState.substring(1)) - 1) * 50, parseInt(isDraftTableCopyingState.substring(1)) * 50);
+                    if (typeof isDraftTableCopying === 'string' && isDraftTableCopying.startsWith('p')) {
+                      itemsToRender = draftSortedData.slice((parseInt(isDraftTableCopying.substring(1)) - 1) * 50, parseInt(isDraftTableCopying.substring(1)) * 50);
                     }
                     return itemsToRender.map((row, idx) => {
                       const ciclista = getVal(row, "Ciclista") || "";

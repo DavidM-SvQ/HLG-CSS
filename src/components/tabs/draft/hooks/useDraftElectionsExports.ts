@@ -24,7 +24,6 @@ export function useDraftElectionsExports(draftTableRef: React.RefObject<HTMLDivE
       await copyDraftTableImage({
         fileName: 'export.png',
         scale: 2,
-        width: container.scrollWidth,
         style: { overflow: 'visible' },
         onBeforeCapture: (el) => prepareTableForCopy(el, subset),
         onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
@@ -35,17 +34,24 @@ export function useDraftElectionsExports(draftTableRef: React.RefObject<HTMLDivE
   };
   
   const handleDownloadDraftTableImage = async (subset?: string) => {
+    setIsDraftTableCopying(subset || 'full');
     const container = draftTableRef?.current;
-    if (!container) return;
+    if (!container) {
+      setIsDraftTableCopying(false);
+      return;
+    }
     const originalClass = container.className;
-    await downloadDraftTableImage({
-      fileName: `draft-elecciones${subset ? `-${subset}` : ''}.png`,
-      scale: 2,
-      width: container.scrollWidth,
-      style: { overflow: 'visible' },
-      onBeforeCapture: (el) => prepareTableForCopy(el, subset),
-      onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
-    });
+    try {
+      await downloadDraftTableImage({
+        fileName: `draft-elecciones${subset ? `-${subset}` : ''}.png`,
+        scale: 2,
+        style: { overflow: 'visible' },
+        onBeforeCapture: (el) => prepareTableForCopy(el, subset),
+        onAfterCapture: (el) => resetTableAfterCopy(el, originalClass),
+      });
+    } finally {
+      setIsDraftTableCopying(false);
+    }
   };
 
   return {
