@@ -16,6 +16,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
     display: node.style.display,
     width: node.style.width,
     minWidth: node.style.minWidth,
+    maxWidth: node.style.maxWidth,
     paddingBottom: node.style.paddingBottom,
   }));
   
@@ -23,6 +24,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
     node,
     width: node.style.width,
     minWidth: node.style.minWidth,
+    maxWidth: node.style.maxWidth,
   }));
   
   const originalCellStyles = cells.map((node) => ({
@@ -42,11 +44,13 @@ export const expandNodeForCapture = (element: HTMLElement) => {
     node.style.setProperty('overflow-y', 'visible', 'important');
     node.style.setProperty('overflow-x', 'visible', 'important');
     node.style.setProperty('overflow', 'visible', 'important');
+    node.style.setProperty('max-width', 'none', 'important');
   });
   
   tables.forEach((node) => {
     node.style.setProperty('width', 'max-content', 'important');
     node.style.setProperty('min-width', 'max-content', 'important');
+    node.style.setProperty('max-width', 'none', 'important');
   });
   
   cells.forEach((node) => {
@@ -60,12 +64,21 @@ export const expandNodeForCapture = (element: HTMLElement) => {
 
   const isChart = element.querySelector('.recharts-wrapper') !== null;
   
+  let maxDescendantScrollWidth = 0;
+  const allDescendants = Array.from(element.querySelectorAll<HTMLElement>('*'));
+  allDescendants.forEach(child => {
+    if (child.scrollWidth > maxDescendantScrollWidth) {
+      maxDescendantScrollWidth = child.scrollWidth;
+    }
+  });
+
   // To avoid huge whitespace on table exports, we can shrink-wrap it to max-content
   element.style.setProperty('display', 'inline-block', 'important');
   element.style.setProperty('width', 'max-content', 'important');
   element.style.setProperty('min-width', 'max-content', 'important');
+  element.style.setProperty('max-width', 'none', 'important');
   
-  let targetWidth = element.scrollWidth;
+  let targetWidth = Math.max(element.scrollWidth, maxDescendantScrollWidth);
 
   // If it is a chart and it collapsed, or we just want charts to be wide:
   if (isChart && targetWidth < 800) {
@@ -73,7 +86,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
     element.style.setProperty('display', 'block', 'important');
     element.style.setProperty('width', '100%', 'important');
     element.style.setProperty('min-width', '100%', 'important');
-    const fullScrollWidth = element.scrollWidth;
+    const fullScrollWidth = Math.max(element.scrollWidth, maxDescendantScrollWidth);
     targetWidth = Math.max(fullScrollWidth, 800);
   }
 
@@ -93,11 +106,13 @@ export const expandNodeForCapture = (element: HTMLElement) => {
       styleObj.node.style.display = styleObj.display;
       styleObj.node.style.width = styleObj.width;
       styleObj.node.style.minWidth = styleObj.minWidth;
+      styleObj.node.style.maxWidth = styleObj.maxWidth;
       styleObj.node.style.paddingBottom = styleObj.paddingBottom;
     });
     originalTableStyles.forEach((styleObj) => {
       styleObj.node.style.width = styleObj.width;
       styleObj.node.style.minWidth = styleObj.minWidth;
+      styleObj.node.style.maxWidth = styleObj.maxWidth;
     });
     originalCellStyles.forEach((styleObj) => {
        styleObj.node.style.whiteSpace = styleObj.whiteSpace;
