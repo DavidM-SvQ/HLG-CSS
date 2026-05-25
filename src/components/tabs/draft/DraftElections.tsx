@@ -154,7 +154,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
               <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftRoundFilterOpen && "rotate-180")} />
             </Button>
           } />
-          <PopoverContent className="w-56 p-0 rounded-xl shadow-xl z-50 py-2">
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-xs sm:w-56 p-0 rounded-xl shadow-xl z-50 py-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
               {draftRoundFilter.length > 0 && (
@@ -182,22 +182,26 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
       </div>
 
       <div className="relative">
-        <Button variant="outline"
-          onClick={() => {
-            setIsDraftTeamFilterOpen(!isDraftTeamFilterOpen);
+        <Popover open={isDraftTeamFilterOpen} onOpenChange={isOpen => {
+          if (isOpen) {
+            setIsDraftTeamFilterOpen(true);
             setIsDraftRoundFilterOpen(false);
             setIsDraftStatsFilterOpen(false);
-          }}
-          className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[160px] justify-between cursor-pointer"
-        >
-          <span className="text-neutral-700">
-            {draftTeamFilter.length === 0 ? "Todos los equipos" : `${draftTeamFilter.length} equipos`}
-          </span>
-          <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftTeamFilterOpen && "rotate-180")} />
-        </Button>
-
-        {isDraftTeamFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-sm bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+          } else {
+            setIsDraftTeamFilterOpen(false);
+          }
+        }}>
+          <PopoverTrigger render={
+            <Button variant="outline"
+              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[160px] justify-between cursor-pointer"
+            >
+              <span className="text-neutral-700">
+                {draftTeamFilter.length === 0 ? "Todos los equipos" : `${draftTeamFilter.length} equipos`}
+              </span>
+              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftTeamFilterOpen && "rotate-180")} />
+            </Button>
+          } />
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-sm sm:w-64 p-0 rounded-xl shadow-xl z-50 py-2">
             <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Equipos</span>
               {draftTeamFilter.length > 0 && (
@@ -220,26 +224,31 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                   </label>
                 ))}
             </div>
-          </div>
-        )}
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="relative">
-        <Button variant="outline"
-          onClick={() => {
-            setIsDraftStatsFilterOpen(!isDraftStatsFilterOpen);
+        <Popover open={isDraftStatsFilterOpen} onOpenChange={isOpen => {
+          if (isOpen) {
+            setIsDraftStatsFilterOpen(true);
             setIsDraftTeamFilterOpen(false);
             setIsDraftRoundFilterOpen(false);
-          }}
-          className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
-        >
-          <span className="text-neutral-700">
-            {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") ? "Est. activas" : "Estadísticas"}
-          </span>
-          <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
-        </Button>
-        {isDraftStatsFilterOpen && (
-          <div className="absolute top-full right-0 mt-1 w-max max-w-[90vw] sm:max-w-md border border-neutral-200 rounded-xl shadow-xl z-50 p-4 animate-in fade-in slide-in-from-top-2 bg-white origin-top-right">
+          } else {
+            setIsDraftStatsFilterOpen(false);
+          }
+        }}>
+          <PopoverTrigger render={
+            <Button variant="outline"
+              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
+            >
+              <span className="text-neutral-700">
+                {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") ? "Est. activas" : "Estadísticas"}
+              </span>
+              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftStatsFilterOpen && "rotate-180")} />
+            </Button>
+          } />
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96 p-4 rounded-xl shadow-xl z-50">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-3">
               <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Filtros de Estadísticas</span>
               {Object.values(localDraftStatsFilters).some((v) => v !== undefined && String(v) !== "") && (
@@ -257,16 +266,16 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
               ].map((stat) => (
                 <div key={stat.key} className="space-y-1">
                   <label className="text-[10px] font-bold text-neutral-500 uppercase">{stat.label}</label>
-                  <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Min" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
-                    <span className="text-neutral-400">-</span>
-                    <input type="number" placeholder="Max" className="w-full px-2 py-1 text-xs border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                  <div className="flex items-center gap-1.5">
+                    <input type="number" placeholder="Min" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                    <span className="text-neutral-400 shrink-0">-</span>
+                    <input type="number" placeholder="Max" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

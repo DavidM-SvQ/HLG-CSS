@@ -41,7 +41,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(({
       ref={innerRef}
     >
       <div className="absolute -right-8 -top-8 w-32 h-32 bg-blue-100/40 rounded-full blur-[40px] pointer-events-none group-hover:bg-blue-200/40 transition-colors duration-700" />
-      <div className={cn("px-6 py-6 border-b border-blue-100/50 bg-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full relative z-10", headerClassName)}>
+      <div className={cn("px-6 py-6 border-b border-blue-100/50 bg-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full relative z-30", headerClassName)}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 min-w-0 pr-4">
           {icon && (
             <div className="p-3 bg-blue-500/10 text-blue-700 rounded-2xl shrink-0 backdrop-blur-md self-start sm:self-center shadow-sm [&>svg]:w-6 [&>svg]:h-6">
