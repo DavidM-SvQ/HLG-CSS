@@ -1,6 +1,7 @@
 import React from 'react';
 
 export const normalizedKeyCache: Record<string, string> = {};
+const rowLayoutCache: Record<string, Record<string, string>> = {};
 
 export const normalizeStr = (s: string) => {
   if (!s) return "";
@@ -18,10 +19,19 @@ export const normalizeStr = (s: string) => {
 export const getVal = (row: any, key: string) => {
   if (!row) return "";
   if (row[key] !== undefined) return row[key];
+  
+  // Very fast cache avoiding repeated Object.keys iterations on identical row layouts
+  const cacheKey = Object.keys(row).join('|');
+  if (!rowLayoutCache[cacheKey]) {
+    const map: Record<string, string> = {};
+    Object.keys(row).forEach(k => {
+      map[normalizeStr(k)] = k;
+    });
+    rowLayoutCache[cacheKey] = map;
+  }
+  
   const normalizedKey = normalizeStr(key);
-  const actualKey = Object.keys(row).find(
-    (k) => normalizeStr(k) === normalizedKey,
-  );
+  const actualKey = rowLayoutCache[cacheKey][normalizedKey];
   return actualKey ? row[actualKey] : "";
 };
 

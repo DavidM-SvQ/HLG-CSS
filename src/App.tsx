@@ -133,7 +133,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuthReady]);
+  }, [isAuthReady, isSupabaseConfigured, initializeGlobalFiles, fetchGlobalFile]);
 
   // Login handler removed (handled by AuthProvider)
 

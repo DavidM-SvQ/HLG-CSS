@@ -37,22 +37,29 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(({
 
   return (
     <div 
-      className={cn("bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col relative", className)} 
+      className={cn("bg-gradient-to-br from-blue-50/80 to-white/90 backdrop-blur-xl border border-blue-100/60 rounded-[28px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col relative group transition-all duration-500", className)} 
       ref={innerRef}
     >
-      <div className={cn("px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full", headerClassName)}>
-        <div className="flex-1 min-w-0 pr-4">
-          <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 min-w-0">
-            {icon && <span className="flex-shrink-0 text-blue-600 [&>svg]:w-5 [&>svg]:h-5">{icon}</span>}
-            <span className="truncate">{title}</span>
-          </h3>
-          {subtitle && (
-            <p className="text-xs text-neutral-500 mt-0.5 truncate">
-              {subtitle}
-            </p>
+      <div className="absolute -right-8 -top-8 w-32 h-32 bg-blue-100/40 rounded-full blur-[40px] pointer-events-none group-hover:bg-blue-200/40 transition-colors duration-700" />
+      <div className={cn("px-6 py-6 border-b border-blue-100/50 bg-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full relative z-10", headerClassName)}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 min-w-0 pr-4">
+          {icon && (
+            <div className="p-3 bg-blue-500/10 text-blue-700 rounded-2xl shrink-0 backdrop-blur-md self-start sm:self-center shadow-sm [&>svg]:w-6 [&>svg]:h-6">
+              {icon}
+            </div>
           )}
+          <div>
+            <h3 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center min-w-0">
+              <span className="truncate">{title}</span>
+            </h3>
+            {subtitle && (
+              <p className="text-sm text-neutral-600 mt-1 truncate">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap relative z-10">
           {headerExtra && (
             <div className="flex items-center gap-2">
               {headerExtra}
@@ -65,7 +72,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(({
           />
         </div>
       </div>
-      <div className={cn("w-full relative", bodyClassName)}>
+      <div className={cn("w-full relative bg-white/60 z-10", bodyClassName)}>
         {children}
       </div>
     </div>

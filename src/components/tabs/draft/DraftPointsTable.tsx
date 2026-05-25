@@ -7,6 +7,7 @@ import { getVal, getCategoryColorStyle } from '../../../lib/data-processing';
 import { useDraftStats } from './hooks/useDraftStats';
 import { Button } from "../../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
+import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 
 interface DraftPointsTableProps {
   files: AppState;
@@ -167,6 +168,109 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
     }
   });
 
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const renderRow = (teamName: any, index: number) => {
+    const teamTotal = rounds.reduce((sum, r) => sum + (teamRoundData[teamName][r] || 0), 0);
+    const order = teamOrderMap[teamName] || "-";
+    const player = teamToPlayerMap[teamName];
+
+    return (
+      <tr key={teamName} className="hover:bg-blue-50/30 transition-colors group">
+        <td className="px-4 py-3 lg:py-1.5 font-mono tabular-nums text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "40px", minWidth: "40px" }}>
+          <div className="flex items-center justify-center">
+            <span className="w-4 inline-block text-center">{order}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3 lg:py-1.5 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[40px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "110px", maxWidth: "110px", minWidth: "110px" }} title={teamName}>
+          {teamName}
+        </td>
+        {rounds.map((r, i) => {
+          const pts = teamRoundData[teamName][r] || 0;
+          const isZero = pts === 0;
+          const stats = roundStats[r];
+          const isMax = pts > 0 && pts === stats?.max;
+          const isMin = pts > 0 && pts === stats?.min;
+
+          let cellStyle = {};
+          if (!isZero && stats && stats.max > stats.min) {
+            const ratio = (pts - stats.min) / (stats.max - stats.min);
+            if (ratio > 0.5) {
+              cellStyle = { backgroundColor: `rgba(34, 197, 94, ${(ratio - 0.5) * 0.4})` };
+            } else {
+              cellStyle = { backgroundColor: `rgba(239, 68, 68, ${(0.5 - ratio) * 0.2})` };
+            }
+          }
+
+          if (isMax) cellStyle = { backgroundColor: "#dcfce7", fontWeight: "bold", color: "#166534", border: "1px solid #86efac" };
+          if (isMin) cellStyle = { backgroundColor: "#fee2e2", color: "#991b1b" };
+
+          const cyclistRow = teamRoundCyclist[teamName][r];
+          const cyclistName = cyclistRow ? getVal(cyclistRow, "Ciclista") : null;
+          const eqComp = cyclistRow ? getVal(cyclistRow, "EqComp") : null;
+          const wins = cyclistName ? cyclistWins[cyclistName as string] || 0 : 0;
+          const meta = cyclistName && cyclistMetadata ? (cyclistMetadata[cyclistName as string] || {}) : {};
+          const ppc = meta.carrerasDisputadas > 0 ? pts / meta.carrerasDisputadas : 0;
+          const ppdc = meta.diasCompeticion > 0 ? pts / meta.diasCompeticion : 0;
+
+          return (
+            <td
+              key={r}
+              className={cn(
+                "px-0 lg:px-0.5 py-1 lg:py-1.5 text-center border-l border-neutral-100 font-mono tracking-tighter tabular-nums",
+                isZero ? "text-red-400" : "text-neutral-900",
+                (i + 1) % 5 === 0 ? "border-r border-r-neutral-200" : ""
+              )}
+              style={cellStyle}
+            >
+              {cyclistName ? (
+                <Tooltip>
+                  <TooltipTrigger className="w-full h-full flex items-center justify-center cursor-default min-h-[20px]">
+                    {pts > 0 ? pts : "0"}
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-left bg-neutral-900 text-white border-neutral-800 shadow-xl max-w-[280px]">
+                    <div className="flex flex-col gap-1.5 whitespace-nowrap text-xs p-1 font-sans">
+                      <div className="font-bold border-b border-neutral-700 pb-1 mb-0.5 whitespace-normal break-words">
+                        {cyclistName}
+                      </div>
+                      <div className="text-neutral-300">
+                        Equipo: <span className="text-white font-medium">{eqComp || "-"}</span>
+                      </div>
+                      <div className="text-neutral-300">
+                        Ronda: <span className="text-white font-medium">{r}</span> | Orden: <span className="text-white font-medium">{order || "-"}</span>
+                      </div>
+                      <div className="text-neutral-300">
+                        Victorias: <span className="text-white font-medium">{wins}</span>
+                      </div>
+                      <div className="text-neutral-300">
+                        Puntos Totales: <span className="text-blue-400 font-bold">{pts}</span>
+                      </div>
+                      {(ppc > 0 || ppdc > 0) && (
+                        <div className="flex items-center gap-3 mt-1 pt-1 border-t border-neutral-700/50">
+                          <span className="text-neutral-400">
+                            P/C: <span className="text-neutral-200 font-mono tabular-nums">{ppc.toFixed(1)}</span>
+                          </span>
+                          <span className="text-neutral-400">
+                            P/D: <span className="text-neutral-200 font-mono tabular-nums">{ppdc.toFixed(1)}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <span className="cursor-default text-neutral-300 min-h-[20px] flex items-center justify-center">-</span>
+              )}
+            </td>
+          );
+        })}
+        <td className="px-4 py-3 lg:py-1.5 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors font-mono tabular-nums tracking-tighter">
+          {teamTotal}
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <motion.div
       layout
@@ -185,7 +289,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
         </Button>
       )}
 
-      <div className={cn("table-responsive-wrapper min-h-[300px] w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-auto max-h-[400px]")}>
+      <div ref={scrollRef} className={cn("table-responsive-wrapper min-h-[300px] w-full", isDraftDatosTableExpanded ? "flex-1 min-h-0 overflow-auto" : "overflow-auto max-h-[400px]")}>
         <table className="w-full text-[9px] lg:text-[10px] text-left border-collapse min-w-[1000px]">
           <thead className="text-[9px] lg:text-[10px] text-neutral-500 uppercase bg-neutral-50/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b border-neutral-200">
             <tr>
@@ -251,108 +355,14 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100 relative">
-            {sortedTeams.map((teamName, index) => {
-              const teamTotal = rounds.reduce((sum, r) => sum + (teamRoundData[teamName][r] || 0), 0);
-              const order = teamOrderMap[teamName] || "-";
-              const player = teamToPlayerMap[teamName];
-
-              return (
-                <tr key={teamName} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-4 py-3 lg:py-1.5 font-mono tabular-nums text-neutral-400 sticky left-0 z-20 bg-white group-hover:bg-blue-50/50" style={{ width: "40px", minWidth: "40px" }}>
-                    <div className="flex items-center justify-center">
-                      <span className="w-4 inline-block text-center">{order}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 lg:py-1.5 font-bold text-neutral-900 border-l border-neutral-100 truncate sticky left-[40px] z-20 bg-white group-hover:bg-blue-50/50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]" style={{ width: "110px", maxWidth: "110px", minWidth: "110px" }} title={teamName}>
-                    {teamName}
-                  </td>
-                  {rounds.map((r, i) => {
-                    const pts = teamRoundData[teamName][r] || 0;
-                    const isZero = pts === 0;
-                    const stats = roundStats[r];
-                    const isMax = pts > 0 && pts === stats?.max;
-                    const isMin = pts > 0 && pts === stats?.min;
-
-                    let cellStyle = {};
-                    if (!isZero && stats && stats.max > stats.min) {
-                      const ratio = (pts - stats.min) / (stats.max - stats.min);
-                      if (ratio > 0.5) {
-                        cellStyle = { backgroundColor: `rgba(34, 197, 94, ${(ratio - 0.5) * 0.4})` };
-                      } else {
-                        cellStyle = { backgroundColor: `rgba(239, 68, 68, ${(0.5 - ratio) * 0.2})` };
-                      }
-                    }
-
-                    if (isMax) cellStyle = { backgroundColor: "#dcfce7", fontWeight: "bold", color: "#166534", border: "1px solid #86efac" };
-                    if (isMin) cellStyle = { backgroundColor: "#fee2e2", color: "#991b1b" };
-
-                    const cyclistRow = teamRoundCyclist[teamName][r];
-                    const cyclistName = cyclistRow ? getVal(cyclistRow, "Ciclista") : null;
-                    const eqComp = cyclistRow ? getVal(cyclistRow, "EqComp") : null;
-                    const wins = cyclistName ? cyclistWins[cyclistName as string] || 0 : 0;
-                    const meta = cyclistName && cyclistMetadata ? (cyclistMetadata[cyclistName as string] || {}) : {};
-                    const ppc = meta.carrerasDisputadas > 0 ? pts / meta.carrerasDisputadas : 0;
-                    const ppdc = meta.diasCompeticion > 0 ? pts / meta.diasCompeticion : 0;
-
-                    return (
-                      <td
-                        key={r}
-                        className={cn(
-                          "px-0 lg:px-0.5 py-1 lg:py-1.5 text-center border-l border-neutral-100 font-mono tracking-tighter tabular-nums",
-                          isZero ? "text-red-400" : "text-neutral-900",
-                          (i + 1) % 5 === 0 ? "border-r border-r-neutral-200" : ""
-                        )}
-                        style={cellStyle}
-                      >
-                        {cyclistName ? (
-                          <Tooltip>
-                            <TooltipTrigger className="w-full h-full flex items-center justify-center cursor-default min-h-[20px]">
-                              {pts > 0 ? pts : "0"}
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-left bg-neutral-900 text-white border-neutral-800 shadow-xl max-w-[280px]">
-                              <div className="flex flex-col gap-1.5 whitespace-nowrap text-xs p-1 font-sans">
-                                <div className="font-bold border-b border-neutral-700 pb-1 mb-0.5 whitespace-normal break-words">
-                                  {cyclistName}
-                                </div>
-                                <div className="text-neutral-300">
-                                  Equipo: <span className="text-white font-medium">{eqComp || "-"}</span>
-                                </div>
-                                <div className="text-neutral-300">
-                                  Ronda: <span className="text-white font-medium">{r}</span> | Orden: <span className="text-white font-medium">{order || "-"}</span>
-                                </div>
-                                <div className="text-neutral-300">
-                                  Victorias: <span className="text-white font-medium">{wins}</span>
-                                </div>
-                                <div className="text-neutral-300">
-                                  Puntos Totales: <span className="text-blue-400 font-bold">{pts}</span>
-                                </div>
-                                {(ppc > 0 || ppdc > 0) && (
-                                  <div className="flex items-center gap-3 mt-1 pt-1 border-t border-neutral-700/50">
-                                    <span className="text-neutral-400">
-                                      P/C: <span className="text-neutral-200 font-mono tabular-nums">{ppc.toFixed(1)}</span>
-                                    </span>
-                                    <span className="text-neutral-400">
-                                      P/D: <span className="text-neutral-200 font-mono tabular-nums">{ppdc.toFixed(1)}</span>
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          <span className="cursor-default text-neutral-300 min-h-[20px] flex items-center justify-center">-</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="px-4 py-3 lg:py-1.5 text-right font-bold text-blue-700 bg-blue-50/90 border-l border-blue-100 sticky right-0 z-20 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] group-hover:bg-blue-100/80 transition-colors font-mono tabular-nums tracking-tighter">
-                    {teamTotal}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+          <VirtualizedTableBody
+            scrollElementRef={scrollRef}
+            items={sortedTeams}
+            renderRow={renderRow}
+            colSpan={3 + rounds.length}
+            estimateSize={36}
+            className="divide-y divide-neutral-100 relative"
+          />
         </table>
       </div>
     </motion.div>

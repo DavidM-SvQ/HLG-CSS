@@ -3,6 +3,7 @@ import { AdminNav } from "../AdminNav";
 import { TableSkeleton } from "../ui/Skeleton";
 
 const AdminDatosTab = React.lazy(() => import("../tabs/admin/AdminDatosTab").then(m => ({ default: m.AdminDatosTab })));
+const AdminDatosV2Tab = React.lazy(() => import("../tabs/admin/AdminDatosV2Tab").then(m => ({ default: m.AdminDatosV2Tab })));
 const GestionStartlists = React.lazy(() => import("../tabs/admin/GestionStartlists").then(m => ({ default: m.GestionStartlists })));
 const RaceView = React.lazy(() => import("../tabs/RaceView").then(m => ({ default: m.RaceView })));
 const MonthlyReportView = React.lazy(() => import("../tabs/MonthlyReportView").then(m => ({ default: m.MonthlyReportView })));
@@ -13,6 +14,7 @@ const AdminAnalyticsView = React.lazy(() => import("../tabs/AdminAnalyticsView")
 export function AdminLayout() {
   const [adminTab, setAdminTab] = useState<
     | "datos"
+    | "datos-v2"
     | "gestion-startlists"
     | "reporte-carrera"
     | "reporte-mes"
@@ -28,6 +30,12 @@ export function AdminLayout() {
       {adminTab === "datos" && (
         <Suspense fallback={<div className="p-8"><TableSkeleton rows={8} /></div>}>
           <AdminDatosTab />
+        </Suspense>
+      )}
+
+      {adminTab === "datos-v2" && (
+        <Suspense fallback={<div className="p-8"><TableSkeleton rows={8} /></div>}>
+          <AdminDatosV2Tab />
         </Suspense>
       )}
 

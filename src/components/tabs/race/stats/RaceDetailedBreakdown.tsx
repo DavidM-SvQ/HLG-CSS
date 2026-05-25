@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Users, X, CheckCircle2, Copy } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
@@ -15,6 +15,58 @@ export const RaceDetailedBreakdown = ({
   onDownloadImage,
   tableRef,
 }: any) => {
+
+  const processedTeams = useMemo(() => {
+    const valid = raceTeams
+      .map((team: any, originalIndex: number) => {
+        let weight = 4; // Headers spacing
+
+        const cyclistMap = new Map<string, { ronda: string; total: number; concepts: any[]; }>();
+        team?.details?.forEach((d: any) => {
+          if (!cyclistMap.has(d.ciclista)) {
+            cyclistMap.set(d.ciclista, { ronda: d.ronda, total: 0, concepts: [] });
+          }
+          const c = cyclistMap.get(d.ciclista)!;
+          c.total += d.puntosObtenidos;
+          if (d.puntosObtenidos > 0) {
+            c.concepts.push(d);
+          }
+        });
+
+        const sortedCyclists = Array.from(cyclistMap.entries())
+          .filter(([_, data]) => team.jugador !== "No draft" || data.total > 0)
+          .sort((a, b) => b[1].total - a[1].total);
+
+        sortedCyclists.forEach(([_, data]) => {
+          weight += 2; // Cyclist header
+          weight += Math.max(1, data.concepts.length); // Rows
+        });
+
+        return { team, originalIndex, sortedCyclists, weight };
+      })
+      .filter((t: any) => t.sortedCyclists.length > 0 || t.team.totalPoints > 0);
+
+      const totalWeight = valid.reduce((acc: number, cur: any) => acc + cur.weight, 0);
+      const numBlocks = valid.length > 18 ? 3 : (valid.length > 8 ? 2 : 1);
+      const targetWeight = totalWeight / numBlocks;
+
+      let currentBlock = 1;
+      let currentWeight = 0;
+
+      valid.forEach((t: any) => {
+        if (currentBlock < numBlocks && currentWeight + (t.weight / 2) > targetWeight) {
+          currentBlock++;
+          currentWeight = 0;
+        }
+        t.block = currentBlock;
+        currentWeight += t.weight;
+      });
+
+      return { valid, numBlocks };
+  }, [raceTeams]);
+
+  const { valid, numBlocks } = processedTeams;
+
   return (
     <ReportCard
       title="Desglose por Equipo"
@@ -33,55 +85,28 @@ export const RaceDetailedBreakdown = ({
         onCopyImage: () => onCopyImage("full"),
         isImageCopying: isImageCopying === "full",
         onDownloadImage: onDownloadImage,
-        customImageButtons: raceTeams.length > 12 ? (
+        customImageButtons: numBlocks > 1 ? (
           <div className="flex border-l border-neutral-200 pl-2 gap-1.5 ml-1">
-            <Button variant="outline"
-              onClick={() => onCopyImage("first")}
-              disabled={!!isImageCopying}
-              className={cn(
-                "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                isImageCopying === "first"
-                  ? "bg-green-50 text-green-700 border-green-200"
-                  : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                isImageCopying && isImageCopying !== "first" && "opacity-50 cursor-not-allowed"
-              )}
-              title="Copiar equipos 1-12"
-            >
-              {isImageCopying === "first" ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              1-12
-            </Button>
-            <Button variant="outline"
-              onClick={() => onCopyImage("second")}
-              disabled={!!isImageCopying}
-              className={cn(
-                "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                isImageCopying === "second"
-                  ? "bg-green-50 text-green-700 border-green-200"
-                  : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                isImageCopying && isImageCopying !== "second" && "opacity-50 cursor-not-allowed"
-              )}
-              title="Copiar equipos 13-24"
-            >
-              {isImageCopying === "second" ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              13-24
-            </Button>
-            {raceTeams.length > 24 && (
-              <Button variant="outline"
-                onClick={() => onCopyImage("third")}
-                disabled={!!isImageCopying}
-                className={cn(
-                  "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                  isImageCopying === "third"
-                    ? "bg-green-50 text-green-700 border-green-200"
-                    : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                  isImageCopying && isImageCopying !== "third" && "opacity-50 cursor-not-allowed"
-                )}
-                title="Copiar equipos 25+"
-              >
-                {isImageCopying === "third" ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                25+
-              </Button>
-            )}
+            {Array.from({ length: numBlocks }).map((_, idx) => {
+              const blockId = String(idx + 1);
+              return (
+                <Button key={blockId} variant="outline"
+                  onClick={() => onCopyImage(blockId)}
+                  disabled={!!isImageCopying}
+                  className={cn(
+                    "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
+                    isImageCopying === blockId
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                    isImageCopying && isImageCopying !== blockId && "opacity-50 cursor-not-allowed"
+                  )}
+                  title={`Copiar parte ${blockId}`}
+                >
+                  {isImageCopying === blockId ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  Pte {blockId}
+                </Button>
+              )
+            })}
           </div>
         ) : null
       }}
@@ -95,30 +120,13 @@ export const RaceDetailedBreakdown = ({
         )}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 min-w-[800px] p-2 crosshair-container">
-          {raceTeams.filter((team: any) => team.totalPoints > 0 || team.jugador !== "No draft").map((team: any, teamIdx: number) => {
-            const cyclistMap = new Map<string, { ronda: string; total: number; concepts: any[]; }>();
-            team?.details?.forEach((d: any) => {
-              if (!cyclistMap.has(d.ciclista)) {
-                cyclistMap.set(d.ciclista, { ronda: d.ronda, total: 0, concepts: [] });
-              }
-              const c = cyclistMap.get(d.ciclista)!;
-              c.total += d.puntosObtenidos;
-              if (d.puntosObtenidos > 0) {
-                c.concepts.push(d);
-              }
-            });
-
-            const sortedCyclists = Array.from(cyclistMap.entries())
-              .filter(([_, data]) => team.jugador !== "No draft" || data.total > 0)
-              .sort((a, b) => b[1].total - a[1].total);
-
-            if (sortedCyclists.length === 0) return null;
-
+          {valid.map(({ team, originalIndex, sortedCyclists, block }: any) => {
             return (
               <div 
                 key={team.jugador} 
                 data-team-card 
-                data-team-index={teamIdx + 1}
+                data-team-index={originalIndex + 1}
+                data-block={block}
                 className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden flex flex-col h-full"
               >
                 {/* Team Header */}
@@ -135,7 +143,7 @@ export const RaceDetailedBreakdown = ({
 
                 {/* Cyclists List */}
                 <div className="p-0 flex-1 divide-y divide-neutral-100">
-                  {sortedCyclists.map(([ciclista, data]) => (
+                  {sortedCyclists.map(([ciclista, data]: any) => (
                     <div key={ciclista} className="px-4 py-3 hover:bg-neutral-50 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                         <div className="font-semibold text-neutral-800 text-sm">

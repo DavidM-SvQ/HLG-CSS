@@ -40,7 +40,7 @@ export const RaceStats = ({
   const [isRetiredExpanded, setIsRetiredExpanded] = useState(false);
   const [isDetailedBreakdownExpanded, setIsDetailedBreakdownExpanded] = useState(false);
 
-  const [isDetailedBreakdownCopying, setIsDetailedBreakdownCopying] = useState<"full" | "first" | "second" | "third" | null>(null);
+  const [isDetailedBreakdownCopying, setIsDetailedBreakdownCopying] = useState<string | null>(null);
   const [isDetailedBreakdownTextCopying, setIsDetailedBreakdownTextCopying] = useState(false);
 
   const cyclistsTableRef = useRef<HTMLDivElement>(null);
@@ -73,7 +73,7 @@ export const RaceStats = ({
   const handleCopyRetiredImage = () => copyRetired({ ...getRetiredOptions("abandonos.png") });
   const handleDownloadRetiredImage = () => downloadRetired({ ...getRetiredOptions(`abandonos-${selectedRace.replace(/\s+/g, "-").toLowerCase()}.png`) });
 
-  const handleCopyDetailedBreakdownImage = async (subset?: "full" | "first" | "second" | "third") => {
+  const handleCopyDetailedBreakdownImage = async (subset?: string) => {
     setIsDetailedBreakdownCopying(subset || "full");
     try {
       await copyDetailedBreakdown({
@@ -82,12 +82,11 @@ export const RaceStats = ({
         style: { textRendering: "optimizeLegibility" },
         onBeforeCapture: (container) => {
           const cards = container.querySelectorAll("[data-team-card]");
-          if (subset) {
+          if (subset && subset !== "full") {
+            const activeBlock = String(subset);
             cards.forEach((card) => {
-              const num = parseInt(card.getAttribute("data-team-index") || "0");
-              if (subset === "first" && num > 12) card.classList.add("hidden");
-              if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
-              if (subset === "third" && num <= 24) card.classList.add("hidden");
+              const block = card.getAttribute("data-block") || "1";
+              if (block !== activeBlock) card.classList.add("hidden");
             });
           }
         },
@@ -103,20 +102,19 @@ export const RaceStats = ({
     }
   };
 
-  const handleDownloadDetailedBreakdownImage = async (subset?: "full" | "first" | "second" | "third") => {
+  const handleDownloadDetailedBreakdownImage = async (subset?: string) => {
     try {
       await downloadDetailedBreakdown({
-        fileName: `desglose-equipos-${selectedRace.replace(/\s+/g, "-").toLowerCase()}${subset ? `-${subset}` : ""}.png`,
+        fileName: `desglose-equipos-${selectedRace.replace(/\s+/g, "-").toLowerCase()}${subset && subset !== "full" ? `-pte${subset}` : ""}.png`,
         scale: 3,
         style: { textRendering: "optimizeLegibility" },
         onBeforeCapture: (container) => {
           const cards = container.querySelectorAll("[data-team-card]");
-          if (subset) {
+          if (subset && subset !== "full") {
+            const activeBlock = String(subset);
             cards.forEach((card) => {
-              const num = parseInt(card.getAttribute("data-team-index") || "0");
-              if (subset === "first" && num > 12) card.classList.add("hidden");
-              if (subset === "second" && (num <= 12 || num > 24)) card.classList.add("hidden");
-              if (subset === "third" && num <= 24) card.classList.add("hidden");
+              const block = card.getAttribute("data-block") || "1";
+              if (block !== activeBlock) card.classList.add("hidden");
             });
           }
         },

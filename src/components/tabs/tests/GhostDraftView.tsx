@@ -165,24 +165,24 @@ export const GhostDraftView = ({
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-center gap-6 border-b pb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-6 bg-gradient-to-br from-indigo-50/50 to-white backdrop-blur-xl border border-indigo-100/60 p-4 rounded-2xl shadow-sm mb-6">
         {/* State Slider */}
-        <div className="flex-1 min-w-[250px] bg-white border border-neutral-200 rounded-xl p-3 shadow-sm">
-          <div className="flex justify-between items-center text-sm font-bold text-neutral-600 mb-2">
+        <div className="flex-1 min-w-[250px]">
+          <div className="flex justify-between items-center text-sm font-bold text-neutral-700 mb-3">
             <span>Evolución del Draft</span>
-            <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">Hasta Ronda {effectiveRoundLimit}</span>
+            <span className="text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full text-xs shadow-sm shadow-indigo-100">Hasta Ronda {effectiveRoundLimit}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-neutral-400 font-medium">1</span>
+          <div className="flex items-center gap-4 bg-white/60 p-3 rounded-xl border border-indigo-50 shadow-inner">
+            <span className="text-xs text-neutral-500 font-bold w-4 text-center">1</span>
             <input 
               type="range" 
               min={1} 
               max={maxAvailableRound} 
               value={effectiveRoundLimit} 
               onChange={(e) => setCurrentRoundLimit(Number(e.target.value))}
-              className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              className="flex-1 h-2 bg-indigo-200/50 rounded-lg appearance-none cursor-pointer accent-indigo-600 block w-full"
             />
-            <span className="text-xs text-neutral-400 font-medium">{maxAvailableRound}</span>
+            <span className="text-xs text-neutral-500 font-bold w-4 text-center">{maxAvailableRound}</span>
           </div>
         </div>
 
@@ -190,13 +190,13 @@ export const GhostDraftView = ({
         <Popover open={isTeamFilterOpen} onOpenChange={setIsTeamFilterOpen}>
           <PopoverTrigger render={
             <Button variant="outline"
-              className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm text-neutral-700 flex items-center gap-2 cursor-pointer max-w-[200px] truncate shadow-sm h-[64px]"
+              className="px-4 py-2 bg-white/80 border border-indigo-100 hover:border-indigo-200 hover:bg-white rounded-xl text-sm text-neutral-800 flex items-center gap-3 cursor-pointer min-w-[160px] max-w-[200px] shadow-sm h-[72px] transition-all"
             >
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Filtro</span>
-                <span>Equipos: {ghostTeamFilter.length === 0 ? "Todos" : `${ghostTeamFilter.length} sel.`}</span>
+              <div className="flex flex-col items-start gap-1 w-full overflow-hidden">
+                <span className="text-[10px] text-indigo-600/80 font-bold uppercase tracking-wider">Filtro Equipos</span>
+                <span className="font-semibold truncate w-full text-left">{ghostTeamFilter.length === 0 ? "Todos" : `${ghostTeamFilter.length} sel.`}</span>
               </div>
-              <ChevronDown className={cn("w-4 h-4 ml-auto text-neutral-400 transition-transform", isTeamFilterOpen && "rotate-180")} />
+              <ChevronDown className={cn("w-4 h-4 ml-auto text-indigo-400 transition-transform", isTeamFilterOpen && "rotate-180")} />
             </Button>
           } />
           <PopoverContent className="w-56 p-0 rounded-xl shadow-xl z-50 py-2">

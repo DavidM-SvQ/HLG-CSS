@@ -1,9 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { SeasonViewProvider } from "./season/SeasonViewProvider";
 import { SeasonHighlights } from "./season/SeasonHighlights";
-import { SeasonCyclistsTab } from "./season/SeasonCyclistsTab";
-import { SeasonWinsTab } from "./season/SeasonWinsTab";
-import { SeasonPointsTab } from "./season/SeasonPointsTab";
 import { SeasonMilestones } from "./season/SeasonMilestones";
 import { BarChart3, Trophy, Users } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -12,6 +9,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/button";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
+import { TableSkeleton } from "../ui/Skeleton";
+
+const SeasonPointsTab = React.lazy(() => import("./season/SeasonPointsTab").then(m => ({ default: m.SeasonPointsTab })));
+const SeasonWinsTab = React.lazy(() => import("./season/SeasonWinsTab").then(m => ({ default: m.SeasonWinsTab })));
+const SeasonCyclistsTab = React.lazy(() => import("./season/SeasonCyclistsTab").then(m => ({ default: m.SeasonCyclistsTab })));
 
 
 export const SeasonView = () => {
@@ -87,7 +89,9 @@ export const SeasonView = () => {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="w-full"
       >
-        <SeasonPointsTab />
+        <Suspense fallback={<TableSkeleton rows={12} />}>
+          <SeasonPointsTab />
+        </Suspense>
       </motion.div>
     )}
     {seasonSubTab === "victorias" && (
@@ -99,7 +103,9 @@ export const SeasonView = () => {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="w-full"
       >
-        <SeasonWinsTab />
+        <Suspense fallback={<TableSkeleton rows={12} />}>
+          <SeasonWinsTab />
+        </Suspense>
       </motion.div>
     )}
     {seasonSubTab === "ciclistas" && (
@@ -111,7 +117,9 @@ export const SeasonView = () => {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="w-full"
       >
-        <SeasonCyclistsTab />
+        <Suspense fallback={<TableSkeleton rows={12} />}>
+          <SeasonCyclistsTab />
+        </Suspense>
       </motion.div>
     )}
   </AnimatePresence>

@@ -1,11 +1,11 @@
 import React from 'react';
-import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker } from 'lucide-react';
+import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker, Cloud } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from "./ui/button";
 
 interface AdminNavProps {
-  adminTab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
-  setAdminTab: (tab: "datos" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas") => void;
+  adminTab: "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
+  setAdminTab: (tab: "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas") => void;
 }
 
 export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
@@ -22,6 +22,18 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <FileSpreadsheet className="w-4 h-4" />
         Datos
+      </Button>
+      <Button variant="outline"
+        onClick={() => setAdminTab("datos-v2")}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+          adminTab === "datos-v2"
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "text-neutral-600 hover:bg-neutral-100",
+        )}
+      >
+        <Cloud className="w-4 h-4" />
+        Datos v2 (Sheets)
       </Button>
       <Button variant="outline"
         onClick={() => setAdminTab("gestion-startlists")}

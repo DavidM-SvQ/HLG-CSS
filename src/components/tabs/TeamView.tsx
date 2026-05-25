@@ -1,17 +1,17 @@
 import React from "react";
 import { CheckCircle2, Copy, UploadCloud } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { useTeamData } from "./team/hooks/useTeamData";
+import { useFormattedTeams } from "./team/hooks/useFormattedTeams";
 
 import { TeamKPIs } from "./team/TeamKPIs";
 import { TeamTrophyRoom } from "./team/TeamTrophyRoom";
 import { TeamCyclistsTable } from "./team/TeamCyclistsTable";
+import { TeamSelector } from "./team/TeamSelector";
 import { Button } from "../ui/button";
 import { useUrlState } from "../../hooks/useUrlState";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
-import { getVal } from "../../lib/data-processing";
 
 export const TeamView = () => {
   const { files } = useDataStore();
@@ -26,35 +26,7 @@ export const TeamView = () => {
 
   const { ref: teamGlobalRef, isCopying: isTeamGlobalCopying, handleCopyImage, handleDownloadImage } = useTableScreenshot<HTMLDivElement>();
 
-  const formattedTeams = React.useMemo(() => {
-    if (!files || !files.elecciones || !files.elecciones.data) return [];
-
-    const teamData: Record<string, string> = {}; // teamName -> order
-    const uniquePlayers = [
-      ...new Set(
-        files.elecciones.data
-          .map((r: any) => getVal(r, "Nombre_TG")?.trim())
-          .filter(Boolean),
-      ),
-    ] as string[];
-
-    files.elecciones?.data?.forEach((row: any) => {
-      const jugador = getVal(row, "Nombre_TG")?.trim();
-      const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim() || jugador;
-      if (jugador && nombreEquipo && !teamData[nombreEquipo]) {
-        const playerIdx = uniquePlayers.indexOf(jugador);
-        const order = (playerIdx + 1).toString().padStart(2, "0");
-        teamData[nombreEquipo] = order;
-      }
-    });
-
-    return Object.entries(teamData)
-      .map(([name, order]) => ({
-        label: `${name} [#${order}]`,
-        value: name,
-      }))
-      .sort((a, b) => a.value.localeCompare(b.value));
-  }, [files]);
+  const formattedTeams = useFormattedTeams(files);
 
   const teamComputedData = useTeamData({
     selectedTeam,
@@ -68,23 +40,11 @@ export const TeamView = () => {
 
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
-      <div className="max-w-md mb-8">
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
-          Selecciona tu equipo
-        </label>
-        <Select value={selectedTeam} onValueChange={(value) => setSelectedTeam(value)}>
-          <SelectTrigger className="w-full bg-white">
-            <SelectValue placeholder="-- Seleccionar Equipo --" />
-          </SelectTrigger>
-          <SelectContent>
-            {formattedTeams.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <TeamSelector 
+        selectedTeam={selectedTeam}
+        setSelectedTeam={setSelectedTeam}
+        formattedTeams={formattedTeams}
+      />
 
       {selectedTeam && teamComputedData ? (
         <div className="space-y-4">

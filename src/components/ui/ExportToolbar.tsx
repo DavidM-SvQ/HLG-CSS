@@ -79,7 +79,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
 
   const renderImageButtons = () => {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <Button variant="outline"
           onClick={() => _onCopyImage?.(imagePageCount > 1 ? 'full' : undefined)}
           disabled={!!_isImageCopying}
@@ -95,7 +95,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         </Button>
 
         {imagePageCount > 1 && (
-          <div className="flex border-l border-neutral-200 pl-1.5 gap-1 ml-1">
+          <div className="flex flex-wrap border-l border-neutral-200 pl-1.5 gap-1 ml-1">
             {Array.from({ length: imagePageCount }, (_, i) => `p${i + 1}`).map((p) => (
               <Button variant="outline"
                 key={p}
@@ -121,7 +121,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-1.5 copy-button-ignore">
+    <div className="flex flex-wrap items-center gap-1.5 copy-button-ignore">
       {onExpand && (
         <Button variant="ghost" size="sm"
           onClick={onExpand}

@@ -579,6 +579,6 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       allRounds,
       allTeams,
     };
-  }, [selectedMonths, leaderboard, visibleRaces, raceMonths]);
+  }, [selectedMonths, leaderboard, visibleRaces, raceMonths, files.carreras.data, files.ciclistas.data, files.equipos.data, files.resultados?.data, requireSelectedMonths]);
   return { availableMonths, monthReportData };
 }

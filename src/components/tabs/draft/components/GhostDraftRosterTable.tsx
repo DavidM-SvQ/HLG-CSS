@@ -1,31 +1,35 @@
 import React from "react";
-import { Camera, Maximize2, Table2, CheckCircle2, ChevronRight, HelpCircle } from "lucide-react";
+import { Camera, Maximize2, Table2, CheckCircle2, ChevronRight, HelpCircle, Ghost } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { Button } from "../../../ui/button";
 import { useTableScreenshot } from "../../../../hooks/useTableScreenshot";
 import { Sheet, SheetContent, SheetTrigger } from "../../../ui/sheet";
+import { ReportCard } from "../../../ui/ReportCard";
+import { EmptyState } from "../../../ui/EmptyState";
 
 export const GhostDraftRosterTable = ({ flatRows }: { flatRows: any[] }) => {
   const tableRef = React.useRef<HTMLDivElement>(null);
-  const { handleCopyImage, isCopying } = useTableScreenshot(tableRef);
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-4 mt-6 mb-2">
-        <h3 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-          Draft fantasma
-        </h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
-          >
-            <Maximize2 className="w-4 h-4" />
-            <span className="hidden sm:inline">{isExpanded ? "Reducir" : "Ampliar"}</span>
-          </Button>
+    <ReportCard
+      title="Draft fantasma"
+      className={cn("mt-6", isExpanded ? "fixed inset-4 z-[200] max-h-none overflow-auto" : "")}
+      bodyClassName="p-0 sm:p-0 overflow-x-auto"
+      filename="ghost-draft"
+      headerExtra={
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600 font-medium ml-2 shadow-sm border-neutral-200/60 transition-colors"
+        >
+          <Maximize2 className="w-4 h-4" />
+          <span className="hidden sm:inline">{isExpanded ? "Reducir" : "Ampliar"}</span>
+        </Button>
+      }
+      toolbarProps={{
+        additionalActions: (
           <Button 
             variant="outline" 
             size="sm" 
@@ -36,28 +40,18 @@ export const GhostDraftRosterTable = ({ flatRows }: { flatRows: any[] }) => {
               ].join('\t'));
               navigator.clipboard.writeText([headers.join('\t'), ...rows].join('\n'));
             }}
-            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
+            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600 font-medium"
+            title="Copiar texto"
           >
             <Table2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Copiar texto</span>
+            <span className="hidden sm:inline">Texto</span>
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleCopyImage({ fileName: 'draft-fantasma.png', scale: 3 })}
-            disabled={isCopying}
-            className="hidden sm:flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
-          >
-            {isCopying ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Camera className="w-4 h-4" />}
-            Copiar imagen
-          </Button>
-        </div>
-      </div>
-      
-      <div ref={tableRef} className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isExpanded ? "fixed inset-4 z-50 overflow-auto flex flex-col" : "")}>
-        <div className={cn("overflow-auto", !isExpanded && "max-h-[1600px]")}>
-          <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-100/50 text-neutral-500 text-xs uppercase font-medium border-b border-neutral-200 sticky top-0 z-10 shadow-sm bg-white">
+        )
+      }}
+    >
+      <div ref={tableRef} className="table-responsive-wrapper min-h-[300px] overflow-auto h-full w-full">
+          <table className="w-full text-sm text-left table-fixed min-w-[800px]">
+            <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200 sticky top-0 z-10 backdrop-blur-sm">
               <tr>
                 <th className="px-4 py-3 whitespace-nowrap text-center">Elección</th>
                 <th className="px-4 py-3 whitespace-nowrap">Nombre Equipo</th>
@@ -171,15 +165,19 @@ export const GhostDraftRosterTable = ({ flatRows }: { flatRows: any[] }) => {
               ))}
               {flatRows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-neutral-500 italic">
-                    No hay selecciones que coincidan con los filtros
+                  <td colSpan={10} className="p-0">
+                    <EmptyState 
+                      icon={Ghost}
+                      title="Sin selecciones" 
+                      description="No hay selecciones que coincidan con los filtros activos." 
+                      className="border-none rounded-none bg-transparent min-h-[250px]"
+                    />
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
       </div>
-    </>
+    </ReportCard>
   );
 };

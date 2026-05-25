@@ -179,11 +179,14 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
 
   }, [
     files.carreras.data,
+    files.resultados.data,
     leaderboard,
     raceWinners,
     globalTeamPartialWinsCount,
     teamsMonthFilter,
     leaderboardTeamsSearch,
+    playerByCyclist,
+    playerTeamMap,
     topTeamsSortColumn,
     topTeamsSortDirection
   ]);

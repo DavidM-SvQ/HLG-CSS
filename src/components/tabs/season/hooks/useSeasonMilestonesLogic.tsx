@@ -626,7 +626,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     tMilestones.sort((a, b) => a.order - b.order);
     cMilestones.sort((a, b) => a.order - b.order);
     return { teamMilestones: tMilestones, cyclistMilestones: cMilestones };
-  }, [files.resultados?.data, files.carreras?.data, leaderboard, cyclistMetadata]);
+  }, [files.resultados?.data, files.carreras?.data, leaderboard, cyclistMetadata, raceWinners]);
 
   return { teamMilestones, cyclistMilestones };
 };

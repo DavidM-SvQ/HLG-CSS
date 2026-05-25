@@ -1,31 +1,35 @@
 import React from "react";
-import { Copy, Camera, Download, Maximize2, Table2, CheckCircle2, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Minus } from "lucide-react";
+import { Copy, Camera, Download, Maximize2, Table2, CheckCircle2, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Minus, Ghost } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { Button } from "../../../ui/button";
 import { useTableScreenshot } from "../../../../hooks/useTableScreenshot";
 import { motion, AnimatePresence } from "motion/react";
+import { ReportCard } from "../../../ui/ReportCard";
+import { EmptyState } from "../../../ui/EmptyState";
 
 export const GhostDraftClassificationTable = ({ classificationData }: { classificationData: any[] }) => {
   const tableRef = React.useRef<HTMLDivElement>(null);
-  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(tableRef);
   const [isExpandedClass, setIsExpandedClass] = React.useState(false);
 
   return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <h3 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-          Clasificación con Draft Fantasma
-        </h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsExpandedClass(!isExpandedClass)}
-            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
-          >
-            <Maximize2 className="w-4 h-4" />
-            <span className="hidden sm:inline">{isExpandedClass ? "Reducir" : "Ampliar"}</span>
-          </Button>
+    <ReportCard
+      title="Clasificación con Draft Fantasma"
+      className={cn("mt-6", isExpandedClass ? "fixed inset-4 z-[200] max-h-none overflow-auto" : "")}
+      bodyClassName="p-0 sm:p-0 overflow-x-auto"
+      filename="clasif-fantasma"
+      headerExtra={
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsExpandedClass(!isExpandedClass)}
+          className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600 font-medium ml-2 shadow-sm border-neutral-200/60 transition-colors"
+        >
+          <Maximize2 className="w-4 h-4" />
+          <span className="hidden sm:inline">{isExpandedClass ? "Reducir" : "Ampliar"}</span>
+        </Button>
+      }
+      toolbarProps={{
+        additionalActions: (
           <Button 
             variant="outline" 
             size="sm" 
@@ -33,40 +37,22 @@ export const GhostDraftClassificationTable = ({ classificationData }: { classifi
               const text = classificationData.map((t: any) => `${t.ghostRank}. ${t.teamName.replace(/ \[.*\]$/, '').trim()}: ${t.ghostPoints.toLocaleString()} pts ${t.rankDiff > 0 ? `(Sube ${t.rankDiff})` : t.rankDiff < 0 ? `(Baja ${Math.abs(t.rankDiff)})` : '(=)'}`).join('\n');
               navigator.clipboard.writeText(text);
             }}
-            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
+            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600 font-medium"
+            title="Copiar lista"
           >
             <Table2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Copiar bloques</span>
+            <span className="hidden sm:inline">Texto</span>
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleCopyImage({ fileName: 'clasificacion-fantasma.png', scale: 3 })}
-            disabled={isCopying}
-            className="hidden sm:flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
-          >
-            {isCopying ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Camera className="w-4 h-4" />}
-            Copiar imagen
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleDownloadImage({ fileName: 'clasificacion-fantasma.png', scale: 3 })}
-            className="flex items-center gap-2 text-neutral-600 hover:text-indigo-600"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Descargar imagen</span>
-          </Button>
-        </div>
-      </div>
-
+        )
+      }}
+    >
       <div 
         ref={tableRef}
-        className={cn("bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm", isExpandedClass ? "fixed inset-4 z-50 overflow-auto flex flex-col" : "")}
+        className="table-responsive-wrapper min-h-[300px] overflow-auto h-full w-full"
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-neutral-50 text-neutral-500 text-xs uppercase font-medium border-b border-neutral-200">
+            <thead className="bg-neutral-50 text-neutral-500 text-[10px] uppercase font-bold border-b border-neutral-200 sticky top-0 z-10 backdrop-blur-sm">
               <tr>
                 <th className="px-4 py-3 w-12 text-center">Pos</th>
                 <th className="px-4 py-3 w-12 text-center">+/-</th>
@@ -142,8 +128,13 @@ export const GhostDraftClassificationTable = ({ classificationData }: { classifi
               </AnimatePresence>
               {classificationData.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-neutral-500 italic">
-                    No hay resultados que coincidan con los filtros
+                  <td colSpan={6} className="p-0">
+                    <EmptyState 
+                      icon={Ghost}
+                      title="Sin resultados" 
+                      description="No hay resultados que coincidan con los filtros activos." 
+                      className="border-none rounded-none bg-transparent min-h-[250px]"
+                    />
                   </td>
                 </tr>
               )}
@@ -151,6 +142,6 @@ export const GhostDraftClassificationTable = ({ classificationData }: { classifi
           </table>
         </div>
       </div>
-    </>
+    </ReportCard>
   );
 };

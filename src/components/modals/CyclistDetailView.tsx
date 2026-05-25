@@ -2,7 +2,7 @@ import { AppState } from '../../lib/types';
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
-import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download } from "lucide-react";
+import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download, Database } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -12,6 +12,8 @@ import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "../ui/button";
 
 import { MultiSelect } from "../ui/multi-select";
+import { VirtualizedTableBody } from "../ui/VirtualizedTableBody";
+import { EmptyState } from "../ui/EmptyState";
 
 export interface CyclistDetailViewProps {
   files: AppState;
@@ -39,6 +41,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   const [localSearch, setLocalSearch] = useState(cyclistSearchTerm);
   const debouncedSearch = useDebounce(localSearch, 300);
 
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (debouncedSearch !== cyclistSearchTerm) {
       setCyclistSearchTerm(debouncedSearch);
@@ -56,7 +60,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
      if (cyclistSearchTerm !== localSearch && debouncedSearch === cyclistSearchTerm) {
          setLocalSearch(cyclistSearchTerm);
      }
-  }, [cyclistSearchTerm]);
+  }, [cyclistSearchTerm, localSearch, debouncedSearch]);
 
   const [cyclistDetailSortCol, setCyclistDetailSortCol] = useUrlState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("cyclistDetailSortCol", "fecha");
   const [cyclistDetailSortDir, setCyclistDetailSortDir] = useUrlState<"asc"|"desc">("cyclistDetailSortDir", "asc");
@@ -93,13 +97,13 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
     if (JSON.stringify(cyclistDetailPosFilter) !== JSON.stringify(localPosFilter)) {
       setLocalPosFilter(cyclistDetailPosFilter);
     }
-  }, [cyclistDetailPosFilter]);
+  }, [cyclistDetailPosFilter, localPosFilter]);
 
   useEffect(() => {
     if (JSON.stringify(cyclistDetailPointsFilterAdv) !== JSON.stringify(localPointsFilterAdv)) {
       setLocalPointsFilterAdv(cyclistDetailPointsFilterAdv);
     }
-  }, [cyclistDetailPointsFilterAdv]);
+  }, [cyclistDetailPointsFilterAdv, localPointsFilterAdv]);
 
   const handleSort = (col: any) => {
     if (cyclistDetailSortCol === col) {
@@ -121,6 +125,60 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
     handleDownloadImage,
     handleCopyText
   } = useTableScreenshot<HTMLDivElement>();
+
+  const raceTypeByName = useMemo(() => {
+    const map: Record<string, string> = {};
+    files.carreras.data?.forEach((row: any) => {
+      const c = getVal(row, "Carrera")?.trim();
+      const cat = getVal(row, "Categoría")?.trim();
+      if (c && cat) map[c] = cat;
+    });
+    return map;
+  }, [files.carreras.data]);
+
+  const pointsLookup = useMemo(() => {
+    const map: Record<string, number> = {};
+    files.puntos.data?.forEach((row: any) => {
+      const cat = getVal(row, "Categoría")?.trim();
+      const tip = getVal(row, "Tipo")?.trim();
+      const pos = getVal(row, "Posición")?.toString().trim();
+      const pt = getVal(row, "Puntos");
+      if (cat && tip && pos && pt !== undefined) {
+        map[`${cat}_${tip}_${pos}`] = Number(pt);
+      }
+    });
+    return map;
+  }, [files.puntos.data]);
+
+  const allFilteredItems = useMemo(() => {
+    if (!selectedCyclistDetail) return [];
+    
+    let eqText = "No elegido";
+    const currentJugador = playerByCyclist[selectedCyclistDetail];
+    if (currentJugador && currentJugador !== "No draft") {
+      const draftRank = playerOrderMap[currentJugador] || DRAFT_RANK_MAP[currentJugador] || "-";
+      const equipoStr = playerTeamMap[currentJugador] || currentJugador;
+      eqText = `${equipoStr} [#${draftRank}]`;
+    }
+    
+    const ronda = cyclistRoundMap[selectedCyclistDetail] || "-";
+    const ciclistaText = `${selectedCyclistDetail} <${ronda}>`;
+
+    return (files.resultados.data || [])
+      .filter((r: any) => getVal(r, "Ciclista")?.toString().trim() === selectedCyclistDetail)
+      .map((r: any) => {
+        const carrera = getVal(r, "Carrera")?.toString().trim() || "";
+        const categoria = getVal(r, "Categoría")?.toString().trim() || raceTypeByName[carrera] || "";
+        const fecha = getVal(r, "Fecha")?.toString().trim() || "";
+        const tipo = getVal(r, "Tipo")?.toString().trim() || "";
+        const etapa = getVal(r, "Etapa")?.toString().trim() || "";
+        const posicion = getVal(r, "Posición")?.toString().trim() || getVal(r, "Pos")?.toString().trim() || "";
+        
+        const pointsKey = `${categoria}_${tipo}_${posicion}`;
+        const puntos = pointsLookup[pointsKey] || 0;
+        return { ciclistaText, eqText, carrera, categoria, fecha, tipo, etapa, pos: posicion, puntos };
+      });
+  }, [selectedCyclistDetail, files.resultados.data, raceTypeByName, pointsLookup, playerByCyclist, playerOrderMap, playerTeamMap, cyclistRoundMap]);
 
   return (
     <div className="space-y-8">
@@ -208,41 +266,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               }
             }
           }
-          
-          const raceTypeByName: Record<string, string> = {};
-          files.carreras.data?.forEach((row: any) => {
-            const c = getVal(row, "Carrera")?.trim();
-            const cat = getVal(row, "Categoría")?.trim();
-            if (c && cat) raceTypeByName[c] = cat;
-          });
 
-          const pointsLookup: Record<string, number> = {};
-          files.puntos.data?.forEach((row: any) => {
-            const cat = getVal(row, "Categoría")?.trim();
-            const tip = getVal(row, "Tipo")?.trim();
-            const pos = getVal(row, "Posición")?.toString().trim();
-            const pt = getVal(row, "Puntos");
-            if (cat && tip && pos && pt !== undefined) {
-              pointsLookup[`${cat}_${tip}_${pos}`] = Number(pt);
-            }
-          });
-
-          const items = (files.resultados.data || []).map((r: any) => {
-            if (getVal(r, "Ciclista")?.toString().trim() !== ciclista) return null;
-            const carrera = getVal(r, "Carrera")?.toString().trim() || "";
-            const categoria = getVal(r, "Categoría")?.toString().trim() || raceTypeByName[carrera] || "";
-            const fecha = getVal(r, "Fecha")?.toString().trim() || "";
-            const tipo = getVal(r, "Tipo")?.toString().trim() || "";
-            const etapa = getVal(r, "Etapa")?.toString().trim() || "";
-            const posicion = getVal(r, "Posición")?.toString().trim() || getVal(r, "Pos")?.toString().trim() || "";
-            
-            const pointsKey = `${categoria}_${tipo}_${posicion}`;
-            const puntos = pointsLookup[pointsKey] || 0;
-            return { ciclistaText, eqText, carrera, categoria, fecha, tipo, etapa, pos: posicion, puntos };
-          }).filter(Boolean);
-
-          const allItems = (items as NonNullable<typeof items[0]>[]);
-          let filteredItems = allItems.filter(it => {
+          let filteredItems = allFilteredItems.filter(it => {
             const parseDateFilters = (d: string) => {
               if (!d) return new Date(0);
               const p = d.split(/[-/]/);
@@ -306,8 +331,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
           const maxPointsInList = Math.max(1, ...filteredItems.map(i => i.puntos));
 
-          const filterOptionsCat = Array.from(new Set(allItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: c, label: c}));
-          const filterOptionsType = Array.from(new Set(allItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: t, label: t}));
+          const filterOptionsCat = Array.from(new Set(allFilteredItems.map(i => i.categoria).filter(Boolean))).sort().map(c => ({value: String(c), label: String(c)}));
+          const filterOptionsType = Array.from(new Set(allFilteredItems.map(i => i.tipo).filter(Boolean))).sort().map(t => ({value: String(t), label: String(t)}));
 
           return (
             <div 
@@ -603,9 +628,9 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               </div>
             </div>
 
-              <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg">
+              <div ref={tableScrollRef} className="table-responsive-wrapper min-h-[300px] max-h-[60vh] overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg relative">
                 <table className="w-full text-sm text-left table-fixed min-w-[900px]">
-                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200">
+                  <thead className="text-xs text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
                       <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-44" onClick={() => handleSort("ciclistaText")}>Ciclista {cyclistDetailSortCol === "ciclistaText" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
                       <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-36" onClick={() => handleSort("eqText")}>Equipo {cyclistDetailSortCol === "eqText" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
@@ -618,40 +643,58 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                       <th className="px-4 py-3 cursor-pointer hover:bg-neutral-200 w-24 text-right" onClick={() => handleSort("puntos")}>Puntos {cyclistDetailSortCol === "puntos" && (cyclistDetailSortDir === "asc" ? "↑" : "↓")}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {filteredItems.length === 0 ? (
-                      <tr><td colSpan={9} className="px-4 py-8 text-center text-neutral-400 italic">No hay resultados con estos filtros.</td></tr>
-                    ) : filteredItems.map((it, idx) => {
-                      const posNumber = parseInt(it!.pos);
-                      let medal = "";
-                      const isNumericPos = /^\d+$/.test(it!.pos);
-                      if (posNumber === 1 && isNumericPos) medal = "🥇";
-                      else if (posNumber === 2 && isNumericPos) medal = "🥈";
-                      else if (posNumber === 3 && isNumericPos) medal = "🥉";
-
-                      const pointsBg = `rgba(34, 197, 94, ${0.1 + ((it!.puntos) / maxPointsInList) * 0.4})`;
-
-                      return (
-                      <tr key={idx} className="transition-colors group text-neutral-800 hover:brightness-95" style={getCategoryColorStyle(it!.categoria)}>
-                        <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
-                        <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
-                        <td className="px-4 py-2.5 font-mono tabular-nums text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
-                        <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
-                        <td className="font-mono tabular-nums tracking-tight px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
-                        <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
-                        <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
-                        <td className="px-4 py-2.5 text-[11px] text-center font-mono tabular-nums font-bold">
-                          <div className="flex items-center justify-center gap-1">
-                            <span>{it!.pos}</span>
-                            {medal && <span className="text-[12px] leading-none drop-shadow-sm">{medal}</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 text-[13px] text-right font-mono tabular-nums text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
-                          {it!.puntos > 0 ? it!.puntos : "-"}
+                  {filteredItems.length === 0 ? (
+                    <tbody className="divide-y divide-neutral-100">
+                      <tr>
+                        <td colSpan={9} className="p-0">
+                          <EmptyState 
+                            icon={Database} 
+                            title="Sin resultados" 
+                            description="No hay resultados con estos filtros." 
+                            className="border-none rounded-none bg-transparent min-h-[250px]"
+                          />
                         </td>
                       </tr>
-                    )})}
-                  </tbody>
+                    </tbody>
+                  ) : (
+                    <VirtualizedTableBody
+                      scrollElementRef={tableScrollRef}
+                      items={filteredItems}
+                      colSpan={9}
+                      estimateSize={40}
+                      renderRow={(it: any, idx: number) => {
+                        const posNumber = parseInt(it!.pos);
+                        let medal = "";
+                        const isNumericPos = /^\d+$/.test(it!.pos);
+                        if (posNumber === 1 && isNumericPos) medal = "🥇";
+                        else if (posNumber === 2 && isNumericPos) medal = "🥈";
+                        else if (posNumber === 3 && isNumericPos) medal = "🥉";
+
+                        const pointsBg = `rgba(34, 197, 94, ${0.1 + ((it!.puntos) / maxPointsInList) * 0.4})`;
+
+                        return (
+                          <tr className="transition-colors group text-neutral-800 hover:brightness-95" style={getCategoryColorStyle(it!.categoria)}>
+                            <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
+                            <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
+                            <td className="px-4 py-2.5 font-mono tabular-nums text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
+                            <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
+                            <td className="font-mono tabular-nums tracking-tight px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
+                            <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
+                            <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
+                            <td className="px-4 py-2.5 text-[11px] text-center font-mono tabular-nums font-bold">
+                              <div className="flex items-center justify-center gap-1">
+                                <span>{it!.pos}</span>
+                                {medal && <span className="text-[12px] leading-none drop-shadow-sm">{medal}</span>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-[13px] text-right font-mono tabular-nums text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
+                              {it!.puntos > 0 ? it!.puntos : "-"}
+                            </td>
+                          </tr>
+                        );
+                      }}
+                    />
+                  )}
                 </table>
               </div>
             </div>

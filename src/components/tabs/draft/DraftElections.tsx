@@ -66,7 +66,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     if (draftSearchTerm !== localSearch) {
       setLocalSearch(draftSearchTerm);
     }
-  }, [draftSearchTerm, localSearch]);
+  }, [draftSearchTerm, localSearch, setLocalSearch]);
 
   const debouncedDraftStatsFilters = useDebounce(localDraftStatsFilters, 500);
   useEffect(() => {
@@ -79,7 +79,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     if (JSON.stringify(draftStatsFilters) !== JSON.stringify(localDraftStatsFilters)) {
       setLocalDraftStatsFilters(draftStatsFilters);
     }
-  }, [draftStatsFilters]);
+  }, [draftStatsFilters, localDraftStatsFilters, setLocalDraftStatsFilters]);
 
   const draftTableRef = useRef<HTMLDivElement>(null);
 
