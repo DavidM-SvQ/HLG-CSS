@@ -1,12 +1,12 @@
 import React, { useContext } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
-import { Copy, Maximize2, UploadCloud, CheckCircle2, TrendingUp, X } from "lucide-react";
+import { TrendingUp, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function MonthlyWinsEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
@@ -22,19 +22,6 @@ export function MonthlyWinsEvolutionChart() {
   const [winsChartType, setWinsChartType] = useUrlState<string>("winsChartType", "acumulado");
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useUrlState<string[]>("winsChartEvolutionTeams", []);
   
-  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(winsEvolutionRef);
-
-  const handleCopyWinsEvolution = async () => {
-    await handleCopyImage({
-      fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff"
-    });
-  };
-  const handleDownloadWinsEvolution = async () => {
-    await handleDownloadImage({
-      fileName: "evolucion-victorias.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff"
-    });
-  };
-
   const { teamColors, monthlyWinsEvolutionData } = useFilters({
     ...context,
     winsChartType,
@@ -50,34 +37,13 @@ export function MonthlyWinsEvolutionChart() {
               <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
               <span className="truncate">Evolución Mensual de Victorias</span>
             </h3>
-            <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-              <Button variant="outline"
-                onClick={() => setIsWinsEvolutionExpanded(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Ampliar gráfico"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon"
-                onClick={handleCopyWinsEvolution}
-                disabled={!!isCopying}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                  isCopying
-                    ? "bg-green-50 text-green-600 border border-green-200"
-                    : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
-                )}
-                title={isCopying ? "Copiado" : "Copiar gráfico como imagen"}
-              >
-                {isCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </Button>
-              <Button variant="ghost" size="sm"
-                onClick={handleDownloadWinsEvolution}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Descargar gráfico como imagen"
-              >
-                <UploadCloud className="w-4 h-4 rotate-180" />
-              </Button>
+            <div className="copy-button-ignore">
+              <ExportToolbar
+                targetRef={winsEvolutionRef}
+                filename="evolucion-victorias"
+                isExpanded={false}
+                onExpand={() => setIsWinsEvolutionExpanded(true)}
+              />
             </div>
           </div>
           <div className="flex bg-neutral-100 p-1 rounded-lg">

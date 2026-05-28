@@ -122,6 +122,7 @@ export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user, 
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleFileUpload(ft.id as keyof AppState, file);
+                  e.target.value = ''; // Allow re-upload of the same file
                 }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 title={`Subir ${ft.name}`}

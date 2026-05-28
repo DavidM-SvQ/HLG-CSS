@@ -1,10 +1,10 @@
 import React, { useContext } from "react";
-import { Maximize2, Copy, CheckCircle2, UploadCloud, BarChart3, X } from "lucide-react";
+import { BarChart3, X } from "lucide-react";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function GeneralClassificationChart() {
   const context = useContext(SeasonViewContext)!;
@@ -16,15 +16,6 @@ export function GeneralClassificationChart() {
 
   const [isChartExpanded, setIsChartExpanded] = React.useState(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
-  
-  const { handleCopyImage: copyChartImage, handleDownloadImage: downloadChartImage, isCopying } = useTableScreenshot(chartRef);
-
-  const handleCopyChart = async () => {
-    await copyChartImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
-  const handleDownloadChart = async () => {
-    await downloadChartImage({ fileName: "clasificacion-general.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
 
   const chartData = filteredLeaderboard.map((p, idx) => {
     const draftOrder = p.orden ? parseInt(p.orden) : 0;
@@ -50,42 +41,13 @@ export function GeneralClassificationChart() {
             <BarChart3 className="w-5 h-5 text-blue-600 shrink-0" />
             <span className="truncate">Clasificación General</span>
           </h3>
-          <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-            <Button variant="outline"
-              onClick={() => setIsChartExpanded(true)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-              title="Ampliar gráfico"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon"
-              onClick={handleCopyChart}
-              disabled={isCopying}
-              className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                isCopying
-                  ? "bg-green-50 text-green-600 border border-green-200"
-                  : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100",
-              )}
-              title={
-                isCopying
-                  ? "Copiado"
-                  : "Copiar gráfico como imagen"
-              }
-            >
-              {isCopying ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
-            </Button>
-            <Button variant="ghost" size="sm"
-              onClick={handleDownloadChart}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-              title="Descargar gráfico como imagen"
-            >
-              <UploadCloud className="w-4 h-4 rotate-180" />
-            </Button>
+          <div className="copy-button-ignore">
+            <ExportToolbar
+              targetRef={chartRef}
+              filename="clasificacion-general"
+              isExpanded={false}
+              onExpand={() => setIsChartExpanded(true)}
+            />
           </div>
         </div>
         <div
@@ -97,14 +59,14 @@ export function GeneralClassificationChart() {
             ),
           }}
         >
-          <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+          <div className="w-full h-full min-h-[300px]"><ResponsiveContainer width="100%" height="99%">
             <BarChart
               data={chartData}
               layout="vertical"
               margin={{
                 top: 20,
-                right: 50,
-                left: 20,
+                right: typeof window !== 'undefined' && window.innerWidth < 640 ? 25 : 50,
+                left: typeof window !== 'undefined' && window.innerWidth < 640 ? 5 : 20,
                 bottom: 20,
               }}
             >
@@ -120,7 +82,7 @@ export function GeneralClassificationChart() {
               <YAxis
                 dataKey="displayName"
                 type="category"
-                width={150}
+                width={typeof window !== 'undefined' && window.innerWidth < 640 ? 100 : 150}
                 interval={0}
                 tick={(props) => {
                   const { x, y, payload } = props;
@@ -155,7 +117,7 @@ export function GeneralClassificationChart() {
                         textAnchor="end"
                         fill={color}
                         style={{
-                          fontSize: "11px",
+                          fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? "9px" : "11px",
                           fontWeight: 600,
                         }}
                       >
@@ -224,7 +186,7 @@ export function GeneralClassificationChart() {
                 />
               </Bar>
             </BarChart>
-          </ResponsiveContainer></div></div>
+          </ResponsiveContainer></div>
         </div>
       </div>
 
@@ -253,14 +215,14 @@ export function GeneralClassificationChart() {
                   ),
                 }}
               >
-                <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] h-full"><ResponsiveContainer width="100%" height="99%">
+                <div className="w-full h-full min-h-[300px]"><ResponsiveContainer width="100%" height="99%">
                   <BarChart
                     data={chartData}
                     layout="vertical"
                     margin={{
                       top: 20,
-                      right: 80,
-                      left: 40,
+                      right: typeof window !== 'undefined' && window.innerWidth < 640 ? 30 : 80,
+                      left: typeof window !== 'undefined' && window.innerWidth < 640 ? 10 : 40,
                       bottom: 20,
                     }}
                   >
@@ -390,7 +352,7 @@ export function GeneralClassificationChart() {
                       />
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer></div></div>
+                </ResponsiveContainer></div>
               </div>
             </div>
           </div>

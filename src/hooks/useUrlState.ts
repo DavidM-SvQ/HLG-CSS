@@ -64,9 +64,12 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
   
   useEffect(() => {
     if (!skipSyncRef.current && stateStr !== urlValStr) {
-      setState(getUrlValue());
+      const nextVal = getUrlValue();
+      if (JSON.stringify(state) !== JSON.stringify(nextVal)) {
+        setState(nextVal);
+      }
     }
-  }, [urlValStr, stateStr, getUrlValue]);
+  }, [urlValStr, stateStr, getUrlValue, state]);
 
   const setUrlState = useCallback(
     (newVal: T | ((prev: T) => T)) => {

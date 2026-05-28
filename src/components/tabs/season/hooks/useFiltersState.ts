@@ -10,8 +10,8 @@ export function useFiltersState() {
   const [historySortDirection, setHistorySortDirection] = useUrlState("historySortDirection", "desc");
   const [cyclistsMonthFilter, setCyclistsMonthFilter] = useUrlState("cyclistsMonthFilter", "all");
   const [noDraftCyclistsMonthFilter, setNoDraftCyclistsMonthFilter] = useUrlState("noDraftCyclistsMonthFilter", "all");
-  const [topCyclistsLimit, setTopCyclistsLimit] = useUrlState("topCyclistsLimit", 10);
-  const [noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit] = useUrlState("noDraftTopCyclistsLimit", 10);
+  const [topCyclistsLimit, setTopCyclistsLimit] = useUrlState("topCyclistsLimit", 25);
+  const [noDraftTopCyclistsLimit, setNoDraftTopCyclistsLimit] = useUrlState("noDraftTopCyclistsLimit", 25);
 
   const [topTeamsSortColumn, setTopTeamsSortColumn] = useUrlState<string>("topTeamsSortColumn", "originalPos");
   const [topTeamsSortDirection, setTopTeamsSortDirection] = useUrlState<"asc" | "desc">("topTeamsSortDirection", "asc");

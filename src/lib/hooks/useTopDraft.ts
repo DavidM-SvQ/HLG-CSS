@@ -2,7 +2,7 @@ import { TopDraftStat } from '../types';
 import { useMemo } from "react";
 import { useComputedStore } from "../stores/useComputedStore";
 import { useDataStore } from "../stores/useDataStore";
-import { getVal } from "../data-processing";
+import { getVal, parseSafeDateStr } from "../data-processing";
 
 
 export function useTopDraft(
@@ -53,16 +53,17 @@ export function useTopDraft(
     const raceMonths: Record<string, number> = {};
     const raceCats: Record<string, string> = {};
     files.carreras.data?.forEach((r) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const fechaFin = getVal(r, "Fecha");
-      const cat = getVal(r, "Categoría")?.trim();
+      const carreraName = getVal(r, "Carrera")?.toString().trim();
+      const fechaFin = getVal(r, "Fecha")?.toString().trim();
+      const cat = getVal(r, "Categoría")?.toString().trim();
       if (carreraName) {
         if (cat) raceCats[carreraName] = cat;
         if (fechaFin) {
-          const parts = fechaFin.split(/[-/]/);
+          const parsedStr = parseSafeDateStr(fechaFin);
+          const parts = parsedStr.split(/[-/]/);
           if (parts.length >= 2) {
             const monthIndex = parseInt(parts[1]) - 1;
-            raceMonths[carreraName] = monthIndex;
+            if (!isNaN(monthIndex)) raceMonths[carreraName] = monthIndex;
           }
         }
       }

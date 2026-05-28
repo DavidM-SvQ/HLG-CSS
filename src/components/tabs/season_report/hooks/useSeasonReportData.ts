@@ -15,8 +15,8 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const map: Record<string, number> = {};
     if (!files?.carreras?.data) return map;
     files.carreras.data.forEach((r: any) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const fechaFin = getVal(r, "Fecha");
+      const carreraName = getVal(r, "Carrera")?.toString().trim();
+      const fechaFin = getVal(r, "Fecha")?.toString().trim();
       if (carreraName && fechaFin) {
         const parts = fechaFin.split(/[-/]/);
         if (parts.length >= 2) {
@@ -200,8 +200,8 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     }).sort((a, b) => {
       if (!a.fecha) return 1;
       if (!b.fecha) return -1;
-      const pa = a.fecha.split(/[-/]/);
-      const pb = b.fecha.split(/[-/]/);
+      const pa = a.fecha.toString().split(/[-/]/);
+      const pb = b.fecha.toString().split(/[-/]/);
       let numA = 0, numB = 0;
       if (pa.length === 3) {
         numA = parseInt((pa[0].length === 4 ? pa[0] : pa[2]) + (pa[1].padStart(2, '0')) + (pa[0].length === 4 ? pa[2].padStart(2, '0') : pa[0].padStart(2, '0')));

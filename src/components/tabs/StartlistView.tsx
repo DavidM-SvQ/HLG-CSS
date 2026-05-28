@@ -267,7 +267,7 @@ export const StartlistView = () => {
                   />
                 </div>
                 <ReportCard
-                  title={`Ciclistas Participantes (${filteredRows.length})`}
+                  title={`[${publicStartlistRace}] Ciclistas participantes (${filteredRows.length})`}
                   filename="startlist-ciclistas"
                   ref={startlistTableRef}
                   className={cn(

@@ -1,11 +1,11 @@
 import React, { useContext } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
-import { TrendingUp, Maximize2, Copy, CheckCircle2, UploadCloud, X } from "lucide-react";
+import { TrendingUp, X } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
@@ -21,15 +21,6 @@ export function MonthlyEvolutionChart() {
   const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = React.useState(false);
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useUrlState<string[]>("evolutionTeamsFilter", []);
   const evolutionChartRef = React.useRef<HTMLDivElement>(null);
-  
-  const { handleCopyImage: copyEvolutionImage, handleDownloadImage: downloadEvolutionImage, isCopying: isEvolutionChartCopying } = useTableScreenshot(evolutionChartRef);
-
-  const handleCopyEvolutionChart = async () => {
-    await copyEvolutionImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
-  const handleDownloadEvolutionChart = async () => {
-    await downloadEvolutionImage({ fileName: "evolucion-mensual.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
 
   const months = [
     "Ene",
@@ -311,42 +302,13 @@ export function MonthlyEvolutionChart() {
               <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
               <span className="truncate">Evolución por fechas</span>
             </h3>
-            <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-              <Button variant="outline"
-                onClick={() => setIsEvolutionChartExpanded(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Ampliar gráfico"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon"
-                onClick={handleCopyEvolutionChart}
-                disabled={isEvolutionChartCopying}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                  isEvolutionChartCopying
-                    ? "bg-green-50 text-green-600 border border-green-200"
-                    : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100",
-                )}
-                title={
-                  isEvolutionChartCopying
-                    ? "Copiado"
-                    : "Copiar gráfico como imagen"
-                }
-              >
-                {isEvolutionChartCopying ? (
-                  <CheckCircle2 className="w-4 h-4" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-              <Button variant="ghost" size="sm"
-                onClick={handleDownloadEvolutionChart}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Descargar gráfico como imagen"
-              >
-                <UploadCloud className="w-4 h-4 rotate-180" />
-              </Button>
+            <div className="copy-button-ignore">
+              <ExportToolbar
+                targetRef={evolutionChartRef}
+                filename="evolucion-mensual"
+                isExpanded={false}
+                onExpand={() => setIsEvolutionChartExpanded(true)}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">

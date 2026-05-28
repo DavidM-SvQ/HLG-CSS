@@ -19,6 +19,7 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      dynamicTyping: true,
       worker: true,
       complete: async (results) => {
         const ftConfig = FILE_TYPES.find((f) => f.id === id);
@@ -67,7 +68,10 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
                   data: parsedData,
                   updated_at: isoDate,
                 });
-                if (error) console.error("Supabase upsert manual error:", error);
+                if (error) {
+                  console.error("Supabase upsert manual error:", error);
+                  throw new Error(`Error en la nube: ${error.message || "Permiso denegado al intentar reemplazar tabla general"}`);
+                }
               }
 
               await localforage.setItem(`global_file_${id}`, {
@@ -75,8 +79,18 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
                 updated_at: isoDate,
               });
 
-              // State will be updated by real-time subscription or manual fetch
-              fetchGlobalFile(id as keyof AppState, true, isSupabaseConfigured);
+              // Instead of fetching from remote and potentially racing with our own update,
+              // we just update the local state manually if we succeeded uploading it.
+              setFiles((prev) => ({
+                ...prev,
+                [id]: {
+                  file,
+                  data: parsedData,
+                  error: null,
+                  loading: false,
+                  updatedAt: isoDate,
+                }
+              }));
             } catch (e: any) {
               console.error("Error saving global file", e);
               setFiles((prev) => ({

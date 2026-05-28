@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Maximize2, Minimize2, Copy, CheckCircle2, UploadCloud, ClipboardList, Camera, ChevronDown } from "lucide-react";
+import { Maximize2, Minimize2, Copy, CheckCircle2, CloudDownload, ClipboardList, Camera, ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "./button";
@@ -173,7 +173,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
                             _isImageCopying && !isCopyingThis && "opacity-50 cursor-not-allowed"
                           )}
                         >
-                          <span className="font-mono">Rango {label}</span>
+                          <span className="font-medium">Parte {i+1}</span>
                           {isCopyingThis && <CheckCircle2 className="w-3 h-3 text-green-600" />}
                         </button>
                       );
@@ -202,7 +202,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
             )}
             title="Descargar imagen"
           >
-            <UploadCloud className="w-4 h-4" />
+            <CloudDownload className="w-4 h-4" />
           </Button>
 
           {hasBlocks && (
@@ -224,9 +224,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
                   <div className="max-h-60 overflow-y-auto w-full flex flex-col">
                     {Array.from({ length: numBlocks }).map((_, i) => {
                       const s = `p${i + 1}`;
-                      const start = i * 50 + 1;
-                      const end = (i + 1) * 50;
-                      const label = `${start}-${end}`;
 
                       return (
                         <button
@@ -237,8 +234,8 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
                           }}
                           className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-neutral-50 text-neutral-700 flex items-center justify-between"
                         >
-                          <span className="font-mono">Rango {label}</span>
-                          <UploadCloud className="w-3 h-3 text-neutral-400" />
+                          <span className="font-medium">Parte {i+1}</span>
+                          <CloudDownload className="w-3 h-3 text-neutral-400" />
                         </button>
                       );
                     })}

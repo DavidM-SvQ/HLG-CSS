@@ -7,7 +7,7 @@ export function useDraftElectionsLogic(
   draftSearchTerm: string,
   draftRoundFilter: string[],
   draftTeamFilter: string[],
-  draftStatsFilters: Record<string, number | undefined>,
+  draftStatsFilters: Record<string, number | string | undefined>,
   draftCyclistStats: Record<string, { puntos: number; victorias: number }>,
   cyclistMetadata: Record<string, CyclistMetadata>,
   draftSortColumn: string,
@@ -41,29 +41,29 @@ export function useDraftElectionsLogic(
         const ppc = carr > 0 ? puntos / carr : 0;
         const ppd = dc > 0 ? puntos / dc : 0;
 
-        if (draftStatsFilters.minPuntos !== undefined && draftStatsFilters.minPuntos !== '' as any && puntos < draftStatsFilters.minPuntos)
+        if (draftStatsFilters.minPuntos !== undefined && draftStatsFilters.minPuntos !== '' as any && puntos < Number(draftStatsFilters.minPuntos))
           matchesStats = false;
-        if (draftStatsFilters.maxPuntos !== undefined && draftStatsFilters.maxPuntos !== '' as any && puntos > draftStatsFilters.maxPuntos)
+        if (draftStatsFilters.maxPuntos !== undefined && draftStatsFilters.maxPuntos !== '' as any && puntos > Number(draftStatsFilters.maxPuntos))
           matchesStats = false;
-        if (draftStatsFilters.minVictorias !== undefined && draftStatsFilters.minVictorias !== '' as any && victorias < draftStatsFilters.minVictorias)
+        if (draftStatsFilters.minVictorias !== undefined && draftStatsFilters.minVictorias !== '' as any && victorias < Number(draftStatsFilters.minVictorias))
           matchesStats = false;
-        if (draftStatsFilters.maxVictorias !== undefined && draftStatsFilters.maxVictorias !== '' as any && victorias > draftStatsFilters.maxVictorias)
+        if (draftStatsFilters.maxVictorias !== undefined && draftStatsFilters.maxVictorias !== '' as any && victorias > Number(draftStatsFilters.maxVictorias))
           matchesStats = false;
-        if (draftStatsFilters.minCarr !== undefined && draftStatsFilters.minCarr !== '' as any && carr < draftStatsFilters.minCarr)
+        if (draftStatsFilters.minCarr !== undefined && draftStatsFilters.minCarr !== '' as any && carr < Number(draftStatsFilters.minCarr))
           matchesStats = false;
-        if (draftStatsFilters.maxCarr !== undefined && draftStatsFilters.maxCarr !== '' as any && carr > draftStatsFilters.maxCarr)
+        if (draftStatsFilters.maxCarr !== undefined && draftStatsFilters.maxCarr !== '' as any && carr > Number(draftStatsFilters.maxCarr))
           matchesStats = false;
-        if (draftStatsFilters.minDc !== undefined && draftStatsFilters.minDc !== '' as any && dc < draftStatsFilters.minDc)
+        if (draftStatsFilters.minDc !== undefined && draftStatsFilters.minDc !== '' as any && dc < Number(draftStatsFilters.minDc))
           matchesStats = false;
-        if (draftStatsFilters.maxDc !== undefined && draftStatsFilters.maxDc !== '' as any && dc > draftStatsFilters.maxDc)
+        if (draftStatsFilters.maxDc !== undefined && draftStatsFilters.maxDc !== '' as any && dc > Number(draftStatsFilters.maxDc))
           matchesStats = false;
-        if (draftStatsFilters.minPpc !== undefined && draftStatsFilters.minPpc !== '' as any && ppc < draftStatsFilters.minPpc)
+        if (draftStatsFilters.minPpc !== undefined && draftStatsFilters.minPpc !== '' as any && ppc < Number(draftStatsFilters.minPpc))
           matchesStats = false;
-        if (draftStatsFilters.maxPpc !== undefined && draftStatsFilters.maxPpc !== '' as any && ppc > draftStatsFilters.maxPpc)
+        if (draftStatsFilters.maxPpc !== undefined && draftStatsFilters.maxPpc !== '' as any && ppc > Number(draftStatsFilters.maxPpc))
           matchesStats = false;
-        if (draftStatsFilters.minPpd !== undefined && draftStatsFilters.minPpd !== '' as any && ppd < draftStatsFilters.minPpd)
+        if (draftStatsFilters.minPpd !== undefined && draftStatsFilters.minPpd !== '' as any && ppd < Number(draftStatsFilters.minPpd))
           matchesStats = false;
-        if (draftStatsFilters.maxPpd !== undefined && draftStatsFilters.maxPpd !== '' as any && ppd > draftStatsFilters.maxPpd)
+        if (draftStatsFilters.maxPpd !== undefined && draftStatsFilters.maxPpd !== '' as any && ppd > Number(draftStatsFilters.maxPpd))
           matchesStats = false;
       }
 

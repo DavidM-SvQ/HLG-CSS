@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUrlState } from "../../../../hooks/useUrlState";
 
 export function useStartlistState() {
-  const [publicStartlistRace, setPublicStartlistRace] = useUrlState<string>("startlist_race", "");
+  const [publicStartlistRace, setPublicStartlistRace] = useState<string>("");
 
   const [startlistSortCol, setStartlistSortCol] = useUrlState<
     "jugador" | "ronda" | "puntos" | "dias"

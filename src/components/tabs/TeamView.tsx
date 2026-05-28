@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, Copy, UploadCloud } from "lucide-react";
+import { CheckCircle2, Camera, CloudDownload } from "lucide-react";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { useTeamData } from "./team/hooks/useTeamData";
 import { useFormattedTeams } from "./team/hooks/useFormattedTeams";
@@ -58,7 +58,7 @@ export const TeamView = () => {
                 {isTeamGlobalCopying ? (
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                 ) : (
-                  <Copy className="w-4 h-4" />
+                  <Camera className="w-4 h-4" />
                 )}
                 Copiar Imagen
               </Button>
@@ -67,7 +67,7 @@ export const TeamView = () => {
                 className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
                 title="Descargar"
               >
-                <UploadCloud className="w-4 h-4" />
+                <CloudDownload className="w-4 h-4" />
                 Descargar
               </Button>
             </div>

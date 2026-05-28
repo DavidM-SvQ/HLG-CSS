@@ -1,14 +1,14 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { SeasonViewContext } from "./SeasonViewContext";
-import { Copy, Download, Maximize2, Minimize2 } from "lucide-react";
-import { copyImageToClipboard } from "../../../lib/clipboard";
 import { EmptyState } from "../../ui/EmptyState";
 import { useHotStreaksTeams } from "../../../lib/hooks/useHotStreaks";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
-import { Button } from "../../ui/button";
 import { motion } from "motion/react";
 import { useDebounce } from "../../../lib/hooks/useDebounce";
+import { ExportToolbar } from "../../ui/ExportToolbar";
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../ui/tooltip";
+import { Info } from "lucide-react";
 
 export function HotStreakTeams() {
   const context = useContext(SeasonViewContext)!;
@@ -38,36 +38,6 @@ export function HotStreakTeams() {
   useEffect(() => {
     if (hotStreakMinPoints !== "" && localMinPoints === "") setLocalMinPoints(hotStreakMinPoints); // Sync back if changed externally
   }, [hotStreakMinPoints, localMinPoints]);
-  
-  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(chartRef);
-
-  const handleCopy = async () => {
-    await handleCopyImage({
-      fileName: "rachas-puntos-equipos.png",
-      scale: 2,
-      backgroundColor: "#ffffff",
-      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-      style: {
-        fontFamily: "Inter, sans-serif",
-        padding: "24px",
-        borderRadius: "24px",
-      }
-    });
-  };
-
-  const handleDownload = async () => {
-    await handleDownloadImage({
-      fileName: "rachas-puntos-equipos.png",
-      scale: 2,
-      backgroundColor: "#ffffff",
-      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
-      style: {
-        fontFamily: "Inter, sans-serif",
-        padding: "24px",
-        borderRadius: "24px",
-      }
-    });
-  };
 
   const hotStreaksData = useHotStreaksTeams(
     files, 
@@ -103,23 +73,29 @@ export function HotStreakTeams() {
           <div>
             <h2 className="text-xl font-black text-neutral-900 flex items-center gap-2">
               <span role="img" aria-label="fire" className="text-2xl drop-shadow-sm">🔥</span> Rachas de Equipos
+              <TooltipProvider delay={100}>
+                <Tooltip>
+                  <TooltipTrigger className="bg-neutral-100 text-neutral-500 rounded-full p-1 cursor-help hover:bg-neutral-200 hover:text-neutral-700 transition">
+                      <Info className="w-3.5 h-3.5" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs text-xs font-medium">
+                    En las rachas las fechas se calculan usando la semana estándar de calendario ISO (lunes a domingo), a diferencia del gráfico mensual que usa cuartos estáticos del mes. Cada celda de la racha muestra los puntos del equipo sumados en las carreras que finalizaron en la semana del calendario correspondiente.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </h2>
             <p className="text-sm font-medium text-neutral-500 mt-1">
               Top 20 Equipos con más puntos sumados en el periodo seleccionado.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 bg-white/80 p-1.5 rounded-xl border border-neutral-200 shadow-sm relative z-10 hidden sm:flex copy-button-ignore">
-             <Button variant="ghost" size="icon" onClick={handleCopy} className={cn("p-1.5 rounded-lg transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
-               <Copy className="w-4 h-4" />
-             </Button>
-             <Button variant="ghost" size="sm" onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors" title="Descargar ranking">
-               <Download className="w-4 h-4" />
-             </Button>
-             <div className="w-px h-5 bg-neutral-200 mx-1"></div>
-             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
-               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-             </Button>
+          <div className="copy-button-ignore">
+             <ExportToolbar
+               targetRef={chartRef}
+               filename="rachas-puntos-equipos"
+               isExpanded={isExpanded}
+               onExpand={() => setIsExpanded(!isExpanded)}
+             />
           </div>
         </div>
 
@@ -161,46 +137,66 @@ export function HotStreakTeams() {
       </div>
       
       <div className={cn("p-6 flex-1 overflow-auto bg-transparent relative z-10", isExpanded ? "h-0" : "")}>
-        <motion.div 
-           variants={containerVariants}
-           initial="hidden"
-           animate="show"
-           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-        >
-          {hotStreaksData.items.length > 0 ? hotStreaksData.items.map((t, i) => (
-            <motion.div variants={itemVariants} whileHover={{ y: -2, scale: 1.02 }} key={i} className="flex flex-col bg-white border border-neutral-200 p-3 rounded-2xl gap-3 shadow-sm hover:shadow-md transition-all group">
-              <div className="flex items-start gap-3">
-                <span className="font-black text-indigo-600 bg-indigo-50 w-7 h-7 flex items-center justify-center rounded-xl text-xs shrink-0 mt-0.5 group-hover:bg-indigo-500 group-hover:text-white transition-colors">{i+1}</span>
-                <div className="flex flex-col flex-grow min-w-0">
-                   <div className="flex justify-between items-start">
-                     <span className="font-bold text-neutral-900 text-sm line-clamp-1 h-[20px] mt-1" title={t.name}>{t.name}</span>
-                     <span className="font-black bg-neutral-900 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap ml-2 shadow-sm">{Math.round(t.pointsInPeriod)} pts</span>
-                   </div>
+        <TooltipProvider delay={0}>
+          <motion.div 
+             variants={containerVariants}
+             initial="hidden"
+             animate="show"
+             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          >
+            {hotStreaksData.items.length > 0 ? hotStreaksData.items.map((t: any, i: number) => (
+              <motion.div variants={itemVariants} whileHover={{ y: -2, scale: 1.02 }} key={i} className="flex flex-col bg-white border border-neutral-200 p-3 rounded-2xl gap-3 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-start gap-3">
+                  <span className="font-black text-indigo-600 bg-indigo-50 w-7 h-7 flex items-center justify-center rounded-xl text-xs shrink-0 mt-0.5 group-hover:bg-indigo-500 group-hover:text-white transition-colors">{i+1}</span>
+                  <div className="flex flex-col flex-grow min-w-0">
+                     <div className="flex justify-between items-start">
+                       <span className="font-bold text-neutral-900 text-sm line-clamp-1 h-[20px] mt-1" title={t.name}>{t.name}</span>
+                       <span className="font-black bg-neutral-900 text-white px-2 py-1 rounded-lg text-xs whitespace-nowrap ml-2 shadow-sm">{Math.round(t.pointsInPeriod)} pts</span>
+                     </div>
+                  </div>
                 </div>
+                <div className="flex flex-wrap gap-1 mt-1 pl-10" style={{ perspective: "1000px" }}>
+                 {t.pointsPerWeek.map((pts: number, idx: number) => {
+                    const qualifies = pts > 0;
+                    const weekDetails = t.pointsPerWeekDetails?.[idx]?.details || {};
+                    const races = Object.entries(weekDetails).sort((a: any, b: any) => b[1] - a[1]);
+                    
+                    return (
+                      <React.Fragment key={idx}>
+                        <Tooltip>
+                        <TooltipTrigger render={<motion.div
+                            whileHover={{ scale: 1.1, y: -2 }}
+                            className={`w-9 text-center py-1 rounded border overflow-hidden cursor-default ${qualifies ? 'bg-gradient-to-t from-indigo-100 to-indigo-50 border-indigo-200 shadow-sm text-indigo-700 font-black' : 'bg-neutral-50 border-neutral-100 text-neutral-400 font-semibold'}`} 
+                          />}>
+                            <span className="text-[10px] block opacity-50 uppercase tracking-widest leading-none mb-0.5">S{idx+1}</span>
+                            <span className="text-xs leading-none">{pts}</span>
+                        </TooltipTrigger>
+                        {qualifies && (
+                          <TooltipContent className="bg-neutral-900 text-neutral-100 border-neutral-800 pointer-events-none p-2.5 shadow-xl">
+                            <p className="font-bold text-[10px] text-neutral-400 mb-1 uppercase tracking-widest">Sem {idx + 1}</p>
+                            <div className="flex flex-col gap-1.5">
+                              {races.map(([raceName, points]) => (
+                                <div key={raceName} className="flex justify-between items-center gap-4 text-xs whitespace-nowrap">
+                                  <span className="font-medium opacity-90">{raceName.length > 25 ? raceName.substring(0, 25) + "..." : raceName}</span>
+                                  <span className="font-bold text-indigo-300">{Number(points)} pts</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                      </React.Fragment>
+                    );
+                 })}
+               </div>
+              </motion.div>
+            )) : (
+              <div className="col-span-full">
+                <EmptyState title="No hay rachas destacadas" description="No hay datos suficientes recientes o no cumplen los filtros de puntos." />
               </div>
-              <div className="flex flex-wrap gap-1 mt-1 pl-10" style={{ perspective: "1000px" }}>
-               {t.pointsPerWeek.map((pts: number, idx: number) => {
-                  const qualifies = pts > 0;
-                  return (
-                    <motion.div 
-                      key={idx} 
-                      whileHover={{ scale: 1.1, y: -2 }}
-                      className={`w-9 text-center py-1 rounded border overflow-hidden ${qualifies ? 'bg-gradient-to-t from-indigo-100 to-indigo-50 border-indigo-200 shadow-sm text-indigo-700 font-black' : 'bg-neutral-50 border-neutral-100 text-neutral-400 font-semibold'}`} 
-                      title={`Semana ${idx + 1}: ${pts} pts`}
-                    >
-                      <span className="text-[10px] block opacity-50 uppercase tracking-widest leading-none mb-0.5">S{idx+1}</span>
-                      <span className="text-xs leading-none">{pts}</span>
-                    </motion.div>
-                  );
-               })}
-             </div>
-            </motion.div>
-          )) : (
-            <div className="col-span-full">
-              <EmptyState title="No hay rachas destacadas" description="No hay datos suficientes recientes o no cumplen los filtros de puntos." />
-            </div>
-          )}
-        </motion.div>
+            )}
+          </motion.div>
+        </TooltipProvider>
       </div>
     </div>
   );

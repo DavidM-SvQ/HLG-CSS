@@ -9,7 +9,7 @@ import { UndebutedCyclistsTable } from "./UndebutedCyclistsTable";
 export function UndebutedCyclists() {
   const context = useContext(SeasonViewContext)!;
   const { 
-    files, playerOrderMap, leaderboard, cyclistMetadata, cyclistRoundMap, getVal,
+    files, playerOrderMap, leaderboard, cyclistMetadata, cyclistRoundMap, getVal, playerByCyclist, playerTeamMap,
     undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter,
     undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter,
     undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn,
@@ -70,8 +70,8 @@ export function UndebutedCyclists() {
     const raw = files.elecciones.data
       ?.map((row) => {
         const ciclista = getVal(row, "Ciclista")?.trim();
-        const jugador = getVal(row, "Nombre_TG")?.trim();
-        const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim();
+        const jugador = playerByCyclist[ciclista || ""] || "No draft";
+        const nombreEquipo = playerTeamMap[jugador] || "";
         const orden = playerOrderMap[jugador] || "";
         const ronda = cyclistRoundMap[ciclista] || "";
 
@@ -108,7 +108,7 @@ export function UndebutedCyclists() {
     });
     
     return _filtered;
-  }, [files, getVal, cyclistMetadata, cyclistRoundMap, playerOrderMap, undebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, undebutedCyclistsSortColumn, undebutedCyclistsSortDirection]);
+  }, [files, getVal, cyclistMetadata, cyclistRoundMap, playerOrderMap, playerByCyclist, playerTeamMap, undebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, undebutedCyclistsSortColumn, undebutedCyclistsSortDirection]);
 
   const numBlocks = Math.ceil(filtered.length / 50);
 

@@ -1,7 +1,7 @@
 import { PlayerScore } from '../../../lib/types';
 import React from "react";
 import { cn } from "../../../lib/utils";
-import { UserMinus, Maximize2, Minimize2, CheckCircle2, Copy, FileText, Download, ChevronDown } from "lucide-react";
+import { UserMinus, Maximize2, Minimize2, CheckCircle2, Camera, FileText, CloudDownload, ChevronDown } from "lucide-react";
 import { Button } from "../../ui/button";
 
 interface UnscoredFiltersProps {
@@ -119,11 +119,11 @@ export function UnscoredFilters({
         Corredores elegidos en el draft que aún no han sumado puntos.
       </p>
       <div className="flex flex-wrap items-center gap-3 mt-1">
-        <div className="flex flex-wrap items-center gap-1.5 pr-3 border-r border-neutral-200 copy-button-ignore">
+        <div className="flex flex-wrap items-center gap-1.5 pr-3 border-r border-neutral-200 copy-button-ignore shrink-0">
           <Button
             variant="outline"
             onClick={() => setIsUnscoredExpanded(!isUnscoredExpanded)}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+            className="w-8 h-8 p-0 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
             title={isUnscoredExpanded ? "Contraer tabla" : "Expandir tabla"}
           >
             {isUnscoredExpanded ? (
@@ -139,7 +139,7 @@ export function UnscoredFilters({
             disabled={!!isUnscoredCopying}
             title="Copiar imagen"
             className={cn(
-              "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+              "p-0 h-8 font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
               isUnscoredCopying === "full" ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
               isUnscoredCopying && isUnscoredCopying !== "full" && "opacity-50 cursor-not-allowed"
             )}
@@ -147,7 +147,7 @@ export function UnscoredFilters({
             {isUnscoredCopying === "full" ? (
               <CheckCircle2 className="w-4 h-4" />
             ) : (
-              <Copy className="w-4 h-4" />
+              <Camera className="w-4 h-4" />
             )}
           </Button>
 
@@ -155,12 +155,11 @@ export function UnscoredFilters({
 
           <Button
             variant="ghost"
-            size="icon"
             onClick={handleCopyUnscoredText}
             disabled={isUnscoredTextCopying}
             title="Copiar texto"
             className={cn(
-              "px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
+              "px-3 h-8 w-auto text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
               isUnscoredTextCopying
                 ? "bg-green-50 text-green-700 border-green-200"
                 : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
@@ -178,9 +177,9 @@ export function UnscoredFilters({
             variant="outline"
             onClick={() => handleDownloadUnscored("full")}
             title="Descargar imagen"
-            className="px-2 py-1.5 text-xs font-semibold bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8"
+            className="p-0 h-8 bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8"
           >
-            <Download className="w-4 h-4" />
+            <CloudDownload className="w-4 h-4" />
           </Button>
         </div>
 

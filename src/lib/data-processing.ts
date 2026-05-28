@@ -10,7 +10,7 @@ export const normalizeStr = (s: string) => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "")
+    .replace(/[^a-z0-9.]/g, "")
     .trim();
   normalizedKeyCache[s] = res;
   return res;
@@ -18,21 +18,54 @@ export const normalizeStr = (s: string) => {
 
 export const getVal = (row: any, key: string) => {
   if (!row) return "";
-  if (row[key] !== undefined) return row[key];
-  
-  // Very fast cache avoiding repeated Object.keys iterations on identical row layouts
-  const cacheKey = Object.keys(row).join('|');
-  if (!rowLayoutCache[cacheKey]) {
-    const map: Record<string, string> = {};
-    Object.keys(row).forEach(k => {
-      map[normalizeStr(k)] = k;
-    });
-    rowLayoutCache[cacheKey] = map;
+  let val: any;
+  if (row[key] !== undefined) {
+    val = row[key];
+  } else {
+    // Very fast cache avoiding repeated Object.keys iterations on identical row layouts
+    const cacheKey = Object.keys(row).join('|');
+    if (!rowLayoutCache[cacheKey]) {
+      const map: Record<string, string> = {};
+      Object.keys(row).forEach(k => {
+        map[normalizeStr(k)] = k;
+      });
+      rowLayoutCache[cacheKey] = map;
+    }
+    
+    let normalizedKeys = [normalizeStr(key)];
+    // Add common FirstCycling english/spanish aliases
+    const aliases: Record<string, string[]> = {
+      carrera: ["race", "event"],
+      ciclista: ["rider", "name", "corredor"],
+      posicion: ["pos.", "pos", "position", "pos1", "pos2", "pos_1", "pos_2", "posicion1", "posicion2"],
+      "pos.": ["posicion", "position", "pos", "pos1", "pos2", "pos_1", "pos_2"],
+      pos: ["pos.", "posicion", "position", "pos1", "pos2", "pos_1", "pos_2"],
+      etapa: ["stage"],
+      tipo: ["type", "class", "classification"],
+      fecha: ["date"],
+      puntos: ["pts", "points", "uci"],
+      equipo: ["team"],
+      nacido: ["age", "yob", "year"]
+    };
+    if (aliases[normalizedKeys[0]]) {
+      normalizedKeys = normalizedKeys.concat(aliases[normalizedKeys[0]]);
+    }
+
+    let actualKey: string | undefined;
+    for (const nk of normalizedKeys) {
+      if (rowLayoutCache[cacheKey][nk]) {
+        actualKey = rowLayoutCache[cacheKey][nk];
+        break;
+      }
+    }
+    
+    val = actualKey ? row[actualKey] : "";
   }
   
-  const normalizedKey = normalizeStr(key);
-  const actualKey = rowLayoutCache[cacheKey][normalizedKey];
-  return actualKey ? row[actualKey] : "";
+  if (typeof val === 'string') {
+    return val.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  return val;
 };
 
 export const getCategoryColorStyle = (cat: string): React.CSSProperties => {
@@ -50,6 +83,26 @@ export const getCategoryColorStyle = (cat: string): React.CSSProperties => {
   if (c.includes('CC') || c.includes('NC') || c.includes('CN') || c.includes('NAT')) return { backgroundColor: "rgba(243, 232, 255, 0.4)" }; // purple
   if (c.includes('JO') || c.includes('CM') || c.includes('OLY') || c.includes('WC')) return { backgroundColor: "rgba(252, 231, 243, 0.4)" }; // pink
   return { backgroundColor: "rgba(248, 250, 252, 0.4)" }; // slate-50
+};
+
+export const parseSafeDateStr = (dStr: any) => {
+  if (!dStr) return "";
+  let s = dStr.toString().trim();
+  
+  const parts = s.split(/[-/.]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  } else if (parts.length === 2) {
+    return `${new Date().getFullYear()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  } else {
+    const v = parseFloat(s);
+    if (!isNaN(v) && v > 10000) { // excel date
+      const d = new Date((v - 25569) * 86400 * 1000);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+  }
+  return s;
 };
 
 export const formatNumberSpanish = (val: number | string | undefined | null) => {

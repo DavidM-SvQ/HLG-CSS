@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getVal } from "../../../lib/data-processing";
+import { getVal, parseSafeDateStr } from "../../../lib/data-processing";
 
 export function useFilters(context: any) {
   const {
@@ -59,7 +59,8 @@ export function useFilters(context: any) {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
-        const parts = fechaFin.toString().split(/[-/]/);
+        const parsedStr = parseSafeDateStr(fechaFin);
+        const parts = parsedStr.split(/[-/]/);
         if (parts.length >= 2) {
           const monthIndex = parseInt(parts[1]) - 1;
           raceMonths[carreraName] = monthIndex;
@@ -105,8 +106,9 @@ export function useFilters(context: any) {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
-        raceDates[carreraName] = fechaFin;
-        const parts = fechaFin.toString().split(/[-/]/);
+        const parsedStr = parseSafeDateStr(fechaFin);
+        raceDates[carreraName] = parsedStr;
+        const parts = parsedStr.split(/[-/]/);
         if (parts.length >= 2) {
           const monthIndex = parseInt(parts[1]) - 1;
           raceMonths[carreraName] = monthIndex;
@@ -153,11 +155,12 @@ export function useFilters(context: any) {
         case "fecha": {
           const parseDate = (d: string) => {
             if (!d) return 0;
-            const parts = d.toString().split(/[-/]/);
-            if (parts.length === 3) {
-              if (parts[0].length === 4) {
+            const parsedStr = parseSafeDateStr(d);
+            const parts = parsedStr.split(/[-/]/);
+            if (parts.length >= 2) {
+              if (parts.length === 3 && parts[0].length === 4) {
                 return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).getTime();
-              } else {
+              } else if (parts.length === 3) {
                 return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
               }
             }

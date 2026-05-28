@@ -2,28 +2,16 @@ import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import { useSeasonMilestonesLogic } from "./hooks/useSeasonMilestonesLogic";
 import React, { useMemo, useRef, useState } from "react";
 import { formatNumberSpanish, getVal } from "../../../lib/data-processing";
-import { Award, Trophy, Crown, Flag, Maximize2, Minimize2, Copy, Download, Globe, Users, Medal, CheckCircle2 } from "lucide-react";
-import { expandNodeForCapture } from "../../../lib/dom-utils";
+import { Flag, Globe, Users, Medal } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
-import { Button } from "../../ui/button";
 import { motion } from "motion/react";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: PlayerScore[]; files: AppState; cyclistMetadata: Record<string, CyclistMetadata>; raceWinners?: Record<string, string> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { handleCopyImage, handleDownloadImage, isCopying } = useTableScreenshot(containerRef);
 
   const { teamMilestones, cyclistMilestones } = useSeasonMilestonesLogic({ leaderboard, files, cyclistMetadata, raceWinners });
-
-
-  const handleCopy = async () => {
-    await handleCopyImage({ scale: 2, backgroundColor: "#ffffff", style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
-  };
-
-  const handleDownload = async () => {
-    await handleDownloadImage({ fileName: "hitos_temporada.png", scale: 2, backgroundColor: "#ffffff", style: { overflow: "visible" }, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")) });
-  };
 
   if (teamMilestones.length === 0 && cyclistMilestones.length === 0) return null;
 
@@ -55,22 +43,18 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
               <p className="text-sm text-neutral-500 font-semibold tracking-wide">Momentos clave de equipos y ciclistas</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 copy-button-ignore">
-             <Button variant="ghost" size="icon" onClick={handleCopy} className={cn("p-1.5 rounded-lg transition-colors", isCopying ? "bg-green-50 text-green-600" : "hover:bg-neutral-100 text-neutral-500")} title="Copiar al portapapeles">
-               <Copy className="w-4 h-4" />
-             </Button>
-             <Button variant="ghost" size="sm" onClick={handleDownload} className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors" title="Descargar">
-               <Download className="w-4 h-4" />
-             </Button>
-             <div className="w-px h-5 bg-neutral-200 mx-1"></div>
-             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-500 transition-colors" title={isExpanded ? "Contraer" : "Expandir"}>
-               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-             </Button>
+          <div className="copy-button-ignore">
+             <ExportToolbar
+               targetRef={containerRef}
+               filename="hitos_temporada"
+               isExpanded={isExpanded}
+               onExpand={() => setIsExpanded(!isExpanded)}
+             />
           </div>
         </div>
 
         <div className="overflow-auto bg-transparent relative z-10">
-          <div className="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start min-w-[700px]">
+          <div className="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 items-start">
             {/* Team Milestones */}
             <div className="flex flex-col">
               <h4 className="font-black text-neutral-400 uppercase tracking-[0.2em] text-xs mb-6 flex items-center gap-2 pl-2">
@@ -83,19 +67,24 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
                 className="flex flex-col gap-3"
               >
                   {teamMilestones.map((m, idx) => (
-                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-indigo-500">
-                          {m.icon}
+                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group gap-3 sm:gap-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-indigo-500">
+                            {m.icon}
+                          </div>
+                          <div className="sm:hidden text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap uppercase tracking-widest">
+                            {m.date}
+                          </div>
                         </div>
-                        <div>
-                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-indigo-600 transition-colors">{m.label}</h5>
-                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase tracking-wider border border-indigo-100">
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-indigo-600 transition-colors break-words">{m.label}</h5>
+                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase tracking-wider border border-indigo-100 break-words overflow-hidden text-ellipsis max-w-full">
                             {m.team}
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
+                      <div className="hidden sm:block text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
                         {m.date}
                       </div>
                     </motion.div>
@@ -120,19 +109,24 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
                  className="flex flex-col gap-3"
               >
                   {cyclistMilestones.map((m, idx) => (
-                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group">
-                      <div className="flex items-center gap-4">
-                         <div className="w-12 h-12 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-rose-500">
-                          {m.icon}
+                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group gap-3 sm:gap-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                         <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-rose-500">
+                            {m.icon}
+                           </div>
+                           <div className="sm:hidden text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap uppercase tracking-widest">
+                             {m.date}
+                           </div>
                          </div>
-                         <div>
-                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-rose-600 transition-colors">{m.label}</h5>
-                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold text-[10px] uppercase tracking-wider border border-rose-100">
+                         <div className="min-w-0 flex-1">
+                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-rose-600 transition-colors break-words">{m.label}</h5>
+                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold text-[10px] uppercase tracking-wider border border-rose-100 break-words overflow-hidden text-ellipsis max-w-full">
                             {m.cyclist}
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
+                      <div className="hidden sm:block text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
                         {m.date}
                       </div>
                     </motion.div>

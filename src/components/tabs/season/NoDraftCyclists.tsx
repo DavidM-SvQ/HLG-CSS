@@ -20,7 +20,7 @@ export function NoDraftCyclists() {
   } = context;
 
   // Local States
-  const [topLimit, setTopLimit] = useUrlState<number>("noDraftTopLimit", 10);
+  const [topLimit, setTopLimit] = useUrlState<number>("noDraftTopLimit", 25);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isCopying, setIsCopying] = useState<string | boolean>(false);
   const [isTextCopying, setIsTextCopying] = useState<boolean>(false);
@@ -76,8 +76,8 @@ export function NoDraftCyclists() {
     // Map races to months
     const raceMonths: Record<string, number> = {};
     files.carreras.data?.forEach((r: any) => {
-      const carreraName = getVal(r, "Carrera")?.trim();
-      const fechaFin = getVal(r, "Fecha");
+      const carreraName = getVal(r, "Carrera")?.toString().trim();
+      const fechaFin = getVal(r, "Fecha")?.toString().trim();
       if (carreraName && fechaFin) {
         const parts = fechaFin.split(/[-/]/);
         if (parts.length >= 2) {

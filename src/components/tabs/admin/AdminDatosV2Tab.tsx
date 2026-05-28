@@ -1,17 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { FILE_TYPES } from "../../../lib/config/fileTypes";
-import { FileSpreadsheet, RefreshCcw, Save, ExternalLink } from "lucide-react";
+import { FileSpreadsheet, RefreshCcw, Save, ExternalLink, Calculator, Trophy, ChevronDown, ChevronRight, Users, AlertTriangle, CheckCircle } from "lucide-react";
 import { useDataStore } from "../../../lib/stores/useDataStore";
+import { useComputedStore } from "../../../lib/stores/useComputedStore";
 import { parse } from "papaparse";
 
 export const AdminDatosV2Tab = () => {
-  const { handleFileUpload } = useDataStore();
+  const { updateFile } = useDataStore();
+  const { leaderboard, cyclistMetadata, unassignedPointsLog, assignedPointsLog, debugLastRows } = useComputedStore();
+  const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
+  const [expandedIframes, setExpandedIframes] = useState<Record<string, boolean>>({ resultados: true });
   
   // Guardamos las URLs de los Google Sheets publicos (CSV export format or standard)
   const [sheetUrls, setSheetUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string>("");
+  const [avisosFilter, setAvisosFilter] = useState<'todos' | 'errores'>('todos');
+
+  const displayUnassigned = useMemo(() => {
+    if (!unassignedPointsLog) return [];
+    if (avisosFilter === 'errores') {
+      return unassignedPointsLog.filter(log => !log.reason.startsWith("No se encontraron puntos para"));
+    }
+    return unassignedPointsLog;
+  }, [unassignedPointsLog, avisosFilter]);
+
+  const orderedFileTypes = React.useMemo(() => {
+    return [...FILE_TYPES.filter(ft => !(ft as any).hiddenInAdmin)].sort((a, b) => {
+      if (a.id === "resultados") return -1;
+      if (b.id === "resultados") return 1;
+      return 0;
+    });
+  }, []);
   
   useEffect(() => {
     // Cargar credenciales previas de localStorage
@@ -34,11 +56,11 @@ export const AdminDatosV2Tab = () => {
 
   const extractCsvExportUrl = (url: string) => {
     // Convierte https://docs.google.com/spreadsheets/d/123...456/edit#gid=0 
-    // a https://docs.google.com/spreadsheets/d/123...456/export?format=csv&gid=0
+    // a https://docs.google.com/spreadsheets/d/123...456/gviz/tq?tqx=out:csv&gid=0
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return url;
     
-    let csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
+    let csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/gviz/tq?tqx=out:csv`;
     
     // extraemos el gid si existe para descargar la hoja correcta
     const gidMatch = url.match(/gid=([0-9]+)/);
@@ -46,79 +68,172 @@ export const AdminDatosV2Tab = () => {
       csvUrl += `&gid=${gidMatch[1]}`;
     }
     
+    csvUrl += `&t=${Date.now()}`;
+    
     return csvUrl;
   };
 
   const extractIframeUrl = (url: string) => {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return null;
-    return `https://docs.google.com/spreadsheets/d/${match[1]}/edit?rm=minimal`;
+    let base = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?rm=minimal`;
+    const gidMatch = url.match(/gid=([0-9]+)/);
+    if (gidMatch) {
+      base += `#gid=${gidMatch[1]}`;
+    }
+    return base;
   };
 
-  const syncSheet = async (id: string) => {
+  const syncSheet = async (id: string, showAlert: boolean = true) => {
     const url = sheetUrls[id];
-    if (!url) return;
+    if (!url) return 0;
 
-    setLoading({ ...loading, [id]: true });
+    setLoading(prev => ({ ...prev, [id]: true }));
+    let rowCount = 0;
     try {
       const csvUrl = extractCsvExportUrl(url);
       const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error("Fallo al descargar el archivo. ¿Está configurado como Público (Cualquiera con el enlace)?");
+      if (!res.ok) throw new Error("Fallo al descargar el archivo. ¿Está configurado como Público?");
       const text = await res.text();
       
+      if (text.trim().toLowerCase().startsWith("<!doctype html>") || text.trim().toLowerCase().startsWith("<html")) {
+        throw new Error("El enlace devuelve una página web en lugar de un CSV. Asegúrate de que el documento es público para todos.");
+      }
+      
       // Papaparse for CSV content (File parsing equivalent)
-      parse(text, {
+      const parseResult = parse(text, {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        complete: (results) => {
-          // Wrap it as a File upload simulation
-          handleFileUpload(id, results.data, new File([text], `${id}.csv`, { type: 'text/csv' }));
-        },
-        error: (err) => {
-          throw new Error("Error procesando CSV: " + err.message);
-        }
       });
-      alert(`Sincronización de ${id} completada con éxito.`);
+      
+      rowCount = parseResult.data.length;
+      if (rowCount === 0) {
+        throw new Error(`CSV vacío o sin contenido válido. (Preview: ${text.substring(0, 100).replace(/\\n/g, ' ')})`);
+      }
+      
+      if (parseResult.errors.length > 0) {
+        console.warn(`PapaParse encontró errores en ${id}:`, parseResult.errors);
+        // Sometimes PapaParse stops parsing if there's a fatal error (like unescaped quotes).
+        // Let's at least log it.
+      }
+      
+      updateFile(id as any, { 
+         file: new File([text], `${id}.csv`, { type: 'text/csv' }),
+         data: parseResult.data as any,
+         error: null,
+         loading: false
+      });
+
+      if (showAlert) {
+         setSyncStatusMsg(`Sincronización de ${id} completada con éxito. Filas leídas: ${rowCount}`);
+         setTimeout(() => setSyncStatusMsg(""), 5000);
+      }
+      return rowCount;
     } catch (e: any) {
-      alert("Error sincronizando: " + e.message);
+      console.error(`Error in syncSheet for ${id}:`, e);
+      let errorMsg = e.message;
+      if (errorMsg === 'Failed to fetch') {
+         errorMsg = "Bloqueado o permisos denegados. ¿Está el documento configurado como 'Cualquier usuario que tenga el vínculo puede LEER'?";
+      }
+      if (showAlert) {
+         setSyncStatusMsg(`Error sincronizando ${id}: ` + errorMsg);
+         return 0;
+      }
+      throw new Error(errorMsg);
     } finally {
-      setLoading({ ...loading, [id]: false });
+      setLoading(prev => ({ ...prev, [id]: false }));
     }
+  };
+
+  const syncAll = async () => {
+    const ids = FILE_TYPES.filter(ft => !(ft as any).hiddenInAdmin).map(ft => ft.id);
+    setSyncStatusMsg("Sincronizando todas las tablas...");
+    const counts: Record<string, number> = {};
+    const errors: string[] = [];
+    
+    for (const id of ids) {
+      if (sheetUrls[id]) {
+        try {
+          // Temporarily bypass silent catch in syncSheet by not swallowing it silently inside syncAll
+          const res = await syncSheet(id, false);
+          if (res) counts[id] = res;
+          if (res === 0) errors.push(`${id} (cero filas)`);
+        } catch (e: any) {
+          errors.push(`${id}: ${e.message}`);
+        }
+      }
+    }
+    
+    let sum = 0;
+    Object.values(counts).forEach(c => sum += c);
+    let msg = `Sincronización completada. Tablas principales leídas correctamente.`;
+    if (counts['resultados']) {
+      msg = `Sincronización completada. Resultados: ${counts['resultados']} filas leídas.`;
+    }
+    if (errors.length > 0) {
+       msg += ` Errores: ${errors.join(' | ')}`;
+    } else {
+       setTimeout(() => setSyncStatusMsg(""), 5000);
+    }
+    setSyncStatusMsg(msg);
+  };
+
+  const forceRecalculate = () => {
+    useDataStore.getState().setFiles(prev => ({ ...prev }));
+    setSyncStatusMsg("Puntos y clasificaciones recalculados con éxito.");
+    setTimeout(() => {
+      setSyncStatusMsg((current) => current === "Puntos y clasificaciones recalculados con éxito." ? "" : current);
+    }, 4000);
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
-        <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
-          <FileSpreadsheet className="w-6 h-6 text-green-600" />
-          Integración Directa con Google Sheets (Datos v2)
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <FileSpreadsheet className="w-6 h-6 text-green-600" />
+            Integración Directa con Google Sheets (Datos v2)
+          </h2>
+        </div>
         <p className="text-sm text-neutral-600 mb-6">
-           Pega la URL de tu Google Sheet para cada archivo. Para que la sincronización automática funcione, el documento debe tener los permisos de <b>Cualquiera con el enlace puede leer</b>.
+           Pega la URL de tu Google Sheet para cada archivo. Si editas los datos directamente en el cuadro de abajo, <strong className="text-indigo-700 font-bold">debes hacer click en el botón de "Sincronizar"</strong> correspondiente o en "Sincronizar Todo" para que la app lea los nuevos datos y actualice los puntos.
         </p>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {FILE_TYPES.filter(ft => !ft.hiddenInAdmin).map((ft) => {
+        <div className="grid grid-cols-1 gap-8">
+          {orderedFileTypes.map((ft) => {
             const url = sheetUrls[ft.id] || "";
             const iframeUrl = extractIframeUrl(url);
+            const isIframeExpanded = !!expandedIframes[ft.id];
 
             return (
               <div key={ft.id} className="border border-neutral-200 rounded-xl overflow-hidden bg-neutral-50 flex flex-col">
                 <div className="p-4 bg-white border-b border-neutral-200 flex flex-col gap-3">
-                   <div className="flex justify-between items-center">
-                     <div>
-                       <h3 className="font-bold text-neutral-900">{ft.name}</h3>
-                       <p className="text-xs text-neutral-500">{ft.description}</p>
+                   <div className="flex justify-between items-center cursor-pointer select-none" onClick={() => setExpandedIframes(prev => ({...prev, [ft.id]: !prev[ft.id]}))}>
+                     <div className="flex items-center gap-2">
+                       {isIframeExpanded ? <ChevronDown className="w-5 h-5 text-neutral-400" /> : <ChevronRight className="w-5 h-5 text-neutral-400" />}
+                       <div>
+                         <h3 className="font-bold text-neutral-900">{ft.name}</h3>
+                         <p className="text-xs text-neutral-500">{(ft as any).description}</p>
+                       </div>
                      </div>
                      {url && (
-                        <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 p-2">
-                           <ExternalLink className="w-4 h-4" />
-                        </a>
+                        <div onClick={e => e.stopPropagation()}>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors text-sm font-medium shrink-0 shadow-sm"
+                              title="Abre la hoja original en otra pestaña. Útil si tienes problemas de desplazamiento (scroll) con la vista integrada."
+                            >
+                               <ExternalLink className="w-4 h-4" />
+                               <span className="hidden sm:inline">Abrir en Google Sheets</span>
+                            </a>
+                        </div>
                      )}
                    </div>
                    
-                   <div className="flex gap-2 w-full">
+                   <div className="flex gap-2 w-full mt-2">
                      <Input 
                         placeholder="https://docs.google.com/spreadsheets/d/..." 
                         value={url}
@@ -137,24 +252,203 @@ export const AdminDatosV2Tab = () => {
                    </div>
                 </div>
 
-                {iframeUrl ? (
-                  <div className="h-[400px] w-full bg-neutral-100 flex-1">
-                    <iframe 
-                      src={iframeUrl} 
-                      className="w-full h-full border-0" 
-                      title={`Preview ${ft.name}`}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-[200px] w-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm">
-                    Previsualización no disponible (Falta URL válida)
-                  </div>
+                {isIframeExpanded && (
+                  iframeUrl ? (
+                    <div 
+                      className="w-full bg-neutral-100"
+                      style={{ height: ft.id === "resultados" ? '1200px' : '600px' }}
+                    >
+                      <iframe 
+                        src={iframeUrl} 
+                        className="w-full h-full border-0 pointer-events-auto" 
+                        title={`Preview ${ft.name}`}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-[200px] w-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm">
+                      Previsualización no disponible (Falta URL válida)
+                    </div>
+                  )
                 )}
               </div>
             );
           })}
         </div>
+        
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200">
+          <Button onClick={syncAll} className="gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg w-full sm:w-auto">
+            <RefreshCcw className="w-5 h-5" />
+            Sincronizar Todas las Tablas
+          </Button>
+          <Button onClick={forceRecalculate} variant="outline" className="gap-2 py-6 text-lg w-full sm:w-auto">
+            <Calculator className="w-5 h-5" />
+            Refrescar Puntos Calculados
+          </Button>
+        </div>
+        
+        {syncStatusMsg && (
+          <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-100 flex items-center justify-center">
+             {syncStatusMsg}
+          </div>
+        )}
       </div>
+      
+      <div className={`mt-8 p-6 rounded-2xl shadow-sm border ${unassignedPointsLog?.length ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4`}>
+          <h2 className={`text-xl font-bold flex items-center gap-2 ${unassignedPointsLog?.length ? 'text-red-700' : 'text-green-700'}`}>
+            {unassignedPointsLog?.length ? <AlertTriangle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+            Avisos de Puntuación ({displayUnassigned?.length || 0})
+          </h2>
+          <select 
+            value={avisosFilter} 
+            onChange={(e) => setAvisosFilter(e.target.value as 'todos' | 'errores')}
+            className="p-2 border rounded-lg text-sm bg-white"
+          >
+            <option value="todos">Mostrar todos ({unassignedPointsLog?.length || 0})</option>
+            <option value="errores">Solo errores (excluir "0 puntos")</option>
+          </select>
+        </div>
+        {displayUnassigned?.length ? (
+          <>
+            <p className="text-sm text-red-600 mb-4">Se han encontrado registros en Resultados que no han podido sumar puntos:</p>
+            <div className="max-h-[300px] overflow-y-auto bg-white rounded border border-red-100 p-2">
+              <ul className="space-y-2 text-sm">
+              {displayUnassigned.slice(0, 500).map((log, i) => (
+                  <li key={i} className="border-b border-neutral-100 pb-2">
+                    <span className="font-bold text-neutral-800">{log.ciclista}</span> en <span className="italic">{log.carrera}</span> - Pos: {log.posicion} <span className="text-neutral-400 text-xs ml-1">(Fila Excel ~{log.originalIndex + 2})</span><br/>
+                    <span className="text-red-500 text-xs">Causa: {log.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-green-600">No hay avisos para el filtro seleccionado.</p>
+        )}
+      </div>
+
+      {assignedPointsLog && assignedPointsLog.length > 0 && (
+        <div className="bg-green-50 border border-green-200 p-6 rounded-2xl shadow-sm mt-8">
+          <h2 className="text-xl font-bold flex items-center gap-2 mb-4 text-green-700">
+            <Trophy className="w-6 h-6" />
+            Puntos Sumados ({assignedPointsLog.length})
+          </h2>
+          <p className="text-sm text-green-600 mb-4">Registro de todos los puntos que se han sumado correctamente, ordenados de más reciente a más antiguo.</p>
+          <div className="max-h-[300px] overflow-y-auto bg-white rounded border border-green-100 p-2">
+            <ul className="space-y-2 text-sm">
+              {assignedPointsLog.slice(0, 500).map((log, i) => (
+                <li key={i} className="border-b border-neutral-100 pb-2 flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-neutral-800">{log.ciclista}</span> <span className="text-neutral-500">en</span> <span className="italic">{log.carrera}</span>
+                    <span className="text-neutral-400 text-xs ml-2">(Fila Excel ~{log.originalIndex + 2})</span>
+                    <div className="text-xs text-neutral-500">
+                      {log.tipoResultado} {log.etapa ? `(Etapa ${log.etapa}) ` : ''}- Pos: {log.posicion} | Fecha: {log.fecha || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="font-bold text-green-600 text-lg">
+                    +{log.puntos}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm mt-8">
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
+          <Calculator className="w-6 h-6 text-blue-600" />
+          Clasificación y Puntos Calculados
+        </h2>
+        
+        {leaderboard && leaderboard.length > 0 ? (
+          <div className="space-y-4">
+            {leaderboard.map((team, idx) => {
+              // Agrupar puntos por ciclista
+              const cyclistPoints: Record<string, number> = {};
+              team.detalles.forEach(d => {
+                cyclistPoints[d.ciclista] = (cyclistPoints[d.ciclista] || 0) + d.puntosObtenidos;
+              });
+
+              // Crear array de ciclistas con su metadata, ordenados por ronda
+              const cyclistArr = Object.entries(cyclistPoints).map(([name, pts]) => {
+                const meta = cyclistMetadata[name];
+                return {
+                  name,
+                  pts,
+                  rondaId: meta?.ronda || 'Z', // Si no hay ronda, al final
+                  eleccion: meta?.eleccion || 999
+                };
+              }).sort((a, b) => {
+                if (a.rondaId !== b.rondaId) return a.rondaId.localeCompare(b.rondaId);
+                return a.eleccion - b.eleccion;
+              });
+
+              const isExpanded = !!expandedTeams[team.nombreEquipo];
+
+              return (
+                <div key={team.nombreEquipo} className="border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
+                  <div 
+                    className="p-4 bg-neutral-50 hover:bg-neutral-100 cursor-pointer flex items-center justify-between transition-colors"
+                    onClick={() => setExpandedTeams(prev => ({ ...prev, [team.nombreEquipo]: !prev[team.nombreEquipo] }))}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-neutral-900">{team.nombreEquipo}</h3>
+                        <p className="text-xs text-neutral-500">{team.jugador}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <span className="block font-bold text-lg text-blue-700">{team.puntos} pts</span>
+                      </div>
+                      {isExpanded ? <ChevronDown className="w-5 h-5 text-neutral-400" /> : <ChevronRight className="w-5 h-5 text-neutral-400" />}
+                    </div>
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className="p-4 bg-white border-t border-neutral-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {cyclistArr.map(c => (
+                          <div key={c.name} className="flex justify-between items-center p-2 rounded border border-neutral-100 bg-neutral-50 text-sm">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <span className="text-[10px] font-mono bg-neutral-200 px-1.5 py-0.5 rounded text-neutral-600 shrink-0">
+                                {c.rondaId}
+                              </span>
+                              <span className="font-medium truncate" title={c.name}>{c.name}</span>
+                            </div>
+                            <span className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2">{c.pts} <span className="text-xs font-normal text-neutral-400">pts</span></span>
+                          </div>
+                        ))}
+                      </div>
+                      {cyclistArr.length === 0 && (
+                        <p className="text-sm text-neutral-500 italic text-center py-4">No hay ciclistas con puntos para este equipo.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-8 text-center text-neutral-500 flex flex-col items-center gap-2">
+            <Trophy className="w-10 h-10 text-neutral-300" />
+            <p>No hay datos calculados. Asegúrate de tener cargados los equiposs, ciclistas y puntos, y sincroniza Resultados.</p>
+          </div>
+        )}
+      </div>
+
+      {debugLastRows && debugLastRows.length > 0 && (
+        <div className="mt-8 p-4 rounded-xl border border-blue-200 bg-blue-50">
+          <h2 className="font-bold text-blue-700 mb-2">Debug de últimas filas leídas</h2>
+          <pre className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-[200px]">
+             {JSON.stringify(debugLastRows, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

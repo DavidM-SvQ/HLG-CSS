@@ -1,6 +1,6 @@
 import { cn } from "../../../lib/utils";
 import React, { useContext, useEffect } from "react";
-import { Copy, CheckCircle2, UploadCloud, Maximize2, Trophy, Search, X } from "lucide-react";
+import { Camera, CheckCircle2, CloudDownload, Maximize2, Trophy, Search, X } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useTopTeams } from "../../../lib/hooks/useTopTeams";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
@@ -10,6 +10,7 @@ import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
 import { TopTeamsTableContent } from "./TopTeamsTableContent";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function TopTeamsTable() {
   const context = useContext(SeasonViewContext)!;
@@ -104,9 +105,29 @@ export function TopTeamsTable() {
     maxPpd, minPpd
   };
 
+  const handleCopyText = () => {
+    let header = `Clasificación de Equipos\n`;
+    header += `Equipo\tPuntos\tPP Días\tDías\tPPC\tCarreras\tDiff.\n`;
+    const rows = sortedTeams.map(t => {
+      const pos = `${t.originalPos}º`;
+      const name = t.nombreEquipo;
+      const pts = Math.round(t.puntos) + " pts";
+      const ppd = isFinite((t as any).ppd) ? ((t as any).ppd).toString().replace('.', ',') : "0,0";
+      const days = typeof (t as any).totalDays === 'number' ? (t as any).totalDays : 0;
+      const ppc = isFinite((t as any).ppc) ? ((t as any).ppc).toString().replace('.', ',') : "0,0";
+      const runs = typeof (t as any).numCarreras === 'number' ? (t as any).numCarreras : 0;
+      const diffStr = (t as any).diff > 0 ? `+${(t as any).diff}` : (t as any).diff < 0 ? `${(t as any).diff}` : "=";
+      return `${pos} ${name}\t${pts}\t${ppd}\t${days}\t${ppc}\t${runs}\t${diffStr}`;
+    }).join('\n');
+    navigator.clipboard.writeText(header + rows);
+  };
+
+  const ITEMS_PER_BLOCK = 10;
+  const numBlocks = Math.ceil(sortedTeams.length / ITEMS_PER_BLOCK);
+
   return (
     <>
-      <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mt-12 relative group overflow-hidden">
+      <div ref={topTeamsTableRef} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mt-12 relative group overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-50 translate-x-1/3 -translate-y-1/3" />
         <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-6 gap-4 relative z-10">
           <div className="flex items-center gap-4 min-w-0">
@@ -121,42 +142,15 @@ export function TopTeamsTable() {
                 </span>
               )}
             </h3>
-            <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-              <Button variant="outline"
-                onClick={() => setIsTopTeamsTableExpanded(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
-                title="Ampliar tabla"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon"
-                onClick={handleCopyTopTeamsTable}
-                disabled={isTopTeamsCopying}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                  isTopTeamsCopying
-                    ? "bg-green-50 text-green-600 border border-green-200"
-                    : "bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50 hover:text-blue-600 hover:border-blue-200",
-                )}
-                title={
-                  isTopTeamsCopying
-                    ? "Copiado"
-                    : "Copiar tabla como imagen"
-                }
-              >
-                {isTopTeamsCopying ? (
-                  <CheckCircle2 className="w-4 h-4" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-              <Button variant="ghost" size="sm"
-                onClick={handleDownloadTopTeamsTable}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-                title="Descargar gráfico como imagen"
-              >
-                <UploadCloud className="w-4 h-4 rotate-180" />
-              </Button>
+            <div className="copy-button-ignore">
+              <ExportToolbar
+                targetRef={topTeamsTableRef}
+                filename="clasificacion-equipos"
+                isExpanded={isTopTeamsTableExpanded}
+                onExpand={() => setIsTopTeamsTableExpanded(true)}
+                numBlocks={numBlocks}
+                onCopyText={handleCopyText}
+              />
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -170,40 +164,44 @@ export function TopTeamsTable() {
                 className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border-neutral-200 rounded-xl focus-visible:ring-blue-500/20 font-medium"
               />
             </div>
-            <Select value={teamsMonthFilter} onValueChange={(value) => setTeamsMonthFilter(value)}>
-              <SelectTrigger className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-blue-300">
-                <SelectValue placeholder="Todas las carreras" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las carreras</SelectItem>
-                {(() => {
-                  const months = [
-                    "Enero",
-                    "Febrero",
-                    "Marzo",
-                    "Abril",
-                    "Mayo",
-                    "Junio",
-                    "Julio",
-                    "Agosto",
-                    "Septiembre",
-                    "Octubre",
-                    "Noviembre",
-                    "Diciembre",
-                  ];
-                  return months.map((m, i) => (
-                    <SelectItem key={i} value={i.toString()}>
-                      {m}
-                    </SelectItem>
-                  ));
-                })()}
-              </SelectContent>
-            </Select>
+            <select 
+              value={teamsMonthFilter} 
+              onChange={(e) => {
+                setTeamsMonthFilter(e.target.value);
+                setTopTeamsSortColumn("puntos");
+                setTopTeamsSortDirection("desc");
+              }}
+              className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-blue-300 focus-visible:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+            >
+              <option value="all">Todos los meses</option>
+              {(() => {
+                const months = [
+                  "Enero",
+                  "Febrero",
+                  "Marzo",
+                  "Abril",
+                  "Mayo",
+                  "Junio",
+                  "Julio",
+                  "Agosto",
+                  "Septiembre",
+                  "Octubre",
+                  "Noviembre",
+                  "Diciembre",
+                ];
+                return months.map((m, i) => (
+                  <option key={i} value={i.toString()}>
+                    {m}
+                  </option>
+                ));
+              })()}
+            </select>
           </div>
+
         </div>
-        <div className="w-full overflow-x-auto"><div ref={topTeamsTableRef} className="min-w-[800px]">
-          <TopTeamsTableContent {...tableProps} scrollRef={topTeamsTableRef} />
-        </div></div>
+        <div className="w-full overflow-x-auto">
+          <TopTeamsTableContent {...tableProps} />
+        </div>
       </div>
 
       {isTopTeamsTableExpanded && (

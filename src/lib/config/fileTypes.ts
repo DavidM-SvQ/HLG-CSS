@@ -9,6 +9,20 @@ export const FILE_TYPES = [
     global: true,
   },
   {
+    id: "puntos",
+    name: "Puntos HLG 2026",
+    icon: FileSpreadsheet,
+    expectedCols: ["Categoría", "Tipo", "Posición", "Puntos"],
+    global: true,
+  },
+  {
+    id: "equipos",
+    name: "Equipos 2026",
+    icon: Users,
+    expectedCols: ["EQUIPO COMPLETO", "EQUIPO BREVE"],
+    global: true,
+  },
+  {
     id: "ciclistas",
     name: "Ciclistas 2026",
     icon: Users,
@@ -30,24 +44,10 @@ export const FILE_TYPES = [
     global: true,
   },
   {
-    id: "equipos",
-    name: "Equipos 2026",
-    icon: Users,
-    expectedCols: ["EQUIPO COMPLETO", "EQUIPO BREVE"],
-    global: true,
-  },
-  {
-    id: "puntos",
-    name: "Puntos HLG 2026",
-    icon: FileSpreadsheet,
-    expectedCols: ["Categoría", "Tipo", "Posición", "Puntos"],
-    global: true,
-  },
-  {
     id: "resultados",
     name: "Resultados FirstCycling",
     icon: Medal,
-    expectedCols: ["Carrera", "Ciclista", "Tipo", "Pos", "Etapa"],
+    expectedCols: ["Carrera", "Ciclista", "Tipo"],
     global: true,
   },
   {

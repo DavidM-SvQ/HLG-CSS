@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "../../../lib/utils";
-import { User, Maximize2, Minimize2, CheckCircle2, Copy, FileText, Download } from "lucide-react";
+import { User, Maximize2, Minimize2, CheckCircle2, Camera, FileText, CloudDownload } from "lucide-react";
 import { Button } from "../../ui/button";
 
 interface NoDraftFiltersProps {
@@ -111,11 +111,11 @@ export function NoDraftFilters({
       </p>
 
       <div className="flex flex-wrap gap-3 mt-1">
-        <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore">
+        <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore shrink-0">
           <Button
             variant="outline"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+            className="w-8 h-8 p-0 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
             title={isExpanded ? "Contraer tabla" : "Expandir tabla"}
           >
             {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -127,24 +127,23 @@ export function NoDraftFilters({
             disabled={!!isCopying}
             title="Copiar imagen"
             className={cn(
-              "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+              "p-0 h-8 font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
               isCopying === "full" ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
               isCopying && isCopying !== "full" && "opacity-50 cursor-not-allowed"
             )}
           >
-            {isCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {isCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </Button>
 
           {renderPartialCopyButtons()}
 
           <Button
             variant="ghost"
-            size="icon"
             onClick={handleCopyText}
             disabled={isTextCopying}
             title="Copiar texto"
             className={cn(
-              "px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
+              "px-3 h-8 w-auto text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
               isTextCopying
                 ? "bg-green-50 text-green-700 border-green-200"
                 : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
@@ -162,9 +161,9 @@ export function NoDraftFilters({
             variant="outline"
             onClick={() => handleDownload("full")}
             title="Descargar imagen"
-            className="px-2 py-1.5 text-xs font-semibold bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8"
+            className="p-0 h-8 bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8"
           >
-            <Download className="w-4 h-4" />
+            <CloudDownload className="w-4 h-4" />
           </Button>
         </div>
 

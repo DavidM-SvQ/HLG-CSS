@@ -18,6 +18,8 @@ import { usePageView } from "./lib/analytics/usePageView";
 import { Button } from "./components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog";
 
+import { MilestoneNotifier } from "./components/MilestoneNotifier";
+
 export default function App() {
   const location = useLocation();
   
@@ -188,6 +190,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200">
       <Toaster position="top-center" richColors />
+      <MilestoneNotifier />
       <OfflineIndicator />
         
         <Dialog open={showFrameWarning} onOpenChange={setShowFrameWarning}>

@@ -1,6 +1,6 @@
 import { AppState, CyclistMetadata } from '../../lib/types';
 import { useMemo } from 'react';
-import { getVal } from '../data-processing';
+import { getVal, parseSafeDateStr } from '../data-processing';
 
 export function useHotStreaks(
   files: AppState, 
@@ -58,7 +58,7 @@ export function useHotStreaks(
        });
     }
 
-    const weeklyPoints: Record<string, Record<string, number>> = {};
+    const weeklyPoints: Record<string, Record<string, { total: number, details: Record<string, number> }>> = {};
 
     Object.entries(cyclistMetadata || {}).forEach(([ciclista, meta]: [string, any]) => {
       if (!weeklyPoints[ciclista]) weeklyPoints[ciclista] = {};
@@ -73,7 +73,9 @@ export function useHotStreaks(
           if (points > 0) {
              const w = raceWeeks[race];
              if (w) {
-               weeklyPoints[ciclista][w] = (weeklyPoints[ciclista][w] || 0) + points;
+               if (!weeklyPoints[ciclista][w]) weeklyPoints[ciclista][w] = { total: 0, details: {} };
+               weeklyPoints[ciclista][w].total += points;
+               weeklyPoints[ciclista][w].details[race] = (weeklyPoints[ciclista][w].details[race] || 0) + points;
                weeksWithResults.add(w);
              }
           }
@@ -89,12 +91,14 @@ export function useHotStreaks(
       const jugador = cyclistToJugador[name];
       const team = jugador ? (playerTeamMap[jugador] || jugador) : "?";
       const order = playerOrderMap[jugador] || "?";
-      const pointsPerWeek = recentWeeks.map(w => wMap[w] || 0);
+      const pointsPerWeekObjects = recentWeeks.map(w => wMap[w] || { total: 0, details: {} });
+      const pointsPerWeek = pointsPerWeekObjects.map(o => o.total);
       return {
         name: `${name} <${ronda.toString().padStart(2, '0')}>`,
         team: `${team} [#${order}]`,
         pointsInPeriod: pointsPerWeek.reduce((a, b) => a + b, 0),
         pointsPerWeek,
+        pointsPerWeekDetails: pointsPerWeekObjects,
         originalName: name
       };
     });
@@ -166,7 +170,7 @@ export function useHotStreaksTeams(
        });
     }
 
-    const teamWeeklyPoints: Record<string, Record<string, number>> = {};
+    const teamWeeklyPoints: Record<string, Record<string, { total: number, details: Record<string, number> }>> = {};
     const teamToJugador: Record<string, string> = {};
 
     Object.entries(cyclistMetadata || {}).forEach(([ciclista, meta]: [string, any]) => {
@@ -184,7 +188,10 @@ export function useHotStreaksTeams(
              const w = raceWeeks[race];
              if (w) {
                weeksWithResults.add(w);
-               teamWeeklyPoints[team][w] = (teamWeeklyPoints[team][w] || 0) + points;
+               if (!teamWeeklyPoints[team][w]) teamWeeklyPoints[team][w] = { total: 0, details: {} };
+               teamWeeklyPoints[team][w].total += points;
+               // detail per race
+               teamWeeklyPoints[team][w].details[race] = (teamWeeklyPoints[team][w].details[race] || 0) + points;
              }
           }
         });
@@ -196,11 +203,13 @@ export function useHotStreaksTeams(
 
     const tStreaks = Object.entries(teamWeeklyPoints).map(([name, wMap]) => {
       const order = playerOrderMap[teamToJugador[name]] || "?";
-      const pointsPerWeek = recentWeeks.map(w => wMap[w] || 0);
+      const pointsPerWeekObjects = recentWeeks.map(w => wMap[w] || { total: 0, details: {} });
+      const pointsPerWeek = pointsPerWeekObjects.map(o => o.total);
       return {
         name: `${name} [#${order}]`,
         pointsInPeriod: pointsPerWeek.reduce((a, b) => a + b, 0),
         pointsPerWeek,
+        pointsPerWeekDetails: pointsPerWeekObjects,
         originalName: name
       };
     });

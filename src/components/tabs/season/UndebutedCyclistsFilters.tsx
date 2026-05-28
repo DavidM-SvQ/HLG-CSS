@@ -26,27 +26,27 @@ export function UndebutedCyclistsFilters({
         Corredores elegidos en el draft que aún no han disputado ninguna carrera (días = 0).
       </p>
       <div className="flex flex-wrap gap-3 mt-1">
-        <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore">
+        <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore shrink-0">
           <Button variant="outline" onClick={() => setIsUndebutedExpanded(!isUndebutedExpanded)}
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
+            className="w-8 h-8 p-0 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
             title={isUndebutedExpanded ? "Contraer tabla" : "Expandir tabla"}>
             {isUndebutedExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </Button>
           <Button variant="outline" onClick={() => handleCopyUndebuted("full")} disabled={!!isUndebutedCopying} title="Copiar imagen"
-            className={cn("px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
+            className={cn("p-0 h-8 font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
               isUndebutedCopying === "full" ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
               isUndebutedCopying && isUndebutedCopying !== "full" && "opacity-50 cursor-not-allowed")}>
             {isUndebutedCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
 
           {numBlocks > 1 && (
-            <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
+            <div className="flex flex-wrap items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
               {Array.from({ length: numBlocks }).map((_, i) => {
                 const s = "p" + (i + 1);
                 const isCopyingThis = isUndebutedCopying === s;
                 return (
                   <Button variant="outline" key={s} onClick={() => handleCopyUndebuted(s)} disabled={!!isUndebutedCopying}
-                    className={cn("px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
+                    className={cn("px-2.5 h-8 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
                       isCopyingThis ? "bg-green-50 text-green-700 border-green-200" : "bg-white",
                       isUndebutedCopying && !isCopyingThis && "opacity-50 cursor-not-allowed")}>
                     {isCopyingThis ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -57,13 +57,13 @@ export function UndebutedCyclistsFilters({
             </div>
           )}
 
-          <Button variant="ghost" size="icon" onClick={handleCopyUndebutedText} disabled={isUndebutedTextCopying} title="Copiar texto"
-            className={cn("px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
+          <Button variant="ghost" onClick={handleCopyUndebutedText} disabled={isUndebutedTextCopying} title="Copiar texto"
+            className={cn("px-3 h-8 w-auto text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
               isUndebutedTextCopying ? "bg-green-50 text-green-700 border-green-200" : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50")}>
             {isUndebutedTextCopying ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <FileText className="w-4 h-4 mr-1.5" />} Texto
           </Button>
           <Button variant="outline" onClick={() => handleDownloadUndebuted("full")} title="Descargar imagen"
-            className="px-2 py-1.5 text-xs font-semibold bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8">
+            className="p-0 h-8 bg-white border border-neutral-200 rounded-md shadow-sm text-neutral-600 hover:bg-neutral-50 flex items-center justify-center transition-colors w-8">
             <Download className="w-4 h-4" />
           </Button>
         </div>

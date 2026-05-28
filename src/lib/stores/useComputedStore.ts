@@ -16,6 +16,9 @@ interface ComputedStore {
   playerTeamMap: Record<string, string>;
   teamToPlayerMap: Record<string, string>;
   cyclistRoundMap: Record<string, string>;
+  unassignedPointsLog?: {ciclista: string, carrera: string, tipoResultado: string, posicion: string, reason: string, timestamp?: number, originalIndex?: number}[];
+  assignedPointsLog?: {ciclista: string, carrera: string, tipoResultado: string, posicion: string, puntos: number, etapa?: string, fecha?: string, timestamp?: number, originalIndex?: number}[];
+  debugLastRows?: any[];
   
   setComputedData: (data: Partial<ComputedStore>) => void;
   setIsComputing: (val: boolean) => void;
@@ -34,6 +37,8 @@ export const useComputedStore = create<ComputedStore>((set) => ({
   playerTeamMap: {},
   teamToPlayerMap: {},
   cyclistRoundMap: {},
+  unassignedPointsLog: [],
+  assignedPointsLog: [],
 
   setComputedData: (data) => set((state) => ({ ...state, ...data })),
   setIsComputing: (val) => set({ isComputing: val }),

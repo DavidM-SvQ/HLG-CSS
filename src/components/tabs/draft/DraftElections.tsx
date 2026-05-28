@@ -8,7 +8,7 @@ import { ReportCard } from '../../ui/ReportCard';
 import { useDebounce } from '../../../lib/hooks/useDebounce';
 import { useTableScreenshot } from '../../../hooks/useTableScreenshot';
 import { useUrlState } from '../../../hooks/useUrlState';
-import { useDraftElectionsState } from './hooks/useDraftElectionsState';
+import { useDraftElectionsState, DEFAULT_DRAFT_COLS } from './hooks/useDraftElectionsState';
 import { useDraftElectionsExports } from './hooks/useDraftElectionsExports';
 import { useDraftElectionsLogic } from './hooks/useDraftElectionsLogic';
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
@@ -48,11 +48,13 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     isDraftRoundFilterOpen, setIsDraftRoundFilterOpen,
     isDraftTeamFilterOpen, setIsDraftTeamFilterOpen,
     isDraftStatsFilterOpen, setIsDraftStatsFilterOpen,
+    isDraftColsFilterOpen, setIsDraftColsFilterOpen,
     draftStatsFilters, setDraftStatsFilters,
     localDraftStatsFilters, setLocalDraftStatsFilters,
     draftSortColumn, setDraftSortColumn,
     draftSortDirection, setDraftSortDirection,
     isDraftTableExpanded, setIsDraftTableExpanded,
+    draftVisibleCols, setDraftVisibleCols,
   } = useDraftElectionsState();
 
   const debouncedSearch = useDebounce(localSearch, 300);
@@ -140,6 +142,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
             setIsDraftRoundFilterOpen(true);
             setIsDraftTeamFilterOpen(false);
             setIsDraftStatsFilterOpen(false);
+            setIsDraftColsFilterOpen(false);
           } else {
             setIsDraftRoundFilterOpen(false);
           }
@@ -187,6 +190,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
             setIsDraftTeamFilterOpen(true);
             setIsDraftRoundFilterOpen(false);
             setIsDraftStatsFilterOpen(false);
+            setIsDraftColsFilterOpen(false);
           } else {
             setIsDraftTeamFilterOpen(false);
           }
@@ -234,6 +238,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
             setIsDraftStatsFilterOpen(true);
             setIsDraftTeamFilterOpen(false);
             setIsDraftRoundFilterOpen(false);
+            setIsDraftColsFilterOpen(false);
           } else {
             setIsDraftStatsFilterOpen(false);
           }
@@ -267,11 +272,58 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
                 <div key={stat.key} className="space-y-1">
                   <label className="text-[10px] font-bold text-neutral-500 uppercase">{stat.label}</label>
                   <div className="flex items-center gap-1.5">
-                    <input type="number" placeholder="Min" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                    <input type="text" inputMode="decimal" placeholder="Min" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`min${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`min${stat.key}`]: e.target.value === "" ? undefined : e.target.value }))} />
                     <span className="text-neutral-400 shrink-0">-</span>
-                    <input type="number" placeholder="Max" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value ? Number(e.target.value) : undefined }))} />
+                    <input type="text" inputMode="decimal" placeholder="Max" className="flex-1 w-0 min-w-0 px-2 py-1.5 text-xs text-center border rounded bg-neutral-50 focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors" value={(localDraftStatsFilters as any)[`max${stat.key}`] ?? ""} onChange={(e) => setLocalDraftStatsFilters((prev) => ({ ...prev, [`max${stat.key}`]: e.target.value === "" ? undefined : e.target.value }))} />
                   </div>
                 </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="relative">
+        <Popover open={isDraftColsFilterOpen} onOpenChange={isOpen => {
+          if (isOpen) {
+            setIsDraftColsFilterOpen(true);
+            setIsDraftStatsFilterOpen(false);
+            setIsDraftTeamFilterOpen(false);
+            setIsDraftRoundFilterOpen(false);
+          } else {
+            setIsDraftColsFilterOpen(false);
+          }
+        }}>
+          <PopoverTrigger render={
+            <Button variant="outline"
+              className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[120px] justify-between cursor-pointer"
+            >
+              <span className="text-neutral-700">Columnas</span>
+              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftColsFilterOpen && "rotate-180")} />
+            </Button>
+          } />
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-sm sm:w-64 p-0 rounded-xl shadow-xl z-50 py-2">
+            <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Columnas Visibles</span>
+              {draftVisibleCols.length !== DEFAULT_DRAFT_COLS.length && (
+                <Button variant="ghost" size="sm" onClick={() => setDraftVisibleCols(DEFAULT_DRAFT_COLS)} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Por defecto</Button>
+              )}
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {DEFAULT_DRAFT_COLS.map((col) => (
+                <label key={col} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
+                  <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftVisibleCols.includes(col)} onChange={() => {
+                    if (draftVisibleCols.includes(col)) {
+                        setDraftVisibleCols(draftVisibleCols.filter((c) => c !== col));
+                    } else {
+                        const newCols = [...draftVisibleCols, col];
+                        // sort to match default order
+                        newCols.sort((a,b) => DEFAULT_DRAFT_COLS.indexOf(a) - DEFAULT_DRAFT_COLS.indexOf(b));
+                        setDraftVisibleCols(newCols);
+                    }
+                  }} />
+                  <span className="text-sm text-neutral-700">{col.replace("_", " ")}</span>
+                </label>
               ))}
             </div>
           </PopoverContent>
@@ -287,7 +339,6 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
       icon={<Users />}
       filename="draft-elecciones"
       ref={draftTableRef}
-      headerExtra={filtersUI}
       toolbarProps={{
         isExpanded: isDraftTableExpanded,
         onExpand: () => setIsDraftTableExpanded(!isDraftTableExpanded),
@@ -298,6 +349,9 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
       }}
       bodyClassName="p-0 border-t border-neutral-100"
     >
+      <div className={cn("copy-button-ignore py-4 px-6 border-b border-neutral-100", isDraftTableExpanded && "hidden")}>
+        {filtersUI}
+      </div>
       <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
         {(draftRoundFilter.length > 0 || draftTeamFilter.length > 0 || Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "")) && (
           <div className="flex flex-wrap items-center gap-2">
@@ -345,7 +399,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
               <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 uppercase text-[10px] tracking-wider sticky top-0 z-10">
                 <tr>
-                  {["Elección", "Nombre_Equipo", "Orden_Draft", "Ronda", "Ciclista", "Edad", "País", "Eq_Comp", "Puntos", "V", "C", "DC", "P/C", "P/D", "%"].map((col) => {
+                  {DEFAULT_DRAFT_COLS.filter(col => draftVisibleCols.includes(col)).map((col) => {
                     let colTitle = col;
                     if (col === "V") colTitle = "Victorias"; if (col === "C") colTitle = "Carreras Disputadas"; if (col === "DC") colTitle = "Días de Competición"; if (col === "P/C") colTitle = "Puntos por Carrera"; if (col === "P/D") colTitle = "Puntos por Día"; if (col === "%") colTitle = "% de puntos del equipo";
                     return (
@@ -377,30 +431,30 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
                       return (
                         <tr key={idx} className="draft-row bg-white h-6">
-                          <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
-                          <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
-                          <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
-                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
-                          <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>
-                          <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
-                          <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
-                          <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
-                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
-                          <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
+                          {draftVisibleCols.includes("Elección") && <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>}
+                          {draftVisibleCols.includes("Nombre_Equipo") && <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>}
+                          {draftVisibleCols.includes("Orden_Draft") && <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>}
+                          {draftVisibleCols.includes("Ronda") && <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>}
+                          {draftVisibleCols.includes("Ciclista") && <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>}
+                          {draftVisibleCols.includes("Edad") && <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>}
+                          {draftVisibleCols.includes("País") && <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>}
+                          {draftVisibleCols.includes("Eq_Comp") && <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>}
+                          {draftVisibleCols.includes("Puntos") && <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>}
+                          {draftVisibleCols.includes("V") && <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>}
+                          {draftVisibleCols.includes("C") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>}
+                          {draftVisibleCols.includes("DC") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>}
+                          {draftVisibleCols.includes("P/C") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>}
+                          {draftVisibleCols.includes("P/D") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>}
+                          {draftVisibleCols.includes("%") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
                             {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
-                          </td>
+                          </td>}
                         </tr>
                       );
                     });
                   })()
                 ) : (
                   <>
-                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={15} /></tr>}
+                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} colSpan={draftVisibleCols.length} /></tr>}
                     {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                       const row = draftSortedData[virtualRow.index]; const idx = virtualRow.index;
                       const ciclista = getVal(row, "Ciclista") || "";
@@ -410,27 +464,27 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
                       return (
                         <tr key={idx} className="draft-row hover:bg-neutral-50 transition-colors h-6">
-                          <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>
-                          <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>
-                          <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>
-                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>
-                          <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>
-                          <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>
-                          <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>
-                          <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>
-                          <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>
-                          <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>
-                          <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
+                          {draftVisibleCols.includes("Elección") && <td className="px-1 py-0.5 font-medium text-neutral-900 text-center">{getVal(row, "Elección")}</td>}
+                          {draftVisibleCols.includes("Nombre_Equipo") && <td className="px-1 py-0.5 text-left min-w-0 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e5e5e5]">{getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG")}</td>}
+                          {draftVisibleCols.includes("Orden_Draft") && <td className="px-1 py-0.5 text-center">{getVal(row, "Orden_Draft")}</td>}
+                          {draftVisibleCols.includes("Ronda") && <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center bg-neutral-100 text-neutral-600 px-1 py-px rounded text-[9px] font-bold">{getVal(row, "Ronda")}</span></td>}
+                          {draftVisibleCols.includes("Ciclista") && <td className="px-1 py-0.5 font-medium text-blue-600 text-[10px]">{ciclista}</td>}
+                          {draftVisibleCols.includes("Edad") && <td className="px-1 py-0.5 text-center">{getVal(row, "Edad")}</td>}
+                          {draftVisibleCols.includes("País") && <td className="px-1 py-0.5 text-center" title={getVal(row, "País")}><span className="text-xs">{getFlagEmoji(getVal(row, "País"))}</span></td>}
+                          {draftVisibleCols.includes("Eq_Comp") && <td className="px-1 py-0.5 text-center text-neutral-500 min-w-0">{cyclistMetadata[ciclista]?.equipoBreve || getVal(row, "Eq_Comp")}</td>}
+                          {draftVisibleCols.includes("Puntos") && <td className="px-1 py-0.5 text-center"><span className="inline-flex items-center justify-center px-1 py-0.5 rounded font-bold min-w-[2.5rem] tracking-tight text-[10px]" style={pointsStyle}>{stats.puntos}</span></td>}
+                          {draftVisibleCols.includes("V") && <td className="px-1 py-0.5 text-center">{stats.victorias > 0 ? <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 px-1 py-px rounded text-[9px] font-bold tracking-tight">{stats.victorias}</span> : <span className="text-neutral-300">-</span>}</td>}
+                          {draftVisibleCols.includes("C") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.carrerasDisputadas === minCarreras ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas || 0}</td>}
+                          {draftVisibleCols.includes("DC") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion || 0) === 0 ? "text-red-500" : cyclistMetadata[ciclista]?.diasCompeticion === minDc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion || 0}</td>}
+                          {draftVisibleCols.includes("P/C") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas === minPpc ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.carrerasDisputadas > 0 ? (stats.puntos / cyclistMetadata[ciclista].carrerasDisputadas).toFixed(1) : "0.0"}</td>}
+                          {draftVisibleCols.includes("P/D") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (cyclistMetadata[ciclista]?.diasCompeticion > 0 ? stats.puntos / cyclistMetadata[ciclista].diasCompeticion : 0) === 0 ? "text-red-500" : stats.puntos / cyclistMetadata[ciclista].diasCompeticion === minPpd ? "text-orange-500 font-bold" : "")}>{cyclistMetadata[ciclista]?.diasCompeticion > 0 ? (stats.puntos / cyclistMetadata[ciclista].diasCompeticion).toFixed(1) : "0.0"}</td>}
+                          {draftVisibleCols.includes("%") && <td className={cn("px-1 py-0.5 text-center font-mono tabular-nums", (() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; if (pct === 0) return "text-red-500"; if (pct === minPct) return "text-orange-500 font-bold"; return ""; })())}>
                             {(() => { const eq = getVal(row, "Nombre_Equipo") || (getVal(row, "Nombre_TG") as string); const pct = eq && teamTotalPoints[eq] > 0 ? (stats.puntos / teamTotalPoints[eq]) * 100 : 0; return pct.toFixed(1) + "%"; })()}
-                          </td>
+                          </td>}
                         </tr>
                       );
                     })}
-                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }} colSpan={15} /></tr>}
+                    {rowVirtualizer.getVirtualItems().length > 0 && <tr><td style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }} colSpan={draftVisibleCols.length} /></tr>}
                   </>
                 )}
               </tbody>

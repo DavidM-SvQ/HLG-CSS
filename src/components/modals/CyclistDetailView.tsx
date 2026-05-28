@@ -2,7 +2,7 @@ import { AppState } from '../../lib/types';
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
-import { User, Search, Minimize2, Maximize2, Copy, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, Download, Database } from "lucide-react";
+import { User, Search, Minimize2, Maximize2, Camera, CheckCircle2, FileText, X, ChevronDown, Trophy, ChevronsUp, Minus, ChevronsDown, AlertTriangle, CloudDownload, Database } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getVal, getCategoryColorStyle } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
@@ -385,7 +385,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     {isCyclistDetailCopying ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
-                      <Copy className="w-4 h-4" />
+                      <Camera className="w-4 h-4" />
                     )}
                   </Button>
                   <Button variant="outline"
@@ -402,7 +402,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     {isCyclistDetailDownloading ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
-                      <Download className="w-4 h-4" />
+                      <CloudDownload className="w-4 h-4" />
                     )}
                   </Button>
                   <Button variant="ghost" size="icon"

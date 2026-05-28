@@ -1,11 +1,11 @@
 import React, { useContext } from "react";
-import { Copy, Maximize2, UploadCloud, CheckCircle2, Trophy, X } from "lucide-react";
+import { Trophy, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
-import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function TeamWinsRankingChart() {
   const context = useContext(SeasonViewContext)!;
@@ -16,15 +16,6 @@ export function TeamWinsRankingChart() {
 
   const [isWinsRankingExpanded, setIsWinsRankingExpanded] = React.useState(false);
   const winsRankingRef = React.useRef<HTMLDivElement>(null);
-  
-  const { handleCopyImage: copyWinsRankingImage, handleDownloadImage: downloadWinsRankingImage, isCopying: isWinsRankingCopying } = useTableScreenshot(winsRankingRef);
-
-  const handleCopyWinsRanking = async () => {
-    await copyWinsRankingImage({ fileName: "export.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
-  const handleDownloadWinsRanking = async () => {
-    await downloadWinsRankingImage({ fileName: "ranking-victorias.png", scale: 3, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff" });
-  };
 
   const { teamWinsRankingData } = useFilters(context);
   const maxChartWins = teamWinsRankingData.length > 0 ? teamWinsRankingData[0].wins : 0;
@@ -40,34 +31,13 @@ export function TeamWinsRankingChart() {
             <Trophy className="w-5 h-5 text-yellow-500 shrink-0" />
             <span className="truncate">Ranking de Victorias por Equipo</span>
           </h3>
-          <div className="copy-button-ignore flex items-center gap-2 shrink-0">
-            <Button variant="outline"
-              onClick={() => setIsWinsRankingExpanded(true)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-              title="Ampliar gráfico"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon"
-              onClick={handleCopyWinsRanking}
-              disabled={isWinsRankingCopying}
-              className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm",
-                isWinsRankingCopying
-                  ? "bg-green-50 text-green-600 border border-green-200"
-                  : "bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100"
-              )}
-              title={isWinsRankingCopying ? "Copiado" : "Copiar gráfico como imagen"}
-            >
-              {isWinsRankingCopying ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
-            <Button variant="ghost" size="sm"
-              onClick={handleDownloadWinsRanking}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm"
-              title="Descargar gráfico como imagen"
-            >
-              <UploadCloud className="w-4 h-4 rotate-180" />
-            </Button>
+          <div className="copy-button-ignore">
+            <ExportToolbar
+              targetRef={winsRankingRef}
+              filename="ranking-victorias"
+              isExpanded={false}
+              onExpand={() => setIsWinsRankingExpanded(true)}
+            />
           </div>
         </div>
         <div className="h-[500px] w-full mt-4">

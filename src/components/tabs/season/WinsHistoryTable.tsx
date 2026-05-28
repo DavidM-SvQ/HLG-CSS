@@ -18,7 +18,8 @@ export function WinsHistoryTable() {
     historyTeamFilter, setHistoryTeamFilter,
     historyMonthFilter, setHistoryMonthFilter,
     historySortColumn, setHistorySortColumn,
-    historySortDirection, setHistorySortDirection
+    historySortDirection, setHistorySortDirection,
+    formatNumberSpanish
   } = context;
 
   const [isWinsHistoryExpanded, setIsWinsHistoryExpanded] = React.useState(false);

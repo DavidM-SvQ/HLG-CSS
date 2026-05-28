@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Users, X, CheckCircle2, Copy } from "lucide-react";
+import { Users, X, CheckCircle2, Camera } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
 import { cn } from "../../../../lib/utils";
@@ -82,33 +82,10 @@ export const RaceDetailedBreakdown = ({
         isTextCopying: isTextCopying,
         useClipboardIconForText: true,
         textCopyLabel: "",
-        onCopyImage: () => onCopyImage("full"),
-        isImageCopying: isImageCopying === "full",
-        onDownloadImage: onDownloadImage,
-        customImageButtons: numBlocks > 1 ? (
-          <div className="flex border-l border-neutral-200 pl-2 gap-1.5 ml-1">
-            {Array.from({ length: numBlocks }).map((_, idx) => {
-              const blockId = String(idx + 1);
-              return (
-                <Button key={blockId} variant="outline"
-                  onClick={() => onCopyImage(blockId)}
-                  disabled={!!isImageCopying}
-                  className={cn(
-                    "px-2.5 py-1 text-[10px] font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all copy-button-ignore",
-                    isImageCopying === blockId
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900",
-                    isImageCopying && isImageCopying !== blockId && "opacity-50 cursor-not-allowed"
-                  )}
-                  title={`Copiar parte ${blockId}`}
-                >
-                  {isImageCopying === blockId ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  Pte {blockId}
-                </Button>
-              )
-            })}
-          </div>
-        ) : null
+        onCopyImage: (range?: string) => onCopyImage(range || "full"),
+        isImageCopying: isImageCopying,
+        onDownloadImage: (range?: string) => onDownloadImage?.(range || "full"),
+        numBlocks: numBlocks > 1 ? numBlocks : undefined,
       }}
       bodyClassName="bg-white p-4 rounded-b-xl border-t border-neutral-100"
     >

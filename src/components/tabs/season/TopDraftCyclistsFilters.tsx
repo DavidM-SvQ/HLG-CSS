@@ -1,7 +1,8 @@
 import React from "react";
-import { Copy, Maximize2, UploadCloud, ChevronDown, CheckCircle2, ClipboardList, Search, X, User } from "lucide-react";
+import { ChevronDown, User } from "lucide-react";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
+import { ExportToolbar } from "../../ui/ExportToolbar";
 
 export function TopDraftCyclistsFilters(props: any) {
   const {
@@ -41,6 +42,10 @@ export function TopDraftCyclistsFilters(props: any) {
     ).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b));
   }, [cyclistsRoundMap]);
 
+  const count = topCyclistsLimit === 9999 ? (leaderboard?.length || 0) : topCyclistsLimit;
+  const pages = Math.ceil(count / 50);
+  const numBlocks = topCyclistsLimit > 50 && pages > 1 ? pages : undefined;
+
   return (
     <>
       <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
@@ -53,37 +58,19 @@ export function TopDraftCyclistsFilters(props: any) {
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mt-1">
-          <div className="copy-button-ignore flex flex-wrap items-center gap-2 pr-3 border-r border-neutral-200">
-            <Button variant="outline" onClick={() => setIsTopCyclistsDraftExpanded(true)} className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm" title="Ampliar tabla">
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" onClick={() => handleCopyTopCyclistsDraft("full")} disabled={!!isTopCyclistsDraftCopying} className={cn("flex items-center justify-center w-8 h-8 rounded-lg transition-all shadow-sm border", isTopCyclistsDraftCopying === "full" ? "bg-green-50 text-green-600 border-green-200" : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-100")} title="Copiar tabla completa como imagen">
-              {isTopCyclistsDraftCopying === "full" ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
-            {topCyclistsLimit > 50 && (
-              <div className="flex items-center gap-1.5 px-2 border-l border-neutral-200 ml-1">
-                {Array.from({ length: Math.ceil((topCyclistsLimit === 9999 ? 500 : topCyclistsLimit) / 50) }).map((_, i) => {
-                  const s = "p" + (i + 1);
-                  const start = i * 50 + 1;
-                  const end = (i + 1) * 50;
-                  const label = start + "-" + end;
-                  const isCopyingThis = isTopCyclistsDraftCopying === s;
-                  return (
-                    <Button variant="outline" key={s} onClick={() => handleCopyTopCyclistsDraft(s as any)} disabled={!!isTopCyclistsDraftCopying} className={cn("px-2.5 py-1 text-xs font-semibold rounded-md border shadow-sm flex items-center gap-1.5 transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900", isCopyingThis ? "bg-green-50 text-green-700 border-green-200" : "bg-white", isTopCyclistsDraftCopying && !isCopyingThis && "opacity-50 cursor-not-allowed")}>
-                      {isCopyingThis ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {label}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleCopyTopCyclistsDraftText} disabled={isTopCyclistsDraftTextCopying} className={cn("px-3 h-8 text-sm font-medium rounded-lg border shadow-sm flex items-center justify-center transition-all", isTopCyclistsDraftTextCopying ? "bg-green-50 text-green-600 border-green-200" : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-100")} title="Copiar texto de la tabla">
-              {isTopCyclistsDraftTextCopying ? <CheckCircle2 className="w-4 h-4 mr-1.5" /> : <ClipboardList className="w-4 h-4 mr-1.5" />}
-              Texto
-            </Button>
-            <Button variant="outline" onClick={() => handleDownloadTopCyclistsDraft("full")} className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-100 transition-all shadow-sm" title="Descargar tabla completa como imagen">
-              <UploadCloud className="w-4 h-4 rotate-180" />
-            </Button>
+          <div className="copy-button-ignore pr-3 border-r border-neutral-200 shrink-0">
+            <ExportToolbar
+              isExpanded={isTopCyclistsDraftExpanded}
+              onExpand={() => setIsTopCyclistsDraftExpanded(!isTopCyclistsDraftExpanded)}
+              onCopyImage={(range) => handleCopyTopCyclistsDraft(range || "full")}
+              isImageCopying={isTopCyclistsDraftCopying}
+              onDownloadImage={(range) => handleDownloadTopCyclistsDraft(range || "full")}
+              onCopyText={handleCopyTopCyclistsDraftText}
+              isTextCopying={isTopCyclistsDraftTextCopying}
+              textCopyLabel="Texto"
+              useClipboardIconForText={true}
+              numBlocks={numBlocks}
+            />
           </div>
 
           <div className="relative">

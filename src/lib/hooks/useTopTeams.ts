@@ -2,7 +2,7 @@ import { TopTeamStat } from '../types';
 import { useMemo } from "react";
 import { useDataStore } from "../stores/useDataStore";
 import { useComputedStore } from "../stores/useComputedStore";
-import { getVal } from "../data-processing";
+import { getVal, parseSafeDateStr } from "../data-processing";
 
 export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: string, topTeamsSortColumn: string, topTeamsSortDirection: string) {
   const { files } = useDataStore();
@@ -36,10 +36,11 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
-        const parts = fechaFin.toString().split(/[-/]/);
+        const parsedStr = parseSafeDateStr(fechaFin);
+        const parts = parsedStr.split(/[-/]/);
         if (parts.length >= 2) {
           const monthIndex = parseInt(parts[1]) - 1;
-          raceMonths[carreraName] = monthIndex;
+          if (!isNaN(monthIndex)) raceMonths[carreraName] = monthIndex;
         }
       }
     });
