@@ -16,6 +16,14 @@ export function VirtualizedTableBody({
   className?: string;
   scrollElementRef: React.RefObject<HTMLDivElement>;
 }) {
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+
+  React.useEffect(() => {
+    if (scrollElementRef.current) {
+      forceUpdate();
+    }
+  }, [scrollElementRef.current]);
+
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollElementRef.current,

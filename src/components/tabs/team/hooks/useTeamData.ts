@@ -90,6 +90,7 @@ export function useTeamData({
     });
 
     const unscoredCount = cyclistStats.filter((c: any) => c.puntos === 0).length;
+    const undebutedCount = cyclistStats.filter((c: any) => (c.diasCompeticion || 0) === 0).length;
 
     return {
       teamPlayer,
@@ -101,6 +102,7 @@ export function useTeamData({
       difConOrden,
       cyclistStats,
       unscoredCount,
+      undebutedCount,
     };
   }, [
     selectedTeam,

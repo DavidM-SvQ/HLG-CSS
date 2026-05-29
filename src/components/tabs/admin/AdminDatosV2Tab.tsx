@@ -6,10 +6,11 @@ import { FileSpreadsheet, RefreshCcw, Save, ExternalLink, Calculator, Trophy, Ch
 import { useDataStore } from "../../../lib/stores/useDataStore";
 import { useComputedStore } from "../../../lib/stores/useComputedStore";
 import { parse } from "papaparse";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../ui/tooltip";
 
 export const AdminDatosV2Tab = () => {
   const { updateFile } = useDataStore();
-  const { leaderboard, cyclistMetadata, unassignedPointsLog, assignedPointsLog, debugLastRows } = useComputedStore();
+  const { leaderboard, cyclistMetadata, unassignedPointsLog, assignedPointsLog, debugLastRows, playerByCyclist } = useComputedStore();
   const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
   const [expandedIframes, setExpandedIframes] = useState<Record<string, boolean>>({ resultados: true });
   
@@ -22,7 +23,7 @@ export const AdminDatosV2Tab = () => {
   const displayUnassigned = useMemo(() => {
     if (!unassignedPointsLog) return [];
     if (avisosFilter === 'errores') {
-      return unassignedPointsLog.filter(log => !log.reason.startsWith("No se encontraron puntos para"));
+      return unassignedPointsLog.filter(log => log.reason && !log.reason.startsWith("No se encontraron puntos para"));
     }
     return unassignedPointsLog;
   }, [unassignedPointsLog, avisosFilter]);
@@ -84,9 +85,9 @@ export const AdminDatosV2Tab = () => {
     return base;
   };
 
-  const syncSheet = async (id: string, showAlert: boolean = true) => {
+  const syncSheet = async (id: string, showAlert: boolean = true, skipStateUpdate: boolean = false) => {
     const url = sheetUrls[id];
-    if (!url) return 0;
+    if (!url) return null;
 
     setLoading(prev => ({ ...prev, [id]: true }));
     let rowCount = 0;
@@ -100,10 +101,9 @@ export const AdminDatosV2Tab = () => {
         throw new Error("El enlace devuelve una página web en lugar de un CSV. Asegúrate de que el documento es público para todos.");
       }
       
-      // Papaparse for CSV content (File parsing equivalent)
       const parseResult = parse(text, {
         header: true,
-        dynamicTyping: true,
+        dynamicTyping: false,
         skipEmptyLines: true,
       });
       
@@ -114,31 +114,33 @@ export const AdminDatosV2Tab = () => {
       
       if (parseResult.errors.length > 0) {
         console.warn(`PapaParse encontró errores en ${id}:`, parseResult.errors);
-        // Sometimes PapaParse stops parsing if there's a fatal error (like unescaped quotes).
-        // Let's at least log it.
       }
       
-      updateFile(id as any, { 
+      const newData = { 
          file: new File([text], `${id}.csv`, { type: 'text/csv' }),
          data: parseResult.data as any,
          error: null,
          loading: false
-      });
+      };
 
-      if (showAlert) {
+      if (!skipStateUpdate) {
+        updateFile(id as any, newData);
+      }
+
+      if (showAlert && !skipStateUpdate) {
          setSyncStatusMsg(`Sincronización de ${id} completada con éxito. Filas leídas: ${rowCount}`);
          setTimeout(() => setSyncStatusMsg(""), 5000);
       }
-      return rowCount;
+      
+      return { rowCount, newData };
     } catch (e: any) {
       console.error(`Error in syncSheet for ${id}:`, e);
       let errorMsg = e.message;
       if (errorMsg === 'Failed to fetch') {
          errorMsg = "Bloqueado o permisos denegados. ¿Está el documento configurado como 'Cualquier usuario que tenga el vínculo puede LEER'?";
       }
-      if (showAlert) {
+      if (showAlert && !skipStateUpdate) {
          setSyncStatusMsg(`Error sincronizando ${id}: ` + errorMsg);
-         return 0;
       }
       throw new Error(errorMsg);
     } finally {
@@ -151,20 +153,33 @@ export const AdminDatosV2Tab = () => {
     setSyncStatusMsg("Sincronizando todas las tablas...");
     const counts: Record<string, number> = {};
     const errors: string[] = [];
+    const bulkUpdates: Record<string, any> = {};
     
     for (const id of ids) {
       if (sheetUrls[id]) {
         try {
-          // Temporarily bypass silent catch in syncSheet by not swallowing it silently inside syncAll
-          const res = await syncSheet(id, false);
-          if (res) counts[id] = res;
-          if (res === 0) errors.push(`${id} (cero filas)`);
+          const res = await syncSheet(id, false, true);
+          if (res) {
+            counts[id] = res.rowCount;
+            bulkUpdates[id] = res.newData;
+            if (res.rowCount === 0) errors.push(`${id} (cero filas)`);
+          }
         } catch (e: any) {
           errors.push(`${id}: ${e.message}`);
         }
       }
     }
     
+    if (Object.keys(bulkUpdates).length > 0) {
+      useDataStore.getState().setFiles(prev => {
+        const next = { ...prev };
+        for (const id in bulkUpdates) {
+          next[id] = { ...next[id as keyof typeof next], ...bulkUpdates[id] };
+        }
+        return next;
+      });
+    }
+
     let sum = 0;
     Object.values(counts).forEach(c => sum += c);
     let msg = `Sincronización completada. Tablas principales leídas correctamente.`;
@@ -365,22 +380,46 @@ export const AdminDatosV2Tab = () => {
           <div className="space-y-4">
             {leaderboard.map((team, idx) => {
               // Agrupar puntos por ciclista
-              const cyclistPoints: Record<string, number> = {};
+              const cyclistPointData: Record<string, { total: number, detalles: any[] }> = {};
               team.detalles.forEach(d => {
-                cyclistPoints[d.ciclista] = (cyclistPoints[d.ciclista] || 0) + d.puntosObtenidos;
+                if (!cyclistPointData[d.ciclista]) {
+                  cyclistPointData[d.ciclista] = { total: 0, detalles: [] };
+                }
+                cyclistPointData[d.ciclista].total += d.puntosObtenidos;
+                cyclistPointData[d.ciclista].detalles.push(d);
+              });
+
+              const teamCyclistsStr = Object.keys(playerByCyclist).filter(c => playerByCyclist[c] === team.jugador);
+              Object.keys(cyclistPointData).forEach(c => {
+                 if (!teamCyclistsStr.includes(c)) teamCyclistsStr.push(c);
               });
 
               // Crear array de ciclistas con su metadata, ordenados por ronda
-              const cyclistArr = Object.entries(cyclistPoints).map(([name, pts]) => {
+              const cyclistArr = teamCyclistsStr.map((name) => {
+                const ptsRaw = cyclistPointData[name];
+                const pts = ptsRaw?.total || 0;
+                
+                // Ordenar detalles por fecha descendente
+                const detalles = ptsRaw?.detalles ? [...ptsRaw.detalles].sort((a, b) => {
+                  if (!a.fecha) return 1;
+                  if (!b.fecha) return -1;
+                  const dateA = new Date(a.fecha);
+                  const dateB = new Date(b.fecha);
+                  return dateB.getTime() - dateA.getTime();
+                }) : [];
+
                 const meta = cyclistMetadata[name];
                 return {
                   name,
                   pts,
                   rondaId: meta?.ronda || 'Z', // Si no hay ronda, al final
-                  eleccion: meta?.eleccion || 999
+                  eleccion: meta?.eleccion || 999,
+                  detalles
                 };
               }).sort((a, b) => {
-                if (a.rondaId !== b.rondaId) return a.rondaId.localeCompare(b.rondaId);
+                const rA = String(a.rondaId);
+                const rB = String(b.rondaId);
+                if (rA !== rB) return rA.localeCompare(rB);
                 return a.eleccion - b.eleccion;
               });
 
@@ -420,12 +459,48 @@ export const AdminDatosV2Tab = () => {
                               </span>
                               <span className="font-medium truncate" title={c.name}>{c.name}</span>
                             </div>
-                            <span className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2">{c.pts} <span className="text-xs font-normal text-neutral-400">pts</span></span>
+                            
+                            {c.pts > 0 ? (
+                              <TooltipProvider delay={0}>
+                                <Tooltip>
+                                  <TooltipTrigger className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2 cursor-help border-b border-dotted border-indigo-300 bg-transparent p-0 m-0 border-t-0 border-x-0 outline-none">
+                                      {c.pts} <span className="text-xs font-normal text-neutral-400">pts</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="w-[340px] max-w-none max-h-96 overflow-y-auto overflow-x-hidden p-0 z-[100] relative bg-white text-slate-800 border border-slate-200 shadow-xl [&>svg]:hidden [&>div.bg-foreground]:hidden">
+                                    <div className="sticky top-0 z-[102] bg-white border-b border-slate-100 p-2 font-semibold text-xs shadow-sm flex items-center justify-between">
+                                      <span>Desglose {c.name}</span>
+                                      <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-[10px]">{c.pts} pts</span>
+                                    </div>
+                                    <div className="flex flex-col divide-y divide-slate-50 relative z-[101]">
+                                      {c.detalles.filter(d => d.puntosObtenidos > 0).map((det, i) => (
+                                        <div key={i} className="px-3 py-2 text-xs flex justify-between items-start hover:bg-slate-50">
+                                          <div className="flex flex-col gap-0.5 overflow-hidden pr-2">
+                                            <span className="font-semibold text-slate-800 break-words whitespace-normal leading-tight">{det.carrera}</span>
+                                            <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                                              {det.fecha && <span>{det.fecha}</span>}
+                                              {det.tipoResultado && <span className="uppercase text-[9px] font-bold text-slate-400">{det.tipoResultado}</span>}
+                                            </div>
+                                          </div>
+                                          <div className="text-right flex flex-col items-end shrink-0">
+                                            <span className="font-bold text-indigo-600">{det.puntosObtenidos}</span>
+                                            {det.posicion && <span className="text-[10px] text-slate-400">Pos: {det.posicion}</span>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <span className="font-bold text-neutral-400 tabular-nums shrink-0 ml-2">
+                                0 <span className="text-xs font-normal text-neutral-300">pts</span>
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
                       {cyclistArr.length === 0 && (
-                        <p className="text-sm text-neutral-500 italic text-center py-4">No hay ciclistas con puntos para este equipo.</p>
+                        <p className="text-sm text-neutral-500 italic text-center py-4">No hay ciclistas en la plantilla.</p>
                       )}
                     </div>
                   )}

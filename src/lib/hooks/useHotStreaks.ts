@@ -103,8 +103,11 @@ export function useHotStreaks(
       };
     });
 
-    const minP = typeof hotStreakMinPoints === "number" ? hotStreakMinPoints : -Infinity;
-    const maxP = typeof hotStreakMaxPoints === "number" ? hotStreakMaxPoints : Infinity;
+    const parsedMinP = Number(hotStreakMinPoints);
+    const minP = hotStreakMinPoints !== "" && !isNaN(parsedMinP) ? parsedMinP : -Infinity;
+
+    const parsedMaxP = Number(hotStreakMaxPoints);
+    const maxP = hotStreakMaxPoints !== "" && !isNaN(parsedMaxP) ? parsedMaxP : Infinity;
 
     const filtered = streaks.filter(x => x.pointsInPeriod >= minP && x.pointsInPeriod <= maxP);
     filtered.sort((a,b) => b.pointsInPeriod - a.pointsInPeriod);
@@ -214,8 +217,11 @@ export function useHotStreaksTeams(
       };
     });
 
-    const minP = typeof hotStreakMinPoints === "number" ? hotStreakMinPoints : -Infinity;
-    const maxP = typeof hotStreakMaxPoints === "number" ? hotStreakMaxPoints : Infinity;
+    const parsedMinP = Number(hotStreakMinPoints);
+    const minP = hotStreakMinPoints !== "" && !isNaN(parsedMinP) ? parsedMinP : -Infinity;
+
+    const parsedMaxP = Number(hotStreakMaxPoints);
+    const maxP = hotStreakMaxPoints !== "" && !isNaN(parsedMaxP) ? parsedMaxP : Infinity;
 
     const filteredTeams = tStreaks.filter(x => x.pointsInPeriod >= minP && x.pointsInPeriod <= maxP);
     filteredTeams.sort((a,b) => b.pointsInPeriod - a.pointsInPeriod);

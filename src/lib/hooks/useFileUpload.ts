@@ -19,7 +19,7 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      dynamicTyping: true,
+      dynamicTyping: false,
       worker: true,
       complete: async (results) => {
         const ftConfig = FILE_TYPES.find((f) => f.id === id);

@@ -103,8 +103,8 @@ export const TeamCyclistsTable = ({ cyclistStats }: TeamCyclistsTableProps) => {
 
   return (
     <div className="table-container-for-capture bg-white border border-neutral-200 rounded-xl overflow-x-auto overflow-y-auto shadow-sm flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full">
-        <table className="w-full text-xs text-left whitespace-nowrap border-collapse mx-auto">
+      <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full group-[.is-exporting]:w-auto group-[.is-exporting]:max-h-none">
+        <table className="w-full text-xs text-left whitespace-nowrap border-collapse mx-auto group-[.is-exporting]:w-auto">
           <thead className="bg-[#1e293b] text-white border-b border-neutral-100 text-[9px] tracking-tight uppercase font-bold sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 text-center cursor-pointer hover:bg-slate-700 select-none transition-colors" title="Ronda de elección" onClick={() => handleSort("ronda", "asc")}>

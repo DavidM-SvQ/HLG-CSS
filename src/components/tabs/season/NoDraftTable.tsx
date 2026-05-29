@@ -138,67 +138,57 @@ export function NoDraftTable({
                         <span className="font-bold text-neutral-900 text-[13px] md:text-[11px] truncate md:whitespace-nowrap">{s.name}</span>
                       </td>
                       <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
-                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
-                        <div className="flex justify-center flex-1 md:block">
-                          <span
-                            className={cn(
-                              "font-mono tabular-nums",
-                              s.ronda === "01" || s.ronda === "02" || s.ronda === "03" || s.ronda === "1" || s.ronda === "2" || s.ronda === "3"
-                                ? "bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded shadow-sm border border-yellow-200"
-                                : "text-neutral-500"
-                            )}
-                          >
-                            {s.ronda}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
-                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Edad</span>
-                        <span className="font-mono tabular-nums opacity-80">{s.edad}</span>
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                        <span className="text-neutral-900 font-semibold md:font-semibold truncate md:whitespace-nowrap">{s.data.equipoBreve}</span>
                       </td>
                       <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
                         <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
-                        <span className="text-xl md:text-lg leading-none" title={s.paisLetras || s.pais}>{s.pais}</span>
+                        <span className="text-xl md:text-lg">{s.data.pais}</span>
                       </td>
-                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center">
-                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq Comp</span>
-                        <span className="font-semibold text-neutral-700 text-sm md:text-[11px]">{s.equipo}</span>
-                      </td>
-
-                      <td
-                        className={cn("px-4 py-3 md:py-1 flex justify-between items-center md:table-cell border-t md:border-t-0 border-neutral-100 rounded-b-xl md:rounded-none order-last md:order-none", s.puntos > 0 ? "bg-blue-50/50 md:bg-transparent" : "bg-neutral-50/50 md:bg-transparent")}
-                      >
-                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: s.puntos > 0 ? "inherit" : undefined, opacity: s.puntos > 0 ? 0.7 : undefined}}>Puntos</span>
-                        <div className="flex flex-col items-center flex-1  md:block">
+                      
+                      <td className="pt-2 pb-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Victorias</span>
                           <span
                             className={cn(
-                              "font-mono tabular-nums text-sm md:text-sm tracking-tight",
-                              s.puntos > 0 ? "font-bold" : "text-red-500 font-bold"
+                              "text-center text-[13px] md:text-[11px]",
+                              s.data.victorias > 0 ? "text-green-700 font-bold bg-green-50 md:bg-transparent rounded" : "text-neutral-900 font-medium"
                             )}
-                            style={s.puntos > 0 ? {
-                                color: (() => {
-                                  if (maxPuntos === minPuntos) return `hsl(142, 70%, 35%)`;
-                                  const ratio = (s.puntos - minPuntos) / (maxPuntos - minPuntos);
-                                  const hue = 45 + ratio * (142 - 45);
-                                  return `hsl(${hue}, 80%, 35%)`;
-                                })()
-                            } : undefined}
                           >
-                            {s.puntos}
+                            {s.data.victorias}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell text-center relative border-b md:border-b-0 border-neutral-100 bg-neutral-50/30 md:bg-transparent">
-                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Top %</span>
-                        <div className="w-full flex justify-center">
-                          <div className="w-24 md:w-16 h-2 md:h-1.5 bg-neutral-100 rounded-full overflow-hidden flex shadow-inner">
-                            <div
-                              className="h-full rounded-full transition-all duration-500 ease-out shrink-0"
-                              style={{ width: `${s.puntos > 0 ? Math.max(5, (s.puntos / maxPuntos) * 100) : 0}%`,
-                              backgroundColor: s.puntos > 0 ? (() => { if(maxPuntos===minPuntos)return`hsl(142,60%,40%)`;const ratio=(s.puntos-minPuntos)/(maxPuntos-minPuntos);const hue=45+ratio*(142-45);return`hsl(${hue},70%,45%)`;})() : 'transparent'
-                               }}
-                            ></div>
-                          </div>
+                      
+                      <td className="py-2 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carreras</span>
+                          <span className="text-center text-neutral-900 font-medium font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {s.numCarreras}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="pb-2 pt-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ptos/Carrera</span>
+                          <span className="text-center text-neutral-900 font-medium font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {s.ppc.toFixed(1)}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 md:py-1 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent border-t border-neutral-100 md:border-none">
+                        <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Puntos</span>
+                        <div className="flex justify-end md:block">
+                          <span
+                            className="text-right md:text-center font-black font-mono tabular-nums text-[14px] md:text-[11px]"
+                            style={{
+                              color: `hsl(${45 + ((s.data.puntos - minPuntos) / (maxPuntos - minPuntos || 1)) * 75}, 80%, 40%)`,
+                            }}
+                          >
+                            {s.data.puntos}
+                          </span>
                         </div>
                       </td>
                     </tr>

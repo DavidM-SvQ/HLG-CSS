@@ -49,24 +49,24 @@ export function StartlistTeamsTable(props: any) {
                 Equipo
               </th>
               <th
-                className="px-3 py-2 text-center w-px whitespace-nowrap"
-                title="Desviación respecto a la media"
+                className="px-4 py-3 text-center w-px whitespace-nowrap"
+                title="Ciclistas participantes"
               >
                 <span className="border-b border-dashed border-neutral-300">
-                  Nº cic
+                  Nº Ciclistas
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-center w-px"
+                className="px-4 py-3 text-center w-px"
                 title="Puntos Totales (Excluyendo esta carrera)"
               >
                 <span className="border-b border-dashed border-neutral-300">
-                  Pts
+                  Ptos
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-center w-px"
-                title="Puntos Medios"
+                className="px-4 py-3 text-center w-px"
+                title="Puntos Medios por ciclista"
               >
                 <span className="border-b border-dashed border-neutral-300">
                   P/C
@@ -110,17 +110,17 @@ export function StartlistTeamsTable(props: any) {
                       )}
                     <tr
                       className={cn(
-                        "group hover:bg-blue-50/50 transition-colors bg-white border-b border-neutral-100 md:border-none",
+                        "group hover:bg-blue-50/50 transition-colors bg-white border-b border-neutral-200 md:border-none",
                         isHiddenVisual && "hidden",
                       )}
                     >
-                      <td className="px-4 py-2 md:px-2 md:py-0.5 font-medium text-sm md:text-xs md:whitespace-nowrap sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50">
-                        <span className="font-bold text-neutral-900 md:font-medium md:text-current">{r.equipo}</span>
+                      <td className="px-5 py-3 md:px-4 md:py-2.5 font-medium text-sm md:text-sm md:whitespace-nowrap sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50">
+                        <span className="font-bold text-neutral-900 md:font-semibold md:text-current">{r.equipo}</span>
                       </td>
                       
                       <td
                         className={cn(
-                          "px-3 py-2 md:px-2 md:py-0.5 text-center font-mono tabular-nums text-sm md:text-[11px] border-r md:border-r-0 border-neutral-100",
+                          "px-4 py-3 md:px-4 md:py-2.5 text-center font-mono tabular-nums text-sm md:text-xs border-r md:border-r-0 border-neutral-100",
                           r.numCiclistas === 0 && "text-red-600 font-bold bg-white md:bg-transparent",
                           r.numCiclistas !== 0 && r.numCiclistas === maxCiclistas && "bg-green-100 font-bold",
                           r.numCiclistas !== 0 && r.numCiclistas !== maxCiclistas && r.numCiclistas === minCiclistas && "bg-yellow-100 font-bold",
@@ -130,7 +130,7 @@ export function StartlistTeamsTable(props: any) {
                         <span className={cn(r.numCiclistas !== 0 && r.numCiclistas !== maxCiclistas && r.numCiclistas !== minCiclistas && r.numCiclistas !== 0 && "text-neutral-700 md:text-current")}>{r.numCiclistas}</span>
                       </td>
                       <td
-                        className="px-3 py-2 md:px-2 md:py-0.5 text-center font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent"
+                        className="px-4 py-3 md:px-4 md:py-2.5 text-center font-mono tabular-nums text-sm md:text-xs font-bold text-neutral-700 border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent"
                         style={getTeamPointsColorStyle(r.puntos)}
                       >
                         <span className="font-mono tabular-nums tracking-tight">
@@ -138,7 +138,7 @@ export function StartlistTeamsTable(props: any) {
                         </span>
                       </td>
                       <td
-                        className="px-3 py-2 md:px-2 md:py-0.5 text-center font-mono tabular-nums text-sm md:text-[11px] font-bold text-blue-800 bg-white md:bg-transparent"
+                        className="px-4 py-3 md:px-4 md:py-2.5 text-center font-mono tabular-nums text-sm md:text-xs font-bold text-blue-800 bg-white md:bg-transparent"
                         style={getTeamPointsMediosColorStyle(r.puntosMedios)}
                       >
                         <span className="font-mono tabular-nums tracking-tight hover:text-blue-600">

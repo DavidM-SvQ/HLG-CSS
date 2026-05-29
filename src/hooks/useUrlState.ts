@@ -34,7 +34,10 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
         return val.split(",").filter(v => v.trim() !== "") as unknown as T;
       }
       if (typeof initialValueRef.current === "number") {
-        return Number(val) as unknown as T;
+        if (val.trim() === "") return initialValueRef.current;
+        const num = Number(val);
+        if (isNaN(num)) return initialValueRef.current;
+        return num as unknown as T;
       }
       if (typeof initialValueRef.current === "boolean") {
         return (val === "true") as unknown as T;

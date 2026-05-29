@@ -49,7 +49,7 @@ export function StartlistTable(props: any) {
           <thead className="text-[11px] text-neutral-500 uppercase sticky top-0 z-10 bg-neutral-50 shadow-[0_1px_0_0_#e5e5e5] hidden md:table-header-group">
             <tr>
               <th
-                className="px-3 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-[35%] sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]"
+                className="px-3 py-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-[25%] sticky left-0 bg-neutral-50 z-20 shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)]"
                 onClick={() => toggleSort("jugador")}
               >
                 <span className="flex items-center gap-1">
@@ -59,19 +59,19 @@ export function StartlistTable(props: any) {
                 </span>
               </th>
               <th className="px-4 py-3 w-12 text-center text-neutral-400 font-medium">
-                Dor
+                Dorsal
               </th>
-              <th className="px-4 py-3 text-neutral-800 font-semibold w-[35%]">
+              <th className="px-4 py-3 text-neutral-800 font-semibold w-[25%]">
                 Ciclista
               </th>
-              <th className="px-4 py-3 text-center w-[12%]">País</th>
-              <th className="px-4 py-3 text-center w-[12%]">Eq</th>
+              <th className="px-4 py-3 text-center w-[10%]">País</th>
+              <th className="px-4 py-3 text-center w-[10%]">Equipo</th>
               <th
                 className="px-3 py-2 text-center cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-16"
                 onClick={() => toggleSort("ronda")}
               >
                 <span className="flex justify-center gap-1">
-                  Rnd{" "}
+                  RND{" "}
                   {startlistSortCol === "ronda" &&
                     (startlistSortDir === "asc" ? "↑" : "↓")}
                 </span>
@@ -82,20 +82,31 @@ export function StartlistTable(props: any) {
                 title="Días de Competición Totales"
               >
                 <span className="flex justify-center gap-1 border-b border-dashed border-neutral-300">
-                  Día{" "}
+                  Días{" "}
                   {startlistSortCol === "dias" &&
                     (startlistSortDir === "asc" ? "↑" : "↓")}
                 </span>
               </th>
-              <th className="px-4 py-3 text-center w-[10%]">Debut</th>
+              <th className="px-4 py-3 text-center w-[8%]">Debut</th>
               <th
-                className="px-3 py-2 text-right cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-20"
+                className="px-3 py-2 text-right cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group w-16"
                 onClick={() => toggleSort("puntos")}
                 title="Puntos con los que el ciclista ha llegado a esta carrera"
               >
                 <span className="flex justify-end gap-1 border-b border-dashed border-neutral-300">
-                  Pts{" "}
+                  Ptos{" "}
                   {startlistSortCol === "puntos" &&
+                    (startlistSortDir === "asc" ? "↑" : "↓")}
+                </span>
+              </th>
+              <th
+                className="px-4 py-3 text-center w-[8%] cursor-pointer hover:bg-neutral-100 transition-colors duration-150 group"
+                onClick={() => toggleSort("victorias")}
+                title="Victorias del ciclista en la temporada (incluyendo parciales)"
+              >
+                <span className="flex justify-center gap-1 border-b border-dashed border-neutral-300">
+                  Victorias{" "}
+                  {startlistSortCol === "victorias" &&
                     (startlistSortDir === "asc" ? "↑" : "↓")}
                 </span>
               </th>
@@ -104,7 +115,7 @@ export function StartlistTable(props: any) {
           <tbody className="divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group pb-4 md:pb-0 px-2 md:px-0">
             {filteredRows.length === 0 ? (
               <tr className="block">
-                <td colSpan={9} className="py-12 border-none block w-full">
+                <td colSpan={10} className="py-12 border-none block w-full">
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
                       <Search className="w-8 h-8 text-neutral-400" />
@@ -162,7 +173,7 @@ export function StartlistTable(props: any) {
                     className="w-full px-4 py-3 md:px-3 md:py-2 font-medium text-neutral-800 truncate sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50 flex justify-between items-center md:table-cell rounded-t-xl md:rounded-none border-b border-neutral-100 md:border-b-0"
                     title={r.jugador}
                   >
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo ({r.jugadorName})</span>
                     <span className="truncate">{r.jugador}</span>
                   </td>
                   
@@ -170,15 +181,7 @@ export function StartlistTable(props: any) {
                     <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Dor</span>
                     <span className="text-neutral-500 font-mono tabular-nums text-sm md:text-[11px]">{r.dorsal}</span>
                   </td>
-                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
-                    <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
-                  </td>
-                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq</span>
-                    <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
-                  </td>
-                  
+
                   <td
                     className="w-full px-4 py-3 md:px-3 md:py-2 font-semibold text-neutral-900 truncate flex flex-col md:table-cell gap-1 bg-white border-t md:border-t-0 border-neutral-100 text-center md:text-left"
                     title={r.ciclista}
@@ -186,9 +189,18 @@ export function StartlistTable(props: any) {
                     <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
                     <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
                   </td>
+
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
+                    <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
+                  </td>
+                  <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                    <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
+                  </td>
                   
                   <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">RND</span>
                     <div className="flex-1 flex items-center justify-center">
                       <span className={cn(
                         "font-mono tabular-nums text-sm md:text-[11px] px-2 py-0.5 rounded",
@@ -224,20 +236,24 @@ export function StartlistTable(props: any) {
                   </td>
                   
                   <td
-                    className="w-full px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-right border-t md:border-t-0 border-neutral-100"
+                    className="w-full px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-right border-t md:border-t-0 border-neutral-100"
                     style={
                       r.puntos > 0 ? getCyclistPointsColorStyle(r.puntos) : {}
                     }
                   >
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: "inherit", opacity: 0.7}}>Puntos Previos</span>
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: "inherit", opacity: 0.7}}>Ptos</span>
                     <span className="">{formatNumberSpanish(r.puntos)}</span>
+                  </td>
+                  <td className="w-full md:w-auto px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-center border-t md:border-t-0 border-neutral-100">
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Vic</span>
+                    {r.victorias > 0 ? <span className="text-green-700 bg-green-100 px-1.5 py-0.5 rounded font-bold">{r.victorias}</span> : "-"}
                   </td>
                   </tr>
                 );
               })
             ) : (
               <>
-                {paddingTop > 0 && <tr className="block md:table-row"><td style={{height: `${paddingTop}px`, display: "block"}} colSpan={9} /></tr>}
+                {paddingTop > 0 && <tr className="block md:table-row"><td style={{height: `${paddingTop}px`, display: "block"}} colSpan={10} /></tr>}
                 {virtualItems.map((virtualRow) => {
                   const i = virtualRow.index;
                   const r = filteredRows[i];
@@ -268,7 +284,7 @@ export function StartlistTable(props: any) {
                       className="w-full px-4 py-3 md:px-3 md:py-2 font-medium text-neutral-800 truncate sticky left-0 bg-neutral-50/50 md:bg-white z-10 md:shadow-[1px_0_0_0_#e5e5e5,4px_0_8px_-2px_rgba(0,0,0,0.05)] group-hover:bg-blue-50/50 flex justify-between items-center md:table-cell rounded-t-xl md:rounded-none border-b border-neutral-100 md:border-b-0"
                       title={r.jugador}
                     >
-                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo ({r.jugadorName})</span>
                       <span className="truncate">{r.jugador}</span>
                     </td>
                     
@@ -276,15 +292,7 @@ export function StartlistTable(props: any) {
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Dor</span>
                       <span className="text-neutral-500 font-mono tabular-nums text-sm md:text-[11px]">{r.dorsal}</span>
                     </td>
-                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
-                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
-                      <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
-                    </td>
-                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
-                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Eq</span>
-                      <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
-                    </td>
-                    
+
                     <td
                       className="w-full px-4 py-3 md:px-3 md:py-2 font-semibold text-neutral-900 truncate flex flex-col md:table-cell gap-1 bg-white border-t md:border-t-0 border-neutral-100 text-center md:text-left"
                       title={r.ciclista}
@@ -292,9 +300,18 @@ export function StartlistTable(props: any) {
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
                       <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
                     </td>
+
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">País</span>
+                      <span className="text-2xl md:text-xl md:text-base leading-none" title={r.paisLetras}>{r.pais}</span>
+                    </td>
+                    <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center md:table-cell gap-1 text-center bg-white md:bg-transparent">
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
+                      <span className="font-medium text-neutral-700 truncate" title={r.equipo}>{r.equipo}</span>
+                    </td>
                     
                     <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col md:table-cell justify-between items-center text-center border-r md:border-r-0 border-neutral-100 gap-1 content-center bg-white md:bg-transparent">
-                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ronda</span>
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">RND</span>
                       <div className="flex-1 flex items-center justify-center">
                         <span className={cn(
                           "font-mono tabular-nums text-sm md:text-[11px] px-2 py-0.5 rounded",
@@ -330,18 +347,22 @@ export function StartlistTable(props: any) {
                     </td>
                     
                     <td
-                      className="w-full px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-right border-t md:border-t-0 border-neutral-100"
+                      className="w-full px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-right border-t md:border-t-0 border-neutral-100"
                       style={
                         r.puntos > 0 ? getCyclistPointsColorStyle(r.puntos) : {}
                       }
                     >
-                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: "inherit", opacity: 0.7}}>Puntos Previos</span>
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider" style={{color: "inherit", opacity: 0.7}}>Ptos</span>
                       {r.puntos > 0 ? formatNumberSpanish(r.puntos) : "-"}
+                    </td>
+                    <td className="w-full md:w-auto px-4 py-3 md:px-3 md:py-2 flex justify-between items-center md:table-cell rounded-b-xl md:rounded-none bg-blue-50/30 md:bg-transparent font-mono tabular-nums text-sm md:text-[11px] font-bold text-neutral-700 text-center border-t md:border-t-0 border-neutral-100">
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Vic</span>
+                      {r.victorias > 0 ? <span className="text-green-700 bg-green-100 px-1.5 py-0.5 rounded font-bold">{r.victorias}</span> : "-"}
                     </td>
                   </tr>
                   );
                 })}
-                {paddingBottom > 0 && <tr className="block md:table-row"><td style={{height: `${paddingBottom}px`, display: "block"}} colSpan={9} /></tr>}
+                {paddingBottom > 0 && <tr className="block md:table-row"><td style={{height: `${paddingBottom}px`, display: "block"}} colSpan={10} /></tr>}
               </>
             )}
           </tbody>

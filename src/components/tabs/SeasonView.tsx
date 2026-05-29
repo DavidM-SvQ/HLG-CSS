@@ -115,7 +115,7 @@ export const SeasonView = () => {
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
         exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: -10 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="w-full"
+        className="w-full relative z-[100]"
       >
         <Suspense fallback={<TableSkeleton rows={12} />}>
           <SeasonCyclistsTab />

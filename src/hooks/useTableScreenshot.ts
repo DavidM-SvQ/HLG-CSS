@@ -40,7 +40,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
         const dataUrl = await domToDataUrl(tableContainer, {
           scale,
           backgroundColor,
-          style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
+          style: { overflow: "visible", ...style },
           width: computedWidth,
           filter
         });
@@ -55,7 +55,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
         const dataUrl = await domToDataUrl(tableContainer, {
           scale,
           backgroundColor,
-          style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
+          style: { overflow: "visible", ...style },
           width: computedWidth,
           filter
         });
@@ -88,7 +88,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
       const dataUrl = await domToDataUrl(tableContainer, {
         scale,
         backgroundColor,
-        style: { overflow: "visible", textRendering: "optimizeLegibility", ...style },
+        style: { overflow: "visible", ...style },
         width: computedWidth,
         filter
       });

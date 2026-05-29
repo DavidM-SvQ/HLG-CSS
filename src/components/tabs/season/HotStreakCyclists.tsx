@@ -52,7 +52,7 @@ export function HotStreakCyclists() {
     hotStreakCyclistsLimit
   );
 
-  if (!hotStreaksData || hotStreaksData.items.length === 0) return null;
+  if (!hotStreaksData) return null;
 
   const containerVariants = {
     hidden: { opacity: 0 },

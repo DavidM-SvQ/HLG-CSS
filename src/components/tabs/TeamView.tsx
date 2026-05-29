@@ -74,7 +74,7 @@ export const TeamView = () => {
           </div>
           <div
             ref={teamGlobalRef}
-            className="space-y-8 bg-white p-6 -mx-6 -mt-6 sm:mx-0 sm:mt-0 sm:p-6 sm:bg-white sm:border sm:border-neutral-200 sm:shadow-sm rounded-2xl"
+            className="space-y-8 bg-white p-6 -mx-6 -mt-6 sm:mx-0 sm:mt-0 sm:p-6 sm:bg-white sm:border sm:border-neutral-200 sm:shadow-sm rounded-2xl group"
           >
             {/* Title for image */}
             <div className="text-center mb-2">
@@ -92,6 +92,7 @@ export const TeamView = () => {
               teamPartialWins={teamComputedData.teamPartialWins}
               avgAge={teamComputedData.avgAge}
               unscoredCount={teamComputedData.unscoredCount}
+              undebutedCount={teamComputedData.undebutedCount}
               currentPuesto={teamComputedData.currentPuesto}
               difConOrden={teamComputedData.difConOrden}
             />

@@ -88,6 +88,7 @@ export function useStartlistData(
             const displayPuntos = totalPuntos - carreraPuntos;
             const dias = Number(meta.diasCompeticion) || 0;
             const debut = dias === 0 ? "Sí" : "";
+            const victorias = Number(meta.victorias) || 0;
 
             rows.push({
               jugador: equipoOrdered,
@@ -100,6 +101,7 @@ export function useStartlistData(
               dias,
               puntos: displayPuntos,
               debut,
+              victorias,
             });
           });
         }
@@ -134,6 +136,7 @@ export function useStartlistData(
     filteredRows.sort((a, b) => {
       if (startlistSortCol === "puntos") return (a.puntos - b.puntos) * sortDirNum;
       if (startlistSortCol === "dias") return (a.dias - b.dias) * sortDirNum;
+      if (startlistSortCol === "victorias") return (a.victorias - b.victorias) * sortDirNum;
       if (startlistSortCol === "ronda") {
         const getRondaNum = (r: string) => {
           const num = parseInt(r);

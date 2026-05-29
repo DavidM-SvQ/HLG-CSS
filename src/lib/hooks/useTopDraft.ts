@@ -150,9 +150,10 @@ export function useTopDraft(
         };
       });
 
+    const limit = Math.max(0, Number(topCyclistsLimit) || 25);
     return { 
       allStats,
-      sortedStats: allStats.slice(0, topCyclistsLimit === 9999 ? undefined : topCyclistsLimit)
+      sortedStats: allStats.slice(0, limit === 9999 ? undefined : limit)
     };
   }, [
     files.carreras.data,

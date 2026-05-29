@@ -42,9 +42,10 @@ export function TopDraftCyclistsFilters(props: any) {
     ).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b));
   }, [cyclistsRoundMap]);
 
-  const count = topCyclistsLimit === 9999 ? (leaderboard?.length || 0) : topCyclistsLimit;
+  const limit = Math.max(0, Number(topCyclistsLimit) || 25);
+  const count = limit === 9999 ? (leaderboard?.length || 0) : limit;
   const pages = Math.ceil(count / 50);
-  const numBlocks = topCyclistsLimit > 50 && pages > 1 ? pages : undefined;
+  const numBlocks = limit > 50 && pages > 1 ? pages : undefined;
 
   return (
     <>
@@ -195,10 +196,10 @@ export function TopDraftCyclistsFilters(props: any) {
           </select>
 
           <div className="flex bg-neutral-100 p-1 rounded-lg">
-            <Button variant="outline" onClick={() => setTopCyclistsLimit(25)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", topCyclistsLimit === 25 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 25</Button>
-            <Button variant="outline" onClick={() => setTopCyclistsLimit(50)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", topCyclistsLimit === 50 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 50</Button>
-            <Button variant="outline" onClick={() => setTopCyclistsLimit(100)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", topCyclistsLimit === 100 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 100</Button>
-            <Button variant="outline" onClick={() => setTopCyclistsLimit(9999)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", topCyclistsLimit === 9999 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Todos</Button>
+            <Button variant="outline" onClick={() => setTopCyclistsLimit(25)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", (Number(topCyclistsLimit) || 25) === 25 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 25</Button>
+            <Button variant="outline" onClick={() => setTopCyclistsLimit(50)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", Number(topCyclistsLimit) === 50 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 50</Button>
+            <Button variant="outline" onClick={() => setTopCyclistsLimit(100)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", Number(topCyclistsLimit) === 100 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 100</Button>
+            <Button variant="outline" onClick={() => setTopCyclistsLimit(9999)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", Number(topCyclistsLimit) === 9999 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Todos</Button>
           </div>
         </div>
       </div>

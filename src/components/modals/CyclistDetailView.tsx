@@ -10,6 +10,7 @@ import { useDebounce } from "../../lib/hooks/useDebounce";
 import { DRAFT_RANK_MAP } from "../../lib/constants";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "../ui/button";
+import { ExportToolbar } from "../ui/ExportToolbar";
 
 import { MultiSelect } from "../ui/multi-select";
 import { VirtualizedTableBody } from "../ui/VirtualizedTableBody";
@@ -36,31 +37,21 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   playerOrderMap,
   playerTeamMap,
 }) => {
-  const [cyclistSearchTerm, setCyclistSearchTerm] = useUrlState("cyclistSearchTerm", "");
-  
-  const [localSearch, setLocalSearch] = useState(cyclistSearchTerm);
-  const debouncedSearch = useDebounce(localSearch, 300);
+  const [localSearch, setLocalSearch] = useState(selectedCyclistDetail || "");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const filteredCyclists = useMemo(() => {
+    if (!localSearch) return Object.keys(cyclistMetadata).sort();
+    return Object.keys(cyclistMetadata)
+      .filter(c => c.toLowerCase().includes(localSearch.toLowerCase()))
+      .sort();
+  }, [localSearch, cyclistMetadata]);
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (debouncedSearch !== cyclistSearchTerm) {
-      setCyclistSearchTerm(debouncedSearch);
-    }
-  }, [debouncedSearch, cyclistSearchTerm, setCyclistSearchTerm]);
-
-  useEffect(() => {
-    if (selectedCyclistDetail && selectedCyclistDetail !== cyclistSearchTerm) {
-      setLocalSearch(selectedCyclistDetail);
-      setCyclistSearchTerm(selectedCyclistDetail);
-    }
-  }, [selectedCyclistDetail, cyclistSearchTerm, setCyclistSearchTerm]);
-  
-  useEffect(() => {
-     if (cyclistSearchTerm !== localSearch && debouncedSearch === cyclistSearchTerm) {
-         setLocalSearch(cyclistSearchTerm);
-     }
-  }, [cyclistSearchTerm, localSearch, debouncedSearch]);
+    setLocalSearch(selectedCyclistDetail || "");
+  }, [selectedCyclistDetail]);
 
   const [cyclistDetailSortCol, setCyclistDetailSortCol] = useUrlState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("cyclistDetailSortCol", "fecha");
   const [cyclistDetailSortDir, setCyclistDetailSortDir] = useUrlState<"asc"|"desc">("cyclistDetailSortDir", "asc");
@@ -182,8 +173,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
+      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm relative">
+        <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3 rounded-t-2xl">
           <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 whitespace-nowrap">
             <User className="w-5 h-5 text-blue-600" />
             Detalle de Ciclista
@@ -193,17 +184,18 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
           </p>
         </div>
 
-        <div className="p-6 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 items-center bg-neutral-50/20">
-          <div className="relative w-full sm:w-96">
+        <div className="p-6 border-b border-neutral-100 flex flex-col sm:flex-row gap-4 items-center bg-neutral-50/20 relative z-[100]">
+          <div className="relative w-full sm:w-96" onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input 
               type="text" 
               placeholder="Buscar ciclista..." 
-              list="all-cyclists-list" 
               className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
               value={localSearch}
+              onFocus={() => setIsDropdownOpen(true)}
               onChange={(e) => {
                 setLocalSearch(e.target.value);
+                setIsDropdownOpen(true);
                 const valid = cyclistMetadata[e.target.value];
                 if (valid) {
                   setSelectedCyclistDetail(e.target.value);
@@ -212,10 +204,25 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                 }
               }}
             />
-            <datalist id="all-cyclists-list">
-              /* @ts-ignore */
-{useMemo(() => Object.keys(cyclistMetadata).sort().map(c => <option key={c} value={c} />), [cyclistMetadata])}
-            </datalist>
+            {isDropdownOpen && filteredCyclists.length > 0 && (
+              <div className="absolute z-50 top-full left-0 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredCyclists.map(c => (
+                  <div 
+                    key={c} 
+                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-neutral-700"
+                    onClick={() => {
+                      setLocalSearch(c);
+                      setSelectedCyclistDetail(c);
+                      setCyclistDetailSortCol("fecha");
+                      setCyclistDetailSortDir("asc");
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -351,81 +358,21 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                 </Button>
               )}
               {!isCyclistDetailExpanded && (
-                <div className="absolute top-4 right-4 flex gap-2 z-10 copy-button-ignore">
-                  <Button variant="outline"
-                    onClick={() =>
-                      setIsCyclistDetailExpanded(
-                        !isCyclistDetailExpanded,
-                      )
-                    }
-                    className="w-8 h-8 flex items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors shadow-sm"
-                    title={
-                      isCyclistDetailExpanded
-                        ? "Contraer tabla"
-                        : "Expandir tabla"
-                    }
-                  >
-                    {isCyclistDetailExpanded ? (
-                      <Minimize2 className="w-4 h-4" />
-                    ) : (
-                      <Maximize2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button variant="outline"
-                    onClick={() => handleCopyImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
-                    disabled={!!isCyclistDetailCopying}
-                    title="Copiar imagen"
-                    className={cn(
-                      "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
-                      isCyclistDetailCopying
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : "bg-white",
-                    )}
-                  >
-                    {isCyclistDetailCopying ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <Camera className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button variant="outline"
-                    onClick={() => handleDownloadImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
-                    disabled={isCyclistDetailDownloading}
-                    title="Descargar imagen"
-                    className={cn(
-                      "px-2 py-1.5 text-xs font-semibold rounded-md border shadow-sm flex items-center justify-center transition-all text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-neutral-900 w-8",
-                      isCyclistDetailDownloading
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : "bg-white",
-                    )}
-                  >
-                    {isCyclistDetailDownloading ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <CloudDownload className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button variant="ghost" size="icon"
-                    onClick={handleCopyText}
-                    disabled={isCyclistDetailTextCopying}
-                    title="Copiar texto"
-                    className={cn(
-                      "px-3 h-8 text-sm font-medium rounded-md border shadow-sm flex items-center justify-center transition-all",
-                      isCyclistDetailTextCopying
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50",
-                    )}
-                  >
-                    {isCyclistDetailTextCopying ? (
-                      <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                    ) : (
-                      <FileText className="w-4 h-4 mr-1.5" />
-                    )}
-                    Texto
-                  </Button>
+                <div className="flex flex-wrap justify-end mb-2 w-full copy-button-ignore">
+                  <ExportToolbar
+                    isExpanded={isCyclistDetailExpanded}
+                    onExpand={() => setIsCyclistDetailExpanded(!isCyclistDetailExpanded)}
+                    onCopyImage={() => handleCopyImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
+                    isImageCopying={isCyclistDetailCopying}
+                    onDownloadImage={() => handleDownloadImage({ fileName: `detalle_${selectedCyclistDetail}.png` })}
+                    onCopyText={handleCopyText}
+                    isTextCopying={isCyclistDetailTextCopying}
+                    textCopyLabel="Texto"
+                    useClipboardIconForText={true}
+                  />
                 </div>
               )}
-              <div className="flex flex-col bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm mt-6">
+              <div className="flex flex-col bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-6 p-4 bg-neutral-50/50 border-b border-neutral-100">
                   <div className="flex flex-wrap items-center gap-8">
                     <div className="flex flex-col">
@@ -628,7 +575,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               </div>
             </div>
 
-              <div ref={tableScrollRef} className="table-responsive-wrapper min-h-[300px] max-h-[60vh] overflow-auto w-full h-full bg-white border border-neutral-200 rounded-lg relative">
+              <div ref={tableScrollRef} className={cn("table-responsive-wrapper min-h-[300px] w-full bg-white border border-neutral-200 rounded-lg relative", (isCyclistDetailCopying || isCyclistDetailDownloading) ? "" : "max-h-[60vh] overflow-auto")}>
                 <table className="w-full text-sm text-left table-fixed min-w-[900px]">
                   <thead className="text-xs text-neutral-500 uppercase bg-neutral-100/80 border-b border-neutral-200 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
@@ -655,6 +602,40 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                           />
                         </td>
                       </tr>
+                    </tbody>
+                  ) : (isCyclistDetailCopying || isCyclistDetailDownloading) ? (
+                    <tbody className="divide-y divide-neutral-100">
+                      {filteredItems.map((it: any, idx: number) => {
+                        const posNumber = parseInt(it!.pos);
+                        let medal = "";
+                        const isNumericPos = /^\d+$/.test(it!.pos);
+                        if (posNumber === 1 && isNumericPos) medal = "🥇";
+                        else if (posNumber === 2 && isNumericPos) medal = "🥈";
+                        else if (posNumber === 3 && isNumericPos) medal = "🥉";
+
+                        const pointsBg = `rgba(34, 197, 94, ${0.1 + ((it!.puntos) / maxPointsInList) * 0.4})`;
+
+                        return (
+                          <tr key={idx} className="transition-colors group text-neutral-800 hover:brightness-95" style={getCategoryColorStyle(it!.categoria)}>
+                            <td className="px-4 py-2.5 text-[11px] truncate font-medium" title={it!.ciclistaText}>{it!.ciclistaText}</td>
+                            <td className="px-4 py-2.5 text-[11px] truncate text-neutral-600 font-medium" title={it!.eqText}>{it!.eqText}</td>
+                            <td className="px-4 py-2.5 font-mono tabular-nums text-[10px] text-neutral-600 whitespace-nowrap font-medium">{it!.fecha}</td>
+                            <td className="px-4 py-2.5 truncate text-[11px] font-semibold text-neutral-800" title={it!.carrera}>{it!.carrera}</td>
+                            <td className="font-mono tabular-nums tracking-tight px-4 py-2.5 text-[10px] text-neutral-700 whitespace-nowrap font-bold tracking-tight">{it!.categoria}</td>
+                            <td className="px-4 py-2.5 text-[10px] text-neutral-600 truncate font-medium" title={it!.tipo}>{it!.tipo}</td>
+                            <td className="px-4 py-2.5 text-[10px] text-center text-neutral-600 font-medium">{it!.etapa || "-"}</td>
+                            <td className="px-4 py-2.5 text-[11px] text-center font-mono tabular-nums font-bold">
+                              <div className="flex items-center justify-center gap-1">
+                                <span>{it!.pos}</span>
+                                {medal && <span className="text-[12px] leading-none drop-shadow-sm">{medal}</span>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-[13px] text-right font-mono tabular-nums text-green-900 font-bold" style={{ backgroundColor: it!.puntos > 0 ? pointsBg : "transparent" }}>
+                              {it!.puntos > 0 ? it!.puntos : "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   ) : (
                     <VirtualizedTableBody

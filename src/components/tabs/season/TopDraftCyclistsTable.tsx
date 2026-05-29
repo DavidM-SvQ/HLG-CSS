@@ -28,7 +28,7 @@ export function TopDraftCyclistsTable(props: any) {
     <>
                                 <div className={cn("overflow-x-auto overflow-y-auto bg-white border-t border-neutral-100 pb-4 flex justify-center scrollbar-thin px-2 md:px-0", isTopCyclistsDraftExpanded ? "flex-1 min-h-0" : "max-h-[750px]")}>
                                   <div ref={topCyclistsDraftRefContainer} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full", isTopCyclistsDraftExpanded ? "h-full" : "max-h-[600px]")}><table className="w-full block md:table">
-                                    <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
+                                    <thead className={cn("text-[10px] font-bold uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group text-neutral-800")}>
                                       <tr className="divide-x divide-neutral-100">
                                         <th
                                           className="sticky top-0 z-30 bg-neutral-50 px-3 py-2 font-bold cursor-pointer hover:bg-neutral-100 select-none transition-colors border-b border-neutral-200"
@@ -265,7 +265,7 @@ export function TopDraftCyclistsTable(props: any) {
                                     {isTopCyclistsDraftCopying ? (
                                       <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
                                         <AnimatePresence>
-                                          {sortedStats.slice(0, 50).map((s: any) => (
+                                          {(isTopCyclistsDraftCopying === "full" ? sortedStats : typeof isTopCyclistsDraftCopying === 'string' && isTopCyclistsDraftCopying.startsWith('p') ? sortedStats.slice((parseInt(isTopCyclistsDraftCopying.substring(1)) - 1) * 50, parseInt(isTopCyclistsDraftCopying.substring(1)) * 50) : sortedStats).map((s: any) => (
                                             <TopCyclistRow
                                               key={s.ciclista}
                                               s={s}
@@ -282,6 +282,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               getColorClass={getColorClass}
                                               getPuntosColor={getPuntosColor}
                                               formatNumberSpanish={formatNumberSpanish}
+                                              isCopying={!!isTopCyclistsDraftCopying}
                                             />
                                           ))}
                                         </AnimatePresence>
@@ -311,6 +312,7 @@ export function TopDraftCyclistsTable(props: any) {
                                               getColorClass={getColorClass}
                                               getPuntosColor={getPuntosColor}
                                               formatNumberSpanish={formatNumberSpanish}
+                                              isCopying={false}
                                             />
                                           );
                                         }}
@@ -322,7 +324,7 @@ export function TopDraftCyclistsTable(props: any) {
   );
 }
 
-function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarreras, maxDias, minDias, maxPpc, minPpc, maxPpd, minPpd, getFlagEmoji, getColorClass, getPuntosColor, formatNumberSpanish }: any) {
+function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarreras, maxDias, minDias, maxPpc, minPpc, maxPpd, minPpd, getFlagEmoji, getColorClass, getPuntosColor, formatNumberSpanish, isCopying }: any) {
   const [expanded, setExpanded] = React.useState(false);
   const { ciclista, nombreEquipo, ronda, orden, pais, victorias, dias, puntos, numCarreras, ppc, ppd, originalIndex } = s;
 
@@ -336,19 +338,24 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
             <span className={cn("w-7 h-7 md:w-6 md:h-6 md:mx-auto rounded-full flex items-center justify-center text-[11px] md:text-[10px] font-black shrink-0 shadow-sm border", originalIndex === 1 ? "bg-gradient-to-br from-amber-100 to-yellow-200 text-yellow-800 border-yellow-300/50" : originalIndex === 2 ? "bg-gradient-to-br from-neutral-100 to-neutral-200 text-neutral-700 border-neutral-300/50" : originalIndex === 3 ? "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800 border-orange-300/50" : "bg-neutral-50 text-neutral-500 border-neutral-200")}>
               {originalIndex}
             </span>
-            <span className="font-bold text-neutral-900 md:hidden text-sm truncate max-w-[200px]">{ciclista}</span>
+            <span className={cn("font-bold md:hidden text-sm truncate max-w-[200px] text-neutral-900")}>{ciclista}</span>
           </div>
           <div className="flex items-center gap-3 md:hidden">
             <span className="font-black font-mono tabular-nums text-sm" style={{ color: getPuntosColor(puntos) }}>{formatNumberSpanish(puntos)}</span>
             <ChevronRight className={cn("w-4 h-4 text-neutral-400 transition-transform", expanded && "rotate-90")} />
           </div>
         </td>
-        <td className="px-4 py-1 font-bold text-neutral-900 whitespace-nowrap hidden md:table-cell w-[250px]">
-          <Tooltip>
-            <TooltipTrigger className="flex items-center gap-1.5 cursor-help hover:text-blue-600 transition-colors w-fit text-left">
-              {ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
-            </TooltipTrigger>
-            <TooltipContent className="bg-white border text-sm border-neutral-200 shadow-xl p-4 rounded-xl text-neutral-900 shadow-neutral-900/10 max-w-[240px]" side="right" sideOffset={10}>
+        <td className={cn("px-4 py-1 font-bold whitespace-nowrap hidden md:table-cell w-[250px] text-neutral-900")}>
+          {isCopying ? (
+            <div className="flex items-center gap-1.5 w-fit text-left text-neutral-900">
+              {ciclista} <span className="text-neutral-500 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger className="flex items-center gap-1.5 cursor-help hover:text-blue-600 transition-colors w-fit text-left">
+                {ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+              </TooltipTrigger>
+              <TooltipContent className="bg-white border text-sm border-neutral-200 shadow-xl p-4 rounded-xl text-neutral-900 shadow-neutral-900/10 max-w-[240px]" side="right" sideOffset={10}>
                <div className="flex flex-col gap-2 relative z-10">
                  <div className="absolute -top-6 -right-6 w-16 h-16 bg-blue-100/50 rounded-full blur-[20px] pointer-events-none" />
                  <div className="flex items-start justify-between">
@@ -379,11 +386,12 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
                </div>
             </TooltipContent>
           </Tooltip>
+          )}
         </td>
-        <td className={cn("px-4 py-2 md:py-1 text-neutral-600 whitespace-nowrap md:table-cell bg-neutral-50/50 md:bg-transparent border-t border-neutral-100 md:border-t-0", expanded ? "block" : "hidden")}>
+        <td className={cn("px-4 py-2 md:py-1 whitespace-nowrap md:table-cell bg-neutral-50/50 md:bg-transparent border-t border-neutral-100 md:border-t-0 text-neutral-600", expanded ? "block" : "hidden")}>
           <div className="flex justify-between items-center md:contents">
             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo</span>
-            {nombreEquipo === "No draft" ? <span className="text-neutral-400 italic text-[10px]">No elegido</span> : <span className="font-medium text-blue-700 md:text-neutral-600">{nombreEquipo} <span className="text-neutral-400 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span></span>}
+            {nombreEquipo === "No draft" ? <span className="text-neutral-500 italic text-[10px]">No elegido</span> : <span className={cn("font-semibold text-blue-700 md:text-neutral-900")}>{nombreEquipo} {orden && <span className="text-neutral-500 font-normal text-[9px]">[<span className="font-mono tabular-nums opacity-80">#{orden}</span>]</span>}</span>}
           </div>
         </td>
         <td className={cn("px-4 py-2 md:px-3 md:py-1 text-base md:text-center md:table-cell", expanded ? "block" : "hidden")}>

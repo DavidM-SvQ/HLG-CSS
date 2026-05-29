@@ -126,7 +126,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
             disabled={!!_isImageCopying}
             className={cn(
               "transition-colors",
-              hasBlocks ? "border-0 shadow-none rounded-r-none border-r border-r-neutral-200 px-2 py-1.5 h-auto text-xs" : "p-1.5 rounded-md border shadow-sm text-sm",
+              hasBlocks ? "border-0 shadow-none rounded-r-none border-r border-r-neutral-200 px-2 py-1.5 h-auto text-xs" : "p-0 h-8 w-8 rounded-md border shadow-sm text-sm flex items-center justify-center",
               _isImageCopying === 'full' || _isImageCopying === true 
                 ? "bg-green-50 text-green-700 border-green-200"
                 : "bg-white text-neutral-600 hover:bg-neutral-50"
@@ -198,7 +198,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
             onClick={() => _onDownloadImage?.(undefined)}
             className={cn(
               "transition-colors bg-white hover:bg-neutral-50 text-neutral-600",
-              hasBlocks ? "border-0 shadow-none rounded-r-none border-r border-r-neutral-200 px-2 py-1.5 h-auto text-xs" : "p-1.5 rounded-md border shadow-sm text-sm border-neutral-200"
+              hasBlocks ? "border-0 shadow-none rounded-r-none border-r border-r-neutral-200 px-2 py-1.5 h-auto text-xs" : "p-0 h-8 w-8 rounded-md border shadow-sm text-sm border-neutral-200 flex items-center justify-center"
             )}
             title="Descargar imagen"
           >
@@ -254,7 +254,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
       {onExpand && (
         <Button variant="ghost" size="sm"
           onClick={onExpand}
-          className="p-1.5 bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
+          className="p-0 h-8 w-8 flex items-center justify-center bg-white border border-neutral-200 shadow-sm hover:bg-neutral-50 rounded-md text-neutral-600 transition-colors"
           title={isExpanded ? "Contraer" : "Ampliar"}
         >
           {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -270,7 +270,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           disabled={isTextCopying}
           className={cn(
             "transition-colors border shadow-sm rounded-md",
-            textCopyLabel ? "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium" : "p-1.5 flex items-center justify-center",
+            textCopyLabel ? "flex items-center gap-1.5 px-3 h-8 text-sm font-medium" : "p-0 h-8 w-8 flex items-center justify-center",
             isTextCopying
               ? "bg-green-50 text-green-700 border-green-200"
               : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"

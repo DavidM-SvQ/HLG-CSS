@@ -150,7 +150,8 @@ export function NoDraftCyclists() {
       return sortDirection === "asc" ? (valA < valB ? -1 : 1) : (valA > valB ? -1 : 1);
     });
 
-    const limitedStats = allStats.slice(0, topLimit);
+    const limit = Math.max(0, Number(topLimit) || 25);
+    const limitedStats = allStats.slice(0, limit);
     const maxPuntos = limitedStats.length > 0 ? Math.max(...limitedStats.map(s => s.data.puntos)) : 0;
     const minPuntos = limitedStats.length > 0 ? Math.min(...limitedStats.map(s => s.data.puntos)) : 0;
 

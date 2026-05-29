@@ -176,17 +176,17 @@ export function useAppComputations() {
       }
     });
 
-    const norm = (s: string | undefined): string => {
+    const norm = (s: any): string => {
         if (!s) return "";
-        return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+        return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
     };
     
     const raceTypeByName: Record<string, string> = {};
     const raceDateByName: Record<string, string> = {};
 
     carreras.data!.forEach((row: any) => {
-      const carrera = getVal(row, "Carrera")?.trim();
-      const categoria = getVal(row, "Categoría")?.trim();
+      const carrera = String(getVal(row, "Carrera") || "").trim();
+      const categoria = String(getVal(row, "Categoría") || "").trim();
       const fecha = String(getVal(row, "Fecha") || "").trim();
       if (carrera && categoria) {
         raceTypeByName[norm(carrera)] = categoria;
@@ -198,8 +198,8 @@ export function useAppComputations() {
 
     const pointsLookup: Record<string, number> = {};
     puntos.data!.forEach((row: any) => {
-      const categoria = getVal(row, "Categoría")?.trim();
-      const tipo = getVal(row, "Tipo")?.trim();
+      const categoria = String(getVal(row, "Categoría") || "").trim();
+      const tipo = String(getVal(row, "Tipo") || "").trim();
       const posicion = String(getVal(row, "Posición") || "").trim();
       const pts = getVal(row, "Puntos");
 

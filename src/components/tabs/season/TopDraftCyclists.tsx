@@ -87,8 +87,9 @@ export function TopDraftCyclists() {
     topCyclistsLimit
   );
 
+  const limit = Math.max(0, Number(topCyclistsLimit) || 25);
   const { sortedStats, maxVictorias, maxCarreras, minCarreras, maxDias, minDias, maxPpc, minPpc, maxPpd, minPpd, maxPuntos, minPuntos } = React.useMemo(() => {
-    const topScorers = topCyclistsLimit === 9999 ? [...allStats] : allStats.slice(0, topCyclistsLimit);
+    const topScorers = limit === 9999 ? [...allStats] : allStats.slice(0, limit);
     topScorers.sort((a, b) => {
       let valA: any, valB: any;
       switch (cyclistsSortColumn) {
@@ -142,10 +143,10 @@ export function TopDraftCyclists() {
   }, [allStats, topCyclistsLimit, cyclistsSortColumn, cyclistsSortDirection]);
 
   const getColorClass = React.useCallback((val: number, max: number, min: number, isZeroRed: boolean = false) => {
-    if (isZeroRed && val === 0) return "text-red-600 font-bold";
-    if (val === max && max > 0) return "text-green-600 font-bold";
-    if (val === min && min < max && !isZeroRed) return "text-yellow-600 font-bold";
-    return "text-neutral-700";
+    if (isZeroRed && val === 0) return "text-red-700 font-bold";
+    if (val === max && max > 0) return "text-green-700 font-bold";
+    if (val === min && min < max && !isZeroRed) return "text-yellow-700 font-bold";
+    return "text-black font-medium";
   }, []);
 
   const getPuntosColor = React.useCallback((puntos: number) => {
