@@ -24,12 +24,29 @@ export function VirtualizedTableBody({
     }
   }, [scrollElementRef.current]);
 
+  const isExporting = typeof document !== "undefined" && (
+    document.querySelector(".is-exporting") !== null ||
+    !!scrollElementRef.current?.closest?.(".is-exporting")
+  );
+
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => estimateSize,
     overscan: 5,
   });
+
+  if (isExporting) {
+    return (
+      <tbody className={className}>
+        {items.map((item, index) => (
+          <React.Fragment key={index}>
+            {renderRow(item, index)}
+          </React.Fragment>
+        ))}
+      </tbody>
+    );
+  }
 
   return (
     <tbody className={className}>

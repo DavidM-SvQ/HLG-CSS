@@ -68,6 +68,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     };
 
     const allWins: { team: string, date: Date, cyclist: string, raceName: string, category: string, points: number, type?: string }[] = [];
+    const allAnyWins: { team: string, date: Date, cyclist: string, raceName: string, category: string, points: number, type?: string }[] = [];
     const allResults: { team: string, date: Date, cyclist: string, points: number, raceName: string, type?: string, rank?: number }[] = [];
 
     leaderboard.forEach(p => {
@@ -107,6 +108,10 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
              const isStage = !!d.etapa || type.includes("etapa");
              const isSecondary = type.includes("montaña") || type.includes("puntos") || type.includes("joven") || type.includes("regularidad");
              
+             if (!isSecondary) {
+               allAnyWins.push({ team: team, date: eventDateObj, cyclist: d.ciclista, raceName: d.carrera, category: meta.category, points: d.puntosObtenidos, type: type });
+             }
+
              if (isGeneral || (!isStage && !isSecondary)) {
                allWins.push({ team: team, date: eventDateObj, cyclist: d.ciclista, raceName: d.carrera, category: meta.category, points: d.puntosObtenidos, type: type });
              }
@@ -153,6 +158,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
 
     // Sort to process chronologically
     allWins.sort((a, b) => a.date.getTime() - b.date.getTime());
+    allAnyWins.sort((a, b) => a.date.getTime() - b.date.getTime());
     allResults.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     const raceNamesProcessed = new Set<string>();
@@ -207,10 +213,26 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     let achievedTeamClassics5 = false;
     let achievedTeamStage5 = false;
 
-    for (const win of allWins) {
+    for (const win of allAnyWins) {
       if (!teamWinsCount[win.team]) teamWinsCount[win.team] = 0;
       teamWinsCount[win.team]++;
       
+      for (const th of winThresholds) {
+        if (teamWinsCount[win.team] === th && !achievedWinThresholds.has(th)) {
+          achievedWinThresholds.add(th);
+          tMilestones.push({
+            label: `Primer equipo en alcanzar ${th} victorias`,
+            team: getTeamFormatted(win.team),
+            date: win.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            icon: <Award className="w-5 h-5 text-indigo-500 drop-shadow-sm" />,
+            order: win.date.getTime()
+          });
+          break;
+        }
+      }
+    }
+
+    for (const win of allWins) {
       const lowerCat = win.category.toLowerCase();
       const isClassic = lowerCat.startsWith("1.") || lowerCat.includes("clásica");
       const isStageRace = lowerCat.startsWith("2.") || lowerCat.includes("vueltas");
@@ -242,20 +264,6 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
                   order: win.date.getTime()
               });
           }
-      }
-
-      for (const th of winThresholds) {
-        if (teamWinsCount[win.team] === th && !achievedWinThresholds.has(th)) {
-          achievedWinThresholds.add(th);
-          tMilestones.push({
-            label: `Primer equipo en alcanzar ${th} victorias`,
-            team: getTeamFormatted(win.team),
-            date: win.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
-            icon: <Award className="w-5 h-5 text-indigo-500 drop-shadow-sm" />,
-            order: win.date.getTime()
-          });
-          break;
-        }
       }
     }
 
@@ -306,27 +314,6 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
         }
     }
 
-    // 4. Reyes Secundarios: "Ganador de la Clasificación de la Montaña (o por Puntos) de una Gran Vuelta"
-    const secondaryClassifications = allResults.filter(d => 
-        isGt(d.raceName.toLowerCase()) && 
-        String(d.rank) === "1" && 
-        d.type && (d.type.toLowerCase().includes("montaña") || d.type.toLowerCase().includes("puntos") || d.type.toLowerCase().includes("joven"))
-    );
-    const secondaryProcessed = new Set<string>();
-    secondaryClassifications.forEach(d => {
-        const key = `${d.raceName}-${d.type}`;
-        if (!secondaryProcessed.has(key)) {
-            secondaryProcessed.add(key);
-            cMilestones.push({
-                label: `Reyes Secundarios: ${d.type} en ${d.raceName}`,
-                cyclist: getCyclistFormatted(d.cyclist),
-                date: d.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                icon: <Medal className="w-5 h-5 text-pink-500 drop-shadow-sm" />,
-                order: d.date.getTime()
-            });
-        }
-    });
-
     // Cyclist Milestones
     const cyclistPointsCount: Record<string, number> = {};
     const cyclistWinCount: Record<string, number> = {};
@@ -341,11 +328,11 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     const cyclistWinThresholds = [5, 10, 15, 20];
     const achievedCyclistWinThresholds = new Set<number>();
     
-    const lateRoundThresholds = [1000, 2000, 3000];
+    const lateRoundThresholds = [500, 1000];
     const achievedCyclistR10Thresholds = new Set<number>();
     const achievedCyclistR20Thresholds = new Set<number>();
     
-    let draftStealFound = false;
+    const draftStealCyclistsProcessed = new Set<string>();
     
     const teamScorers: Record<string, Set<string>> = {};
     let achievedDeepRoster15 = false;
@@ -436,20 +423,20 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
              const rNum = meta.ronda ? parseInt(meta.ronda.replace(/\D/g, ''), 10) : 99; // 99 for libre
              const compareNum = isNaN(rNum) ? (isLibre ? 99 : 1) : rNum;
              
-             if (compareNum > 10 && !achievedCyclistR10Thresholds.has(th)) {
+             if (compareNum >= 10 && !achievedCyclistR10Thresholds.has(th)) {
                  achievedCyclistR10Thresholds.add(th);
                  cMilestones.push({
-                   label: `Primer ciclista de ronda >10 en conseguir ${formatNumberSpanish(th)} puntos`,
+                   label: `Primer ciclista de ronda >=10 en conseguir ${formatNumberSpanish(th)} puntos`,
                    cyclist: getCyclistFormatted(res.cyclist),
                    date: res.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
                    icon: <Award className="w-5 h-5 text-indigo-500 drop-shadow-sm" />,
                    order: res.date.getTime()
                  });
              }
-             if (compareNum > 20 && !achievedCyclistR20Thresholds.has(th)) {
+             if (compareNum >= 20 && !achievedCyclistR20Thresholds.has(th)) {
                  achievedCyclistR20Thresholds.add(th);
                  cMilestones.push({
-                   label: `Primer ciclista de ronda >20 en conseguir ${formatNumberSpanish(th)} puntos`,
+                   label: `Primer ciclista de ronda >=20 en conseguir ${formatNumberSpanish(th)} puntos`,
                    cyclist: getCyclistFormatted(res.cyclist),
                    date: res.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
                    icon: <Award className="w-5 h-5 text-purple-600 drop-shadow-sm" />,
@@ -460,19 +447,19 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
       }
       
       // 2. El Robo del Draft
-      if (!draftStealFound && cyclistPointsCount[res.cyclist] >= 2000) {
+      if (!draftStealCyclistsProcessed.has(res.cyclist) && cyclistPointsCount[res.cyclist] >= 500) {
           const meta = (cyclistMetadata?.[res.cyclist] || {}) as Partial<import("../../../../lib/types").CyclistMetadata>;
           let isLate = true;
           if (meta.ronda) {
               const rNum = parseInt(meta.ronda.replace(/\D/g, ''), 10);
-              if (!isNaN(rNum) && rNum <= 15) {
+              if (!isNaN(rNum) && rNum < 15) {
                   isLate = false;
               }
           }
           if (isLate) {
-              draftStealFound = true;
+              draftStealCyclistsProcessed.add(res.cyclist);
               cMilestones.push({
-                   label: `El Robo del Draft: Alcanzó los 2.000 puntos`,
+                   label: `El Robo del Draft: Ciclista escogido en la 15ª ronda o después que logra superar los 500 puntos`,
                    cyclist: getCyclistFormatted(res.cyclist),
                    date: res.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' }),
                    icon: <Award className="w-5 h-5 text-blue-600 drop-shadow-sm" />,

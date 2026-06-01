@@ -147,6 +147,15 @@ export const GhostDraftView = ({
     return <EmptyState icon={Ghost} title="No hay datos suficientes" description="No hay selecciones válidas para procesar el motor del Draft Fantasma." />;
   }
 
+  const title = mode === 'puntos' ? 'El draft fantasma según puntos' : 'El draft fantasma según rondas';
+  const description = mode === 'puntos' ? (
+    <>¿Qué puntuación tendría tu equipo si, en tu turno, en lugar de elegir a tu corredor, hubieras elegido al <strong className="text-indigo-700">mejor ciclista que estaba libre</strong> en ese momento? 
+    Los mánagers están ordenados por la diferencia de puntos "perdidos" (los puntos que se dejaron sobre la mesa).</>
+  ) : (
+    <>¿Qué puntuación tendría tu equipo si hubieras elegido al <strong className="text-indigo-700">mejor ciclista disponible de tu ronda o rondas anteriores</strong>? 
+    Los mánagers están ordenados por la diferencia "perdida" respecto al máximo posible de esa ronda.</>
+  );
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-indigo-50/80 to-white/90 backdrop-blur-xl border border-indigo-100/60 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
@@ -156,10 +165,9 @@ export const GhostDraftView = ({
             <Ghost className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-2xl font-black text-neutral-900 tracking-tight">El "Draft Fantasma"</h3>
+            <h3 className="text-2xl font-black text-neutral-900 tracking-tight">{title}</h3>
             <p className="text-sm text-neutral-600 mt-2 max-w-3xl leading-relaxed">
-              ¿Qué puntuación tendría tu equipo si, en tu turno, en lugar de elegir a tu corredor, hubieras elegido al <strong className="text-indigo-700">mejor ciclista que estaba libre</strong> en ese momento? 
-              Los mánagers están ordenados por la diferencia de puntos "perdidos" (los puntos que se dejaron sobre la mesa).
+              {description}
             </p>
           </div>
         </div>

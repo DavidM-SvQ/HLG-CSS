@@ -356,6 +356,8 @@ export function useRaceData(
                   globalTeamPartialWinsCount?.byRace?.[selectedRace] || {};
                 const __stageWinsByUser: Record<string, number> = {};
                 let __generalWinners: string[] = [];
+                let __pointsWinners: string[] = [];
+                let __mountainWinners: string[] = [];
                 let __hasEtapas = false;
     
                 Object.entries(__eventsInfo).forEach(([eventKey, _teams]) => {
@@ -369,38 +371,104 @@ export function useRaceData(
                         (__stageWinsByUser[tName] || 0) + 1;
                     });
                   }
-                  if (eventKey.startsWith("Clasificación final")) {
-                    teams.forEach((t) => {
-                      const p = leaderboard?.find((p) => p.nombreEquipo === t);
-                      const tName = p ? p.nombreEquipo : t;
-                      if (!__generalWinners.includes(tName)) {
-                        __generalWinners.push(tName);
-                      }
-                    });
-                  }
                 });
+
+                // Scan all player records to find winners of key classifications in selectedRace
+                leaderboard?.forEach((player) => {
+                  if (player.nombreEquipo === "No draft" || player.nombreEquipo === "No draft [99]") return;
+                  player.detalles?.forEach((d) => {
+                    if (d.carrera !== selectedRace) return;
+                    const pos = String(d.posicion || "").trim();
+                    if (pos === "1" || pos === "01") {
+                      const tipoLower = String(d.tipoResultado || "").toLowerCase();
+                      
+                      // General
+                      if (
+                        tipoLower.includes("clasificación final") || 
+                        tipoLower.includes("clasificación general") || 
+                        tipoLower === "cg" || 
+                        d.tipoResultado === "Clasificación final (Crono equipos)"
+                      ) {
+                        if (!__generalWinners.includes(player.nombreEquipo)) {
+                          __generalWinners.push(player.nombreEquipo);
+                        }
+                      }
+                      
+                      // Puntos
+                      if (
+                        tipoLower.includes("regularidad final") || 
+                        tipoLower.includes("puntos final") || 
+                        tipoLower.includes("puntos") || 
+                        tipoLower === "cp"
+                      ) {
+                        if (d.puntosObtenidos > 0 && !__pointsWinners.includes(player.nombreEquipo)) {
+                          __pointsWinners.push(player.nombreEquipo);
+                        }
+                      }
+                      
+                      // Montaña
+                      if (
+                        tipoLower.includes("montaña final") || 
+                        tipoLower.includes("montaña") || 
+                        tipoLower === "cm"
+                      ) {
+                        if (d.puntosObtenidos > 0 && !__mountainWinners.includes(player.nombreEquipo)) {
+                          __mountainWinners.push(player.nombreEquipo);
+                        }
+                      }
+                    }
+                  });
+                });
+
+                const formatListSpanish = (items: string[]) => {
+                  if (items.length === 0) return "";
+                  if (items.length === 1) return items[0];
+                  const butLast = items.slice(0, -1).join(", ");
+                  const last = items[items.length - 1];
+                  return `${butLast} y ${last}`;
+                };
     
-                const __etapasItems = Object.entries(__stageWinsByUser);
-                const __etapasStr =
-                  __etapasItems.length > 0
-                    ? __etapasItems
-                        .map(
-                          ([user, count]) =>
-                            `🏆 ${user} se lleva ${count} etapa${count !== 1 ? "s" : ""}`,
-                        )
-                        .join("\n")
-                    : "";
-                const __generalWinner =
-                  __generalWinners.length > 0 ? __generalWinners.join(", ") : "...";
+                // Group stage winners by win count
+                const __groupedByCount: Record<number, string[]> = {};
+                Object.entries(__stageWinsByUser).forEach(([user, count]) => {
+                  if (!__groupedByCount[count]) {
+                    __groupedByCount[count] = [];
+                  }
+                  __groupedByCount[count].push(user);
+                });
+
+                // Sort counts descending
+                const __sortedCounts = Object.keys(__groupedByCount)
+                  .map(Number)
+                  .sort((a, b) => b - a);
+
+                const __etapasStr = __sortedCounts
+                  .map((count) => {
+                    const trophies = "🏆".repeat(count);
+                    const teamsFormatted = formatListSpanish(__groupedByCount[count]);
+                    return `${trophies} ${teamsFormatted}`;
+                  })
+                  .join("\n");
+
+                let __extraClassifications = "";
+                if (__generalWinners.length > 0) {
+                  __extraClassifications += `\n🏆 ${formatListSpanish(__generalWinners)} se lleva la clasificación general`;
+                }
+                if (__pointsWinners.length > 0) {
+                  __extraClassifications += `\n🏆 ${formatListSpanish(__pointsWinners)} gana la clasificación por puntos`;
+                }
+                if (__mountainWinners.length > 0) {
+                  __extraClassifications += `\n🏆 ${formatListSpanish(__mountainWinners)} gana la clasificación de la montaña`;
+                }
     
                 const __textValue =
                   `🏁 **CARRERA FINALIZADA: ${selectedRace}** 🏁
-    Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
+Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
     
-    🚴‍♂️ ${__bestCyclistName} con ${__bestCyclistPoints} es el ciclista con más puntos.` +
+🚴‍♂️ ${__bestCyclistName} con ${__bestCyclistPoints} es el ciclista con más puntos.` +
                   (__hasEtapas
-                    ? `\n\nClasificación por Etapas / Conceptos:\n${__etapasStr}\n🏆 ${__generalWinner} se lleva la clasificación general`
-                    : "");
+                    ? `\n\nGanadores de etapa:\n${__etapasStr}\n${__extraClassifications}`
+                    : __extraClassifications ? `\n\n${__extraClassifications.trim()}` : "");
     
                 const cyclistToInfo = new Map<string, { equipo: string, orden: string, ronda: string, tempPoints: number, racePoints: number }>();
                 leaderboard?.forEach(player => {

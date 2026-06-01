@@ -27,10 +27,13 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     const { fileName = 'export.png', scale = 3, onBeforeCapture, onAfterCapture, style, width, filter, backgroundColor = '#ffffff' } = options;
     if (!ref.current || isCopying) return;
     setIsCopying(true);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    
     const tableContainer = ref.current;
     if (onBeforeCapture) onBeforeCapture(tableContainer);
+    // Expand node and add .is-exporting early so React effects can trigger during the wait
     const restore = expandNodeForCapture(tableContainer);
+    
+    await new Promise((resolve) => setTimeout(resolve, 300));
     
     // We measure scrollWidth after expanding
     const computedWidth = width || tableContainer.scrollWidth;
@@ -76,11 +79,12 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     const { fileName = 'export.png', scale = 3, onBeforeCapture, onAfterCapture, style, width, filter, backgroundColor = '#ffffff' } = options;
     if (!ref.current || isDownloading) return;
     setIsDownloading(true);
-    await new Promise((resolve) => setTimeout(resolve, 200));
     
     const tableContainer = ref.current;
     if (onBeforeCapture) onBeforeCapture(tableContainer);
     const restore = expandNodeForCapture(tableContainer);
+    
+    await new Promise((resolve) => setTimeout(resolve, 300));
     
     const computedWidth = width || tableContainer.scrollWidth;
     

@@ -83,7 +83,7 @@ export const RaceStats = ({
         onBeforeCapture: (container) => {
           const cards = container.querySelectorAll("[data-team-card]");
           if (subset && subset !== "full") {
-            const activeBlock = String(subset);
+            const activeBlock = String(subset).replace(/^p/, "");
             cards.forEach((card) => {
               const block = card.getAttribute("data-block") || "1";
               if (block !== activeBlock) card.classList.add("hidden");
@@ -111,7 +111,7 @@ export const RaceStats = ({
         onBeforeCapture: (container) => {
           const cards = container.querySelectorAll("[data-team-card]");
           if (subset && subset !== "full") {
-            const activeBlock = String(subset);
+            const activeBlock = String(subset).replace(/^p/, "");
             cards.forEach((card) => {
               const block = card.getAttribute("data-block") || "1";
               if (block !== activeBlock) card.classList.add("hidden");

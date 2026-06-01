@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Users, X, CheckCircle2, Camera } from "lucide-react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { Users, Filter, ChevronDown, CheckCircle2 } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
 import { cn } from "../../../../lib/utils";
@@ -15,9 +15,26 @@ export const RaceDetailedBreakdown = ({
   onDownloadImage,
   tableRef,
 }: any) => {
+  const [selectedTeamsFilter, setSelectedTeamsFilter] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const allTeamNames = useMemo(() => {
+    return Array.from(new Set(raceTeams.map((t: any) => t.nombreEquipo))).filter(Boolean) as string[];
+  }, [raceTeams]);
 
   const processedTeams = useMemo(() => {
-    const valid = raceTeams
+    let valid = raceTeams
       .map((team: any, originalIndex: number) => {
         let weight = 4; // Headers spacing
 
@@ -46,24 +63,29 @@ export const RaceDetailedBreakdown = ({
       })
       .filter((t: any) => t.sortedCyclists.length > 0 || t.team.totalPoints > 0);
 
-      const totalWeight = valid.reduce((acc: number, cur: any) => acc + cur.weight, 0);
-      const numBlocks = valid.length > 18 ? 3 : (valid.length > 8 ? 2 : 1);
-      const targetWeight = totalWeight / numBlocks;
+    // Filtrar por equipos seleccionados
+    if (selectedTeamsFilter.length > 0) {
+      valid = valid.filter((t: any) => selectedTeamsFilter.includes(t.team.nombreEquipo));
+    }
 
-      let currentBlock = 1;
-      let currentWeight = 0;
+    const totalWeight = valid.reduce((acc: number, cur: any) => acc + cur.weight, 0);
+    const numBlocks = valid.length > 18 ? 3 : (valid.length > 8 ? 2 : 1);
+    const targetWeight = totalWeight / numBlocks;
 
-      valid.forEach((t: any) => {
-        if (currentBlock < numBlocks && currentWeight + (t.weight / 2) > targetWeight) {
-          currentBlock++;
-          currentWeight = 0;
-        }
-        t.block = currentBlock;
-        currentWeight += t.weight;
-      });
+    let currentBlock = 1;
+    let currentWeight = 0;
 
-      return { valid, numBlocks };
-  }, [raceTeams]);
+    valid.forEach((t: any) => {
+      if (currentBlock < numBlocks && currentWeight + (t.weight / 2) > targetWeight) {
+        currentBlock++;
+        currentWeight = 0;
+      }
+      t.block = currentBlock;
+      currentWeight += t.weight;
+    });
+
+    return { valid, numBlocks };
+  }, [raceTeams, selectedTeamsFilter]);
 
   const { valid, numBlocks } = processedTeams;
 
@@ -75,6 +97,69 @@ export const RaceDetailedBreakdown = ({
       filename="desglose-equipo"
       ref={tableRef}
       className="mt-12"
+      headerExtra={
+        <div className="relative inline-block text-left" ref={filterRef}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="flex items-center gap-1.5 text-xs h-8 text-neutral-600 hover:text-blue-700 border-neutral-200 transition-all font-medium bg-white shadow-sm"
+          >
+            <Filter className="w-3.5 h-3.5 text-neutral-400" />
+            <span>Equipos ({selectedTeamsFilter.length === 0 ? "Todos" : `${selectedTeamsFilter.length}/${allTeamNames.length}`})</span>
+            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+          </Button>
+
+          {isFilterOpen && (
+            <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-neutral-200 rounded-xl shadow-xl z-[90] py-2 animate-in fade-in slide-in-from-top-2">
+              <div className="px-3 py-1.5 border-b border-neutral-100 flex justify-between items-center mb-1 bg-neutral-50/50 rounded-t-xl">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Seleccionar Equipos</span>
+                {selectedTeamsFilter.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTeamsFilter([])}
+                    className="text-[10px] text-blue-600 hover:underline font-semibold"
+                  >
+                    Mostrar todos
+                  </button>
+                )}
+              </div>
+              <div className="max-h-60 overflow-y-auto px-1 py-1 space-y-0.5">
+                {allTeamNames.length === 0 ? (
+                  <div className="text-[11px] text-neutral-400 italic text-center py-4">No hay equipos</div>
+                ) : (
+                  allTeamNames.map(name => {
+                    const isSelected = selectedTeamsFilter.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedTeamsFilter(selectedTeamsFilter.filter(t => t !== name));
+                          } else {
+                            setSelectedTeamsFilter([...selectedTeamsFilter, name]);
+                          }
+                        }}
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between",
+                          isSelected ? "bg-blue-50/80 text-blue-750 font-semibold" : "hover:bg-neutral-50 text-neutral-700"
+                        )}
+                      >
+                        <span className="truncate pr-2">{name}</span>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}} // dummy block handled by father click
+                          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 rounded-sm pointer-events-none"
+                        />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      }
       toolbarProps={{
         isExpanded: isExpanded,
         onExpand: () => setIsExpanded(!isExpanded),

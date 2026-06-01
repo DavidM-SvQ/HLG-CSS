@@ -1,7 +1,7 @@
 import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, ChevronDown, X, Users } from 'lucide-react';
+import { Search, ChevronDown, X, Users, SlidersHorizontal } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { getVal } from '../../../lib/data-processing';
 import { ReportCard } from '../../ui/ReportCard';
@@ -13,6 +13,7 @@ import { useDraftElectionsExports } from './hooks/useDraftElectionsExports';
 import { useDraftElectionsLogic } from './hooks/useDraftElectionsLogic';
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { Button } from "../../ui/button";
+import { DualRangeSlider } from "../../ui/dual-range-slider";
 
 export interface DraftElectionsProps {
   files: AppState;
@@ -123,6 +124,20 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
     );
   }
 
+  const allRounds = useMemo(() => {
+    if (!files?.elecciones?.data) return [];
+    return Array.from(new Set(files.elecciones.data.map((d: any) => parseInt(getVal(d, "Ronda"))))).filter(r => !isNaN(r));
+  }, [files?.elecciones?.data]);
+  const minPossibleRound = allRounds.length > 0 ? Math.min(...allRounds) : 1;
+  const maxPossibleRound = allRounds.length > 0 ? Math.max(...allRounds) : 25;
+  const currentMinRound = draftRoundFilter.length > 0 ? Math.min(...draftRoundFilter.map(Number)) : minPossibleRound;
+  const currentMaxRound = draftRoundFilter.length > 0 ? Math.max(...draftRoundFilter.map(Number)) : maxPossibleRound;
+  const rondasLabel = draftRoundFilter.length === 0 
+    ? "Todas las rondas" 
+    : draftRoundFilter.length === 1 
+      ? `Ronda ${draftRoundFilter[0]}` 
+      : `Rondas: ${currentMinRound} - ${currentMaxRound}`;
+
   const filtersUI = (
     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
       <div className="relative flex-1 sm:w-64">
@@ -152,33 +167,40 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
               className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 flex items-center gap-2 min-w-[140px] justify-between cursor-pointer"
             >
               <span className="text-neutral-700">
-                {draftRoundFilter.length === 0 ? "Todas las rondas" : `${draftRoundFilter.length} rondas`}
+                {rondasLabel}
               </span>
               <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isDraftRoundFilterOpen && "rotate-180")} />
             </Button>
           } />
-          <PopoverContent className="w-[calc(100vw-2rem)] max-w-xs sm:w-56 p-0 rounded-xl shadow-xl z-50 py-2">
-            <div className="px-3 py-1 flex justify-between items-center border-b border-neutral-100 mb-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
+          <PopoverContent className="w-[calc(100vw-2rem)] max-w-xs sm:w-64 p-4 rounded-xl shadow-xl z-50">
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-2 mb-4">
+              <span className="text-xs font-bold text-neutral-600 uppercase">Filtrar por Rondas</span>
               {draftRoundFilter.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setDraftRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold">Limpiar</Button>
+                <Button variant="ghost" size="sm" onClick={() => setDraftRoundFilter([])} className="h-6 px-2 text-[10px] text-blue-600 hover:text-blue-700 font-bold bg-blue-50 hover:bg-blue-100 rounded">Limpiar</Button>
               )}
             </div>
-            <div className="max-h-60 overflow-y-auto">
-              {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Ronda"))).filter(Boolean)))
-                .sort((a, b) => parseInt(a as string) - parseInt(b as string))
-                .map((ronda) => (
-                  <label key={ronda as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">
-                    <input type="checkbox" className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500/20" checked={draftRoundFilter.includes(ronda as string)} onChange={() => {
-                      if (draftRoundFilter.includes(ronda as string)) {
-                          setDraftRoundFilter(draftRoundFilter.filter((r) => r !== ronda));
-                      } else {
-                          setDraftRoundFilter([...draftRoundFilter, ronda as string]);
-                      }
-                    }} />
-                    <span className="text-sm text-neutral-700">Ronda {ronda as string}</span>
-                  </label>
-                ))}
+            
+            <div className="space-y-6 pt-2 pb-1">
+              <DualRangeSlider 
+                min={minPossibleRound} 
+                max={maxPossibleRound} 
+                value={[currentMinRound, currentMaxRound]} 
+                onChange={([newMin, newMax]) => {
+                  if (newMin === minPossibleRound && newMax === maxPossibleRound) {
+                    setDraftRoundFilter([]);
+                  } else {
+                    const newFilter = [];
+                    for (let i = newMin; i <= newMax; i++) {
+                      newFilter.push(String(i));
+                    }
+                    setDraftRoundFilter(newFilter);
+                  }
+                }} 
+              />
+              <div className="flex justify-between items-center text-sm font-medium text-neutral-500">
+                <span className="bg-neutral-100 px-2 py-1 rounded">Min: {currentMinRound}</span>
+                <span className="bg-neutral-100 px-2 py-1 rounded">Max: {currentMaxRound}</span>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -356,12 +378,12 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
         {(draftRoundFilter.length > 0 || draftTeamFilter.length > 0 || Object.values(draftStatsFilters).some((v) => v !== undefined && String(v) !== "")) && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-500 font-medium mr-1">Filtros activos:</span>
-            {draftRoundFilter.map(r => (
-              <span key={'r'+r} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[11px] font-medium rounded-full border border-blue-100">
-                 Ronda {r}
-                 <Button variant="outline" onClick={() => setDraftRoundFilter(draftRoundFilter.filter(x => x !== r))} className="hover:bg-blue-200 rounded-full p-0.5"><X className="w-3 h-3" /></Button>
+            {draftRoundFilter.length > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[11px] font-medium rounded-full border border-blue-100">
+                 {draftRoundFilter.length === 1 ? `Ronda ${draftRoundFilter[0]}` : `Rondas: ${Math.min(...draftRoundFilter.map(Number))} - ${Math.max(...draftRoundFilter.map(Number))}`}
+                 <Button variant="outline" onClick={() => setDraftRoundFilter([])} className="hover:bg-blue-200 rounded-full p-0.5"><X className="w-3 h-3" /></Button>
               </span>
-            ))}
+            )}
             {draftTeamFilter.map(t => (
               <span key={'t'+t} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[11px] font-medium rounded-full border border-blue-100">
                  {t}

@@ -9,6 +9,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
   const originalStyles = targets.map((node) => ({
     node,
     maxHeight: node.style.maxHeight,
+    minHeight: node.style.minHeight,
     height: node.style.height,
     overflowY: node.style.overflowY,
     overflowX: node.style.overflowX,
@@ -66,6 +67,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
 
   targets.forEach((node) => {
     node.style.setProperty('max-height', 'none', 'important');
+    node.style.setProperty('min-height', '0px', 'important');
     node.style.setProperty('height', 'auto', 'important');
     node.style.setProperty('overflow-y', 'visible', 'important');
     node.style.setProperty('overflow-x', 'visible', 'important');
@@ -104,12 +106,20 @@ export const expandNodeForCapture = (element: HTMLElement) => {
   let maxDescendantScrollWidth = 0;
   const allDescendants = Array.from(element.querySelectorAll<HTMLElement>('*'));
   allDescendants.forEach(child => {
-    if (child.scrollWidth > maxDescendantScrollWidth) {
+    // Ignore absolute positioned decorative elements to keep width measurements accurate
+    const isAbsolute = window.getComputedStyle(child).position === 'absolute';
+    if (!isAbsolute && child.scrollWidth > maxDescendantScrollWidth) {
       maxDescendantScrollWidth = child.scrollWidth;
     }
   });
 
-  let targetWidth = Math.max(element.scrollWidth, maxDescendantScrollWidth);
+  const hasTable = element.querySelector('table') !== null;
+  let targetWidth;
+  if (hasTable) {
+    targetWidth = Math.max(600, maxDescendantScrollWidth);
+  } else {
+    targetWidth = Math.max(element.scrollWidth, maxDescendantScrollWidth);
+  }
 
   // If it is a chart and it collapsed, or we just want charts to be wide:
   if (isChart && targetWidth < 800) {
@@ -131,6 +141,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
   return () => {
     originalStyles.forEach((styleObj) => {
       styleObj.node.style.maxHeight = styleObj.maxHeight;
+      styleObj.node.style.minHeight = styleObj.minHeight;
       styleObj.node.style.height = styleObj.height;
       styleObj.node.style.overflowY = styleObj.overflowY;
       styleObj.node.style.overflowX = styleObj.overflowX;

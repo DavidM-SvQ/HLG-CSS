@@ -21,6 +21,27 @@ export const RaceCyclistsTable = ({
     return Math.max(...(raceCyclists || []).map((c: any) => c.victorias || 0), 0);
   }, [raceCyclists]);
 
+  const filteredRaceCyclists = React.useMemo(() => {
+    if (!raceCyclists) return [];
+    
+    // Show top 25 cyclists based on points
+    const sortedByPoints = [...raceCyclists].sort((a, b) => b.puntos - a.puntos);
+    const top25Ids = new Set(sortedByPoints.slice(0, 25).map(c => c.ciclista));
+
+    // Determine stage winners
+    const winnerIds = new Set<string>();
+    raceCyclists.forEach((c: any) => {
+      finalColumns?.forEach((col: any) => {
+        const pts = c.pointsByCol ? (c.pointsByCol[col.formatted] || 0) : 0;
+        if (pts > 0 && maxPointsByCol && pts === maxPointsByCol[col.formatted]) {
+          winnerIds.add(c.ciclista);
+        }
+      });
+    });
+
+    return raceCyclists.filter((c: any) => top25Ids.has(c.ciclista) || winnerIds.has(c.ciclista));
+  }, [raceCyclists, finalColumns, maxPointsByCol]);
+
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const renderRow = (c: any, index: number) => {
@@ -39,7 +60,7 @@ export const RaceCyclistsTable = ({
             </span>
           </div>
         </td>
-        <td className="px-4 py-3 pr-8 sticky left-[140px] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px] w-48 truncate">
+        <td className="px-4 py-3 pr-8 sticky left-[140px] shadow-[4px_0_12px_rgba(0,0,0,0.02)] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px] w-48 truncate">
           <div className="flex flex-col">
             <span className="text-neutral-700 font-bold leading-tight">
               {c.jugador} [<span className="font-mono tabular-nums opacity-60">#{c.orden}</span>]
@@ -79,7 +100,7 @@ export const RaceCyclistsTable = ({
           );
         })}
         <td
-          className="px-4 py-3 text-center font-mono tabular-nums font-bold text-blue-600 text-[11px] sticky right-0 z-10 bg-white group-hover:bg-blue-50 border-l border-neutral-100"
+          className="px-4 py-3 text-center font-mono tabular-nums font-bold text-blue-600 text-[11px] sticky right-0 z-10 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] min-w-[50px] bg-white group-hover:bg-blue-50 border-l border-neutral-100"
           style={{
             backgroundColor:
               c.puntos > 0
@@ -126,27 +147,27 @@ export const RaceCyclistsTable = ({
         >
           <div ref={scrollRef} className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
-              <thead className="bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10">
+              <thead className="bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="px-4 py-3 min-w-[140px] sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700">Ciclista</th>
-                  <th className="px-4 py-3 w-48 sticky left-[140px] bg-[#1e293b] z-20 border-r border-slate-700">
+                  <th className="px-4 py-3 w-48 sticky left-[140px] shadow-[4px_0_12px_rgba(0,0,0,0.2)] bg-[#1e293b] z-20 border-r border-slate-700">
                     Equipo [#Orden]
                   </th>
                   <th className="px-4 py-3 text-center border-r border-slate-700 min-w-[50px]">Vict.</th>
                   {finalColumns?.map((col: any) => (
                     <th
                       key={col.formatted}
-                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700"
+                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700 min-w-[36px]"
                     >
                       {col.formatted}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">Puntos</th>
+                  <th className="px-4 py-3 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px] shadow-[-4px_0_12px_rgba(0,0,0,0.2)]">Puntos</th>
                 </tr>
               </thead>
               <VirtualizedTableBody
                 scrollElementRef={scrollRef}
-                items={raceCyclists}
+                items={filteredRaceCyclists}
                 renderRow={renderRow}
                 colSpan={4 + (finalColumns?.length || 0)}
                 estimateSize={44}

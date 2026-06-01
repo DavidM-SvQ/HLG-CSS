@@ -7,9 +7,10 @@ import { useDataStore } from "../../../lib/stores/useDataStore";
 import { useComputedStore } from "../../../lib/stores/useComputedStore";
 import { parse } from "papaparse";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../ui/tooltip";
+import { supabase } from "../../../supabase";
 
 export const AdminDatosV2Tab = () => {
-  const { updateFile } = useDataStore();
+  const { files, updateFile } = useDataStore();
   const { leaderboard, cyclistMetadata, unassignedPointsLog, assignedPointsLog, debugLastRows, playerByCyclist } = useComputedStore();
   const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
   const [expandedIframes, setExpandedIframes] = useState<Record<string, boolean>>({ resultados: true });
@@ -19,6 +20,10 @@ export const AdminDatosV2Tab = () => {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [syncStatusMsg, setSyncStatusMsg] = useState<string>("");
   const [avisosFilter, setAvisosFilter] = useState<'todos' | 'errores'>('todos');
+
+  const isSupabaseConfigured =
+    !!(import.meta as any).env.VITE_SUPABASE_URL &&
+    !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
   const displayUnassigned = useMemo(() => {
     if (!unassignedPointsLog) return [];
@@ -44,11 +49,50 @@ export const AdminDatosV2Tab = () => {
         setSheetUrls(JSON.parse(saved));
       } catch(e) {}
     }
-  }, []);
 
-  const saveUrls = (urls: Record<string, string>) => {
+    // Cargar desde Supabase para tener la versión compartida entre dispositivos
+    if (isSupabaseConfigured) {
+      const fetchUrls = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("global_files")
+            .select("data")
+            .eq("id", "google_sheets_urls")
+            .single();
+
+          if (!error && data && data.data) {
+            setSheetUrls(data.data as Record<string, string>);
+            localStorage.setItem('googleSheetsUrls', JSON.stringify(data.data));
+          }
+        } catch (err) {
+          console.error("Error cargando URLs de Google Sheets desde Supabase:", err);
+        }
+      };
+      fetchUrls();
+    }
+  }, [isSupabaseConfigured]);
+
+  const saveUrls = async (urls: Record<string, string>) => {
     setSheetUrls(urls);
     localStorage.setItem('googleSheetsUrls', JSON.stringify(urls));
+
+    // Si Supabase está configurado, guardamos las URLs en la base de datos
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase
+          .from("global_files")
+          .upsert({
+            id: "google_sheets_urls",
+            data: urls,
+            updated_at: new Date().toISOString()
+          });
+        if (error) {
+          console.error("Error al guardar URLs en Supabase:", error);
+        }
+      } catch (err) {
+        console.error("Error al guardar URLs en Supabase:", err);
+      }
+    }
   };
 
   const handleUrlChange = (id: string, url: string) => {
@@ -74,13 +118,27 @@ export const AdminDatosV2Tab = () => {
     return csvUrl;
   };
 
-  const extractIframeUrl = (url: string) => {
+  const extractIframeUrl = (url: string, id: string) => {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return null;
     let base = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?rm=minimal`;
     const gidMatch = url.match(/gid=([0-9]+)/);
     if (gidMatch) {
       base += `#gid=${gidMatch[1]}`;
+    }
+    if (id === "resultados" && files.resultados?.data) {
+      const rowCount = Array.isArray(files.resultados.data) ? files.resultados.data.length : 0;
+      if (rowCount > 0) {
+        // En lugar de enfocar una sola celda, mostramos las últimas 15 celdas y dejamos 100 de margen hacia abajo.
+        // Esto previene que se oculten las últimas celdas al editar y facilita el scroll a quien escribe.
+        const targetRowStart = Math.max(1, rowCount - 15);
+        const targetRowEnd = rowCount + 100;
+        if (base.includes("#")) {
+          base += `&range=A${targetRowStart}:Z${targetRowEnd}`;
+        } else {
+          base += `#range=A${targetRowStart}:Z${targetRowEnd}`;
+        }
+      }
     }
     return base;
   };
@@ -218,7 +276,7 @@ export const AdminDatosV2Tab = () => {
         <div className="grid grid-cols-1 gap-8">
           {orderedFileTypes.map((ft) => {
             const url = sheetUrls[ft.id] || "";
-            const iframeUrl = extractIframeUrl(url);
+            const iframeUrl = extractIframeUrl(url, ft.id);
             const isIframeExpanded = !!expandedIframes[ft.id];
 
             return (
