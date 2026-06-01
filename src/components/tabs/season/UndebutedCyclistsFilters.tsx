@@ -29,6 +29,7 @@ export function UndebutedCyclistsFilters({
       <div className="flex flex-wrap gap-3 mt-1">
         <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore shrink-0">
           <ExportToolbar
+            filename="ciclistas-sin-debutar"
             isExpanded={isUndebutedExpanded}
             onExpand={() => setIsUndebutedExpanded(!isUndebutedExpanded)}
             onCopyImage={(range) => handleCopyUndebuted(range || "full")}

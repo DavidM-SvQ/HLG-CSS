@@ -23,6 +23,5 @@ export const performTextCopy = async (
     )
     .join("\n");
   await copyTextToClipboard(text, "export.txt");
-  trackEvent("export", { type: "text_copy", item: chartName });
   setTimeout(() => setCopyingState(false), 2000);
 };

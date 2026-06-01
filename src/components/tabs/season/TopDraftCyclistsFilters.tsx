@@ -61,6 +61,7 @@ export function TopDraftCyclistsFilters(props: any) {
         <div className="flex flex-wrap items-center gap-3 mt-1">
           <div className="copy-button-ignore pr-3 border-r border-neutral-200 shrink-0">
             <ExportToolbar
+              filename="top-ciclistas"
               isExpanded={isTopCyclistsDraftExpanded}
               onExpand={() => setIsTopCyclistsDraftExpanded(!isTopCyclistsDraftExpanded)}
               onCopyImage={(range) => handleCopyTopCyclistsDraft(range || "full")}

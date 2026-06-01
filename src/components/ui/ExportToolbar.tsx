@@ -3,6 +3,7 @@ import { Maximize2, Minimize2, Copy, CheckCircle2, CloudDownload, ClipboardList,
 import { cn } from "../../lib/utils";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { Button } from "./button";
+import { trackEvent } from "../../lib/analytics/trackEvent";
 
 interface ExportToolbarProps {
   isExpanded?: boolean;
@@ -64,6 +65,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
         style: { overflow: "visible" }
       });
+      trackEvent("export", { type: "image_copy", item: filename });
     } finally {
       setInternalIsCopying(false);
     }
@@ -77,10 +79,29 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
       filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
       style: { overflow: "visible" }
     });
+    trackEvent("export", { type: "image_download", item: filename });
   };
 
-  const _onCopyImage = onCopyImage || (targetRef ? handleAutoCopy : undefined);
-  const _onDownloadImage = onDownloadImage || (targetRef ? handleAutoDownload : undefined);
+  const wrappedCopyImage = (range?: string) => {
+    trackEvent("export", { type: "image_copy", item: filename });
+    if (onCopyImage) onCopyImage(range);
+    else if (targetRef) handleAutoCopy(range);
+  };
+  
+  const wrappedDownloadImage = (range?: string) => {
+    trackEvent("export", { type: "image_download", item: filename });
+    if (onDownloadImage) onDownloadImage(range);
+    else if (targetRef) handleAutoDownload(range);
+  };
+  
+  const wrappedCopyText = () => {
+    trackEvent("export", { type: "text_copy", item: filename });
+    if (onCopyText) onCopyText();
+  };
+
+  const _onCopyImage = onCopyImage || targetRef ? wrappedCopyImage : undefined;
+  const _onDownloadImage = onDownloadImage || targetRef ? wrappedDownloadImage : undefined;
+  const _onCopyText = onCopyText ? wrappedCopyText : undefined;
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -264,9 +285,9 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
       {_onCopyImage && renderImageButtons()}
       {customImageButtons}
 
-      {onCopyText && (
+      {_onCopyText && (
         <Button variant="outline"
-          onClick={onCopyText}
+          onClick={_onCopyText}
           disabled={isTextCopying}
           className={cn(
             "transition-colors border shadow-sm rounded-md",

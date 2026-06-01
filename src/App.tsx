@@ -83,8 +83,18 @@ export default function App() {
 
   useAppComputations();
   const currentTabName = location.pathname.split("/")[1] || "season";
+  
+  // Extract URL parameters for analytics
+  const searchParams = new window.URLSearchParams(location.search);
+  const selectedTeam = searchParams.get("selected_team");
+  const selectedRace = searchParams.get("selected_race");
 
-  usePageView("app_navigation", { publicTab: currentTabName, view });
+  usePageView("app_navigation", { 
+    publicTab: currentTabName, 
+    view,
+    ...(selectedTeam && { selectedTeam }),
+    ...(selectedRace && { selectedRace })
+  });
 
   // Removed isAdmin and isSupabaseConfigured (handled by AuthProvider)
 

@@ -49,6 +49,7 @@ export function NoDraftFilters({
       <div className="flex flex-wrap gap-3 mt-1">
         <div className="flex flex-wrap items-center gap-1.5 border-r border-neutral-200 pr-3 copy-button-ignore shrink-0">
           <ExportToolbar
+            filename="top-ciclistas-no-draft"
             isExpanded={isExpanded}
             onExpand={() => setIsExpanded(!isExpanded)}
             onCopyImage={(range) => handleCopy(range || "full")}
