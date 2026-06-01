@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: window.location.origin + '/',
+            redirectTo: window.location.origin + window.location.pathname,
           },
         });
         if (error) throw error;
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin + '/',
+          redirectTo: window.location.origin + window.location.pathname,
           skipBrowserRedirect: true,
         },
       });

@@ -77,7 +77,7 @@ export function PublicLayout() {
             className="w-full"
           >
             <Routes location={location}>
-              <Route path="/" element={<Navigate to="/season" replace />} />
+              <Route path="/" element={<Navigate to={{ pathname: "/season", search: location.search, hash: location.hash }} replace />} />
               <Route path="/season" element={<SeasonView />} />
               <Route path="/race" element={<RaceView />} />
               <Route path="/team" element={<TeamView />} />
