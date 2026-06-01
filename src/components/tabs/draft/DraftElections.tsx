@@ -126,7 +126,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
   const allRounds = useMemo(() => {
     if (!files?.elecciones?.data) return [];
-    return Array.from(new Set(files.elecciones.data.map((d: any) => parseInt(getVal(d, "Ronda"))))).filter(r => !isNaN(r));
+    return Array.from(new Set(files.elecciones.data.map((d: any) => parseInt(getVal(d, "Ronda"))))).filter((r: unknown) => !isNaN(Number(r))) as number[];
   }, [files?.elecciones?.data]);
   const minPossibleRound = allRounds.length > 0 ? Math.min(...allRounds) : 1;
   const maxPossibleRound = allRounds.length > 0 ? Math.max(...allRounds) : 25;

@@ -63,6 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
+      // Use standard redirect when NOT in an iframe (e.g. Vercel, standalone tab)
+      // Use popup when IN an iframe (e.g. AI Studio preview) because Google blocks iframes
+      const isIframe = window !== window.top;
+
+      if (!isIframe) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        return; // Page will redirect
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
