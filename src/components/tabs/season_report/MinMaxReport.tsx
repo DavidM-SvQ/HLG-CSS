@@ -27,12 +27,12 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
         filename="mejores-peores-equipo"
         ref={ref6}
         toolbarProps={{
-          isExpanded: isTeamExpanded,
-          onExpand: () => setIsTeamExpanded(!isTeamExpanded)
+          isExpanded: true,
+          onExpand: () => {}
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
-        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container", !isTeamExpanded && "overflow-auto max-h-[600px]", isTeamExpanded && "overflow-x-auto")}>
+        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container overflow-x-auto")}>
           <table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap">
             <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
               <tr className="border-b">
@@ -109,12 +109,12 @@ export const MinMaxReport: React.FC<MinMaxReportProps> = ({
         filename="mejores-peores-ronda"
         ref={ref7}
         toolbarProps={{
-          isExpanded: isRoundExpanded,
-          onExpand: () => setIsRoundExpanded(!isRoundExpanded)
+          isExpanded: true,
+          onExpand: () => {}
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
-        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container", !isRoundExpanded && "overflow-auto max-h-[600px]", isRoundExpanded && "overflow-x-auto")}>
+        <div className={cn("table-responsive-wrapper min-h-[300px] w-full crosshair-container overflow-x-auto")}>
           <table className="w-full min-w-[600px] text-sm text-left">
             <thead className="sticky top-0 z-20 bg-neutral-50 shadow-sm border-b border-neutral-100">
               <tr className="border-b">

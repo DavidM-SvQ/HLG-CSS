@@ -196,12 +196,12 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
         filename="puntos-meses"
         ref={ref2}
         toolbarProps={{
-          isExpanded: isPointsMonthsExpanded,
-          onExpand: () => setIsPointsMonthsExpanded(!isPointsMonthsExpanded)
+          isExpanded: true,
+          onExpand: () => {}
         }}
         bodyClassName="overflow-x-auto bg-neutral-50/20 pb-8 relative mt-2 text-sm w-full min-w-0 border-t border-neutral-100"
       >
-        <div className={cn("table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container", !isPointsMonthsExpanded && "max-h-[600px]")}>
+        <div className={cn("table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container")}>
           <table className="w-full min-w-[800px] text-sm text-left bg-white bg-white rounded-xl shadow-sm rounded-lg">
             <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50">
               <tr>
@@ -250,7 +250,7 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                         </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-neutral-800 ">
-                        {team.team} <span className="text-xs text-neutral-400 ml-1 font-normal">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span>
+                        {team.team} {team.draftRank && team.draftRank !== "-" && <span className="text-xs text-neutral-400 ml-1 font-normal">[<span className="font-mono tabular-nums opacity-60">#{team.draftRank}</span>]</span>}
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-neutral-900 bg-neutral-100  border-l border-r border-neutral-200">
                         {team.pts.toLocaleString()}
@@ -321,9 +321,9 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
                         <td className="px-6 py-2.5">
                           <div className="flex justify-center">
                             {r.winnerTeam !== "-" ? (
-                              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-800 rounded-full font-bold text-xs ring-1 ring-yellow-600/20 shadow-sm">
-                                <Crown className="w-3 h-3 text-yellow-600" />
-                                {r.winnerTeam} [<span className="font-mono tabular-nums opacity-60">#{}</span>]
+                              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-800 rounded-full font-bold text-xs ring-1 ring-yellow-600/20 shadow-sm whitespace-nowrap">
+                                <Crown className="w-3 h-3 text-yellow-600 shrink-0" />
+                                <span className="truncate">{r.winnerTeam}</span> <span className="shrink-0 opacity-60 font-mono tabular-nums">[#{r.draftRank}]</span>
                               </div>
                             ) : (
                               <span className="text-neutral-400 font-mono tabular-nums">-</span>

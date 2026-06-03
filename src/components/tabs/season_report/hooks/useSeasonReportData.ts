@@ -1,13 +1,16 @@
 import { useMemo } from "react";
 import { DRAFT_RANK_MAP } from "../../../../lib/constants";
 
+export const norm = (s: string) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "") : "";
+
 export const getVal = (row: any, key: string) => {
   if (!row) return "";
   if (row[key] !== undefined) return row[key];
-  const caseInsensitiveKey = Object.keys(row).find(
-    (k) => k.toLowerCase() === key.toLowerCase()
+  const normalizedSearch = norm(key);
+  const matchedKey = Object.keys(row).find(
+    (k) => norm(k) === normalizedSearch
   );
-  return caseInsensitiveKey ? row[caseInsensitiveKey] : "";
+  return matchedKey ? row[matchedKey] : "";
 };
 
 export function useSeasonReportData({ files, leaderboard, selectedMonths, requireSelectedMonths }: any) {
@@ -214,6 +217,37 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
     const maxWins = Math.max(0, ...raceWinners.map((rw) => rw.winnerTeam !== "-" ? 1 : 0));
 
+    const teamTotalCompDays: Record<string, number> = {};
+    if (files?.carreras?.data && leaderboard) {
+      const raceDaysRaw: Record<string, number> = {};
+      files.carreras.data.forEach((r: any) => {
+        const name = getVal(r, "Carrera")?.toString();
+        if (name) {
+          raceDaysRaw[norm(name)] = parseInt(getVal(r, "Días")) || 1;
+        }
+      });
+      leaderboard.forEach((player: any) => {
+        const team = player.nombreEquipo;
+        const isDraft = team !== "No draft" && team !== "No draft [99]";
+        if (isDraft) {
+          const cyclistSetRaces: Record<string, Set<string>> = {};
+          player.detalles?.forEach((d: any) => {
+            if (visibleRaces.has(d.carrera)) {
+              if (!cyclistSetRaces[d.ciclista]) cyclistSetRaces[d.ciclista] = new Set();
+              cyclistSetRaces[d.ciclista].add(d.carrera);
+            }
+          });
+          let tDays = 0;
+          Object.values(cyclistSetRaces).forEach(caces => {
+            caces.forEach(c => {
+               tDays += raceDaysRaw[norm(c)] || 1;
+            });
+          });
+          teamTotalCompDays[team] = tDays;
+        }
+      });
+    }
+
     const topTeams = Object.entries(teamPoints)
       .sort((a, b) => b[1] - a[1])
       .map(([teamName, pts], currentPos) => {
@@ -225,16 +259,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         const racesSet = teamUniqueRaces[teamName] || new Set();
         const numCarreras = racesSet.size;
         
-        let totalDays = 0;
-        racesSet.forEach((raceName) => {
-          const raceData = files?.carreras?.data?.find((r: any) => getVal(r, "Carrera")?.trim() === raceName);
-          if (raceData) {
-            const diasStr = getVal(raceData, "Días");
-            totalDays += parseInt(diasStr) || 1;
-          } else {
-            totalDays += 1;
-          }
-        });
+        const totalDays = teamTotalCompDays[teamName] || 1;
 
         const ppc = numCarreras > 0 ? parseFloat((pts / numCarreras).toFixed(1)) : 0;
         const ppd = totalDays > 0 ? parseFloat((pts / totalDays).toFixed(1)) : 0;
@@ -242,6 +267,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         return {
           team: teamName, // Keep 'team' for backward compatibility in MonthlyReport/SeasonReport
           nombreEquipo: teamName, // Map to TopTeamsTableContent
+          draftRank: draftRankNum,
           pts,
           puntos: pts, // Map to TopTeamsTableContent
           originalPos: draftRankNum !== "-" ? parseInt(draftRankNum, 10) : 999, // Map to TopTeamsTableContent (draft Pos)
@@ -269,12 +295,12 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const raceDays: Record<string, number> = {};
     if (files?.carreras?.data) {
       files.carreras.data.forEach((r: any) => {
-        const name = getVal(r, "Carrera")?.trim();
-        const cat = getVal(r, "Categoría")?.trim();
+        const name = getVal(r, "Carrera")?.toString();
+        const cat = getVal(r, "Categoría")?.toString().trim();
         const diasStr = getVal(r, "Días");
         if (name) {
-          if (cat) raceCats[name] = cat;
-          raceDays[name] = parseInt(diasStr) || 1;
+          if (cat) raceCats[name.trim()] = cat;
+          raceDays[norm(name)] = parseInt(diasStr) || 1;
         }
       });
     }
@@ -339,10 +365,21 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     });
 
     Object.values(cyclistStats).forEach(stats => {
-      stats.carreras.forEach((carrera: string) => {
-         stats.dias += raceDays[carrera] || 1;
-      });
+      stats.dias = 0; // reset
     });
+    if (files?.resultados?.data) {
+      files.resultados.data.forEach((r: any) => {
+         const ciclista = getVal(r, "Ciclista")?.trim();
+         const tipo = getVal(r, "Tipo")?.trim();
+         const carrera = getVal(r, "Carrera")?.trim();
+         // only count if visible race
+         if (ciclista && carrera && visibleRaces.has(carrera) && cyclistStats[ciclista]) {
+            if (tipo === "Etapa" || tipo === "Etapa (Crono equipos)" || tipo === "Clásica") {
+                cyclistStats[ciclista].dias += 1;
+            }
+         }
+      });
+    }
 
     const topCyclistsStats = Object.entries(cyclistStats)
       .sort((a, b) => b[1].puntos - a[1].puntos)
@@ -363,6 +400,35 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
     const topCyclists = topCyclistsStats;
 
+    const eleccionesList: { ciclista: string; team: string; round: string }[] = [];
+    if (files?.elecciones?.data) {
+      const uniquePlayersSet = new Set<string>();
+      files.elecciones.data.forEach((row: any) => {
+        const jugador = String(getVal(row, "Nombre_TG") || getVal(row, "Jugador") || getVal(row, "Manager") || "").trim();
+        if (jugador) uniquePlayersSet.add(jugador);
+      });
+      const numPlayers = uniquePlayersSet.size;
+
+      files.elecciones.data.forEach((row: any, idx: number) => {
+        const ciclista = String(getVal(row, "Ciclista") || "").trim();
+        if (!ciclista) return;
+
+        const eqRaw = String(getVal(row, "Nombre_Equipo") || getVal(row, "Equipo") || "").trim();
+        let rondaStr = String(getVal(row, "Ronda") || "").trim();
+        if (!rondaStr && numPlayers > 0) {
+          rondaStr = (Math.floor(idx / numPlayers) + 1).toString().padStart(2, "0");
+        } else if (rondaStr) {
+          rondaStr = rondaStr.padStart(2, "0");
+        }
+
+        eleccionesList.push({
+          ciclista,
+          team: eqRaw,
+          round: rondaStr
+        });
+      });
+    }
+
     const minMaxTeam = Object.entries(teamCyclistsPoints)
       .filter(([team]) => team !== "No draft" && team !== "No draft [99]")
       .map(([team, cMap]) => {
@@ -372,10 +438,16 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         const totalTeamPts = teamPoints[team] || 0;
         
         let zeroPointsCount = 0;
-        Object.entries(cyclistTeamMap).forEach(([c, t]) => {
-           if (t === teamNameWithDraftRank && (!allCyclistPoints[c] || allCyclistPoints[c] === 0)) {
-               zeroPointsCount++;
-           }
+        eleccionesList.forEach((el) => {
+          if (el.team === team) {
+            const rNum = parseInt(el.round, 10);
+            if (rNum <= 25) {
+              const pts = allCyclistPoints[el.ciclista] || 0;
+              if (pts === 0) {
+                zeroPointsCount++;
+              }
+            }
+          }
         });
 
         return {
@@ -390,14 +462,18 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       .sort((a, b) => a.draftRank - b.draftRank);
 
     const minMaxRound = Object.entries(roundCyclistsPoints)
+      .filter(([round]) => parseInt(round, 10) <= 25)
       .map(([round, cMap]) => {
         const sorted = Object.entries(cMap).sort((a, b) => b[1] - a[1]);
         
         let zeroPointsCount = 0;
-        Object.entries(cyclistRondaMap).forEach(([c, r]) => {
-           if (r === round && (!allCyclistPoints[c] || allCyclistPoints[c] === 0)) {
-               zeroPointsCount++;
-           }
+        eleccionesList.forEach((el) => {
+          if (parseInt(el.round, 10) === parseInt(round, 10)) {
+            const pts = allCyclistPoints[el.ciclista] || 0;
+            if (pts === 0) {
+              zeroPointsCount++;
+            }
+          }
         });
 
         return {
@@ -472,7 +548,8 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         };
       });
 
-    const panenkitaTopTeams = Object.keys(DRAFT_RANK_MAP)
+    const panenkitaTopTeams = Object.keys(teamPoints)
+      .filter((team) => team !== "No draft" && team !== "No draft [99]")
       .map((team) => {
         const pts = panenkitaTeamPoints[team] || 0;
         const draftRank = DRAFT_RANK_MAP[team] || "-";
@@ -502,11 +579,13 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         return { cyclist, pts, round, teamInfo };
       });
 
-    const winningTeamObj = panenkitaTopTeams.length > 0 ? panenkitaTopTeams[0] : null;
-    const bestPanenkitaTeam = winningTeamObj ? winningTeamObj.team : null;
-    let bestPanenkitaTeamPicks: { cyclist: string; pts: number }[] = [];
+    const highestPanenkitaPts = panenkitaTopTeams.length > 0 ? panenkitaTopTeams[0].pts : 0;
+    const winningTeamObjs = highestPanenkitaPts > 0 
+      ? panenkitaTopTeams.filter(t => t.pts === highestPanenkitaPts) 
+      : [];
 
-    if (winningTeamObj) {
+    const bestPanenkitaTeams = winningTeamObjs.map(winningTeamObj => {
+      let picks: { cyclist: string; pts: number }[] = [];
       const player = leaderboard?.find(
         (x) => x.nombreEquipo === winningTeamObj.teamClean,
       );
@@ -524,7 +603,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
           }
         });
 
-        bestPanenkitaTeamPicks = Array.from(teamCyclistsRounds.entries())
+        picks = Array.from(teamCyclistsRounds.entries())
           .map(([name, round]) => ({
             cyclist: `${name} <${round}>`,
             pts: teamPointsMap.get(name) || 0,
@@ -532,10 +611,11 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
           }))
           .sort((a, b) => a.roundNum - b.roundNum);
       }
-    }
+      return { team: winningTeamObj.team, picks };
+    });
 
     // Grid for points by round and team
-    const allRounds = Array.from(new Set(Object.keys(roundTeamPoints))).sort(
+    const allRounds = Array.from(new Set(Object.keys(roundTeamPoints))).filter(r => parseInt(r) <= 25).sort(
       (a, b) => parseInt(a) - parseInt(b),
     );
     
@@ -573,8 +653,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       topNoDraftCyclists,
       panenkitaTopTeams,
       panenkitaTopCyclists,
-      bestPanenkitaTeam,
-      bestPanenkitaTeamPicks,
+      bestPanenkitaTeams,
       roundStats,
       allRounds,
       allTeams,

@@ -77,13 +77,13 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         ref={ref3}
         className="mt-8"
         toolbarProps={{
-          isExpanded: isTopCyclistsExpanded,
-          onExpand: () => setIsTopCyclistsExpanded(!isTopCyclistsExpanded)
+          isExpanded: true,
+          onExpand: () => {}
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div ref={containerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container pb-4 px-2 md:px-0 mt-2 md:mt-0", !isTopCyclistsExpanded && "max-h-[600px]")}>
+          <div ref={containerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container pb-4 px-2 md:px-0 mt-2 md:mt-0")}>
             <table className="w-full text-xs text-left block md:table min-w-0 md:min-w-[700px] mx-auto bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none rounded-lg border-collapse">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                 <tr className="divide-x divide-neutral-100">
@@ -185,13 +185,13 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         ref={ref4}
         className="mt-8"
         toolbarProps={{
-          isExpanded: isNoDraftExpanded,
-          onExpand: () => setIsNoDraftExpanded(!isNoDraftExpanded)
+          isExpanded: true,
+          onExpand: () => {}
         }}
         bodyClassName="p-0 border-t border-neutral-100"
       >
         <div className="overflow-x-auto overflow-y-hidden bg-neutral-50/20 pb-8 rounded-b-2xl">
-          <div ref={noDraftContainerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container px-2 md:px-0 mt-2 md:mt-0 pb-4", !isNoDraftExpanded && "max-h-[600px]")}>
+          <div ref={noDraftContainerRef} className={cn("table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container px-2 md:px-0 mt-2 md:mt-0 pb-4")}>
             <table className="w-full text-xs text-left bg-transparent md:bg-white rounded-xl shadow-sm md:shadow-none rounded-lg block md:table min-w-0 md:min-w-[700px] mx-auto border-collapse">
               <thead className="text-[10px] text-neutral-500 uppercase z-20 sticky top-0 bg-neutral-50 shadow-sm border-b border-neutral-100 hidden md:table-header-group">
                 <tr className="divide-x divide-neutral-100">

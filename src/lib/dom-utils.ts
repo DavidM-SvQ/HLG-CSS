@@ -77,7 +77,7 @@ export const expandNodeForCapture = (element: HTMLElement) => {
   
   tables.forEach((node) => {
     node.style.setProperty('width', 'max-content', 'important');
-    node.style.setProperty('min-width', 'max-content', 'important');
+    node.style.setProperty('min-width', '100%', 'important');
     node.style.setProperty('max-width', 'none', 'important');
   });
   

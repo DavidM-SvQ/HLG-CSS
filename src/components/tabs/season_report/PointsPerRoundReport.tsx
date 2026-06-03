@@ -66,13 +66,13 @@ export const PointsPerRoundReport: React.FC<PointsPerRoundReportProps> = ({
       filename="puntos-ronda-equipo"
       ref={ref5}
       toolbarProps={{
-        isExpanded,
-        onExpand: () => setIsExpanded(!isExpanded)
+        isExpanded: true,
+        onExpand: () => {}
       }}
-      bodyClassName="p-0 border-t border-neutral-100"
+      bodyClassName="p-0 border-t border-neutral-100 overflow-x-auto max-w-full"
     >
-      <div className={cn("table-responsive-wrapper min-h-[300px] overflow-auto w-full crosshair-container", !isExpanded && "max-h-[600px]")}>
-        <table className="w-full min-w-[600px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
+      <div className={cn("table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container")}>
+        <table className="w-full min-w-[1240px] text-xs text-left whitespace-nowrap border-separate border-spacing-0">
           <thead>
             <tr>
               <th className="py-2 pl-4 sticky left-0 bg-neutral-50 z-20 border-r border-b border-neutral-200 pr-2 shadow-sm font-bold">

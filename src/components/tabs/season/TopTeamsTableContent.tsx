@@ -46,7 +46,7 @@ export function TopTeamRow({
         </div>
       </td>
       <td className="px-4 py-2 font-bold text-neutral-900 group-hover/row:text-blue-700 transition-colors text-sm">
-        {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[<span className="font-mono tabular-nums opacity-60">#{}</span>]</span>}
+        {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[<span className="font-mono tabular-nums opacity-60">#{team.originalPos === 999 ? '-' : team.originalPos}</span>]</span>}
       </td>
       {!hideDifColumn && (
       <td className="px-4 py-3 text-center whitespace-nowrap">

@@ -23,4 +23,5 @@ export const DRAFT_RANK_MAP: Record<string, string> = {
   "The Notorious O.R.G": "22",
   "Panetta Cycling Team": "23",
   "Manfredi CT": "24",
+  "Pandis": "20",
 };

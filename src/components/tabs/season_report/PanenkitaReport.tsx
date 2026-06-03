@@ -9,9 +9,6 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
   const ref10 = useRef<HTMLDivElement>(null);
   const ref11 = useRef<HTMLDivElement>(null);
 
-  const [isTopCyclistsExpanded, setIsTopCyclistsExpanded] = useState(false);
-  const [isTeamPicksExpanded, setIsTeamPicksExpanded] = useState(false);
-
   if (!monthReportData) return null;
 
   return (
@@ -35,7 +32,7 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           bodyClassName="p-0 border-t border-pink-100"
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container">
-            <table className="w-full text-sm text-left table-fixed">
+            <table className="w-full text-sm text-left table-auto">
               <tbody>
                 {monthReportData.panenkitaTopTeams.map((t: any, idx: number) => (
                   <tr key={idx} className="border-b border-pink-50 last:border-0 hover:bg-pink-50/30">
@@ -65,15 +62,11 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           filename="top-50-panenkitas"
           ref={ref10}
           className="lg:col-span-5 border-pink-200 shadow-sm"
-          toolbarProps={{
-            isExpanded: isTopCyclistsExpanded,
-            onExpand: () => setIsTopCyclistsExpanded(!isTopCyclistsExpanded)
-          }}
           titleClassName="text-pink-800 text-sm"
-          bodyClassName="p-0 border-t border-pink-100"
+          bodyClassName="p-0 border-t border-pink-100 h-full"
         >
-          <div className={cn("table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container", !isTopCyclistsExpanded && "max-h-[300px]")}>
-            <table className="w-full text-sm text-left table-fixed">
+          <div className="table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container h-full">
+            <table className="w-full text-sm text-left table-auto">
               <tbody>
                 {monthReportData.panenkitaTopCyclists.map((c: any, idx: number) => (
                   <tr key={idx} className="border-b border-pink-50 last:border-0 hover:bg-pink-50/30">
@@ -81,7 +74,7 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
                       <span className="text-pink-400 mr-2 text-xs">
                         {idx + 1}º
                       </span>
-                      {c.cyclist} <span className="opacity-60 text-[10px]">&lt;{c.round}&gt; {c.teamInfo}</span>
+                      {c.cyclist} &lt;{c.round}&gt; <span className="opacity-60 text-[10px] block lg:inline mt-0.5 lg:mt-0 lg:ml-1">{c.teamInfo}</span>
                     </td>
                     <td className="py-1.5 px-4 text-right font-mono tabular-nums text-xs font-bold text-pink-600">
                       {c.pts}
@@ -100,40 +93,53 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           </div>
         </ReportCard>
 
-        <ReportCard
-          title={`Elecciones de ${monthReportData.bestPanenkitaTeam || "N/A"}`}
-          filename="elecciones-equipo-panenkita"
-          ref={ref11}
-          className="lg:col-span-4 border-pink-200 shadow-sm"
-          toolbarProps={{
-            isExpanded: isTeamPicksExpanded,
-            onExpand: () => setIsTeamPicksExpanded(!isTeamPicksExpanded)
-          }}
-          titleClassName="text-pink-800 text-sm truncate"
-          bodyClassName="p-0 border-t border-pink-100"
-        >
-          <div className={cn("table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container", !isTeamPicksExpanded && "max-h-[300px]")}>
-            <table className="w-full text-sm text-left table-fixed">
-              <tbody>
-                {monthReportData.bestPanenkitaTeamPicks.map((c: any, idx: number) => (
-                  <tr key={idx} className="border-b border-pink-50 last:border-0 hover:bg-pink-50/30">
-                    <td className="py-1.5 px-4 truncate">{c.cyclist}</td>
-                    <td className="py-1.5 px-4 text-right font-mono tabular-nums text-xs font-bold text-pink-600">
-                      +{c.pts}
-                    </td>
-                  </tr>
-                ))}
-                {monthReportData.bestPanenkitaTeamPicks.length === 0 && (
-                  <tr>
-                    <td className="py-4 text-center text-pink-400 italic">
-                      Sin datos que sumar puntos
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </ReportCard>
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          {monthReportData.bestPanenkitaTeams?.map((t: any, idx: number) => (
+            <ReportCard
+              key={idx}
+              title={`Elecciones de ${t.team || "N/A"}`}
+              filename={`elecciones-equipo-panenkita-${idx}`}
+              ref={idx === 0 ? ref11 : null}
+              className="border-pink-200 shadow-sm"
+              titleClassName="text-pink-800 text-sm truncate w-full"
+              bodyClassName="p-0 border-t border-pink-100 flex flex-col"
+            >
+              <div className="table-responsive-wrapper overflow-y-auto w-full crosshair-container">
+                <table className="w-full text-sm text-left">
+                  <tbody>
+                    {t.picks.map((c: any, cIdx: number) => (
+                      <tr key={cIdx} className="border-b border-pink-50 last:border-0 hover:bg-pink-50/30">
+                        <td className="py-1.5 px-4">{c.cyclist}</td>
+                        <td className="py-1.5 px-4 w-16 whitespace-nowrap text-right font-mono tabular-nums text-xs font-bold text-pink-600">
+                          +{c.pts}
+                        </td>
+                      </tr>
+                    ))}
+                    {t.picks.length === 0 && (
+                      <tr>
+                        <td className="py-4 text-center text-pink-400 italic">
+                          Sin datos que sumar puntos
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </ReportCard>
+          ))}
+          {(!monthReportData.bestPanenkitaTeams || monthReportData.bestPanenkitaTeams.length === 0) && (
+             <ReportCard
+             title="Mejor Equipo Panenkita"
+             className="border-pink-200 shadow-sm flex-1"
+             titleClassName="text-pink-800 text-sm truncate"
+             bodyClassName="p-0 border-t border-pink-100 flex flex-col"
+           >
+             <div className="p-4 text-center text-pink-400 italic">
+               Sin datos
+             </div>
+           </ReportCard>
+          )}
+        </div>
       </div>
     </ReportCard>
   );
