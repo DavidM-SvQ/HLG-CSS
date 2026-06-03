@@ -257,6 +257,16 @@ export const getFlagEmoji = (countryName: string) => {
     niger: '🇳🇪',
     'níger': '🇳🇪',
     nig: '🇳🇪',
+    monaco: '🇲🇨',
+    'mónaco': '🇲🇨',
+    mon: '🇲🇨',
+    serbia: '🇷🇸',
+    srb: '🇷🇸',
+    sweden: '🇸🇪',
+    suecia: '🇸🇪',
+    swe: '🇸🇪',
+    guatemala: '🇬🇹',
+    gua: '🇬🇹',
   };
   return flags[country] || countryName;
 };
