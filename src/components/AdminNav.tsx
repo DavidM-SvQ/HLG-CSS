@@ -12,18 +12,6 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
   return (
     <div className="flex items-center gap-2 border-b border-neutral-200 pb-4 overflow-x-auto">
       <Button variant="outline"
-        onClick={() => setAdminTab("datos")}
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
-          adminTab === "datos"
-            ? "bg-purple-50 text-purple-700"
-            : "text-neutral-600 hover:bg-neutral-100",
-        )}
-      >
-        <FileSpreadsheet className="w-4 h-4" />
-        Datos
-      </Button>
-      <Button variant="outline"
         onClick={() => setAdminTab("datos-v2")}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
@@ -106,6 +94,18 @@ export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
       >
         <FileSpreadsheet className="w-4 h-4" />
         Estadísticas
+      </Button>
+      <Button variant="outline"
+        onClick={() => setAdminTab("datos")}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+          adminTab === "datos"
+            ? "bg-purple-50 text-purple-700"
+            : "text-neutral-600 hover:bg-neutral-100",
+        )}
+      >
+        <FileSpreadsheet className="w-4 h-4" />
+        Datos v1
       </Button>
     </div>
   );

@@ -185,6 +185,23 @@ export const AdminDatosV2Tab = () => {
         updateFile(id as any, newData);
       }
 
+      if (isSupabaseConfigured) {
+        try {
+          const { error } = await supabase
+            .from("global_files")
+            .upsert({
+              id,
+              data: parseResult.data,
+              updated_at: new Date().toISOString()
+            });
+          if (error) {
+            console.error("Error al guardar en Supabase:", error);
+          }
+        } catch (err) {
+          console.error("Error al guardar en Supabase:", err);
+        }
+      }
+
       if (showAlert && !skipStateUpdate) {
          setSyncStatusMsg(`Sincronización de ${id} completada con éxito. Filas leídas: ${rowCount}`);
          setTimeout(() => setSyncStatusMsg(""), 5000);
@@ -413,12 +430,23 @@ export const AdminDatosV2Tab = () => {
                 <li key={i} className="border-b border-neutral-100 pb-2 flex justify-between items-center">
                   <div>
                     <span className="font-bold text-neutral-800">{log.ciclista}</span> <span className="text-neutral-500">en</span> <span className="italic">{log.carrera}</span>
-                    <span className="text-neutral-400 text-xs ml-2">(Fila Excel ~{log.originalIndex + 2})</span>
-                    <div className="text-xs text-neutral-500">
-                      {log.tipoResultado} {log.etapa ? `(Etapa ${log.etapa}) ` : ''}- Pos: {log.posicion} | Fecha: {log.fecha || 'N/A'}
+                    <span className="text-neutral-400 text-xs ml-1">(Fila Excel ~{log.originalIndex + 2})</span>
+                    <div className="text-xs text-neutral-500 flex flex-wrap items-center gap-y-1">
+                      <span>
+                        {log.tipoResultado} {log.etapa ? `(${log.etapa.toLowerCase().includes("etapa") ? log.etapa : `Etapa ${log.etapa}`}) ` : ''}- Pos: {log.posicion} | Fecha: {log.fecha || 'N/A'}
+                      </span>
+                      {log.nombreEquipo && (
+                        <div className="flex items-center">
+                          <span className="text-neutral-300 mx-1.5">|</span>
+                          <span className="font-medium text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100 text-[10px]">{log.nombreEquipo}</span>
+                          <span className="text-neutral-400 text-[10px] font-mono ml-1">[{log.orden ? `#${log.orden}` : ''}]</span>
+                          <span className="text-neutral-400 mx-1">{"->"}</span>
+                          <span className="text-neutral-600 font-medium">Ronda {log.ronda ? parseInt(log.ronda, 10) || log.ronda : 'N/A'}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="font-bold text-green-600 text-lg">
+                  <div className="font-bold text-green-600 text-lg shrink-0 ml-2">
                     +{log.puntos}
                   </div>
                 </li>
@@ -524,7 +552,7 @@ export const AdminDatosV2Tab = () => {
                                   <TooltipTrigger className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2 cursor-help border-b border-dotted border-indigo-300 bg-transparent p-0 m-0 border-t-0 border-x-0 outline-none">
                                       {c.pts} <span className="text-xs font-normal text-neutral-400">pts</span>
                                   </TooltipTrigger>
-                                  <TooltipContent side="left" className="w-[340px] max-w-none max-h-96 overflow-y-auto overflow-x-hidden p-0 z-[100] relative bg-white text-slate-800 border border-slate-200 shadow-xl [&>svg]:hidden [&>div.bg-foreground]:hidden">
+                                  <TooltipContent side="top" align="center" className="w-[340px] max-w-[calc(100vw-32px)] max-h-96 overflow-y-auto overflow-x-hidden p-0 z-[100] bg-white text-slate-800 border border-slate-200 shadow-xl [&>svg]:hidden [&>div.bg-foreground]:hidden">
                                     <div className="sticky top-0 z-[102] bg-white border-b border-slate-100 p-2 font-semibold text-xs shadow-sm flex items-center justify-between">
                                       <span>Desglose {c.name}</span>
                                       <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-[10px]">{c.pts} pts</span>

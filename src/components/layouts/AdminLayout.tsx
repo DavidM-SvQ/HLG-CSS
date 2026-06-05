@@ -21,7 +21,7 @@ export function AdminLayout() {
     | "reporte-temporada"
     | "pruebas"
     | "estadisticas"
-  >("datos");
+  >("datos-v2");
 
   return (
     <div className="space-y-6">

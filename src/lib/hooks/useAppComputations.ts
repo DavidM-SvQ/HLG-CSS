@@ -220,7 +220,7 @@ export function useAppComputations() {
       try {
         const ciclista = String(getVal(row, "Ciclista") || "").trim();
         const carrera = String(getVal(row, "Carrera") || "").trim();
-        const tipoResultado = String(getVal(row, "Tipo") || "").trim();
+        let tipoResultado = String(getVal(row, "Tipo") || "").trim();
         let etapa = String(getVal(row, "Etapa") || "").trim();
         let posicion = String(getVal(row, "Posición") || getVal(row, "Pos") || "").trim();
         const fechaEspecifica = String(getVal(row, "Fecha") || "").trim();
@@ -285,15 +285,40 @@ export function useAppComputations() {
           return;
       }
 
+      // Check if it is a one-day race to aid in diagnosing data issues
+      const isOneDayRace = tipoCarrera && (
+          tipoCarrera.startsWith("1.") || 
+          /^mon/i.test(tipoCarrera) || 
+          /monumento/i.test(tipoCarrera) ||
+          /campeonato/i.test(tipoCarrera)
+      );
+
       const pointsKey = `${norm(tipoCarrera)}_${norm(tipoResultado)}_${norm(posicion)}`;
       const puntosObtenidos = pointsLookup[pointsKey] || 0;
 
       if (puntosObtenidos === 0) {
-          debugPts(0, `No se encontraron puntos para la combinación: Categoría = ${tipoCarrera}, Tipo = ${tipoResultado}, Posición = ${posicion}`);
+          let errorMsg = `No se encontraron puntos para la combinación: Categoría = ${tipoCarrera}, Tipo = ${tipoResultado}, Posición = ${posicion}`;
+          if (isOneDayRace && (tipoResultado === "Etapa" || tipoResultado.toLowerCase().includes("etapa"))) {
+              errorMsg += ` [AVISO: Esta es una carrera de un día pero se ha subido con el tipo "${tipoResultado}". Las carreras de un día deben registrarse con el tipo "Clasificación final" en el excel de resultados]`;
+          }
+          debugPts(0, errorMsg);
       } else {
           const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : raceDateByName[norm(carrera)];
           const timestamp = raceDateStr ? new Date(raceDateStr).getTime() : 0;
-          assignedPointsLog.push({ciclista, carrera, tipoResultado, posicion, etapa, fecha: raceDateStr, puntos: puntosObtenidos, timestamp, originalIndex});
+          assignedPointsLog.push({
+            ciclista, 
+            carrera, 
+            tipoResultado, 
+            posicion, 
+            etapa, 
+            fecha: raceDateStr, 
+            puntos: puntosObtenidos, 
+            timestamp, 
+            originalIndex,
+            nombreEquipo: jugador === "No draft" ? null : (playerTeamMap[jugador] || jugador),
+            orden: jugador === "No draft" ? null : playerOrderMap[jugador],
+            ronda: cyclistRoundMap[ciclista] || null
+          });
       }
 
       if (!cyclistPointsTotals[ciclista]) cyclistPointsTotals[ciclista] = 0;
