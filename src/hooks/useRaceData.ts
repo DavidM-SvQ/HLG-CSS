@@ -359,6 +359,15 @@ export function useRaceData(
                 let __pointsWinners: string[] = [];
                 let __mountainWinners: string[] = [];
                 let __hasEtapas = false;
+                
+                let __isOneDayRace = false;
+                if (files?.carreras?.data) {
+                  const currRace = files.carreras.data.find((c: any) => getVal(c, "Carrera")?.trim() === selectedRace.trim());
+                  if (currRace) {
+                    const cat = getVal(currRace, "Categoría") || "";
+                    __isOneDayRace = cat.startsWith("1.") || /^mon/i.test(cat) || /monumento/i.test(cat) || /campeonato/i.test(cat) || /ruta/i.test(cat);
+                  }
+                }
     
                 Object.entries(__eventsInfo).forEach(([eventKey, _teams]) => {
                   const teams = _teams as string[];
@@ -452,7 +461,7 @@ export function useRaceData(
 
                 let __extraClassifications = "";
                 if (__generalWinners.length > 0) {
-                  __extraClassifications += `\n🏆 ${formatListSpanish(__generalWinners)} se lleva la clasificación general`;
+                  __extraClassifications += `\n🏆 ${formatListSpanish(__generalWinners)} se lleva ${__isOneDayRace ? 'la carrera' : 'la clasificación general'}`;
                 }
                 if (__pointsWinners.length > 0) {
                   __extraClassifications += `\n🏆 ${formatListSpanish(__pointsWinners)} gana la clasificación por puntos`;

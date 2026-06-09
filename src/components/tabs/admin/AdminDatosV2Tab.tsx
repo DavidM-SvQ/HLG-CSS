@@ -7,6 +7,7 @@ import { useDataStore } from "../../../lib/stores/useDataStore";
 import { useComputedStore } from "../../../lib/stores/useComputedStore";
 import { parse } from "papaparse";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { supabase } from "../../../supabase";
 
 export const AdminDatosV2Tab = () => {
@@ -547,24 +548,32 @@ export const AdminDatosV2Tab = () => {
                             </div>
                             
                             {c.pts > 0 ? (
-                              <TooltipProvider delay={0}>
-                                <Tooltip>
-                                  <TooltipTrigger className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2 cursor-help border-b border-dotted border-indigo-300 bg-transparent p-0 m-0 border-t-0 border-x-0 outline-none">
+                              <Popover>
+                                <PopoverTrigger className="font-bold text-indigo-600 tabular-nums shrink-0 ml-2 cursor-pointer border-b border-dotted border-indigo-300 bg-transparent p-0 m-0 border-t-0 border-x-0 outline-none">
                                       {c.pts} <span className="text-xs font-normal text-neutral-400">pts</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" align="center" className="w-[340px] max-w-[calc(100vw-32px)] max-h-96 overflow-y-auto overflow-x-hidden p-0 z-[100] bg-white text-slate-800 border border-slate-200 shadow-xl [&>svg]:hidden [&>div.bg-foreground]:hidden">
-                                    <div className="sticky top-0 z-[102] bg-white border-b border-slate-100 p-2 font-semibold text-xs shadow-sm flex items-center justify-between">
+                                </PopoverTrigger>
+                                  <PopoverContent side="top" align="center" className="w-[340px] max-w-[calc(100vw-32px)] p-0 z-[100] bg-white text-slate-800 border border-slate-200 shadow-xl overflow-hidden flex flex-col gap-0 [&>svg]:hidden [&>div.bg-foreground]:hidden">
+                                    <div className="bg-white border-b border-slate-100 p-2 font-semibold text-xs shadow-sm flex items-center justify-between rounded-t-lg shrink-0">
                                       <span>Desglose {c.name}</span>
                                       <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-[10px]">{c.pts} pts</span>
                                     </div>
-                                    <div className="flex flex-col divide-y divide-slate-50 relative z-[101]">
-                                      {c.detalles.filter(d => d.puntosObtenidos > 0).map((det, i) => (
-                                        <div key={i} className="px-3 py-2 text-xs flex justify-between items-start hover:bg-slate-50">
-                                          <div className="flex flex-col gap-0.5 overflow-hidden pr-2">
-                                            <span className="font-semibold text-slate-800 break-words whitespace-normal leading-tight">{det.carrera}</span>
-                                            <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
-                                              {det.fecha && <span>{det.fecha}</span>}
-                                              {det.tipoResultado && <span className="uppercase text-[9px] font-bold text-slate-400">{det.tipoResultado}</span>}
+                                    <div className="flex flex-col divide-y divide-slate-50 overflow-y-auto overflow-x-hidden max-h-[250px]">
+                                      {c.detalles.filter((d: any) => d.puntosObtenidos > 0).map((det: any, i: number) => (
+                                        <div key={i} className="px-3 py-2 text-xs flex justify-between items-start hover:bg-slate-50 last:mb-2">
+                                          <div className="flex flex-col gap-0.5 min-w-0 flex-1 pr-2">
+                                            <span className="font-semibold text-slate-800 break-words whitespace-normal leading-tight" title={det.carrera}>{det.carrera}</span>
+                                            <div className="text-[10px] text-slate-500 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+                                              {det.fecha && <span className="whitespace-nowrap">{det.fecha}</span>}
+                                              {det.tipoResultado && (
+                                                <span className="uppercase text-[9px] font-bold text-slate-400">
+                                                  {det.tipoResultado.toLowerCase() === 'etapa' && det.etapa 
+                                                    ? `Etapa ${det.etapa.replace(/etapa/i, '').trim()}`
+                                                    : det.tipoResultado}
+                                                  {det.tipoResultado.toLowerCase() !== 'etapa' && det.etapa && det.etapa.toLowerCase() !== 'cg' && det.etapa.toLowerCase() !== 'gc'
+                                                    ? ` (Etapa ${det.etapa.replace(/etapa/i, '').trim()})`
+                                                    : ''}
+                                                </span>
+                                              )}
                                             </div>
                                           </div>
                                           <div className="text-right flex flex-col items-end shrink-0">
@@ -574,9 +583,8 @@ export const AdminDatosV2Tab = () => {
                                         </div>
                                       ))}
                                     </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                                  </PopoverContent>
+                              </Popover>
                             ) : (
                               <span className="font-bold text-neutral-400 tabular-nums shrink-0 ml-2">
                                 0 <span className="text-xs font-normal text-neutral-300">pts</span>

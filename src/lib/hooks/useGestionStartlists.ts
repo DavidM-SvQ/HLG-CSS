@@ -16,6 +16,7 @@ export function useGestionStartlists(
   const [parsedStartlist, setParsedStartlist] = useState<{
     carrera: string;
     resultados: { jugador: string; ciclistas: any[] }[];
+    rawText?: string;
     updatedAt?: string;
   } | null>(null);
   const [isSavingStartlist, setIsSavingStartlist] = useState(false);
@@ -46,10 +47,17 @@ export function useGestionStartlists(
 
       const lineIndex = textLinesLower.findIndex((line) => {
         const lNoComma = line.replace(/,/g, "");
-        return lNoComma.includes(cyclistStandard) || 
-               lNoComma.includes(cyclistNoComma) || 
-               lNoComma.includes(cyclistReversed) ||
-               lNoComma.includes(cyclistReversed2);
+        
+        const createRegex = (nameStr: string) => {
+          // Escape special regex chars just in case (though names shouldn't have many)
+          const escapedStr = nameStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return new RegExp(`\\b${escapedStr.replace(/ /g, '\\s+')}\\b`, "i");
+        };
+
+        return createRegex(cyclistStandard).test(lNoComma) || 
+               createRegex(cyclistNoComma).test(lNoComma) || 
+               createRegex(cyclistReversed).test(lNoComma) ||
+               createRegex(cyclistReversed2).test(lNoComma);
       });
 
       if (lineIndex !== -1) {
@@ -89,6 +97,7 @@ export function useGestionStartlists(
     setParsedStartlist({
       carrera: startlistRace || "Carrera sin nombre",
       resultados: results,
+      rawText: startlistText,
       updatedAt: new Date().toISOString(),
     });
   };

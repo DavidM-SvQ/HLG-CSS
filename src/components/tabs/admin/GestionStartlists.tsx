@@ -1,8 +1,15 @@
 import React from "react";
-import { Save, Search, Users, Trash, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Save, Search, Users, Trash, AlertCircle, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { getVal } from "../../../lib/data-processing";
 import { Button } from "../../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../ui/dialog";
 import { useGestionStartlists } from "../../../lib/hooks/useGestionStartlists";
 import { useDataStore } from "../../../lib/stores/useDataStore";
 import { useComputedStore } from "../../../lib/stores/useComputedStore";
@@ -267,15 +274,35 @@ export const GestionStartlists = () => {
                       </td>
                       {handleDeleteStartlist && (
                         <td className="px-4 py-3 text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDeleteStartlist(s.carrera)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            title="Eliminar startlist"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {s.rawText && (
+                              <Dialog>
+                                <DialogTrigger 
+                                  className="group/button inline-flex items-center justify-center border border-transparent whitespace-nowrap rounded-lg text-sm font-medium transition-colors hover:bg-indigo-50 hover:text-indigo-700 text-indigo-500 bg-transparent h-8 w-8 !p-0"
+                                  title="Ver texto pegado"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                </DialogTrigger>
+                                <DialogContent className="max-w-3xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Texto Original - {s.carrera}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="mt-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200 overflow-y-auto max-h-[60vh] font-mono text-xs whitespace-pre-wrap">
+                                    {s.rawText}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteStartlist(s.carrera)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              title="Eliminar startlist"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       )}
                     </tr>
