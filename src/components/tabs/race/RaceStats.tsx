@@ -180,7 +180,23 @@ export const RaceStats = ({
       sortedCyclists.forEach(([ciclista, data]) => {
         text += `📍 ${ciclista}: +${data.total} pts\n`;
         data.concepts.forEach((c) => {
-          text += `   • ${c.tipoResultado} ${c.posicion ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})` : ""}: +${c.puntosObtenidos}\n`;
+          let label = c.tipoResultado || "";
+          const tipoLower = label.toLowerCase();
+          if (tipoLower === 'etapa' && c.etapa) {
+            label = `Etapa ${c.etapa.toString().replace(/etapa/i, '').trim()}`;
+          } else if (c.etapa && tipoLower !== 'etapa' && c.etapa.toLowerCase() !== 'cg' && c.etapa.toLowerCase() !== 'gc') {
+            const cleanedEtapa = c.etapa.toString().replace(/etapa/i, '').trim();
+            if (tipoLower.includes('etapa')) {
+              if (tipoLower.includes('crono') && tipoLower.includes('equipo')) {
+                label = `Etapa ${cleanedEtapa} (Crono equipos)`;
+              } else {
+                label = `Etapa ${cleanedEtapa} (${c.tipoResultado})`;
+              }
+            } else {
+              label = `${c.tipoResultado} (Etapa ${cleanedEtapa})`;
+            }
+          }
+          text += `   • ${label} ${c.posicion ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})` : ""}: +${c.puntosObtenidos}\n`;
         });
         text += `\n`;
       });

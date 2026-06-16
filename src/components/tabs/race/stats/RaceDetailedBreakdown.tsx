@@ -221,7 +221,26 @@ export const RaceDetailedBreakdown = ({
                           {data.concepts.map((c: any, compIdx: number) => (
                             <div key={compIdx} className="flex justify-between items-center text-[11px] leading-tight">
                               <span className="text-neutral-600 truncate mr-2">
-                                {c.tipoResultado} {c.posicion ? `(Pos ${c.posicion.toString().replace(/^p/i, "")})` : ""}
+                                {(() => {
+                                  let label = c.tipoResultado || "";
+                                  const tipoLower = label.toLowerCase();
+                                  if (tipoLower === 'etapa' && c.etapa) {
+                                    label = `Etapa ${c.etapa.toString().replace(/etapa/i, '').trim()}`;
+                                  } else if (c.etapa && tipoLower !== 'etapa' && c.etapa.toLowerCase() !== 'cg' && c.etapa.toLowerCase() !== 'gc') {
+                                    const cleanedEtapa = c.etapa.toString().replace(/etapa/i, '').trim();
+                                    if (tipoLower.includes('etapa')) {
+                                      if (tipoLower.includes('crono') && tipoLower.includes('equipo')) {
+                                        label = `Etapa ${cleanedEtapa} (Crono equipos)`;
+                                      } else {
+                                        label = `Etapa ${cleanedEtapa} (${c.tipoResultado})`;
+                                      }
+                                    } else {
+                                      label = `${c.tipoResultado} (Etapa ${cleanedEtapa})`;
+                                    }
+                                  }
+                                  return label;
+                                })()}
+                                {c.posicion ? ` (Pos ${c.posicion.toString().replace(/^p/i, "").trim()})` : ""}
                               </span>
                               <span className="font-mono text-neutral-500 shrink-0">
                                 +{c.puntosObtenidos}

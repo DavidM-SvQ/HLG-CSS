@@ -139,10 +139,16 @@ export function useRaceData(
                   const formatted = formatTipoResultado(tipo);
                   const isStage =
                     /^\d+[a-zA-Z]?$/.test(formatted) ||
-                    tipo.toLowerCase() === "etapa";
+                    tipo.toLowerCase() === "etapa" ||
+                    tipo.toLowerCase().startsWith("etapa");
     
                   if (isStage) {
-                    const stageNum = etapa || formatted;
+                    let stageNum = etapa || formatted;
+                    if (tipo.toLowerCase().includes("crono") && tipo.toLowerCase().includes("equipo")) {
+                      if (etapa) {
+                        stageNum = `${etapa} (CRE)`;
+                      }
+                    }
                     const key = `Stage_${stageNum}`;
                     if (!columnDefinitions.has(key)) {
                       columnDefinitions.set(key, {
@@ -168,9 +174,16 @@ export function useRaceData(
                       const dFormatted = formatTipoResultado(d.tipoResultado);
                       const isDStage =
                         /^\d+[a-zA-Z]?$/.test(dFormatted) ||
-                        d.tipoResultado.toLowerCase() === "etapa";
+                        d.tipoResultado.toLowerCase() === "etapa" ||
+                        d.tipoResultado.toLowerCase().startsWith("etapa");
                       if (isDStage) {
-                        typesWithPoints.add(d.etapa || dFormatted);
+                        let finalStageNum = d.etapa || dFormatted;
+                        if (d.tipoResultado.toLowerCase().includes("crono") && d.tipoResultado.toLowerCase().includes("equipo")) {
+                          if (d.etapa) {
+                            finalStageNum = `${d.etapa} (CRE)`;
+                          }
+                        }
+                        typesWithPoints.add(finalStageNum);
                       } else {
                         typesWithPoints.add(dFormatted);
                       }
@@ -189,10 +202,13 @@ export function useRaceData(
                 );
     
                 finalColumns.sort((a, b) => {
-                  const isNumA = /^\d+[a-zA-Z]?$/.test(a.formatted);
-                  const isNumB = /^\d+[a-zA-Z]?$/.test(b.formatted);
-                  if (isNumA && isNumB)
-                    return parseInt(a.formatted) - parseInt(b.formatted);
+                  const isNumA = /^\d+[a-zA-Z]?(\s*\(CRE\))?$/.test(a.formatted);
+                  const isNumB = /^\d+[a-zA-Z]?(\s*\(CRE\))?$/.test(b.formatted);
+                  if (isNumA && isNumB) {
+                    const valA = parseInt(a.formatted.replace(/\s*\(CRE\)/i, '')) || 0;
+                    const valB = parseInt(b.formatted.replace(/\s*\(CRE\)/i, '')) || 0;
+                    return valA - valB;
+                  }
                   if (isNumA) return -1;
                   if (isNumB) return 1;
     
@@ -214,11 +230,13 @@ export function useRaceData(
                           const dFormatted = formatTipoResultado(d.tipoResultado);
                           const dStageNum = d.etapa || dFormatted;
                           
-                          const colIsStage = /^\d+[a-zA-Z]?$/.test(col.formatted);
-                          const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa";
+                          const colIsStage = /^\d+[a-zA-Z]?(\s*\(CRE\))?$/.test(col.formatted);
+                          const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa" || d.tipoResultado.toLowerCase().startsWith("etapa");
     
                           if (colIsStage && dIsStage) {
-                            return dStageNum.toString().trim() === col.formatted.toString().trim();
+                            const colBase = col.formatted.replace(/\s*\(CRE\)/i, '').trim();
+                            const dBase = dStageNum.toString().trim();
+                            return dBase === colBase;
                           }
                           
                           return dFormatted.toString().trim() === col.formatted.toString().trim() || 
@@ -285,10 +303,12 @@ export function useRaceData(
                     const dFormatted = formatTipoResultado(d.tipoResultado);
                     const dStageNum = d.etapa || dFormatted;
                     finalColumns.forEach(col => {
-                      const colIsStage = /^\d+[a-zA-Z]?$/.test(col.formatted);
-                      const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa";
+                      const colIsStage = /^\d+[a-zA-Z]?(\s*\(CRE\))?$/.test(col.formatted);
+                      const dIsStage = /^\d+[a-zA-Z]?$/.test(dFormatted) || d.tipoResultado.toLowerCase() === "etapa" || d.tipoResultado.toLowerCase().startsWith("etapa");
                       if (colIsStage && dIsStage) {
-                        if (dStageNum.toString().trim() === col.formatted.toString().trim()) {
+                        const colBase = col.formatted.replace(/\s*\(CRE\)/i, '').trim();
+                        const dBase = dStageNum.toString().trim();
+                        if (dBase === colBase) {
                           c.pointsByCol[col.formatted] = (c.pointsByCol[col.formatted] || 0) + d.puntosObtenidos;
                         }
                       } else {
@@ -460,8 +480,8 @@ export function useRaceData(
                   .join("\n");
 
                 let __extraClassifications = "";
-                if (__generalWinners.length > 0) {
-                  __extraClassifications += `\n🏆 ${formatListSpanish(__generalWinners)} se lleva ${__isOneDayRace ? 'la carrera' : 'la clasificación general'}`;
+                if (__generalWinners.length > 0 && !__isOneDayRace) {
+                  __extraClassifications += `\n🏆 ${formatListSpanish(__generalWinners)} se lleva la clasificación general`;
                 }
                 if (__pointsWinners.length > 0) {
                   __extraClassifications += `\n🏆 ${formatListSpanish(__pointsWinners)} gana la clasificación por puntos`;

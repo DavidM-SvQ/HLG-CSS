@@ -9,6 +9,7 @@ import { parse } from "papaparse";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { supabase } from "../../../supabase";
+import { FirstCyclingImporter } from "./FirstCyclingImporter";
 
 export const AdminDatosV2Tab = () => {
   const { files, updateFile } = useDataStore();
@@ -367,14 +368,15 @@ export const AdminDatosV2Tab = () => {
         </div>
         
         <div className="mt-8 flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200">
-          <Button onClick={syncAll} className="gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg w-full sm:w-auto">
+          <Button onClick={syncAll} className="gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg w-full sm:w-auto h-auto">
             <RefreshCcw className="w-5 h-5" />
             Sincronizar Todas las Tablas
           </Button>
-          <Button onClick={forceRecalculate} variant="outline" className="gap-2 py-6 text-lg w-full sm:w-auto">
+          <Button onClick={forceRecalculate} variant="outline" className="gap-2 py-6 text-lg w-full sm:w-auto h-auto">
             <Calculator className="w-5 h-5" />
             Refrescar Puntos Calculados
           </Button>
+          <FirstCyclingImporter />
         </div>
         
         {syncStatusMsg && (
