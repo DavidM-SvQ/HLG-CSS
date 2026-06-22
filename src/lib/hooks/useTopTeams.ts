@@ -32,11 +32,13 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
     const filteredLeaderboard = leaderboard.filter((p) => p.nombreEquipo !== "No draft" && p.nombreEquipo !== "No draft [99]");
 
     const raceMonths: Record<string, number> = {};
+    const raceDates: Record<string, string> = {}; // YYYY-MM-DD
     files.carreras.data.forEach((r) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
         const parsedStr = parseSafeDateStr(fechaFin);
+        raceDates[carreraName] = parsedStr;
         const parts = parsedStr.split(/[-/]/);
         if (parts.length >= 2) {
           const monthIndex = parseInt(parts[1]) - 1;
@@ -44,6 +46,17 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
         }
       }
     });
+
+    const isCustomDate = teamsMonthFilter.startsWith("custom_");
+    let customStart = "";
+    let customEnd = "";
+    if (isCustomDate) {
+      const parts = teamsMonthFilter.split("_");
+      if (parts.length === 3) {
+        customStart = parts[1];
+        customEnd = parts[2];
+      }
+    }
 
     const teamCarrerasLog = new Map<string, Set<string>>();
     const teamDiasCount = new Map<string, number>();
@@ -55,7 +68,12 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
         const etapa = getVal(row, "Etapa")?.toString().trim();
         
         if (ciclista && carrera) {
-          if (teamsMonthFilter !== "all" && raceMonths[carrera] !== parseInt(teamsMonthFilter)) {
+          if (isCustomDate) {
+            const raceDate = raceDates[carrera];
+            if (!raceDate || raceDate < customStart || raceDate > customEnd) {
+              return;
+            }
+          } else if (teamsMonthFilter !== "all" && raceMonths[carrera] !== parseInt(teamsMonthFilter)) {
             return;
           }
           const jugador = playerByCyclist?.[ciclista];
@@ -76,7 +94,14 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
 
     const teamStats = filteredLeaderboard.map((team, idx) => {
       const filteredDetalles = team.detalles.filter((d) => {
-        if (teamsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(teamsMonthFilter)) {
+        if (isCustomDate) {
+          // Si el detalle tiene fecha (evolución) la usamos, o sino la de la carrera
+          let dDate = d.fecha;
+          if (!dDate) dDate = raceDates[d.carrera];
+          if (!dDate || dDate < customStart || dDate > customEnd) {
+             return false;
+          }
+        } else if (teamsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(teamsMonthFilter)) {
           return false;
         }
         return true;
@@ -89,7 +114,12 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       let wins = 0;
       Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
         if (winnerTeam === team.nombreEquipo) {
-          if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
+          if (isCustomDate) {
+            const raceDate = raceDates[raceName];
+            if (raceDate && raceDate >= customStart && raceDate <= customEnd) {
+              wins++;
+            }
+          } else if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
             wins++;
           }
         }
@@ -98,7 +128,14 @@ export function useTopTeams(teamsMonthFilter: string, leaderboardTeamsSearch: st
       let partialWins = 0;
       if (globalTeamPartialWinsCount && globalTeamPartialWinsCount.byRace) {
         Object.entries(globalTeamPartialWinsCount.byRace).forEach(([raceName, raceEvents]) => {
-          if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
+          if (isCustomDate) {
+            const raceDate = raceDates[raceName];
+            if (raceDate && raceDate >= customStart && raceDate <= customEnd) {
+              Object.values(raceEvents).forEach((winnerTeams) => {
+                if (winnerTeams.includes(team.nombreEquipo)) partialWins++;
+              });
+            }
+          } else if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
             Object.values(raceEvents).forEach((winnerTeams) => {
               if (winnerTeams.includes(team.nombreEquipo)) {
                 partialWins++;

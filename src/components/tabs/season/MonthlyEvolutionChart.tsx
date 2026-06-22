@@ -10,6 +10,11 @@ import { ExportToolbar } from "../../ui/ExportToolbar";
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
   const [hoveredTeam, setHoveredTeam] = React.useState<string | null>(null);
+  const [localCustomDateRange, setLocalCustomDateRange] = React.useState({
+    start: `${new Date().getFullYear()}-01-01`,
+    end: new Date().toISOString().split('T')[0]
+  });
+
   const {
     cn,
     filteredLeaderboard,
@@ -18,6 +23,18 @@ export function MonthlyEvolutionChart() {
 
   const [evolutionMode, setEvolutionMode] = useUrlState<string>("evolutionMode", "posiciones");
   const [evolutionTimeFilter, setEvolutionTimeFilter] = useUrlState<string>("evolutionTimeFilter", "all");
+
+  // Keep localCustomDateRange in sync if it changes from outside or initializes
+  React.useEffect(() => {
+    if (evolutionTimeFilter.startsWith("custom_")) {
+      const parts = evolutionTimeFilter.split("_");
+      setLocalCustomDateRange({
+        start: parts[1] || `${new Date().getFullYear()}-01-01`,
+        end: parts[2] || new Date().toISOString().split('T')[0]
+      });
+    }
+  }, [evolutionTimeFilter]);
+
   const [isEvolutionChartExpanded, setIsEvolutionChartExpanded] = React.useState(false);
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useUrlState<string[]>("evolutionTeamsFilter", []);
   const evolutionChartRef = React.useRef<HTMLDivElement>(null);
@@ -75,6 +92,17 @@ export function MonthlyEvolutionChart() {
   });
 
   const getEvolutionData = () => {
+    const isCustomDate = evolutionTimeFilter.startsWith("custom_");
+    let customStart = "";
+    let customEnd = "";
+    if (isCustomDate) {
+      const parts = evolutionTimeFilter.split("_");
+      if (parts.length === 3) {
+        customStart = parts[1];
+        customEnd = parts[2];
+      }
+    }
+
     if (evolutionMode === "posiciones") {
       const weeks: string[] = [];
       for (let i = 0; i < 12; i++) {
@@ -94,6 +122,9 @@ export function MonthlyEvolutionChart() {
             const wIdx = mIdx * 4 + (w - 1);
             const weekPoints = team.detalles.reduce((sum: number, d: any) => {
               if (!d.fecha) return sum;
+              if (isCustomDate) {
+                if (d.fecha < customStart || d.fecha > customEnd) return sum;
+              }
               const parts = d.fecha.split("-");
               if (parts.length < 3) return sum;
               const monthIndex = parseInt(parts[1], 10) - 1;
@@ -119,10 +150,10 @@ export function MonthlyEvolutionChart() {
       let started = false;
 
       pointsByWeek.forEach((weekData, wIdx) => {
-        if (wIdx > currentWIdx) return;
+        if (wIdx > currentWIdx && !isCustomDate) return;
         
         const hasPoints = Object.values(weekData.scores).some(val => val > 0);
-        if (!hasPoints && !started) return;
+        if (!hasPoints && !started && !isCustomDate) return;
         started = true;
         
         const teamsScoreArray = Object.entries(weekData.scores).map(([team, score]) => ({ team, score }));
@@ -139,7 +170,12 @@ export function MonthlyEvolutionChart() {
       });
 
       return chartData.filter((w) => {
-        if (evolutionTimeFilter !== "all") {
+        if (isCustomDate) {
+          const mIdx = w.mIdx;
+          const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
+          const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+          if (mIdx < startMIdx || mIdx > endMIdx) return false;
+        } else if (evolutionTimeFilter !== "all") {
           if (evolutionTimeFilter.includes("-")) {
             const [start, end] = evolutionTimeFilter.split("-").map(Number);
             if (w.mIdx < start || w.mIdx > end) return false;
@@ -168,6 +204,9 @@ export function MonthlyEvolutionChart() {
             const wIdx = mIdx * 4 + (w - 1);
             const weekPoints = team.detalles.reduce((sum, d) => {
               if (!d.fecha) return sum;
+              if (isCustomDate) {
+                if (d.fecha < customStart || d.fecha > customEnd) return sum;
+              }
               const parts = d.fecha.split("-");
               if (parts.length < 3) return sum;
               const monthIndex = parseInt(parts[1], 10) - 1;
@@ -198,10 +237,16 @@ export function MonthlyEvolutionChart() {
       );
 
       return dataByWeek.filter((w, wIdx) => {
-        if (wIdx > currentWIdx) return false;
-        if (firstWeekWithData === -1) return false;
+        if (!isCustomDate && wIdx > currentWIdx) return false;
+        if (!isCustomDate && firstWeekWithData === -1) return false;
 
-        if (evolutionTimeFilter !== "all") {
+        if (isCustomDate) {
+          const mIdx = Math.floor(wIdx / 4);
+          const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
+          const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+          if (mIdx < startMIdx || mIdx > endMIdx) return false;
+          return true;
+        } else if (evolutionTimeFilter !== "all") {
           const mIdx = Math.floor(wIdx / 4);
           if (evolutionTimeFilter.includes("-")) {
             const [start, end] = evolutionTimeFilter.split("-").map(Number);
@@ -228,6 +273,9 @@ export function MonthlyEvolutionChart() {
       months.forEach((m, mIdx) => {
         const monthPoints = team.detalles.reduce((sum, d) => {
           if (!d.fecha) return sum;
+          if (isCustomDate) {
+            if (d.fecha < customStart || d.fecha > customEnd) return sum;
+          }
           const parts = d.fecha.split("-");
           if (parts.length < 3) return sum;
           const monthIndex = parseInt(parts[1], 10) - 1;
@@ -245,6 +293,21 @@ export function MonthlyEvolutionChart() {
     });
 
     return dataByMonth.filter((m, idx) => {
+      if (isCustomDate) {
+        const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
+        const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+        return idx >= startMIdx && idx <= endMIdx;
+      }
+      
+      if (evolutionTimeFilter !== "all") {
+        if (evolutionTimeFilter.includes("-")) {
+          const [start, end] = evolutionTimeFilter.split("-").map(Number);
+          if (idx < start || idx > end) return false;
+        } else {
+          if (idx !== parseInt(evolutionTimeFilter)) return false;
+        }
+      }
+
       const hasData = Object.keys(m).some(
         (key) => key !== "month" && m[key] > 0,
       );
@@ -296,8 +359,8 @@ export function MonthlyEvolutionChart() {
   return (
     <>
       <div ref={evolutionChartRef} className="mt-12 group relative">
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-3 mb-6 gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b pb-3 mb-6 gap-4">
+          <div className="flex items-center gap-4 min-w-0 shrink-0">
             <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 min-w-0">
               <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
               <span className="truncate">Evolución por fechas</span>
@@ -311,8 +374,8 @@ export function MonthlyEvolutionChart() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-neutral-100 p-1 rounded-lg">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-start xl:justify-end gap-3 w-full xl:w-auto">
+            <div className="flex flex-wrap bg-neutral-100 p-1 rounded-lg gap-1 w-full xl:w-auto">
               <Button variant="outline"
                 onClick={() => setEvolutionMode("posiciones")}
                 className={cn(
@@ -369,14 +432,22 @@ export function MonthlyEvolutionChart() {
                 Semanal
               </Button>
             </div>
-            {(evolutionMode === "semanal" ||
-              evolutionMode === "acumulado_semanal") && (
+            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full xl:w-auto">
               <select
-                value={evolutionTimeFilter}
-                onChange={(e) => setEvolutionTimeFilter(e.target.value)}
-                className="px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                value={evolutionTimeFilter.startsWith("custom_") ? "custom" : evolutionTimeFilter}
+                onChange={(e) => {
+                  if (e.target.value === "custom") {
+                    const currentYear = new Date().getFullYear();
+                    const today = new Date().toISOString().split('T')[0];
+                    setEvolutionTimeFilter(`custom_${currentYear}-01-01_${today}`);
+                  } else {
+                    setEvolutionTimeFilter(e.target.value);
+                  }
+                }}
+                className="w-full sm:w-auto px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
               >
-                <option value="all">Todas las semanas</option>
+                <option value="all">Todas las fechas</option>
+                <option value="custom">Rango de fechas</option>
                 <option value="0-2">T1 (Ene-Mar)</option>
                 <option value="3-5">T2 (Abr-Jun)</option>
                 <option value="6-8">T3 (Jul-Sep)</option>
@@ -394,7 +465,38 @@ export function MonthlyEvolutionChart() {
                 <option value="10">Noviembre</option>
                 <option value="11">Diciembre</option>
               </select>
-            )}
+              {evolutionTimeFilter.startsWith("custom_") && (
+                <div className="flex flex-wrap items-center gap-2 w-full justify-start sm:w-auto">
+                  <input
+                    type="date"
+                    className="w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
+                    value={localCustomDateRange.start}
+                    onChange={(e) => {
+                      setLocalCustomDateRange(prev => ({ ...prev, start: e.target.value }));
+                    }}
+                  />
+                  <span className="text-neutral-500 font-medium">a</span>
+                  <input
+                    type="date"
+                    className="w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
+                    value={localCustomDateRange.end}
+                    onChange={(e) => {
+                      setLocalCustomDateRange(prev => ({ ...prev, end: e.target.value }));
+                    }}
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => {
+                      setEvolutionTimeFilter(`custom_${localCustomDateRange.start}_${localCustomDateRange.end}`);
+                    }}
+                    className="h-[34px]"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

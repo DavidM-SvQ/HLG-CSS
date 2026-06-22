@@ -26,6 +26,21 @@ export function TopTeamsTable() {
   const topTeamsTableRef = React.useRef<HTMLDivElement>(null);
 
   const [localSearch, setLocalSearch] = React.useState(leaderboardTeamsSearch);
+  const [localCustomDateRange, setLocalCustomDateRange] = React.useState({
+    start: `${new Date().getFullYear()}-01-01`,
+    end: new Date().toISOString().split('T')[0]
+  });
+
+  // Keep localCustomDateRange in sync if it changes from outside or initializes
+  useEffect(() => {
+    if (teamsMonthFilter.startsWith("custom_")) {
+      const parts = teamsMonthFilter.split("_");
+      setLocalCustomDateRange({
+        start: parts[1] || `${new Date().getFullYear()}-01-01`,
+        end: parts[2] || new Date().toISOString().split('T')[0]
+      });
+    }
+  }, [teamsMonthFilter]);
   
   // Sync localSearch ONLY when URL state changes externally
   useEffect(() => {
@@ -129,12 +144,12 @@ export function TopTeamsTable() {
     <>
       <div ref={topTeamsTableRef} className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mt-12 relative group overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-50 translate-x-1/3 -translate-y-1/3" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-6 gap-4 relative z-10">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex flex-col xl:flex-row xl:items-start justify-between border-b pb-4 mb-6 gap-4 relative z-10">
+          <div className="flex items-center gap-4 min-w-0 shrink-0 flex-wrap sm:flex-nowrap">
             <div className="bg-gradient-to-br from-yellow-400 to-amber-600 p-2.5 rounded-xl shadow-lg shadow-amber-500/20 shrink-0">
               <Trophy className="w-6 h-6 text-white" />
             </div>
-            <h3 className="font-bold text-2xl text-neutral-900 tracking-tight flex items-center gap-2 truncate">
+            <h3 className="font-bold text-2xl text-neutral-900 tracking-tight flex items-center gap-2 flex-wrap min-w-0">
               Clasificación de Equipos
               {teamsMonthFilter !== "all" && (
                 <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap">
@@ -142,7 +157,7 @@ export function TopTeamsTable() {
                 </span>
               )}
             </h3>
-            <div className="copy-button-ignore">
+            <div className="copy-button-ignore shrink-0 ml-auto sm:ml-0">
               <ExportToolbar
                 targetRef={topTeamsTableRef}
                 filename="clasificacion-equipos"
@@ -153,49 +168,91 @@ export function TopTeamsTable() {
               />
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-              <Input
-                type="text"
-                placeholder="Buscar equipo..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border-neutral-200 rounded-xl focus-visible:ring-blue-500/20 font-medium"
-              />
+          <div className="flex flex-col items-start xl:items-end gap-3 w-full xl:w-auto overflow-x-visible shrink-0 min-w-0">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64 max-w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar equipo..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border-neutral-200 rounded-xl focus-visible:ring-blue-500/20 font-medium"
+                />
+              </div>
+              <select 
+                value={teamsMonthFilter.startsWith("custom_") ? "custom" : teamsMonthFilter} 
+                onChange={(e) => {
+                  if (e.target.value === "custom") {
+                    const currentYear = new Date().getFullYear();
+                    const today = new Date().toISOString().split('T')[0];
+                    setTeamsMonthFilter(`custom_${currentYear}-01-01_${today}`);
+                  } else {
+                    setTeamsMonthFilter(e.target.value);
+                  }
+                  setTopTeamsSortColumn("puntos");
+                  setTopTeamsSortDirection("desc");
+                }}
+                className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-blue-300 focus-visible:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+              >
+                <option value="all">Todos los meses</option>
+                <option value="custom">Rango de fechas</option>
+                {(() => {
+                  const months = [
+                    "Enero",
+                    "Febrero",
+                    "Marzo",
+                    "Abril",
+                    "Mayo",
+                    "Junio",
+                    "Julio",
+                    "Agosto",
+                    "Septiembre",
+                    "Octubre",
+                    "Noviembre",
+                    "Diciembre",
+                  ];
+                  return months.map((m, i) => (
+                    <option key={i} value={i.toString()}>
+                      {m}
+                    </option>
+                  ));
+                })()}
+              </select>
             </div>
-            <select 
-              value={teamsMonthFilter} 
-              onChange={(e) => {
-                setTeamsMonthFilter(e.target.value);
-                setTopTeamsSortColumn("puntos");
-                setTopTeamsSortDirection("desc");
-              }}
-              className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-blue-300 focus-visible:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
-            >
-              <option value="all">Todos los meses</option>
-              {(() => {
-                const months = [
-                  "Enero",
-                  "Febrero",
-                  "Marzo",
-                  "Abril",
-                  "Mayo",
-                  "Junio",
-                  "Julio",
-                  "Agosto",
-                  "Septiembre",
-                  "Octubre",
-                  "Noviembre",
-                  "Diciembre",
-                ];
-                return months.map((m, i) => (
-                  <option key={i} value={i.toString()}>
-                    {m}
-                  </option>
-                ));
-              })()}
-            </select>
+            {teamsMonthFilter.startsWith("custom_") && (
+              <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2 w-full lg:w-auto mt-1">
+                <Input 
+                  type="date" 
+                  className="w-auto py-1 text-sm bg-neutral-50 h-9"
+                  value={localCustomDateRange.start}
+                  onChange={(e) => {
+                    setLocalCustomDateRange(prev => ({ ...prev, start: e.target.value }));
+                  }}
+                />
+                <span className="text-neutral-500 font-medium">a</span>
+                <Input 
+                  type="date" 
+                  className="w-auto py-1 text-sm bg-neutral-50 h-9"
+                  value={localCustomDateRange.end}
+                  onChange={(e) => {
+                    setLocalCustomDateRange(prev => ({ ...prev, end: e.target.value }));
+                  }}
+                />
+                <Button 
+                  size="sm" 
+                  variant="default"
+                  onClick={() => {
+                    setTeamsMonthFilter(`custom_${localCustomDateRange.start}_${localCustomDateRange.end}`);
+                    setTopTeamsSortColumn("puntos");
+                    setTopTeamsSortDirection("desc");
+                  }}
+                  className="h-9"
+                >
+                  Aplicar
+                </Button>
+              </div>
+            )}
           </div>
 
         </div>

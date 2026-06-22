@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect } from "react";
-import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X } from "lucide-react";
+import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X, ArrowRight } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useNavigate } from "react-router-dom";
 
 import { performTextCopy } from "./hooks/useExportHandlers";
 import { ExportToolbar } from "../../ui/ExportToolbar";
@@ -11,6 +12,7 @@ import { Button } from "../../ui/button";
 
 export function WinsHistoryTable() {
   const context = useContext(SeasonViewContext)!;
+  const navigate = useNavigate();
 
   const {
     cn,
@@ -272,7 +274,16 @@ export function WinsHistoryTable() {
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:table-cell gap-1">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carrera</span>
-                            <span className="font-semibold md:font-medium text-neutral-900 line-clamp-2">{race}</span>
+                            <span 
+                              className="font-semibold md:font-medium text-blue-600 hover:text-blue-800 line-clamp-2 cursor-pointer flex items-center gap-1 group/link transition-colors"
+                              onClick={() => {
+                                navigate(`/race?race=${encodeURIComponent(race)}`);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }}
+                            >
+                              {race}
+                              <ArrowRight className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                            </span>
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell text-right">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo Ganador</span>
@@ -326,7 +337,16 @@ export function WinsHistoryTable() {
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:table-cell gap-1">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carrera</span>
-                            <span className="font-semibold md:font-medium text-neutral-900 line-clamp-2">{race}</span>
+                            <span 
+                              className="font-semibold md:font-medium text-blue-600 hover:text-blue-800 line-clamp-2 cursor-pointer flex items-center gap-1 group/link transition-colors"
+                              onClick={() => {
+                                navigate(`/race?race=${encodeURIComponent(race)}`);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }}
+                            >
+                              {race}
+                              <ArrowRight className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                            </span>
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell text-right">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Equipo Ganador</span>
@@ -394,7 +414,17 @@ export function WinsHistoryTable() {
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:table-cell gap-1">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Carrera</span>
-                            <span className="font-bold text-neutral-900">{row.race}</span>
+                            <span 
+                              className="font-bold text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1 group/link transition-colors"
+                              onClick={() => {
+                                setIsWinsHistoryExpanded(false);
+                                navigate(`/race?race=${encodeURIComponent(row.race)}`);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }}
+                            >
+                              {row.race}
+                              <ArrowRight className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                            </span>
                           </td>
                           <td className="px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:table-cell text-right">
                             <span className="text-xs font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ganador</span>
