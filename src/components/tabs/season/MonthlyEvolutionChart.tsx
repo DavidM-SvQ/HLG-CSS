@@ -466,19 +466,19 @@ export function MonthlyEvolutionChart() {
                 <option value="11">Diciembre</option>
               </select>
               {evolutionTimeFilter.startsWith("custom_") && (
-                <div className="flex flex-wrap items-center gap-2 w-full justify-start sm:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full justify-start xl:justify-end sm:w-auto">
                   <input
                     type="date"
-                    className="w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
+                    className="w-full sm:w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
                     value={localCustomDateRange.start}
                     onChange={(e) => {
                       setLocalCustomDateRange(prev => ({ ...prev, start: e.target.value }));
                     }}
                   />
-                  <span className="text-neutral-500 font-medium">a</span>
+                  <span className="text-neutral-500 font-medium hidden sm:inline">a</span>
                   <input
                     type="date"
-                    className="w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
+                    className="w-full sm:w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
                     value={localCustomDateRange.end}
                     onChange={(e) => {
                       setLocalCustomDateRange(prev => ({ ...prev, end: e.target.value }));
@@ -490,7 +490,7 @@ export function MonthlyEvolutionChart() {
                     onClick={() => {
                       setEvolutionTimeFilter(`custom_${localCustomDateRange.start}_${localCustomDateRange.end}`);
                     }}
-                    className="h-[34px]"
+                    className="h-[34px] w-full sm:w-auto"
                   >
                     Aplicar
                   </Button>
