@@ -71,15 +71,28 @@ export const GestionStartlists = () => {
             >
               <option value="">-- Selecciona una carrera --</option>
               {(() => {
-                const finishedRaces = new Set(
-                  (files.resultados?.data || [])
-                    .filter((r: any) => getVal(r, "Tipo")?.trim().match(/Clasificaci[oó]n final|CG/i))
-                    .map((r: any) => getVal(r, "Carrera")?.trim() || "")
-                );
+                const finishedRaces = new Set<string>();
+                if (files.resultados?.data) {
+                  files.resultados.data.forEach((r: any) => {
+                    const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
+                    const raceName = String(getVal(r, "Carrera") || "").trim().toLowerCase();
+                    
+                    const isFinished = 
+                      tipoLower.includes("clasificaci") || 
+                      tipoLower === "cg" || 
+                      tipoLower.includes("clásica") || 
+                      tipoLower.includes("clasica");
+                      
+                    if (isFinished) {
+                      finishedRaces.add(raceName);
+                    }
+                  });
+                }
 
                 return files.carreras.data?.map((row: any, idx: number) => {
                   const carreraName = getVal(row, "Carrera")?.trim();
-                  if (!carreraName || finishedRaces.has(carreraName)) return null;
+                  const carreraNameLower = (carreraName || "").toLowerCase();
+                  if (!carreraName || finishedRaces.has(carreraNameLower)) return null;
                   return (
                     <option key={idx} value={carreraName}>
                       {carreraName}
@@ -205,8 +218,18 @@ export const GestionStartlists = () => {
                   
                   const matchCarrera = files.carreras?.data?.find((c: any) => getVal(c, "Carrera")?.trim() === s.carrera);
                   const fechaCarrera = matchCarrera ? (getVal(matchCarrera, "Fecha") || "-") : "-";
-                  const statusCarrera = matchCarrera ? getVal(matchCarrera, "Tipo") : "";
-                  const isFinished = statusCarrera?.match(/Clasificaci[oó]n final|CG/i);
+                  
+                  let isFinished = false;
+                  if (files.resultados?.data) {
+                    isFinished = files.resultados.data.some((r: any) => {
+                      if (String(getVal(r, "Carrera") || "").trim().toLowerCase() !== s.carrera.trim().toLowerCase()) return false;
+                      const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
+                      return tipoLower.includes("clasificaci") || 
+                             tipoLower === "cg" || 
+                             tipoLower.includes("clásica") || 
+                             tipoLower.includes("clasica");
+                    });
+                  }
 
                   let isRacePastDate = false;
                   if (fechaCarrera && fechaCarrera !== "-") {
