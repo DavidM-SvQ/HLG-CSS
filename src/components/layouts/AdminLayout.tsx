@@ -5,6 +5,7 @@ import { TableSkeleton } from "../ui/Skeleton";
 const AdminDatosTab = React.lazy(() => import("../tabs/admin/AdminDatosTab").then(m => ({ default: m.AdminDatosTab })));
 const AdminDatosV2Tab = React.lazy(() => import("../tabs/admin/AdminDatosV2Tab").then(m => ({ default: m.AdminDatosV2Tab })));
 const GestionStartlists = React.lazy(() => import("../tabs/admin/GestionStartlists").then(m => ({ default: m.GestionStartlists })));
+const ConfiguracionView = React.lazy(() => import("../tabs/admin/ConfiguracionView").then(m => ({ default: m.ConfiguracionView })));
 const RaceView = React.lazy(() => import("../tabs/RaceView").then(m => ({ default: m.RaceView })));
 const MonthlyReportView = React.lazy(() => import("../tabs/MonthlyReportView").then(m => ({ default: m.MonthlyReportView })));
 const SeasonReportView = React.lazy(() => import("../tabs/SeasonReportView").then(m => ({ default: m.SeasonReportView })));
@@ -13,6 +14,7 @@ const AdminAnalyticsView = React.lazy(() => import("../tabs/AdminAnalyticsView")
 
 export function AdminLayout() {
   const [adminTab, setAdminTab] = useState<
+    | "configuracion"
     | "datos"
     | "datos-v2"
     | "gestion-startlists"
@@ -21,12 +23,18 @@ export function AdminLayout() {
     | "reporte-temporada"
     | "pruebas"
     | "estadisticas"
-  >("datos-v2");
+  >("configuracion");
 
   return (
     <div className="space-y-6">
       <AdminNav adminTab={adminTab} setAdminTab={setAdminTab} />
       
+      {adminTab === "configuracion" && (
+        <Suspense fallback={<div className="p-8"><TableSkeleton rows={4} /></div>}>
+          <ConfiguracionView />
+        </Suspense>
+      )}
+
       {adminTab === "datos" && (
         <Suspense fallback={<div className="p-8"><TableSkeleton rows={8} /></div>}>
           <AdminDatosTab />

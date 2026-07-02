@@ -3,6 +3,8 @@ import { Users, X } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { cn } from "../../../../lib/utils";
 import { VirtualizedTableBody } from "../../../ui/VirtualizedTableBody";
+import { getCyclistAvatar } from "../../../../lib/utils/teamColors";
+import { useDataStore } from "../../../../lib/stores/useDataStore";
 
 export const RaceCyclistsTable = ({
   raceCyclists,
@@ -17,6 +19,18 @@ export const RaceCyclistsTable = ({
   onDownloadImage,
   tableRef,
 }: any) => {
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  const fantasyCardsEnabled = getValue("fantasy_cards_enabled", true);
+
   const maxVictorias = React.useMemo(() => {
     return Math.max(...(raceCyclists || []).map((c: any) => c.victorias || 0), 0);
   }, [raceCyclists]);
@@ -51,19 +65,29 @@ export const RaceCyclistsTable = ({
         className="hover:bg-blue-50/30 transition-colors group"
       >
         <td className="px-4 py-3 sticky left-0 bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 min-w-[140px]">
-          <div className="flex flex-col">
-            <span className="font-bold text-neutral-900 leading-tight text-xs truncate">
-              {c.ciclista}{" "}
-              <span className="text-neutral-400 font-normal">
-                &lt;{c.ronda}&gt;
+          <div className="flex items-center gap-2">
+            {fantasyCardsEnabled && (
+              <img 
+                src={getCyclistAvatar(c.ciclista)} 
+                alt={c.ciclista} 
+                className="w-7 h-7 rounded-full border border-neutral-200 bg-neutral-100 shrink-0" 
+                loading="lazy"
+              />
+            )}
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-neutral-900 leading-tight text-xs truncate">
+                {c.ciclista}{" "}
+                <span className="text-neutral-400 font-normal">
+                  &lt;{c.ronda}&gt;
+                </span>
               </span>
-            </span>
+            </div>
           </div>
         </td>
         <td className="px-4 py-3 pr-8 sticky left-[140px] shadow-[4px_0_12px_rgba(0,0,0,0.02)] bg-white group-hover:bg-blue-50 border-r border-neutral-100 z-10 text-[11px] w-48 truncate">
           <div className="flex flex-col">
-            <span className="text-neutral-700 font-bold leading-tight">
-              {c.jugador} [<span className="font-mono tabular-nums opacity-60">#{c.orden}</span>]
+            <span className="text-neutral-700 font-bold leading-tight flex items-center gap-2">
+              <span>{c.jugador} [<span className="font-mono tabular-nums opacity-60">#{c.orden}</span>]</span>
             </span>
           </div>
         </td>

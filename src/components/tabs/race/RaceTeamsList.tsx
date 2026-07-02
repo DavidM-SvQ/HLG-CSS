@@ -4,6 +4,8 @@ import { ReportCard } from "../../ui/ReportCard";
 import { cn } from "../../../lib/utils";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { Button } from "../../ui/button";
+import { motion } from "motion/react";
+import { useDataStore } from "../../../lib/stores/useDataStore";
 
 interface RaceTeamsListProps {
   rankedTeams: any[];
@@ -32,6 +34,19 @@ export const RaceTeamsList = ({
     handleCopyText,
     isTextCopying
   } = useTableScreenshot(tableRef);
+
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  
+  const animationsEnabled = getValue("animations_enabled", true);
 
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
@@ -83,6 +98,40 @@ export const RaceTeamsList = ({
     );
   };
 
+  // Simple number counter component
+  const Counter = ({ value, duration = 1.5 }: { value: number, duration?: number }) => {
+    const [count, setCount] = useState(0);
+    
+    React.useEffect(() => {
+      let start = 0;
+      const end = value;
+      if (!animationsEnabled || start === end) {
+        setCount(end);
+        return;
+      }
+      
+      let startTimestamp: number | null = null;
+      const step = (timestamp: number) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
+        
+        // easeOutQuart
+        const easeProgress = 1 - Math.pow(1 - progress, 4);
+        setCount(Math.floor(easeProgress * (end - start) + start));
+        
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          setCount(end);
+        }
+      };
+      
+      window.requestAnimationFrame(step);
+    }, [value, duration, animationsEnabled]);
+
+    return <span>{count}</span>;
+  };
+
   return (
     <ReportCard
       title="Clasificación Equipos"
@@ -113,7 +162,7 @@ export const RaceTeamsList = ({
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container px-2 md:px-0">
             <table className="w-full min-w-[500px] text-sm text-left border-collapse mx-auto">
-              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 select-none">
+              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-20 select-none">
                 <tr>
                   <th 
                     className="px-2 py-1.5 w-8 text-center cursor-pointer hover:bg-slate-700 transition-colors"
@@ -162,6 +211,13 @@ export const RaceTeamsList = ({
                     const isNonParticipant = team.uniqueCyclists === 0;
                     const showDivider = isNonParticipant && index > 0 && sortedTeams[index - 1].uniqueCyclists > 0;
                     
+                    const RowComponent = animationsEnabled ? motion.tr : "tr";
+                    const rowProps = animationsEnabled ? {
+                      initial: { opacity: 0, y: 10 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { delay: index * 0.05, duration: 0.3 }
+                    } : {};
+
                     return (
                       <React.Fragment key={team.jugador}>
                         {showDivider && (
@@ -169,10 +225,11 @@ export const RaceTeamsList = ({
                             <td colSpan={6}></td>
                           </tr>
                         )}
-                        <tr
-                          className="hover:bg-blue-50/30 transition-colors group"
+                        <RowComponent
+                          {...rowProps as any}
+                          className="hover:bg-blue-50/30 transition-colors group relative overflow-hidden"
                         >
-                          <td className="px-4 py-3 text-center font-mono tabular-nums text-xs text-neutral-400">
+                          <td className="px-4 py-3 text-center font-mono tabular-nums text-xs text-neutral-400 relative z-10">
                             {isNonParticipant 
                               ? "-" 
                               : team.totalPoints > 0
@@ -185,14 +242,14 @@ export const RaceTeamsList = ({
                                 : team.pos
                               : team.pos}
                           </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 relative z-10">
                         <div className="flex flex-col">
-                          <span className="font-bold text-neutral-900 leading-tight text-xs">
-                            {team.nombreEquipo} [<span className="font-mono tabular-nums opacity-60">#{team.orden}</span>]
+                          <span className="font-bold text-neutral-900 leading-tight text-xs flex items-center gap-2">
+                            {team.nombreEquipo} <span className="font-mono tabular-nums opacity-60">#{team.orden}</span>
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center relative z-10">
                         <span
                           className={cn(
                             "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
@@ -207,7 +264,7 @@ export const RaceTeamsList = ({
                         </span>
                       </td>
                       <td
-                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-xs border-l border-neutral-100"
+                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-xs border-l border-neutral-100 relative z-10"
                         style={
                           (team as any).racePartialWins > 0
                             ? {
@@ -228,16 +285,16 @@ export const RaceTeamsList = ({
                         }
                       >
                         {(team as any).racePartialWins > 0
-                          ? (team as any).racePartialWins
+                          ? <Counter value={(team as any).racePartialWins} />
                           : "-"}
                       </td>
-                      <td className="px-4 py-3 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600">
+                      <td className="px-4 py-3 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600 relative z-10">
                         {team.uniqueCyclists > 0
                           ? (team.totalPoints / team.uniqueCyclists).toFixed(1)
                           : "0.0"}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-black text-xs border-l border-neutral-100"
+                        className="px-3 py-1.5 text-center font-mono tabular-nums font-bold text-black text-xs border-l border-neutral-100 relative z-10"
                         style={{
                           backgroundColor: `hsl(${Math.max(
                             0,
@@ -250,9 +307,9 @@ export const RaceTeamsList = ({
                           color: "#000000",
                         }}
                       >
-                        {team.totalPoints}
+                        <Counter value={team.totalPoints} />
                       </td>
-                    </tr>
+                    </RowComponent>
                   </React.Fragment>
                 );
               })}

@@ -1,11 +1,12 @@
 import React, { useContext } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { TrendingUp, X } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 import { ExportToolbar } from "../../ui/ExportToolbar";
+import { useDataStore } from "../../../lib/stores/useDataStore";
 
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
@@ -356,6 +357,29 @@ export function MonthlyEvolutionChart() {
     return null;
   };
 
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  const gradientChartsEnabled = getValue("gradient_charts_enabled", true);
+
+  const renderDefs = () => (
+    <defs>
+      {Object.keys(teamColors).map((teamKey) => (
+        <linearGradient key={`gradient-${teamKey}`} id={`color-${teamKey}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0.6 : 0.05} />
+          <stop offset="95%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0 : 0.05} />
+        </linearGradient>
+      ))}
+    </defs>
+  );
+
   return (
     <>
       <div ref={evolutionChartRef} className="mt-12 group relative">
@@ -576,7 +600,7 @@ export function MonthlyEvolutionChart() {
 
           <div className="h-[600px] w-full mt-4 border-t border-neutral-100 pt-6">
             <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
-              <LineChart
+              <AreaChart
                 data={evolutionData}
                 margin={{
                   top: 20,
@@ -585,6 +609,7 @@ export function MonthlyEvolutionChart() {
                   bottom: 60,
                 }}
               >
+                {renderDefs()}
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -632,15 +657,17 @@ export function MonthlyEvolutionChart() {
                       selectedEvolutionTeams.includes(teamKey);
                     const opacity = isSelected ? 1 : 0.15;
                     return (
-                      <Line
+                      <Area
                         key={teamKey}
                         type="monotone"
                         dataKey={teamKey}
                         stroke={teamColors[teamKey]}
+                        fill={evolutionMode !== "posiciones" ? `url(#color-${teamKey})` : "transparent"}
                         onMouseEnter={() => setHoveredTeam(teamKey)}
                         onMouseLeave={() => setHoveredTeam(null)}
                         strokeWidth={isSelected ? 3 : 1}
                         strokeOpacity={opacity}
+                        fillOpacity={opacity}
                         dot={isSelected ? { r: 4, strokeWidth: 2 } : false}
                         activeDot={
                           isSelected
@@ -656,7 +683,7 @@ export function MonthlyEvolutionChart() {
                       />
                     );
                   })}
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer></div></div>
           </div>
         </div>
@@ -688,7 +715,7 @@ export function MonthlyEvolutionChart() {
             <div className="flex-1 overflow-y-auto p-8">
               <div className="h-[700px] w-full">
                 <div className="w-full overflow-x-auto h-full min-h-[300px]"><div className="min-w-[800px] w-full h-full"><ResponsiveContainer width="100%" height="99%">
-                  <LineChart
+                  <AreaChart
                     data={evolutionData}
                     margin={{
                       top: 20,
@@ -697,6 +724,7 @@ export function MonthlyEvolutionChart() {
                       bottom: 60,
                     }}
                   >
+                    {renderDefs()}
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
@@ -745,15 +773,17 @@ export function MonthlyEvolutionChart() {
                           selectedEvolutionTeams.includes(teamKey);
                         const opacity = isSelected ? 1 : 0.15;
                         return (
-                          <Line
+                          <Area
                             key={teamKey}
                             type="monotone"
                             dataKey={teamKey}
                             stroke={teamColors[teamKey]}
+                            fill={evolutionMode !== "posiciones" ? `url(#color-${teamKey})` : "transparent"}
                             onMouseEnter={() => setHoveredTeam(teamKey)}
                             onMouseLeave={() => setHoveredTeam(null)}
                             strokeWidth={isSelected ? 4 : 1}
                             strokeOpacity={opacity}
+                            fillOpacity={opacity}
                             dot={isSelected ? { r: 5, strokeWidth: 2 } : false}
                             activeDot={
                               isSelected
@@ -769,7 +799,7 @@ export function MonthlyEvolutionChart() {
                           />
                         );
                       })}
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer></div></div>
               </div>
             </div>

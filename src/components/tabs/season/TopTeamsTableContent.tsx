@@ -46,7 +46,11 @@ export function TopTeamRow({
         </div>
       </td>
       <td className="px-4 py-2 font-bold text-neutral-900 group-hover/row:text-blue-700 transition-colors text-sm">
-        {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[<span className="font-mono tabular-nums opacity-60">#{team.originalPos === 999 ? '-' : team.originalPos}</span>]</span>}
+        <div className="flex items-center gap-2">
+          <span>
+            {team.nombreEquipo} {showDraftPos && <span className="text-xs text-neutral-400 font-normal ml-1">[<span className="font-mono tabular-nums opacity-60">#{team.originalPos === 999 ? '-' : team.originalPos}</span>]</span>}
+          </span>
+        </div>
       </td>
       {!hideDifColumn && (
       <td className="px-4 py-3 text-center whitespace-nowrap">
@@ -109,6 +113,8 @@ export function TopTeamRow({
   );
 }
 
+import { useDataStore } from "../../../lib/stores/useDataStore";
+
 export function TopTeamsTableContent({ 
   topTeamsSortColumn,
   topTeamsSortDirection,
@@ -130,6 +136,18 @@ export function TopTeamsTableContent({
   isExpanded = false
 }: any) {
   const [isMobile, setIsMobile] = useState(false);
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  
+  const animationsEnabled = getValue("animations_enabled", true);
   
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -253,14 +271,20 @@ export function TopTeamsTableContent({
         </tr>
       </thead>
       <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 pb-4">
-        {sortedTeams.map((team: any, idx: number) => (
-          <motion.tr 
-            layout 
+        {sortedTeams.map((team: any, idx: number) => {
+          const RowComponent = animationsEnabled ? motion.tr : "tr";
+          const rowProps = animationsEnabled ? {
+            layout: true,
+            initial: { opacity: 0 },
+            animate: { opacity: 1 },
+            exit: { opacity: 0 },
+            transition: { duration: 0.2 }
+          } : {};
+
+          return (
+          <RowComponent 
+            {...rowProps as any}
             key={team.nombreEquipo}
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            transition={{ duration: 0.2 }} 
             className="hover:bg-blue-50/30 transition-colors group/row"
           >
             <TopTeamRow
@@ -285,8 +309,9 @@ export function TopTeamsTableContent({
               hidePointsDiff={hidePointsDiff}
               showDraftPos={showDraftPos}
             />
-          </motion.tr>
-        ))}
+          </RowComponent>
+          );
+        })}
       </tbody>
     </table>
     </div>

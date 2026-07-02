@@ -7,6 +7,10 @@ import { VirtualizedTableBody } from "../../ui/VirtualizedTableBody";
 import { cn } from "../../../lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
+import { useDataStore } from "../../../lib/stores/useDataStore";
+
+import { getCyclistAvatar } from "../../../lib/utils/teamColors";
+
 export function TopDraftCyclistsTable(props: any) {
   const {
     isTopCyclistsDraftExpanded, topCyclistsDraftRefContainer,
@@ -16,6 +20,18 @@ export function TopDraftCyclistsTable(props: any) {
   , isTopCyclistsDraftCopying } = props;
 
   const [isMobile, setIsMobile] = useState(false);
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  const animationsEnabled = getValue("animations_enabled", true);
+  const fantasyCardsEnabled = getValue("fantasy_cards_enabled", true);
   
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -283,6 +299,8 @@ export function TopDraftCyclistsTable(props: any) {
                                               getPuntosColor={getPuntosColor}
                                               formatNumberSpanish={formatNumberSpanish}
                                               isCopying={!!isTopCyclistsDraftCopying}
+                                              animationsEnabled={animationsEnabled}
+                                              fantasyCardsEnabled={fantasyCardsEnabled}
                                             />
                                           ))}
                                         </AnimatePresence>
@@ -292,7 +310,7 @@ export function TopDraftCyclistsTable(props: any) {
                                         items={sortedStats}
                                         scrollElementRef={topCyclistsDraftRefContainer}
                                         colSpan={10}
-                                        estimateSize={isMobile ? 54 : 33}
+                                        estimateSize={isMobile ? 54 : 45}
                                         className="divide-y md:divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group pt-2 md:pt-0 pb-4"
                                         renderRow={(s, idx) => {
                                           return (
@@ -313,6 +331,8 @@ export function TopDraftCyclistsTable(props: any) {
                                               getPuntosColor={getPuntosColor}
                                               formatNumberSpanish={formatNumberSpanish}
                                               isCopying={false}
+                                              animationsEnabled={animationsEnabled}
+                                              fantasyCardsEnabled={fantasyCardsEnabled}
                                             />
                                           );
                                         }}
@@ -324,16 +344,25 @@ export function TopDraftCyclistsTable(props: any) {
   );
 }
 
-function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarreras, maxDias, minDias, maxPpc, minPpc, maxPpd, minPpd, getFlagEmoji, getColorClass, getPuntosColor, formatNumberSpanish, isCopying }: any) {
+function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarreras, maxDias, minDias, maxPpc, minPpc, maxPpd, minPpd, getFlagEmoji, getColorClass, getPuntosColor, formatNumberSpanish, isCopying, animationsEnabled, fantasyCardsEnabled }: any) {
   const [expanded, setExpanded] = React.useState(false);
   const { ciclista, nombreEquipo, ronda, orden, pais, victorias, dias, puntos, numCarreras, ppc, ppd, originalIndex } = s;
 
   if (isHiddenVisual) return null;
 
+  const RowComponent = animationsEnabled ? motion.tr : "tr";
+  const rowProps = animationsEnabled ? {
+    layout: true,
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, scale: 0.95 },
+    transition: { duration: 0.2 }
+  } : {};
+
   return (
     <>
-      <motion.tr layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none hover:border-blue-200 md:hover:border-transparent", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
-        <td className="px-4 py-3 md:px-3 md:py-1 flex md:table-cell justify-between items-center md:text-center w-full md:w-auto hover:bg-neutral-50 md:hover:bg-transparent rounded-t-xl transition-colors">
+      <RowComponent {...rowProps as any} className={cn("hover:bg-neutral-50 transition-colors top-cyclists-row text-[11px] md:divide-x divide-neutral-100 flex flex-col md:table-row cursor-pointer md:cursor-auto bg-white border border-neutral-200 md:border-none rounded-xl md:rounded-none mb-3 md:mb-0 shadow-sm md:shadow-none hover:border-blue-200 md:hover:border-transparent", expanded ? "bg-neutral-50" : "")} onClick={() => window.innerWidth < 768 && setExpanded(!expanded)}>
+        <td className="px-4 py-3 md:px-3 md:py-2 flex md:table-cell justify-between items-center md:text-center w-full md:w-auto hover:bg-neutral-50 md:hover:bg-transparent rounded-t-xl transition-colors">
           <div className="flex items-center gap-3 md:contents">
             <span className={cn("w-7 h-7 md:w-6 md:h-6 md:mx-auto rounded-full flex items-center justify-center text-[11px] md:text-[10px] font-black shrink-0 shadow-sm border", originalIndex === 1 ? "bg-gradient-to-br from-amber-100 to-yellow-200 text-yellow-800 border-yellow-300/50" : originalIndex === 2 ? "bg-gradient-to-br from-neutral-100 to-neutral-200 text-neutral-700 border-neutral-300/50" : originalIndex === 3 ? "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800 border-orange-300/50" : "bg-neutral-50 text-neutral-500 border-neutral-200")}>
               {originalIndex}
@@ -345,15 +374,25 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
             <ChevronRight className={cn("w-4 h-4 text-neutral-400 transition-transform", expanded && "rotate-90")} />
           </div>
         </td>
-        <td className={cn("px-4 py-1 font-bold whitespace-nowrap hidden md:table-cell w-[250px] text-neutral-900")}>
+        <td className={cn("px-4 py-2 font-bold whitespace-nowrap hidden md:table-cell w-[250px] text-neutral-900")}>
           {isCopying ? (
-            <div className="flex items-center gap-1.5 w-fit text-left text-neutral-900">
-              {ciclista} <span className="text-neutral-500 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+            <div className="flex items-center gap-2 w-fit text-left text-neutral-900">
+              {fantasyCardsEnabled && (
+                <img src={getCyclistAvatar(ciclista)} alt={ciclista} className="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 shrink-0 object-cover" />
+              )}
+              <div className="flex flex-col">
+                <span>{ciclista} <span className="text-neutral-500 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span></span>
+              </div>
             </div>
           ) : (
             <Tooltip>
-              <TooltipTrigger className="flex items-center gap-1.5 cursor-help hover:text-blue-600 transition-colors w-fit text-left">
-                {ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span>
+              <TooltipTrigger className="flex items-center gap-2 cursor-help hover:text-blue-600 transition-colors w-fit text-left">
+                {fantasyCardsEnabled && (
+                  <img src={getCyclistAvatar(ciclista)} alt={ciclista} className="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 shrink-0 object-cover" loading="lazy" />
+                )}
+                <div className="flex flex-col">
+                  <span>{ciclista} <span className="text-neutral-400 font-normal text-[9px]">&lt;{ronda || "-"}&gt;</span></span>
+                </div>
               </TooltipTrigger>
               <TooltipContent className="bg-white border text-sm border-neutral-200 shadow-xl p-4 rounded-xl text-neutral-900 shadow-neutral-900/10 max-w-[240px]" side="right" sideOffset={10}>
                <div className="flex flex-col gap-2 relative z-10">
@@ -433,7 +472,7 @@ function TopCyclistRow({ s, isHiddenVisual, maxVictorias, maxCarreras, minCarrer
         <td className="px-4 py-1 text-right font-black font-mono tabular-nums text-sm hidden md:table-cell" style={{ color: getPuntosColor(puntos) }}>
           <span className="font-mono tabular-nums tracking-tight">{formatNumberSpanish(puntos)}</span>
         </td>
-      </motion.tr>
+      </RowComponent>
     </>
   );
 }

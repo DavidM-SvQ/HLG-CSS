@@ -1,16 +1,28 @@
 import React from 'react';
-import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker, Cloud } from 'lucide-react';
+import { FileSpreadsheet, List, Flag, Clock, Trophy, Beaker, Cloud, Settings } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from "./ui/button";
 
 interface AdminNavProps {
-  adminTab: "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
-  setAdminTab: (tab: "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas") => void;
+  adminTab: "configuracion" | "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas";
+  setAdminTab: (tab: "configuracion" | "datos" | "datos-v2" | "gestion-startlists" | "reporte-carrera" | "reporte-mes" | "reporte-temporada" | "pruebas" | "estadisticas") => void;
 }
 
 export function AdminNav({ adminTab, setAdminTab }: AdminNavProps) {
   return (
     <div className="flex items-center gap-2 border-b border-neutral-200 pb-4 overflow-x-auto">
+      <Button variant="outline"
+        onClick={() => setAdminTab("configuracion")}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all",
+          adminTab === "configuracion"
+            ? "bg-purple-50 text-purple-700"
+            : "text-neutral-600 hover:bg-neutral-100",
+        )}
+      >
+        <Settings className="w-4 h-4" />
+        Configuración
+      </Button>
       <Button variant="outline"
         onClick={() => setAdminTab("datos-v2")}
         className={cn(

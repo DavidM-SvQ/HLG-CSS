@@ -1,12 +1,13 @@
 import React, { useContext } from "react";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { TrendingUp, X } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 import { ExportToolbar } from "../../ui/ExportToolbar";
+import { useDataStore } from "../../../lib/stores/useDataStore";
 
 export function MonthlyWinsEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
@@ -15,6 +16,17 @@ export function MonthlyWinsEvolutionChart() {
     cn,
     filteredLeaderboard,
   } = context;
+
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  const gradientChartsEnabled = getValue("gradient_charts_enabled", true);
 
   const [isWinsEvolutionExpanded, setIsWinsEvolutionExpanded] = React.useState(false);
   const winsEvolutionRef = React.useRef<HTMLDivElement>(null);
@@ -27,6 +39,17 @@ export function MonthlyWinsEvolutionChart() {
     winsChartType,
     selectedEvolutionTeams,
   });
+
+  const renderDefs = () => (
+    <defs>
+      {Object.keys(teamColors).map((teamKey) => (
+        <linearGradient key={`gradient-${teamKey}`} id={`color-wins-${teamKey}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0.6 : 0.05} />
+          <stop offset="95%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0 : 0.05} />
+        </linearGradient>
+      ))}
+    </defs>
+  );
 
   return (
     <>
@@ -138,10 +161,11 @@ export function MonthlyWinsEvolutionChart() {
               <div className="w-full overflow-x-auto h-full min-h-[300px]">
                 <div className="min-w-[800px] h-full">
                   <ResponsiveContainer width="100%" height="99%">
-                    <LineChart
+                    <AreaChart
                       data={monthlyWinsEvolutionData}
                       margin={{ top: 10, right: 10, left: -20, bottom: 40 }}
                     >
+                      {renderDefs()}
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
                       <XAxis
                         dataKey="month"
@@ -174,18 +198,20 @@ export function MonthlyWinsEvolutionChart() {
                           return null;
 
                         return (
-                          <Line
+                          <Area
                             key={teamKey}
                             type="monotone"
                             dataKey={teamKey}
                             stroke={teamColors[teamKey]}
+                            fill={`url(#color-wins-${teamKey})`}
                             strokeWidth={3}
+                            fillOpacity={0.4}
                             dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                             activeDot={{ r: 6, strokeWidth: 0 }}
                           />
                         );
                       })}
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -218,10 +244,11 @@ export function MonthlyWinsEvolutionChart() {
                 <div className="w-full overflow-x-auto h-full min-h-[300px]">
                   <div className="min-w-[800px] h-full">
                     <ResponsiveContainer width="100%" height="99%">
-                      <LineChart
+                      <AreaChart
                         data={monthlyWinsEvolutionData}
                         margin={{ top: 20, right: 40, left: 20, bottom: 60 }}
                       >
+                        {renderDefs()}
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                         <XAxis dataKey="month" tick={{ fontSize: 14 }} />
                         <YAxis tick={{ fontSize: 14 }} allowDecimals={false} />
@@ -243,19 +270,21 @@ export function MonthlyWinsEvolutionChart() {
                           )
                             return null;
                           return (
-                            <Line
+                            <Area
                               key={teamKey}
                               type="monotone"
                               dataKey={teamKey}
                               stroke={teamColors[teamKey]}
+                              fill={`url(#color-wins-${teamKey})`}
                               strokeWidth={4}
+                              fillOpacity={0.4}
                               dot={{ r: 5, strokeWidth: 2 }}
                               activeDot={{ r: 8, strokeWidth: 0 }}
                               connectNulls
                             />
                           );
                         })}
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>

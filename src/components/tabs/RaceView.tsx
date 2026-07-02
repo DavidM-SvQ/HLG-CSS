@@ -5,6 +5,7 @@ import React from "react";
 import { useUrlState } from "../../hooks/useUrlState";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
+import { getRaceTheme } from "../../lib/utils/themeUtils";
 
 export interface RaceViewProps {
   isAdminReport?: boolean;
@@ -34,28 +35,37 @@ export const RaceView = (props: RaceViewProps) => {
     cyclistMetadata
   );
 
-  return (
-      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
-        <RaceHeader 
-          isAdminReport={isAdminReport} 
-          files={files} 
-          uniqueRaces={uniqueRaces} 
-          selectedRace={selectedRace} 
-          setSelectedRace={setSelectedRace} 
-        />
+  const configuracionData = files.configuracion?.data || [];
+  const initialThemesEnabled = configuracionData.find((item: any) => item.key === "themes_enabled")?.value;
+  const isThemesEnabled = initialThemesEnabled !== undefined ? (initialThemesEnabled === "true" || initialThemesEnabled === true) : true;
 
-        {selectedRace ? (
-          <RaceResults 
-            isAdminReport={isAdminReport}
-            selectedRace={selectedRace}
-            leaderboard={leaderboard}
-            raceDataObj={raceDataObj}
+  const { containerClasses, themeBadge } = getRaceTheme(selectedRace, isThemesEnabled);
+
+  return (
+      <div className={`border rounded-2xl shadow-sm p-6 relative transition-colors duration-500 ${containerClasses}`}>
+        {themeBadge}
+        <div className="relative z-10">
+          <RaceHeader 
+            isAdminReport={isAdminReport} 
+            files={files} 
+            uniqueRaces={uniqueRaces} 
+            selectedRace={selectedRace} 
+            setSelectedRace={setSelectedRace} 
           />
-        ) : (
-          <div className="text-center py-12 text-neutral-500">
-            Selecciona una carrera para ver el desglose de puntos.
-          </div>
-        )}
+
+          {selectedRace ? (
+            <RaceResults 
+              isAdminReport={isAdminReport}
+              selectedRace={selectedRace}
+              leaderboard={leaderboard}
+              raceDataObj={raceDataObj}
+            />
+          ) : (
+            <div className="text-center py-12 text-neutral-500">
+              Selecciona una carrera para ver el desglose de puntos.
+            </div>
+          )}
+        </div>
       </div>
     );
 };

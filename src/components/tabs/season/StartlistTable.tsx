@@ -4,8 +4,21 @@ import { formatNumberSpanish } from "../../../lib/data-processing";
 import { Search } from "lucide-react";
 import { Button } from "../../ui/button";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useDataStore } from "../../../lib/stores/useDataStore";
+import { getCyclistAvatar } from "../../../lib/utils/teamColors";
 
 export function StartlistTable(props: any) {
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
+  const fantasyCardsEnabled = getValue("fantasy_cards_enabled", true);
+
   const {
     startlistScrollRef, startlistSortCol, startlistSortDir, toggleSort,
     filteredRowPagination, filteredRows, memoizedData, 
@@ -187,7 +200,12 @@ export function StartlistTable(props: any) {
                     title={r.ciclista}
                   >
                     <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ciclista</span>
-                    <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
+                    <div className="flex items-center gap-2 justify-center md:justify-start">
+                      {fantasyCardsEnabled && (
+                        <img src={getCyclistAvatar(r.ciclista)} alt={r.ciclista} className="w-7 h-7 rounded-full bg-neutral-100 border border-neutral-200 shrink-0" loading="lazy" />
+                      )}
+                      <span className="text-[15px] md:text-[13px] font-bold">{r.ciclista}</span>
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 md:px-3 md:py-2 flex flex-col items-center justify-center md:table-cell gap-1 text-center border-r md:border-r-0 border-neutral-100 bg-white md:bg-transparent">

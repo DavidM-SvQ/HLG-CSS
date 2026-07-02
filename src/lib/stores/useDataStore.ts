@@ -25,6 +25,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
     puntos: initialFileState,
     resultados: initialFileState,
     startlist: initialFileState,
+    configuracion: initialFileState,
   },
   
   setFiles: (updater) => set((state) => ({
@@ -141,8 +142,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
   initializeGlobalFiles: (isSupabaseConfigured) => {
     const essentialFiles: (keyof AppState)[] = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados"];
-    // Also include startlist
-    const allGlobalFiles: (keyof AppState)[] = [...essentialFiles, "startlist"];
+    // Also include startlist and configuracion
+    const allGlobalFiles: (keyof AppState)[] = [...essentialFiles, "startlist", "configuracion"];
     
     allGlobalFiles.forEach((id) => {
       get().fetchGlobalFile(id, false, isSupabaseConfigured);

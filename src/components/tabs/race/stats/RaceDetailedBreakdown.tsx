@@ -3,6 +3,7 @@ import { Users, Filter, ChevronDown, CheckCircle2 } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { Button } from "../../../ui/button";
 import { cn } from "../../../../lib/utils";
+import { useDataStore } from "../../../../lib/stores/useDataStore";
 
 export const RaceDetailedBreakdown = ({
   raceTeams,
@@ -18,6 +19,16 @@ export const RaceDetailedBreakdown = ({
   const [selectedTeamsFilter, setSelectedTeamsFilter] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  const { files } = useDataStore();
+  const configuracionData = files.configuracion?.data || [];
+  const getValue = (key: string, defaultValue: any) => {
+    const item = configuracionData.find((item: any) => item.key === key);
+    if (item === undefined) return defaultValue;
+    if (item.value === "true") return true;
+    if (item.value === "false") return false;
+    return item.value;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

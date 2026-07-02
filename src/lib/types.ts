@@ -25,6 +25,7 @@ export interface AppState {
   puntos: FileState;
   resultados: FileState;
   startlist: FileState;
+  configuracion: FileState;
 }
 
 
