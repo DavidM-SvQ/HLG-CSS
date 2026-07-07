@@ -62,6 +62,8 @@ export interface CyclistMetadata {
   victorias: number;
   puntosTotales?: number;
   puntosPorCarrera?: Record<string, number>;
+  fcId?: string;
+  foto?: string;
 }
 
 export interface TopTeamStat {

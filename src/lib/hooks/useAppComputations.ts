@@ -63,12 +63,25 @@ export function useAppComputations() {
       const ciclista = String(getVal(row, "Ciclista") || "").trim();
       const pais = String(getVal(row, "Pais") || "").trim();
       const full = String(getVal(row, "Equipo") || "").trim().toLowerCase();
+      const url = String(getVal(row, "URL") || getVal(row, "Link") || "").trim();
+      let fcId = "";
+      let foto = "";
+      if (url && url.includes("firstcycling.com")) {
+          const match = url.match(/rider\.php\?r=(\d+)/);
+          if (match) {
+              fcId = match[1];
+              foto = `https://firstcycling.com/img/riders/${fcId}.jpg`;
+          }
+      }
+      
       if (ciclista) {
         cyclistToInfo[ciclista] = {
           pais: pais || "",
           paisLetras: pais || "",
           equipoBreve: (full && fullToBreve[full]) || "",
           nacido: "",
+          fcId,
+          foto
         };
       }
     });
@@ -131,6 +144,8 @@ export function useAppComputations() {
           carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
           diasCompeticion: cyclistStats[ciclista]?.dias || 0,
           victorias: cyclistStats[ciclista]?.victorias || 0,
+          fcId: cyclistToInfo[ciclista]?.fcId || "",
+          foto: cyclistToInfo[ciclista]?.foto || "",
         };
       }
     });
@@ -172,6 +187,8 @@ export function useAppComputations() {
           carrerasDisputadas: cyclistStats[ciclista]?.carreras.size || 0,
           diasCompeticion: cyclistStats[ciclista]?.dias || 0,
           victorias: cyclistStats[ciclista]?.victorias || 0,
+          fcId: cyclistToInfo[ciclista]?.fcId || "",
+          foto: cyclistToInfo[ciclista]?.foto || "",
         };
       }
     });
@@ -297,11 +314,14 @@ export function useAppComputations() {
       const puntosObtenidos = pointsLookup[pointsKey] || 0;
 
       if (puntosObtenidos === 0) {
-          let errorMsg = `No se encontraron puntos para la combinación: Categoría = ${tipoCarrera}, Tipo = ${tipoResultado}, Posición = ${posicion}`;
-          if (isOneDayRace && (tipoResultado === "Etapa" || tipoResultado.toLowerCase().includes("etapa"))) {
-              errorMsg += ` [AVISO: Esta es una carrera de un día pero se ha subido con el tipo "${tipoResultado}". Las carreras de un día deben registrarse con el tipo "Clasificación final" en el excel de resultados]`;
+          const isRetired = ["DNF", "DNS", "OTL", "DSQ", "OOT"].includes(posicion.toString().trim().toUpperCase());
+          if (!isRetired) {
+            let errorMsg = `No se encontraron puntos para la combinación: Categoría = ${tipoCarrera}, Tipo = ${tipoResultado}, Posición = ${posicion}`;
+            if (isOneDayRace && (tipoResultado === "Etapa" || tipoResultado.toLowerCase().includes("etapa"))) {
+                errorMsg += ` [AVISO: Esta es una carrera de un día pero se ha subido con el tipo "${tipoResultado}". Las carreras de un día deben registrarse con el tipo "Clasificación final" en el excel de resultados]`;
+            }
+            debugPts(0, errorMsg);
           }
-          debugPts(0, errorMsg);
       } else {
           const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : raceDateByName[norm(carrera)];
           const timestamp = raceDateStr ? new Date(raceDateStr).getTime() : 0;

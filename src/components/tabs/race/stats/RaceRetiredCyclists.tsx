@@ -13,9 +13,10 @@ export const RaceRetiredCyclists = ({
   onDownloadImage,
   tableRef,
 }: any) => {
-  if (!retiredCyclists || retiredCyclists.length === 0) return null;
+  // Always render the table so it's visible even when empty
+  // if (!retiredCyclists || retiredCyclists.length === 0) return null;
 
-  const maxRetiredPoints = Math.max(...retiredCyclists.map((c: any) => c.racePoints), 1);
+  const maxRetiredPoints = retiredCyclists && retiredCyclists.length > 0 ? Math.max(...retiredCyclists.map((c: any) => c.racePoints), 1) : 1;
   const getRetiredPointsColor = (points: number) => {
     if (points === 0) return { bg: '#fee2e2', text: '#991b1b' };
     if (maxRetiredPoints <= 1) return { bg: `hsl(30, 80%, 75%)`, text: "#000000" };
@@ -61,7 +62,14 @@ export const RaceRetiredCyclists = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                {retiredCyclists.map((c: any, idx: number) => {
+                {(!retiredCyclists || retiredCyclists.length === 0) && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-neutral-500 font-medium text-sm">
+                      No hay abandonos en esta carrera
+                    </td>
+                  </tr>
+                )}
+                {retiredCyclists && retiredCyclists.map((c: any, idx: number) => {
                   const ptosColor = getRetiredPointsColor(typeof c.racePoints === 'number' ? c.racePoints : 0);
                   return (
                     <tr key={idx} className="hover:bg-red-50/30 transition-colors">

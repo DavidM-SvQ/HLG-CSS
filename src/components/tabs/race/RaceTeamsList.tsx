@@ -16,6 +16,40 @@ interface RaceTeamsListProps {
   maxRacePartialWins: number;
 }
 
+// Simple number counter component
+const Counter = ({ value, duration = 1.5, animationsEnabled = true }: { value: number, duration?: number, animationsEnabled?: boolean }) => {
+  const [count, setCount] = useState(0);
+  
+  React.useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (!animationsEnabled || start === end) {
+      setCount(end);
+      return;
+    }
+    
+    let startTimestamp: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
+      
+      // easeOutQuart
+      const easeProgress = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeProgress * (end - start) + start));
+      
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        setCount(end);
+      }
+    };
+    
+    window.requestAnimationFrame(step);
+  }, [value, duration, animationsEnabled]);
+
+  return <span>{count}</span>;
+};
+
 export const RaceTeamsList = ({
   rankedTeams,
   maxUniqueCyclists,
@@ -96,40 +130,6 @@ export const RaceTeamsList = ({
     ) : (
       <span className="ml-1 text-[10px] text-blue-400">↓</span>
     );
-  };
-
-  // Simple number counter component
-  const Counter = ({ value, duration = 1.5 }: { value: number, duration?: number }) => {
-    const [count, setCount] = useState(0);
-    
-    React.useEffect(() => {
-      let start = 0;
-      const end = value;
-      if (!animationsEnabled || start === end) {
-        setCount(end);
-        return;
-      }
-      
-      let startTimestamp: number | null = null;
-      const step = (timestamp: number) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
-        
-        // easeOutQuart
-        const easeProgress = 1 - Math.pow(1 - progress, 4);
-        setCount(Math.floor(easeProgress * (end - start) + start));
-        
-        if (progress < 1) {
-          window.requestAnimationFrame(step);
-        } else {
-          setCount(end);
-        }
-      };
-      
-      window.requestAnimationFrame(step);
-    }, [value, duration, animationsEnabled]);
-
-    return <span>{count}</span>;
   };
 
   return (
@@ -245,7 +245,7 @@ export const RaceTeamsList = ({
                       <td className="px-4 py-3 relative z-10">
                         <div className="flex flex-col">
                           <span className="font-bold text-neutral-900 leading-tight text-xs flex items-center gap-2">
-                            {team.nombreEquipo} <span className="font-mono tabular-nums opacity-60">#{team.orden}</span>
+                            {team.nombreEquipo} <span className="font-mono tabular-nums opacity-60">[#{team.orden}]</span>
                           </span>
                         </div>
                       </td>
@@ -285,7 +285,7 @@ export const RaceTeamsList = ({
                         }
                       >
                         {(team as any).racePartialWins > 0
-                          ? <Counter value={(team as any).racePartialWins} />
+                          ? <Counter value={(team as any).racePartialWins} animationsEnabled={animationsEnabled} />
                           : "-"}
                       </td>
                       <td className="px-4 py-3 text-center font-mono tabular-nums text-xs border-l border-neutral-100 text-neutral-600 relative z-10">
@@ -307,7 +307,7 @@ export const RaceTeamsList = ({
                           color: "#000000",
                         }}
                       >
-                        <Counter value={team.totalPoints} />
+                        <Counter value={team.totalPoints} animationsEnabled={animationsEnabled} />
                       </td>
                     </RowComponent>
                   </React.Fragment>

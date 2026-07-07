@@ -115,7 +115,8 @@ export const FirstCyclingImporter = () => {
 
         if (cols.length > 2) {
            for (let i = 0; i < cols.length; i++) {
-               if (cols[i].match(/^[0-9]+$/) && !pos) {
+               const isRetired = ["DNF", "DNS", "OTL", "DSQ", "OOT"].includes(cols[i].toUpperCase());
+               if ((cols[i].match(/^[0-9]+$/) || isRetired) && !pos) {
                    pos = cols[i];
                } else if (cols[i].match(/[a-zA-Z]/) && !name) {
                    name = cols[i];
@@ -127,7 +128,7 @@ export const FirstCyclingImporter = () => {
            }
         } else {
            // Fallback
-           const normalMatch = line.match(/^(\d+)\s+(?:\d+|-)?\s+(.+?)(?:\t|\s{2,}|\s+-|$)/);
+           const normalMatch = line.match(/^(\d+|DNF|DNS|OTL|DSQ|OOT)\s+(?:\d+|-)?\s+(.+?)(?:\t|\s{2,}|\s+-|$)/i);
            if (normalMatch) {
              pos = normalMatch[1];
              name = normalMatch[2].trim();

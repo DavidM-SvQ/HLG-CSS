@@ -3,8 +3,10 @@ import { Users, X } from "lucide-react";
 import { ReportCard } from "../../../ui/ReportCard";
 import { cn } from "../../../../lib/utils";
 import { VirtualizedTableBody } from "../../../ui/VirtualizedTableBody";
-import { getCyclistAvatar } from "../../../../lib/utils/teamColors";
 import { useDataStore } from "../../../../lib/stores/useDataStore";
+import { useComputedStore } from "../../../../lib/stores/useComputedStore";
+import { getCyclistAvatar } from "../../../../lib/utils/teamColors";
+import { User } from "lucide-react";
 
 export const RaceCyclistsTable = ({
   raceCyclists,
@@ -20,6 +22,7 @@ export const RaceCyclistsTable = ({
   tableRef,
 }: any) => {
   const { files } = useDataStore();
+  const { cyclistMetadata } = useComputedStore();
   const configuracionData = files.configuracion?.data || [];
   
   const getValue = (key: string, defaultValue: any) => {

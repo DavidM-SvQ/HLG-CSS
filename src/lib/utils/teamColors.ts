@@ -1,3 +1,5 @@
+import { useComputedStore } from '../stores/useComputedStore';
+
 export function getTeamColor(teamName: string): string {
   if (!teamName) return "#cbd5e1"; // slate-300 default
 
@@ -91,7 +93,11 @@ export function getTeamGradient(teamName: string): string {
 
 export function getCyclistAvatar(cyclistName: string): string {
   if (!cyclistName) return "";
-  const seed = encodeURIComponent(cyclistName);
-  return `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=e2e8f0`;
+  const meta = useComputedStore.getState().cyclistMetadata[cyclistName];
+  if (meta?.foto) return meta.foto;
+  
+  // Generic user silhouette SVG data URI
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 

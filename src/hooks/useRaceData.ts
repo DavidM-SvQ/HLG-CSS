@@ -548,33 +548,71 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                 const isStageRace = finalColumns.some((c) => /^\d+/.test(c.formatted)) || finalColumns.length > 1;
                 const retiredCyclists: { ciclista: string, status: string, etapa: string, ronda: string, equipo: string, orden: string, tempPoints: number, racePoints: number }[] = [];
                 
-                if (isStageRace) {
-                    const processed = new Set();
-                    allRaceResults.forEach(r => {
-                        const posStr = (getVal(r, "Pos") || getVal(r, "Posición"))?.toString().trim().toUpperCase() || "";
-                        const isRetired = retiredStrings.some(rs => posStr.includes(rs));
-                        const cyclistName = getVal(r, "Ciclista")?.toString().trim();
-                        const statusVal = retiredStrings.find(rs => posStr.includes(rs)) || posStr;
-                        
-                        if (isRetired && cyclistName && !processed.has(cyclistName)) {
-                          const info = cyclistToInfo.get(cyclistName);
-                          if(info && info.equipo !== "No draft" && info.equipo !== "No draft [99]" && info.equipo !== "Libre" && info.equipo !== "") {
-                              retiredCyclists.push({
-                                  ciclista: cyclistName,
-                                  ronda: info.ronda,
-                                  equipo: info.equipo,
-                                  orden: info.orden,
-                                  tempPoints: info.tempPoints,
-                                  racePoints: info.racePoints,
-                                  status: statusVal,
-                                  etapa: getVal(r, "Etapa")?.toString() || ""
-                              });
-                              processed.add(cyclistName);
-                          }
+                const uniquePlayers = [
+                  ...new Set(
+                    files.elecciones?.data
+                      ?.map((r: any) => getVal(r, "Nombre_TG")?.trim())
+                      .filter(Boolean)
+                  )
+                ] as string[];
+                const numPlayers = uniquePlayers.length;
+
+                const playerInfoMap = new Map<string, { nombreEquipo: string, orden: string }>();
+                leaderboard?.forEach((p) => {
+                  playerInfoMap.set(p.jugador, {
+                    nombreEquipo: p.nombreEquipo,
+                    orden: p.orden
+                  });
+                });
+
+                const cyclistDraftInfo = new Map<string, { equipo: string, orden: string, ronda: string }>();
+                files.elecciones?.data?.forEach((row: any, idx: number) => {
+                    const ciclista = String(getVal(row, "Ciclista") || "").trim();
+                    const jugador = String(getVal(row, "Nombre_TG") || getVal(row, "Jugador") || getVal(row, "Manager") || "").trim();
+                    
+                    if (ciclista && jugador) {
+                        let ronda = String(getVal(row, "Ronda") || "").trim();
+                        if (!ronda && numPlayers > 0) {
+                            ronda = (Math.floor(idx / numPlayers) + 1).toString().padStart(2, "0");
+                        } else if (ronda) {
+                            ronda = ronda.padStart(2, "0");
                         }
-                    });
-                    retiredCyclists.sort((a,b) => a.equipo.localeCompare(b.equipo));
-                }
+
+                        const pInfo = playerInfoMap.get(jugador);
+                        const equipo = pInfo?.nombreEquipo || String(getVal(row, "Nombre_Equipo") || getVal(row, "Equipo") || jugador).trim();
+                        const orden = pInfo?.orden || (uniquePlayers.indexOf(jugador) + 1).toString().padStart(2, "0");
+
+                        if (equipo && equipo !== "No draft" && equipo !== "No draft [99]" && !equipo.toLowerCase().includes("libre")) {
+                            cyclistDraftInfo.set(ciclista, { equipo, orden, ronda });
+                        }
+                    }
+                });
+
+                const processed = new Set();
+                allRaceResults.forEach(r => {
+                    const posStr = (getVal(r, "Pos") || getVal(r, "Posición"))?.toString().trim().toUpperCase() || "";
+                    const isRetired = retiredStrings.some(rs => posStr.includes(rs));
+                    const cyclistName = getVal(r, "Ciclista")?.toString().trim();
+                    const statusVal = retiredStrings.find(rs => posStr.includes(rs)) || posStr;
+                    
+                    if (isRetired && cyclistName && !processed.has(cyclistName)) {
+                      const draftInfo = cyclistDraftInfo.get(cyclistName);
+                      const info = cyclistToInfo.get(cyclistName) || { tempPoints: 0, racePoints: 0 };
+                      
+                      retiredCyclists.push({
+                          ciclista: cyclistName,
+                          ronda: draftInfo?.ronda || "Libre",
+                          equipo: draftInfo?.equipo || "Libre",
+                          orden: draftInfo?.orden || "99",
+                          tempPoints: info.tempPoints || 0,
+                          racePoints: info.racePoints || 0,
+                          status: statusVal,
+                          etapa: getVal(r, "Etapa")?.toString() || ""
+                      });
+                      processed.add(cyclistName);
+                    }
+                });
+                retiredCyclists.sort((a,b) => a.equipo.localeCompare(b.equipo));
 
     return {
       raceTeams,

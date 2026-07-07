@@ -90,9 +90,11 @@ export const AdminDatosV2Tab = () => {
           });
         if (error) {
           console.error("Error al guardar URLs en Supabase:", error);
+          throw new Error(`Error Supabase: ${error.message || JSON.stringify(error)}`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error al guardar URLs en Supabase:", err);
+        throw new Error(err.message || "Error al guardar URLs en Supabase");
       }
     }
   };
@@ -103,11 +105,13 @@ export const AdminDatosV2Tab = () => {
 
   const extractCsvExportUrl = (url: string) => {
     // Convierte https://docs.google.com/spreadsheets/d/123...456/edit#gid=0 
-    // a https://docs.google.com/spreadsheets/d/123...456/gviz/tq?tqx=out:csv&gid=0
+    // a https://docs.google.com/spreadsheets/d/123...456/export?format=csv&gid=0
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return url;
     
-    let csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/gviz/tq?tqx=out:csv`;
+    // We use /export instead of /gviz/tq to prevent Google Sheets from automatically 
+    // casting columns with mostly numbers to numeric, which silently drops strings like "DNF"
+    let csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
     
     // extraemos el gid si existe para descargar la hoja correcta
     const gidMatch = url.match(/gid=([0-9]+)/);
@@ -145,6 +149,21 @@ export const AdminDatosV2Tab = () => {
     return base;
   };
 
+  const cleanCsvText = (text: string): string => {
+    const lines = text.split("\n");
+    let startIndex = 0;
+    while (startIndex < lines.length) {
+      const line = lines[startIndex].trim();
+      // Si la línea está completamente vacía o contiene solo comas y espacios, es una fila vacía y la saltamos
+      if (line === "" || /^[,\s]*$/.test(line)) {
+        startIndex++;
+      } else {
+        break;
+      }
+    }
+    return lines.slice(startIndex).join("\n");
+  };
+
   const syncSheet = async (id: string, showAlert: boolean = true, skipStateUpdate: boolean = false) => {
     const url = sheetUrls[id];
     if (!url) return null;
@@ -153,7 +172,8 @@ export const AdminDatosV2Tab = () => {
     let rowCount = 0;
     try {
       const csvUrl = extractCsvExportUrl(url);
-      const res = await fetch(csvUrl);
+      const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(csvUrl)}`;
+      const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error("Fallo al descargar el archivo. ¿Está configurado como Público?");
       const text = await res.text();
       
@@ -161,7 +181,9 @@ export const AdminDatosV2Tab = () => {
         throw new Error("El enlace devuelve una página web en lugar de un CSV. Asegúrate de que el documento es público para todos.");
       }
       
-      const parseResult = parse(text, {
+      const cleanedText = cleanCsvText(text);
+      
+      const parseResult = parse(cleanedText, {
         header: true,
         dynamicTyping: false,
         skipEmptyLines: true,
@@ -177,7 +199,7 @@ export const AdminDatosV2Tab = () => {
       }
       
       const newData = { 
-         file: new File([text], `${id}.csv`, { type: 'text/csv' }),
+         file: new File([cleanedText], `${id}.csv`, { type: 'text/csv' }),
          data: parseResult.data as any,
          error: null,
          loading: false
@@ -189,18 +211,22 @@ export const AdminDatosV2Tab = () => {
 
       if (isSupabaseConfigured) {
         try {
+          // PostgreSQL JSONB no soporta null bytes (\u0000)
+          const safeData = JSON.parse(JSON.stringify(parseResult.data).replace(/\\u0000/g, ''));
           const { error } = await supabase
             .from("global_files")
             .upsert({
               id,
-              data: parseResult.data,
+              data: safeData,
               updated_at: new Date().toISOString()
             });
           if (error) {
             console.error("Error al guardar en Supabase:", error);
+            throw new Error(`Error Supabase al guardar ${id}: ${error.message || JSON.stringify(error)}`);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error al guardar en Supabase:", err);
+          throw new Error(err.message || "Error al guardar en Supabase");
         }
       }
 
