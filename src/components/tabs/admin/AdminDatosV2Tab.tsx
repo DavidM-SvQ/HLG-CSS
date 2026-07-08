@@ -15,7 +15,7 @@ export const AdminDatosV2Tab = () => {
   const { files, updateFile } = useDataStore();
   const { leaderboard, cyclistMetadata, unassignedPointsLog, assignedPointsLog, debugLastRows, playerByCyclist } = useComputedStore();
   const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
-  const [expandedIframes, setExpandedIframes] = useState<Record<string, boolean>>({ resultados: true });
+  const [expandedIframes, setExpandedIframes] = useState<Record<string, boolean>>({});
   
   // Guardamos las URLs de los Google Sheets publicos (CSV export format or standard)
   const [sheetUrls, setSheetUrls] = useState<Record<string, string>>({});
@@ -305,8 +305,6 @@ export const AdminDatosV2Tab = () => {
     }
     if (errors.length > 0) {
        msg += ` Errores: ${errors.join(' | ')}`;
-    } else {
-       setTimeout(() => setSyncStatusMsg(""), 5000);
     }
     setSyncStatusMsg(msg);
   };
@@ -314,9 +312,6 @@ export const AdminDatosV2Tab = () => {
   const forceRecalculate = () => {
     useDataStore.getState().setFiles(prev => ({ ...prev }));
     setSyncStatusMsg("Puntos y clasificaciones recalculados con éxito.");
-    setTimeout(() => {
-      setSyncStatusMsg((current) => current === "Puntos y clasificaciones recalculados con éxito." ? "" : current);
-    }, 4000);
   };
 
   return (
@@ -408,11 +403,11 @@ export const AdminDatosV2Tab = () => {
         </div>
         
         <div className="mt-8 flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200">
-          <Button onClick={syncAll} className="gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg w-full sm:w-auto h-auto">
+          <Button type="button" onClick={syncAll} className="gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg w-full sm:w-auto h-auto">
             <RefreshCcw className="w-5 h-5" />
             Sincronizar Todas las Tablas
           </Button>
-          <Button onClick={forceRecalculate} variant="outline" className="gap-2 py-6 text-lg w-full sm:w-auto h-auto">
+          <Button type="button" onClick={forceRecalculate} variant="outline" className="gap-2 py-6 text-lg w-full sm:w-auto h-auto">
             <Calculator className="w-5 h-5" />
             Refrescar Puntos Calculados
           </Button>

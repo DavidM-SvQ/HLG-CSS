@@ -597,18 +597,21 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
                     
                     if (isRetired && cyclistName && !processed.has(cyclistName)) {
                       const draftInfo = cyclistDraftInfo.get(cyclistName);
+                      const equipo = draftInfo?.equipo || "Libre";
                       const info = cyclistToInfo.get(cyclistName) || { tempPoints: 0, racePoints: 0 };
                       
-                      retiredCyclists.push({
-                          ciclista: cyclistName,
-                          ronda: draftInfo?.ronda || "Libre",
-                          equipo: draftInfo?.equipo || "Libre",
-                          orden: draftInfo?.orden || "99",
-                          tempPoints: info.tempPoints || 0,
-                          racePoints: info.racePoints || 0,
-                          status: statusVal,
-                          etapa: getVal(r, "Etapa")?.toString() || ""
-                      });
+                      if (equipo !== "Libre" && equipo !== "No draft") {
+                        retiredCyclists.push({
+                            ciclista: cyclistName,
+                            ronda: draftInfo?.ronda || "Libre",
+                            equipo: draftInfo?.equipo || "Libre",
+                            orden: draftInfo?.orden || "99",
+                            tempPoints: info.tempPoints || 0,
+                            racePoints: info.racePoints || 0,
+                            status: statusVal,
+                            etapa: getVal(r, "Etapa")?.toString() || ""
+                        });
+                      }
                       processed.add(cyclistName);
                     }
                 });
