@@ -212,7 +212,21 @@ export const AdminDatosV2Tab = () => {
       if (isSupabaseConfigured) {
         try {
           // PostgreSQL JSONB no soporta null bytes (\u0000)
-          const safeData = JSON.parse(JSON.stringify(parseResult.data).replace(/\\u0000/g, ''));
+          let safeData = JSON.parse(JSON.stringify(parseResult.data).replace(/\\u0000/g, ''));
+          
+          if (id === "resultados") {
+            const neededColumns = ["Ciclista", "Carrera", "Tipo", "Etapa", "Posición", "Pos", "Fecha", "Equipo", "Nacido", "País", "Pais"];
+            safeData = safeData.map(row => {
+               const newRow = {};
+               for (const col of neededColumns) {
+                  if (row[col] !== undefined && row[col] !== null && row[col] !== "") {
+                     newRow[col] = row[col];
+                  }
+               }
+               return newRow;
+            }).filter(row => row["Ciclista"] && (row["Posición"] || row["Pos"]));
+          }
+          
           const { error } = await supabase
             .from("global_files")
             .upsert({
