@@ -109,19 +109,48 @@ export const RaceStageBreakdown = ({
                         const pts = team.pointsByCol[col.formatted] || 0;
                         const isMax =
                           pts > 0 && pts === maxPointsByCol[col.formatted];
+                        const details = team.pointsDetailByCol?.[col.formatted] || [];
                         return (
                           <td
                             key={col.formatted}
                             className={cn(
-                              "px-1.5 py-1 text-center font-mono tabular-nums border-r border-neutral-50 text-[10px]",
+                              "relative px-1.5 py-1 text-center font-mono tabular-nums border-r border-neutral-50 text-[10px]",
+                              pts > 0 ? "cursor-pointer group/cell" : "",
                               isMax
                                 ? "bg-yellow-100 font-bold text-yellow-800"
                                 : pts > 0
-                                ? "text-neutral-700"
+                                ? "text-neutral-700 hover:bg-neutral-100"
                                 : "text-neutral-200"
                             )}
                           >
-                            {pts > 0 ? pts : "-"}
+                            {pts > 0 ? (
+                              <>
+                                <span>{pts}</span>
+                                {details.length > 0 && (
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cell:block z-30 bg-neutral-900 text-neutral-100 p-2.5 rounded-lg shadow-xl text-xs font-sans tracking-normal font-normal text-left min-w-[200px] border border-neutral-700 pointer-events-none">
+                                    <div className="font-semibold text-[11px] text-neutral-300 border-b border-neutral-700 pb-1 mb-1.5 flex justify-between gap-2">
+                                      <span>{col.formatted}</span>
+                                      <span className="text-amber-400 font-mono">+{pts} pts</span>
+                                    </div>
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                      {details.map((d: any, dIdx: number) => (
+                                        <div key={dIdx} className="flex justify-between items-center gap-3 text-[10px]">
+                                          <span className="truncate max-w-[130px] font-medium text-white">
+                                            {d.ciclista}
+                                          </span>
+                                          <span className="font-mono text-[9px] text-neutral-400 shrink-0">
+                                            {d.posicion ? `Pos ${d.posicion}` : ""} (+{d.puntos})
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-neutral-900 rotate-45 border-r border-b border-neutral-700"></div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              "-"
+                            )}
                           </td>
                         );
                       })}

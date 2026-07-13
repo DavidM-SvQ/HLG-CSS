@@ -11,6 +11,8 @@ export interface RaceViewProps {
   isAdminReport?: boolean;
 }
 
+import { ErrorBoundary } from "../ErrorBoundary";
+
 export const RaceView = (props: RaceViewProps) => {
   const { isAdminReport = false } = props;
   const { files } = useDataStore();
@@ -42,6 +44,7 @@ export const RaceView = (props: RaceViewProps) => {
   const { containerClasses, themeBadge } = getRaceTheme(selectedRace, isThemesEnabled);
 
   return (
+    <ErrorBoundary>
       <div className={`border rounded-2xl shadow-sm p-6 relative transition-colors duration-500 ${containerClasses}`}>
         {themeBadge}
         <div className="relative z-10">
@@ -67,5 +70,6 @@ export const RaceView = (props: RaceViewProps) => {
           )}
         </div>
       </div>
-    );
+    </ErrorBoundary>
+  );
 };

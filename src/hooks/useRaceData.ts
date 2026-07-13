@@ -224,8 +224,9 @@ export function useRaceData(
                 const teamStagePoints = rankedTeams
                   .map((team) => {
                     const pointsByCol: Record<string, number> = {};
+                    const pointsDetailByCol: Record<string, { ciclista: string; puntos: number; posicion?: string; tipoResultado?: string }[]> = {};
                     finalColumns.forEach((col) => {
-                      pointsByCol[col.formatted] = team.details
+                      const matchedDetails = team.details
                         .filter((d) => {
                           const dFormatted = formatTipoResultado(d.tipoResultado);
                           const dStageNum = d.etapa || dFormatted;
@@ -241,8 +242,19 @@ export function useRaceData(
                           
                           return dFormatted.toString().trim() === col.formatted.toString().trim() || 
                                  d.tipoResultado.toString().trim() === col.originalTipo?.toString().trim();
-                        })
-                        .reduce((sum, d) => sum + d.puntosObtenidos, 0);
+                        });
+
+                      pointsByCol[col.formatted] = matchedDetails.reduce((sum, d) => sum + d.puntosObtenidos, 0);
+                      
+                      pointsDetailByCol[col.formatted] = matchedDetails
+                        .filter((d) => d.puntosObtenidos > 0)
+                        .map((d) => ({
+                          ciclista: d.ciclista,
+                          puntos: d.puntosObtenidos,
+                          posicion: d.posicion ? String(d.posicion).trim() : undefined,
+                          tipoResultado: d.tipoResultado,
+                        }))
+                        .sort((a, b) => b.puntos - a.puntos);
                     });
                     return {
                       jugador: team.jugador,
@@ -253,6 +265,7 @@ export function useRaceData(
                       isTied: team.isTied,
                       uniqueCyclists: team.uniqueCyclists,
                       pointsByCol,
+                      pointsDetailByCol,
                     };
                   })
                   .filter(

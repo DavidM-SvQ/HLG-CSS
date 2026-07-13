@@ -3,6 +3,7 @@ import { RaceAdminReport } from "./RaceAdminReport";
 import { RacePodium } from "./RacePodium";
 import { RaceTeamsList } from "./RaceTeamsList";
 import { RaceStats } from "./RaceStats";
+import { RaceAnalysis } from "./RaceAnalysis";
 
 export interface RaceResultsProps {
   isAdminReport: boolean;
@@ -71,6 +72,12 @@ export const RaceResults = ({
         maxPointsByCol={maxPointsByCol}
         retiredCyclists={retiredCyclists}
         raceTeams={raceTeams}
+        selectedRace={selectedRace}
+        leaderboard={leaderboard}
+      />
+
+      <RaceAnalysis
+        raceDataObj={raceDataObj}
         selectedRace={selectedRace}
         leaderboard={leaderboard}
       />
