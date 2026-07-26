@@ -56,7 +56,7 @@ export function TeamWinsRankingChart() {
                     cursor={{ fill: "#f5f5f5" }}
                     content={(props) => <ChartTooltip {...props} />}
                   />
-                  <Bar dataKey="wins" radius={[0, 4, 4, 0]} barSize={24}>
+                  <Bar dataKey="wins" isAnimationActive={false} radius={[0, 4, 4, 0]} barSize={24}>
                     {teamWinsRankingData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.wins > 0 && entry.wins === maxChartWins ? "#fbbf24" : "#3b82f6"} />
                     ))}
@@ -98,7 +98,7 @@ export function TeamWinsRankingChart() {
                         <XAxis type="number" hide />
                         <YAxis dataKey="name" type="category" width={200} tick={{ fontSize: 14, fontWeight: 600, fill: "#404040" }} />
                         <Tooltip cursor={{ fill: "#f8fafc" }} content={(props) => <ChartTooltip {...props} />} />
-                        <Bar dataKey="wins" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
+                        <Bar dataKey="wins" isAnimationActive={false} fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
                           <LabelList dataKey="wins" position="right" style={{ fill: "#1d4ed8", fontWeight: 800, fontSize: 16 }} />
                         </Bar>
                       </BarChart>

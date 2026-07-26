@@ -30,8 +30,15 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
     const val = searchParams.get(key);
     if (val !== null) {
       if (Array.isArray(initialValueRef.current)) {
-        if (val.trim() === "") return [] as unknown as T;
-        return val.split(",").filter(v => v.trim() !== "") as unknown as T;
+        if (val.trim() === "") {
+          if (Array.isArray(stateRef.current) && stateRef.current.length === 0) return stateRef.current;
+          return [] as unknown as T;
+        }
+        const arr = val.split(",").filter(v => v.trim() !== "") as unknown as T;
+        if (JSON.stringify(arr) === JSON.stringify(stateRef.current)) {
+          return stateRef.current;
+        }
+        return arr;
       }
       if (typeof initialValueRef.current === "number") {
         if (val.trim() === "") return initialValueRef.current;
@@ -42,9 +49,13 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
       if (typeof initialValueRef.current === "boolean") {
         return (val === "true") as unknown as T;
       }
-      if (typeof initialValueRef.current === "object") {
+      if (typeof initialValueRef.current === "object" && initialValueRef.current !== null) {
         try {
-          return JSON.parse(val) as T;
+          const parsed = JSON.parse(val) as T;
+          if (JSON.stringify(parsed) === JSON.stringify(stateRef.current)) {
+            return stateRef.current;
+          }
+          return parsed;
         } catch {
           return initialValueRef.current;
         }

@@ -67,8 +67,10 @@ export const expandNodeForCapture = (element: HTMLElement) => {
 
   targets.forEach((node) => {
     node.style.setProperty('max-height', 'none', 'important');
-    node.style.setProperty('min-height', '0px', 'important');
-    node.style.setProperty('height', 'auto', 'important');
+    if (!node.querySelector('.recharts-wrapper') && !node.closest('.recharts-wrapper') && !node.querySelector('canvas')) {
+      node.style.setProperty('min-height', '0px', 'important');
+      node.style.setProperty('height', 'auto', 'important');
+    }
     node.style.setProperty('overflow-y', 'visible', 'important');
     node.style.setProperty('overflow-x', 'visible', 'important');
     node.style.setProperty('overflow', 'visible', 'important');
@@ -93,6 +95,32 @@ export const expandNodeForCapture = (element: HTMLElement) => {
   const isChart = element.querySelector('.recharts-wrapper') !== null;
   
   element.classList.add('is-exporting');
+  
+  // Force SVG clip-paths and masks to be removed during export
+  // modern-screenshot sometimes fails to resolve local svg URL references
+  const svgElements = Array.from(element.querySelectorAll('svg'));
+  const originalSvgStyles = [];
+  
+  svgElements.forEach(svg => {
+    const paths = Array.from(svg.querySelectorAll<HTMLElement>('*'));
+    paths.forEach(node => {
+      originalSvgStyles.push({
+        node,
+        clipPath: node.style.clipPath,
+        mask: node.style.mask,
+        clipPathAttr: node.getAttribute('clip-path'),
+        maskAttr: node.getAttribute('mask'),
+        strokeDasharray: node.style.strokeDasharray,
+        strokeDashoffset: node.style.strokeDashoffset,
+      });
+      node.style.setProperty('clip-path', 'none', 'important');
+      node.style.setProperty('mask', 'none', 'important');
+      node.style.setProperty('stroke-dasharray', 'none', 'important');
+      node.style.setProperty('stroke-dashoffset', '0', 'important');
+      node.removeAttribute('clip-path');
+      node.removeAttribute('mask');
+    });
+  });
 
   // To avoid huge whitespace on table exports, we can shrink-wrap it to max-content
   element.style.setProperty('display', 'inline-flex', 'important');
@@ -174,5 +202,14 @@ export const expandNodeForCapture = (element: HTMLElement) => {
       styleObj.node.style.flexShrink = styleObj.flexShrink;
     });
     element.classList.remove('is-exporting');
+    
+    originalSvgStyles.forEach((styleObj) => {
+      styleObj.node.style.clipPath = styleObj.clipPath;
+      styleObj.node.style.mask = styleObj.mask;
+      styleObj.node.style.strokeDasharray = styleObj.strokeDasharray;
+      styleObj.node.style.strokeDashoffset = styleObj.strokeDashoffset;
+      if (styleObj.clipPathAttr) styleObj.node.setAttribute('clip-path', styleObj.clipPathAttr);
+      if (styleObj.maskAttr) styleObj.node.setAttribute('mask', styleObj.maskAttr);
+    });
   };
 };

@@ -16,10 +16,10 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
       title={`Premio Panenkita ${monthsText ? ` [${monthsText}]` : ""}`}
       subtitle="(Puntos con elecciones R20 - R25)"
       icon={<Award />}
-      iconClassName="text-pink-500"
+      className="text-pink-500 mt-8 bg-pink-50 border-pink-100"
       filename="premio-panenkita"
       ref={ref8}
-      className="mt-8 bg-pink-50 border-pink-100"
+      
       bodyClassName="bg-transparent p-6 pt-2 border-t-0"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -28,7 +28,6 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           filename="mejores-equipos-panenkita"
           ref={ref9}
           className="lg:col-span-3 border-pink-200 shadow-sm"
-          titleClassName="text-pink-800 text-sm"
           bodyClassName="p-0 border-t border-pink-100"
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-x-auto w-full crosshair-container">
@@ -62,7 +61,6 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
           filename="top-50-panenkitas"
           ref={ref10}
           className="lg:col-span-5 border-pink-200 shadow-sm"
-          titleClassName="text-pink-800 text-sm"
           bodyClassName="p-0 border-t border-pink-100 h-full"
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-y-auto w-full crosshair-container h-full">
@@ -101,7 +99,6 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
               filename={`elecciones-equipo-panenkita-${idx}`}
               ref={idx === 0 ? ref11 : null}
               className="border-pink-200 shadow-sm"
-              titleClassName="text-pink-800 text-sm truncate w-full"
               bodyClassName="p-0 border-t border-pink-100 flex flex-col"
             >
               <div className="table-responsive-wrapper overflow-y-auto w-full crosshair-container">
@@ -131,7 +128,6 @@ export const PanenkitaReport = ({ monthReportData, monthsText }: { monthReportDa
              <ReportCard
              title="Mejor Equipo Panenkita"
              className="border-pink-200 shadow-sm flex-1"
-             titleClassName="text-pink-800 text-sm truncate"
              bodyClassName="p-0 border-t border-pink-100 flex flex-col"
            >
              <div className="p-4 text-center text-pink-400 italic">

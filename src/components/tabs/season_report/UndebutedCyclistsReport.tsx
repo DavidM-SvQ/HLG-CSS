@@ -146,10 +146,10 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
       title={`Ciclistas sin debutar (${countFiltered})`}
       subtitle="Corredores arrastrados desde el draft que no han competido todavía este año."
       icon={<UserX />}
-      iconClassName="text-neutral-400"
+      className="text-neutral-400 mt-8"
       filename="ciclistas-sin-debutar"
       ref={undebutedTableRef}
-      className="mt-8"
+      
       toolbarProps={{
         isExpanded: isUndebutedExpanded,
         onExpand: () => setIsUndebutedExpanded(!isUndebutedExpanded),

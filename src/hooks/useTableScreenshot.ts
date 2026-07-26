@@ -14,6 +14,44 @@ export interface ScreenshotOptions {
   backgroundColor?: string;
 }
 
+const stripSvgForExport = (container: HTMLElement) => {
+  const svgs = Array.from(container.querySelectorAll('svg'));
+  const originalSvgStyles: any[] = [];
+  
+  svgs.forEach(svg => {
+    const elements = Array.from(svg.querySelectorAll('*'));
+    elements.forEach(el => {
+      const htmlEl = el as HTMLElement;
+      originalSvgStyles.push({
+        node: htmlEl,
+        clipPath: htmlEl.style.clipPath,
+        mask: htmlEl.style.mask,
+        clipPathAttr: htmlEl.getAttribute('clip-path'),
+        maskAttr: htmlEl.getAttribute('mask'),
+        strokeDasharray: htmlEl.style.strokeDasharray,
+        strokeDashoffset: htmlEl.style.strokeDashoffset,
+      });
+      htmlEl.style.setProperty('clip-path', 'none', 'important');
+      htmlEl.style.setProperty('mask', 'none', 'important');
+      htmlEl.style.setProperty('stroke-dasharray', 'none', 'important');
+      htmlEl.style.setProperty('stroke-dashoffset', '0', 'important');
+      htmlEl.removeAttribute('clip-path');
+      htmlEl.removeAttribute('mask');
+    });
+  });
+  
+  return () => {
+    originalSvgStyles.forEach((styleObj) => {
+      styleObj.node.style.clipPath = styleObj.clipPath;
+      styleObj.node.style.mask = styleObj.mask;
+      styleObj.node.style.strokeDasharray = styleObj.strokeDasharray;
+      styleObj.node.style.strokeDashoffset = styleObj.strokeDashoffset;
+      if (styleObj.clipPathAttr) styleObj.node.setAttribute('clip-path', styleObj.clipPathAttr);
+      if (styleObj.maskAttr) styleObj.node.setAttribute('mask', styleObj.maskAttr);
+    });
+  };
+};
+
 export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.RefObject<T>) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
@@ -30,6 +68,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     
     const tableContainer = ref.current;
     if (onBeforeCapture) onBeforeCapture(tableContainer);
+    
     // Expand node and add .is-exporting early so React effects can trigger during the wait
     const restore = expandNodeForCapture(tableContainer);
     
@@ -37,8 +76,10 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     
     // We measure scrollWidth after expanding
     const computedWidth = width || tableContainer.scrollWidth;
+    let restoreSvg = () => {};
     
     try {
+      restoreSvg = stripSvgForExport(tableContainer);
       const processCopy = async () => {
         const dataUrl = await domToDataUrl(tableContainer, {
           scale,
@@ -70,6 +111,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
         console.error("Fallback export failed", fallbackErr);
       }
     } finally {
+      restoreSvg();
       restore();
       if (onAfterCapture) onAfterCapture(tableContainer);
     }
@@ -87,8 +129,10 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
     await new Promise((resolve) => setTimeout(resolve, 300));
     
     const computedWidth = width || tableContainer.scrollWidth;
+    let restoreSvg = () => {};
     
     try {
+      restoreSvg = stripSvgForExport(tableContainer);
       const dataUrl = await domToDataUrl(tableContainer, {
         scale,
         backgroundColor,
@@ -107,6 +151,7 @@ export function useTableScreenshot<T extends HTMLElement>(externalRef?: React.Re
       console.error(err);
       setIsDownloading(false);
     } finally {
+      restoreSvg();
       restore();
       if (onAfterCapture) onAfterCapture(tableContainer);
     }

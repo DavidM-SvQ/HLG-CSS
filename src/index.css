@@ -200,3 +200,10 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+.is-exporting .recharts-layer, .is-exporting .recharts-area-area, .is-exporting .recharts-line-curve, .is-exporting path {
+  clip-path: none !important;
+}
+
+.is-exporting .recharts-layer, .is-exporting .recharts-area-area, .is-exporting .recharts-line-curve, .is-exporting path {
+  mask: none !important;
+}

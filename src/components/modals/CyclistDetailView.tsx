@@ -27,6 +27,9 @@ export interface CyclistDetailViewProps {
   playerTeamMap: Record<string, string>;
 }
 
+const DEFAULT_POS_FILTER = { op: "<=", val: "" };
+const DEFAULT_PTS_FILTER = { op: ">=", val: "" };
+
 export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   files,
   selectedCyclistDetail,
@@ -51,6 +54,10 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
   useEffect(() => {
     setLocalSearch(selectedCyclistDetail || "");
+    setLocalPosFilter(DEFAULT_POS_FILTER);
+    setLocalPointsFilterAdv(DEFAULT_PTS_FILTER);
+    setCyclistDetailPosFilter(DEFAULT_POS_FILTER);
+    setCyclistDetailPointsFilterAdv(DEFAULT_PTS_FILTER);
   }, [selectedCyclistDetail]);
 
   const [cyclistDetailSortCol, setCyclistDetailSortCol] = useUrlState<"fecha"|"carrera"|"categoria"|"tipo"|"etapa"|"posicion"|"puntos"|"ciclistaText"|"eqText"|"pos">("cyclistDetailSortCol", "fecha");
@@ -63,8 +70,8 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   const [selectedYear, setSelectedYear] = useUrlState<string>("cyclistDetailSelectedYear", new Date().getFullYear().toString());
   const [cyclistDetailCategoryFilter, setCyclistDetailCategoryFilter] = useUrlState<string[]>("cyclistDetailCategoryFilter", []);
   const [cyclistDetailTypeFilter, setCyclistDetailTypeFilter] = useUrlState<string[]>("cyclistDetailTypeFilter", []);
-  const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useUrlState<{ op: string; val: string }>("cyclistDetailPosFilter", { op: "<=", val: "" });
-  const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useUrlState<{ op: string; val: string }>("cyclistDetailPointsFilterAdv", { op: ">=", val: "" });
+  const [cyclistDetailPosFilter, setCyclistDetailPosFilter] = useUrlState<{ op: string; val: string }>("cyclistDetailPosFilter", DEFAULT_POS_FILTER);
+  const [cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv] = useUrlState<{ op: string; val: string }>("cyclistDetailPointsFilterAdv", DEFAULT_PTS_FILTER);
 
   const [localPosFilter, setLocalPosFilter] = useState<{ op: string; val: string }>(cyclistDetailPosFilter);
   const [localPointsFilterAdv, setLocalPointsFilterAdv] = useState<{ op: string; val: string }>(cyclistDetailPointsFilterAdv);
@@ -73,28 +80,16 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
   const debouncedPointsFilterAdv = useDebounce(localPointsFilterAdv, 400);
 
   useEffect(() => {
-    if (JSON.stringify(debouncedPosFilter) !== JSON.stringify(cyclistDetailPosFilter)) {
+    if (debouncedPosFilter.op !== cyclistDetailPosFilter.op || debouncedPosFilter.val !== cyclistDetailPosFilter.val) {
       setCyclistDetailPosFilter(debouncedPosFilter);
     }
-  }, [debouncedPosFilter, cyclistDetailPosFilter, setCyclistDetailPosFilter]);
+  }, [debouncedPosFilter.op, debouncedPosFilter.val, cyclistDetailPosFilter.op, cyclistDetailPosFilter.val, setCyclistDetailPosFilter]);
 
   useEffect(() => {
-    if (JSON.stringify(debouncedPointsFilterAdv) !== JSON.stringify(cyclistDetailPointsFilterAdv)) {
+    if (debouncedPointsFilterAdv.op !== cyclistDetailPointsFilterAdv.op || debouncedPointsFilterAdv.val !== cyclistDetailPointsFilterAdv.val) {
       setCyclistDetailPointsFilterAdv(debouncedPointsFilterAdv);
     }
-  }, [debouncedPointsFilterAdv, cyclistDetailPointsFilterAdv, setCyclistDetailPointsFilterAdv]);
-
-  useEffect(() => {
-    if (JSON.stringify(cyclistDetailPosFilter) !== JSON.stringify(localPosFilter)) {
-      setLocalPosFilter(cyclistDetailPosFilter);
-    }
-  }, [cyclistDetailPosFilter, localPosFilter]);
-
-  useEffect(() => {
-    if (JSON.stringify(cyclistDetailPointsFilterAdv) !== JSON.stringify(localPointsFilterAdv)) {
-      setLocalPointsFilterAdv(cyclistDetailPointsFilterAdv);
-    }
-  }, [cyclistDetailPointsFilterAdv, localPointsFilterAdv]);
+  }, [debouncedPointsFilterAdv.op, debouncedPointsFilterAdv.val, cyclistDetailPointsFilterAdv.op, cyclistDetailPointsFilterAdv.val, setCyclistDetailPointsFilterAdv]);
 
   const handleSort = (col: any) => {
     if (cyclistDetailSortCol === col) {
@@ -245,7 +240,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
           if (ronda !== "-") {
             const cyclistsInRound = Object.keys(cyclistRoundMap).filter(c => cyclistRoundMap[c] === ronda);
             if (cyclistsInRound.length > 0) {
-              const sortedByPoints = cyclistsInRound.sort((a, b) => {
+              const sortedByPoints = [...cyclistsInRound].sort((a, b) => {
                 const ptsA = (cyclistMetadata[a]?.puntosTotales) || 0;
                 const ptsB = (cyclistMetadata[b]?.puntosTotales) || 0;
                 return ptsB - ptsA;
@@ -334,6 +329,33 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
               }
             }
             return true;
+          });
+
+          filteredItems.sort((a, b) => {
+            let valA: any = a[cyclistDetailSortCol as keyof typeof a] ?? "";
+            let valB: any = b[cyclistDetailSortCol as keyof typeof b] ?? "";
+            if (cyclistDetailSortCol === "puntos") {
+              valA = Number(valA) || 0;
+              valB = Number(valB) || 0;
+            } else if (cyclistDetailSortCol === "pos" || cyclistDetailSortCol === "etapa") {
+              valA = parseFloat(valA) || 999999;
+              valB = parseFloat(valB) || 999999;
+            } else if (cyclistDetailSortCol === "fecha") {
+              const parseD = (d: string) => {
+                if (!d) return 0;
+                const p = d.split(/[-/]/);
+                if (p.length !== 3) return 0;
+                return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
+              };
+              valA = parseD(String(valA));
+              valB = parseD(String(valB));
+            } else {
+              valA = String(valA).toLowerCase();
+              valB = String(valB).toLowerCase();
+            }
+            if (valA < valB) return cyclistDetailSortDir === "asc" ? -1 : 1;
+            if (valA > valB) return cyclistDetailSortDir === "asc" ? 1 : -1;
+            return 0;
           });
 
           const maxPointsInList = Math.max(1, ...filteredItems.map(i => i.puntos));
@@ -568,8 +590,10 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
                     setSelectedYear(new Date().getFullYear().toString());
                     setCyclistDetailCategoryFilter([]);
                     setCyclistDetailTypeFilter([]);
-                    setCyclistDetailPosFilter({ op: "<=", val: "" });
-                    setCyclistDetailPointsFilterAdv({ op: ">=", val: "" });
+                    setLocalPosFilter(DEFAULT_POS_FILTER);
+                    setLocalPointsFilterAdv(DEFAULT_PTS_FILTER);
+                    setCyclistDetailPosFilter(DEFAULT_POS_FILTER);
+                    setCyclistDetailPointsFilterAdv(DEFAULT_PTS_FILTER);
                   }} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 border border-neutral-200 bg-white px-4 py-1.5 rounded-md hover:bg-neutral-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">Limpiar Filtros</Button>
                 </div>
               </div>

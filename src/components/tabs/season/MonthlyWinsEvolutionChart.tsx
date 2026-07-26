@@ -40,16 +40,6 @@ export function MonthlyWinsEvolutionChart() {
     selectedEvolutionTeams,
   });
 
-  const renderDefs = () => (
-    <defs>
-      {Object.keys(teamColors).map((teamKey) => (
-        <linearGradient key={`gradient-${teamKey}`} id={`color-wins-${teamKey}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0.6 : 0.05} />
-          <stop offset="95%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0 : 0.05} />
-        </linearGradient>
-      ))}
-    </defs>
-  );
 
   return (
     <>
@@ -165,7 +155,6 @@ export function MonthlyWinsEvolutionChart() {
                       data={monthlyWinsEvolutionData}
                       margin={{ top: 10, right: 10, left: -20, bottom: 40 }}
                     >
-                      {renderDefs()}
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
                       <XAxis
                         dataKey="month"
@@ -198,14 +187,15 @@ export function MonthlyWinsEvolutionChart() {
                           return null;
 
                         return (
-                          <Area
+                          <Area isAnimationActive={false}
                             key={teamKey}
                             type="monotone"
                             dataKey={teamKey}
                             stroke={teamColors[teamKey]}
-                            fill={`url(#color-wins-${teamKey})`}
+                            fill={teamColors[teamKey]}
+                            
                             strokeWidth={3}
-                            fillOpacity={0.4}
+                            fillOpacity={0.25}
                             dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                             activeDot={{ r: 6, strokeWidth: 0 }}
                           />
@@ -248,7 +238,6 @@ export function MonthlyWinsEvolutionChart() {
                         data={monthlyWinsEvolutionData}
                         margin={{ top: 20, right: 40, left: 20, bottom: 60 }}
                       >
-                        {renderDefs()}
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                         <XAxis dataKey="month" tick={{ fontSize: 14 }} />
                         <YAxis tick={{ fontSize: 14 }} allowDecimals={false} />
@@ -270,14 +259,15 @@ export function MonthlyWinsEvolutionChart() {
                           )
                             return null;
                           return (
-                            <Area
+                            <Area isAnimationActive={false}
                               key={teamKey}
                               type="monotone"
                               dataKey={teamKey}
                               stroke={teamColors[teamKey]}
-                              fill={`url(#color-wins-${teamKey})`}
+                              fill={teamColors[teamKey]}
+                              
                               strokeWidth={4}
-                              fillOpacity={0.4}
+                              fillOpacity={0.25}
                               dot={{ r: 5, strokeWidth: 2 }}
                               activeDot={{ r: 8, strokeWidth: 0 }}
                               connectNulls

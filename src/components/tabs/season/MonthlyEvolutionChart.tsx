@@ -369,16 +369,6 @@ export function MonthlyEvolutionChart() {
   };
   const gradientChartsEnabled = getValue("gradient_charts_enabled", true);
 
-  const renderDefs = () => (
-    <defs>
-      {Object.keys(teamColors).map((teamKey) => (
-        <linearGradient key={`gradient-${teamKey}`} id={`color-${teamKey}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0.6 : 0.05} />
-          <stop offset="95%" stopColor={teamColors[teamKey]} stopOpacity={gradientChartsEnabled ? 0 : 0.05} />
-        </linearGradient>
-      ))}
-    </defs>
-  );
 
   return (
     <>
@@ -609,7 +599,6 @@ export function MonthlyEvolutionChart() {
                   bottom: 60,
                 }}
               >
-                {renderDefs()}
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -617,16 +606,29 @@ export function MonthlyEvolutionChart() {
                 />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 {evolutionMode === "posiciones" ? (
-                  <YAxis 
-                    reversed 
-                    domain={[1, activeTeams.length]} 
-                    tickCount={activeTeams.length}
-                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={12}
-                    interval={0}
-                  />
+                  <>
+                    <YAxis 
+                      reversed 
+                      domain={[1, activeTeams.length]} 
+                      tickCount={activeTeams.length}
+                      tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={12}
+                      interval={0}
+                    />
+                    <YAxis 
+                      orientation="right"
+                      reversed 
+                      domain={[1, activeTeams.length]} 
+                      tickCount={activeTeams.length}
+                      tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={12}
+                      interval={0}
+                    />
+                  </>
                 ) : (
                   <YAxis tick={{ fontSize: 12 }} />
                 )}
@@ -657,17 +659,18 @@ export function MonthlyEvolutionChart() {
                       selectedEvolutionTeams.includes(teamKey);
                     const opacity = isSelected ? 1 : 0.15;
                     return (
-                      <Area
+                      <Area isAnimationActive={false}
                         key={teamKey}
                         type="monotone"
                         dataKey={teamKey}
                         stroke={teamColors[teamKey]}
-                        fill={evolutionMode !== "posiciones" ? `url(#color-${teamKey})` : "transparent"}
+                        fill={evolutionMode !== "posiciones" ? teamColors[teamKey] : "transparent"}
                         onMouseEnter={() => setHoveredTeam(teamKey)}
                         onMouseLeave={() => setHoveredTeam(null)}
                         strokeWidth={isSelected ? 3 : 1}
                         strokeOpacity={opacity}
-                        fillOpacity={opacity}
+                        fillOpacity={evolutionMode !== "posiciones" ? opacity * 0.3 : 0}
+                        
                         dot={isSelected ? { r: 4, strokeWidth: 2 } : false}
                         activeDot={
                           isSelected
@@ -724,7 +727,6 @@ export function MonthlyEvolutionChart() {
                       bottom: 60,
                     }}
                   >
-                    {renderDefs()}
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
@@ -732,16 +734,29 @@ export function MonthlyEvolutionChart() {
                     />
                     <XAxis dataKey="month" tick={{ fontSize: 14 }} />
                     {evolutionMode === "posiciones" ? (
-                      <YAxis 
-                        reversed 
-                        domain={[1, activeTeams.length]} 
-                        tickCount={activeTeams.length}
-                        tick={{ fontSize: 13, fill: '#64748b', fontWeight: 'bold' }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickMargin={12}
-                        interval={0}
-                      />
+                      <>
+                        <YAxis 
+                          reversed 
+                          domain={[1, activeTeams.length]} 
+                          tickCount={activeTeams.length}
+                          tick={{ fontSize: 13, fill: '#64748b', fontWeight: 'bold' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickMargin={12}
+                          interval={0}
+                        />
+                        <YAxis 
+                          orientation="right"
+                          reversed 
+                          domain={[1, activeTeams.length]} 
+                          tickCount={activeTeams.length}
+                          tick={{ fontSize: 13, fill: '#64748b', fontWeight: 'bold' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickMargin={12}
+                          interval={0}
+                        />
+                      </>
                     ) : (
                       <YAxis tick={{ fontSize: 14 }} />
                     )}
@@ -773,17 +788,18 @@ export function MonthlyEvolutionChart() {
                           selectedEvolutionTeams.includes(teamKey);
                         const opacity = isSelected ? 1 : 0.15;
                         return (
-                          <Area
+                          <Area isAnimationActive={false}
                             key={teamKey}
                             type="monotone"
                             dataKey={teamKey}
                             stroke={teamColors[teamKey]}
-                            fill={evolutionMode !== "posiciones" ? `url(#color-${teamKey})` : "transparent"}
+                            fill={evolutionMode !== "posiciones" ? teamColors[teamKey] : "transparent"}
                             onMouseEnter={() => setHoveredTeam(teamKey)}
                             onMouseLeave={() => setHoveredTeam(null)}
                             strokeWidth={isSelected ? 4 : 1}
                             strokeOpacity={opacity}
-                            fillOpacity={opacity}
+                            fillOpacity={evolutionMode !== "posiciones" ? opacity * 0.3 : 0}
+                            
                             dot={isSelected ? { r: 5, strokeWidth: 2 } : false}
                             activeDot={
                               isSelected

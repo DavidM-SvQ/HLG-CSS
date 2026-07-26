@@ -34,7 +34,6 @@ export function StartlistPointsTable(props: any) {
       {racePoints.length > 0 && (
         <ReportCard
           title={`Puntuaciones (${raceCategory})`}
-          titleClassName="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
           filename={`puntuaciones-${raceCategory}`}
           ref={pointsTableRef}
           className="mt-8"

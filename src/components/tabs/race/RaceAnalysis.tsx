@@ -515,17 +515,6 @@ export const RaceAnalysis = ({ raceDataObj, selectedRace, leaderboard: propLeade
             Análisis de Datos
           </button>
           <button
-            onClick={() => setActiveTab("ai")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${
-              activeTab === "ai"
-                ? "bg-white text-blue-700 shadow-sm"
-                : "text-neutral-500 hover:text-neutral-800"
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            Crónica con IA
-          </button>
-          <button
             onClick={() => setActiveTab("infographic")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${
               activeTab === "infographic"

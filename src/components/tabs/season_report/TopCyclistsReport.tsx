@@ -72,10 +72,10 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         title={`Top Ciclistas por Puntuación ${monthsText ? ` [${monthsText}]` : ""}`}
         subtitle="Top 50 ciclistas con más puntos en las carreras de este periodo."
         icon={<User />}
-        iconClassName="text-orange-600"
+        className="text-orange-600 mt-8"
         filename="top-ciclistas"
         ref={ref3}
-        className="mt-8"
+        
         toolbarProps={{
           isExpanded: true,
           onExpand: () => {}
@@ -180,10 +180,10 @@ export const TopCyclistsReport: React.FC<TopCyclistsReportProps> = ({
         title={`Top Ciclistas No Elegidos (No draft) ${monthsText ? ` [${monthsText}]` : ""}`}
         subtitle="Corredores que han sumado puntos pero no fueron elegidos por ningún equipo."
         icon={<User />}
-        iconClassName="text-red-600"
+        className="text-red-600 mt-8"
         filename="top-ciclistas-no-draft"
         ref={ref4}
-        className="mt-8"
+        
         toolbarProps={{
           isExpanded: true,
           onExpand: () => {}
