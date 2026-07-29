@@ -1,11 +1,158 @@
 import { AppState, PlayerScore, CyclistMetadata } from '../../../lib/types';
-import { useSeasonMilestonesLogic } from "./hooks/useSeasonMilestonesLogic";
-import React, { useMemo, useRef, useState } from "react";
-import { formatNumberSpanish, getVal } from "../../../lib/data-processing";
-import { Flag, Globe, Users, Medal } from "lucide-react";
+import { useSeasonMilestonesLogic, MilestoneItem } from "./hooks/useSeasonMilestonesLogic";
+import React, { useRef, useState } from "react";
+import { Flag, Users, Medal, Info, BookOpen, CheckCircle2 } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ExportToolbar } from "../../ui/ExportToolbar";
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+};
+
+const MilestoneCard = ({ m, type }: { m: MilestoneItem; type: 'team' | 'cyclist' }) => {
+  const [showPopup, setShowPopup] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const isTeam = type === 'team';
+  const themeBg = isTeam ? 'bg-indigo-50/50' : 'bg-rose-50/50';
+  const themeBorder = isTeam ? 'border-indigo-100' : 'border-rose-100';
+  const themeText = isTeam ? 'text-indigo-500' : 'text-rose-500';
+  const themeBadgeBg = isTeam ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-rose-50 text-rose-700 border-rose-100';
+  const themeHoverText = isTeam ? 'group-hover:text-indigo-600' : 'group-hover:text-rose-600';
+
+  const handleMouseEnter = () => {
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If there's less than 320px below, open upward
+      if (spaceBelow < 320) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+    setShowPopup(true);
+  };
+
+  return (
+    <div 
+      ref={cardRef}
+      className="relative group z-10 hover:z-30"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setShowPopup(false)}
+    >
+      <motion.div 
+        variants={itemVariants} 
+        whileHover={{ x: 4 }} 
+        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group gap-3 sm:gap-0 cursor-pointer relative"
+        onClick={() => {
+          if (cardRef.current) {
+            const rect = cardRef.current.getBoundingClientRect();
+            setOpenUpward(window.innerHeight - rect.bottom < 320);
+          }
+          setShowPopup(!showPopup);
+        }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3">
+            <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-xl border flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden", themeBg, themeBorder, themeText)}>
+              {m.icon}
+            </div>
+            <div className="sm:hidden text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap uppercase tracking-widest">
+              {m.date}
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h5 className={cn("font-bold text-neutral-900 text-sm leading-tight transition-colors break-words", themeHoverText)}>{m.label}</h5>
+              <button 
+                type="button" 
+                className="text-neutral-400 hover:text-blue-600 transition-colors p-0.5 rounded-full shrink-0"
+                title="Ver detalles del hito"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPopup(!showPopup);
+                }}
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            </div>
+            <span className={cn("inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider border break-words overflow-hidden text-ellipsis max-w-full", themeBadgeBg)}>
+              {isTeam ? m.team : m.cyclist}
+            </span>
+          </div>
+        </div>
+        <div className="hidden sm:block text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
+          {m.date}
+        </div>
+      </motion.div>
+
+      {/* Hover Popup (Light Theme) */}
+      <AnimatePresence>
+        {showPopup && (
+          <motion.div
+            initial={{ opacity: 0, y: openUpward ? -8 : 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: openUpward ? -6 : 6, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className={cn(
+              "absolute left-0 right-0 sm:left-auto sm:right-0 sm:w-[420px] z-50 p-4 bg-white/95 backdrop-blur-md text-neutral-800 rounded-2xl shadow-xl border border-neutral-200/90 pointer-events-auto",
+              openUpward ? "bottom-full mb-2" : "top-full mt-2"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3 pb-3 mb-3 border-b border-neutral-100">
+              <div className={cn("p-2 rounded-xl bg-neutral-50 border border-neutral-200/80 shadow-sm shrink-0", themeText)}>
+                {m.icon}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                  {isTeam ? "Hito de Equipo" : "Hito de Ciclista"}
+                </div>
+                <div className="font-extrabold text-sm text-neutral-900 leading-snug">
+                  {m.title || m.label}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Explicación Teórica */}
+              <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-200/60">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900 mb-1">
+                  <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Explicación Teórica</span>
+                </div>
+                <p className="text-amber-950/90 leading-relaxed font-normal">
+                  {m.explanation}
+                </p>
+                {m.triggerDetails && (
+                  <div className="mt-2 text-[11px] text-amber-800 border-t border-amber-200/60 pt-1.5 font-mono">
+                    <strong className="text-amber-900 font-semibold">Activación:</strong> {m.triggerDetails}
+                  </div>
+                )}
+              </div>
+
+              {/* Datos de Por qué ha logrado el hito */}
+              <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200/60">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-900 mb-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Datos del Logro</span>
+                </div>
+                <p className="text-emerald-950 font-medium leading-relaxed">
+                  {m.details || `${isTeam ? m.team : m.cyclist} cumplió este hito el ${m.date}.`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinners }: { leaderboard: PlayerScore[]; files: AppState; cyclistMetadata: Record<string, CyclistMetadata>; raceWinners?: Record<string, string> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -21,11 +168,6 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
       opacity: 1,
       transition: { staggerChildren: 0.1 }
     }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, x: -10 },
-    show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -53,7 +195,7 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
           </div>
         </div>
 
-        <div className="overflow-auto bg-transparent relative z-10">
+        <div className="overflow-visible bg-transparent relative z-10">
           <div className="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 items-start">
             {/* Team Milestones */}
             <div className="flex flex-col">
@@ -67,27 +209,7 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
                 className="flex flex-col gap-3"
               >
                   {teamMilestones.map((m, idx) => (
-                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group gap-3 sm:gap-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-indigo-500">
-                            {m.icon}
-                          </div>
-                          <div className="sm:hidden text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap uppercase tracking-widest">
-                            {m.date}
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-indigo-600 transition-colors break-words">{m.label}</h5>
-                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase tracking-wider border border-indigo-100 break-words overflow-hidden text-ellipsis max-w-full">
-                            {m.team}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="hidden sm:block text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
-                        {m.date}
-                      </div>
-                    </motion.div>
+                    <MilestoneCard key={m.id + '_' + idx} m={m} type="team" />
                   ))}
                   {teamMilestones.length === 0 && (
                     <div className="p-8 text-center text-neutral-400 font-medium">
@@ -109,27 +231,7 @@ export const SeasonMilestones = ({ leaderboard, files, cyclistMetadata, raceWinn
                  className="flex flex-col gap-3"
               >
                   {cyclistMilestones.map((m, idx) => (
-                    <motion.div variants={itemVariants} whileHover={{ x: 4 }} key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-neutral-100 shadow-sm rounded-2xl hover:shadow-md transition-all group gap-3 sm:gap-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden text-rose-500">
-                            {m.icon}
-                           </div>
-                           <div className="sm:hidden text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap uppercase tracking-widest">
-                             {m.date}
-                           </div>
-                         </div>
-                         <div className="min-w-0 flex-1">
-                          <h5 className="font-bold text-neutral-900 text-sm leading-tight group-hover:text-rose-600 transition-colors break-words">{m.label}</h5>
-                          <span className="inline-flex items-center px-2.5 py-0.5 mt-1.5 rounded-lg bg-rose-50 text-rose-700 font-bold text-[10px] uppercase tracking-wider border border-rose-100 break-words overflow-hidden text-ellipsis max-w-full">
-                            {m.cyclist}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="hidden sm:block text-xs font-mono tabular-nums text-neutral-400 font-bold whitespace-nowrap ml-4 uppercase tracking-widest">
-                        {m.date}
-                      </div>
-                    </motion.div>
+                    <MilestoneCard key={m.id + '_' + idx} m={m} type="cyclist" />
                   ))}
                   {cyclistMilestones.length === 0 && (
                     <div className="p-8 text-center text-neutral-400 font-medium">

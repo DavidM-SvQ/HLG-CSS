@@ -17,6 +17,7 @@ export function TopTeamsTable() {
   const {
     formatNumberSpanish,
     teamsMonthFilter, setTeamsMonthFilter,
+    teamsCategoryFilter, setTeamsCategoryFilter,
     topTeamsSortColumn, setTopTeamsSortColumn,
     topTeamsSortDirection, setTopTeamsSortDirection,
     leaderboardTeamsSearch, setLeaderboardTeamsSearch
@@ -30,6 +31,16 @@ export function TopTeamsTable() {
     start: `${new Date().getFullYear()}-01-01`,
     end: new Date().toISOString().split('T')[0]
   });
+
+  const uniqueCategories = React.useMemo(() => {
+    if (!context.files?.carreras?.data) return [];
+    const set = new Set<string>();
+    context.files.carreras.data.forEach((r: any) => {
+      const cat = context.getVal(r, "Categoría")?.trim();
+      if (cat) set.add(cat);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [context.files?.carreras?.data, context.getVal]);
 
   // Keep localCustomDateRange in sync if it changes from outside or initializes
   useEffect(() => {
@@ -79,6 +90,7 @@ export function TopTeamsTable() {
     maxPpd, minPpd
   } = useTopTeams(
     teamsMonthFilter,
+    teamsCategoryFilter || "all",
     leaderboardTeamsSearch,
     topTeamsSortColumn,
     topTeamsSortDirection
@@ -153,8 +165,13 @@ export function TopTeamsTable() {
             </div>
             <h3 className="font-bold text-2xl text-neutral-900 tracking-tight flex items-center gap-2 flex-wrap min-w-0">
               Clasificación de Equipos
+              {teamsCategoryFilter !== "all" && (
+                <span className="text-sm font-medium bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                  Categoría: {teamsCategoryFilter}
+                </span>
+              )}
               {teamsMonthFilter !== "all" && (
-                <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full whitespace-nowrap">
                   Solo data del mes seleccionado
                 </span>
               )}
@@ -183,6 +200,23 @@ export function TopTeamsTable() {
               className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border-neutral-200 rounded-xl focus-visible:ring-blue-500/20 font-medium h-10"
             />
           </div>
+          <select 
+            value={teamsCategoryFilter || "all"} 
+            onChange={(e) => {
+              setTeamsCategoryFilter(e.target.value);
+              setTopTeamsSortColumn("puntos");
+              setTopTeamsSortDirection("desc");
+            }}
+            className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-purple-300 focus-visible:outline-none focus:ring-2 focus:ring-purple-500/20 text-sm h-10 shrink-0"
+          >
+            <option value="all">Todas las categorías</option>
+            {uniqueCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
           <select 
             value={teamsMonthFilter.startsWith("custom_") ? "custom" : teamsMonthFilter} 
             onChange={(e) => {

@@ -284,10 +284,9 @@ export const TopTeamsReport: React.FC<TopTeamsReportProps> = ({
           title={`Historial de Ganadores por Carrera${monthsText ? ` [${monthsText}]` : ""}`}
           subtitle="Relación cronológica de las victorias obtenidas por los equipos en cada carrera."
           icon={<History />}
-          className="text-purple-600"
+          className="text-purple-600 mt-8"
           filename="historial-ganadores"
           ref={ref3}
-          className="mt-8"
           toolbarProps={{
             isExpanded: isHistoryExpanded,
             onExpand: () => setIsHistoryExpanded(!isHistoryExpanded),

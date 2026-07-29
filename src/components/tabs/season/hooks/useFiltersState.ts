@@ -27,6 +27,7 @@ export function useFiltersState() {
   const [noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection] = useUrlState<"asc" | "desc">("noDraftCyclistsSortDirection", "desc");
 
   const [teamsMonthFilter, setTeamsMonthFilter] = useUrlState<string>("teamsMonthFilter", "all");
+  const [teamsCategoryFilter, setTeamsCategoryFilter] = useUrlState<string>("teamsCategoryFilter", "all");
   const [historyMonthFilter, setHistoryMonthFilter] = useUrlState<string>("historyMonthFilter", "all");
 
   const [cyclistsTeamFilter, setCyclistsTeamFilter] = useUrlState<string[]>("cyclistsTeamFilter", []);
@@ -60,7 +61,7 @@ export function useFiltersState() {
     unscoredCyclistsSortColumn, setUnscoredCyclistsSortColumn, unscoredCyclistsSortDirection, setUnscoredCyclistsSortDirection,
     undebutedCyclistsSortColumn, setUndebutedCyclistsSortColumn, undebutedCyclistsSortDirection, setUndebutedCyclistsSortDirection,
     noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection,
-    teamsMonthFilter, setTeamsMonthFilter, historyMonthFilter, setHistoryMonthFilter,
+    teamsMonthFilter, setTeamsMonthFilter, teamsCategoryFilter, setTeamsCategoryFilter, historyMonthFilter, setHistoryMonthFilter,
     cyclistsTeamFilter, setCyclistsTeamFilter, cyclistsCategoryFilter, setCyclistsCategoryFilter,
     cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsNameSearch, setCyclistsNameSearch,
     unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter,

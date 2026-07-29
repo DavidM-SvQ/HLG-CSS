@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDataStore } from "../../../lib/stores/useDataStore";
 import { supabase } from "../../../supabase";
 import { toast } from "sonner";
-import { Save, Loader2, Palette, Image as ImageIcon, Zap, Upload, Check, Trash2, Eye } from "lucide-react";
+import { Save, Loader2, Palette, Image as ImageIcon, Zap, Upload, Check, Trash2, Eye, Award, Info, Trophy, Crown, Globe, Users, X, CheckSquare, Square } from "lucide-react";
 import { Button } from "../../ui/button";
+import { MILESTONE_DEFINITIONS, MilestoneDef } from "./milestonesConfigData";
 
 export function ConfiguracionView() {
   const { files, fetchGlobalFile } = useDataStore();
@@ -71,11 +72,22 @@ export function ConfiguracionView() {
   const [fantasyCardsEnabled, setFantasyCardsEnabled] = useState(getValue("fantasy_cards_enabled", true));
   const [gradientChartsEnabled, setGradientChartsEnabled] = useState(getValue("gradient_charts_enabled", true));
   const [heroBannerImages, setHeroBannerImages] = useState<string[]>(getValue("hero_banner_images", DEFAULT_BANNER_IMAGES));
-  
+  const [activeHeroBanner, setActiveHeroBanner] = useState<string>(getValue("active_hero_banner", DEFAULT_BANNER_IMAGES[0]));
+
+  // Milestones states
+  const [masterMilestonesEnabled, setMasterMilestonesEnabled] = useState(getValue("milestones_master_enabled", true));
+  const [individualMilestones, setIndividualMilestones] = useState<Record<string, boolean>>(() => {
+    const initialMap: Record<string, boolean> = {};
+    MILESTONE_DEFINITIONS.forEach(m => {
+      initialMap[m.id] = getValue(`milestone_${m.id}`, true);
+    });
+    return initialMap;
+  });
+  const [milestoneFilterTab, setMilestoneFilterTab] = useState<"todos" | "equipos" | "ciclistas">("todos");
+  const [activeInfoMilestone, setActiveInfoMilestone] = useState<MilestoneDef | null>(null);
+
   // update legacy banner images to include new options
   useEffect(() => {
-    // If the user hasn't received the big 25+ images update (they have less than 15 images)
-    // we give them the full new set, while keeping any custom uploads
     if (heroBannerImages.length < 15) {
       const customImages = heroBannerImages.filter(img => !img.includes("unsplash.com") && !img.includes("wikimedia.org"));
       const newImages = Array.from(new Set([...DEFAULT_BANNER_IMAGES, ...customImages]));
@@ -83,12 +95,9 @@ export function ConfiguracionView() {
     }
   }, []);
 
-  const [activeHeroBanner, setActiveHeroBanner] = useState<string>(getValue("active_hero_banner", DEFAULT_BANNER_IMAGES[0]));
-  
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // stringify to avoid infinite loop on new empty array reference
   const configuracionDataString = JSON.stringify(configuracionData);
 
   useEffect(() => {
@@ -100,6 +109,13 @@ export function ConfiguracionView() {
     setGradientChartsEnabled(getValue("gradient_charts_enabled", true));
     setHeroBannerImages(getValue("hero_banner_images", DEFAULT_BANNER_IMAGES));
     setActiveHeroBanner(getValue("active_hero_banner", DEFAULT_BANNER_IMAGES[0]));
+
+    setMasterMilestonesEnabled(getValue("milestones_master_enabled", true));
+    const newMap: Record<string, boolean> = {};
+    MILESTONE_DEFINITIONS.forEach(m => {
+      newMap[m.id] = getValue(`milestone_${m.id}`, true);
+    });
+    setIndividualMilestones(newMap);
   }, [configuracionDataString]);
 
   const handleSave = async () => {
@@ -114,6 +130,11 @@ export function ConfiguracionView() {
         { key: "gradient_charts_enabled", value: gradientChartsEnabled.toString() },
         { key: "hero_banner_images", value: heroBannerImages },
         { key: "active_hero_banner", value: activeHeroBanner },
+        { key: "milestones_master_enabled", value: masterMilestonesEnabled.toString() },
+        ...MILESTONE_DEFINITIONS.map(m => ({
+          key: `milestone_${m.id}`,
+          value: (individualMilestones[m.id] ?? true).toString()
+        }))
       ];
 
       const { error } = await supabase
@@ -162,6 +183,37 @@ export function ConfiguracionView() {
       return next;
     });
   };
+
+  const handleToggleAllMilestones = (enable: boolean) => {
+    setMasterMilestonesEnabled(enable);
+    const updatedMap: Record<string, boolean> = {};
+    MILESTONE_DEFINITIONS.forEach(m => {
+      updatedMap[m.id] = enable;
+    });
+    setIndividualMilestones(updatedMap);
+  };
+
+  const handleToggleIndividualMilestone = (id: string, enabled: boolean) => {
+    setIndividualMilestones(prev => ({
+      ...prev,
+      [id]: enabled
+    }));
+  };
+
+  const renderMilestoneIcon = (iconName: string) => {
+    switch (iconName) {
+      case "Crown": return <Crown className="w-4 h-4 text-amber-500" />;
+      case "Globe": return <Globe className="w-4 h-4 text-blue-500" />;
+      case "Trophy": return <Trophy className="w-4 h-4 text-yellow-500" />;
+      case "Users": return <Users className="w-4 h-4 text-emerald-500" />;
+      default: return <Award className="w-4 h-4 text-indigo-500" />;
+    }
+  };
+
+  const filteredMilestones = MILESTONE_DEFINITIONS.filter(m => {
+    if (milestoneFilterTab === "todos") return true;
+    return m.category === milestoneFilterTab;
+  });
 
   return (
     <div className="space-y-6">
@@ -376,6 +428,167 @@ export function ConfiguracionView() {
               </div>
             )}
           </div>
+
+          {/* Section: Hitos */}
+          <div className="p-5 bg-neutral-50 rounded-xl border border-neutral-200 space-y-5">
+            {/* Master Toggle Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
+              <div className="flex gap-4">
+                <div className="p-2.5 bg-amber-100 text-amber-600 rounded-xl h-fit shadow-xs">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-neutral-900">Hitos y Logros</h3>
+                  <p className="text-sm text-neutral-500 mt-0.5 max-w-xl">
+                    Activa o desactiva de forma global o individual cada uno de los hitos calculados en la temporada.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-neutral-200 shadow-2xs">
+                <div className="text-right hidden sm:block">
+                  <span className="text-xs font-bold text-neutral-700 block">
+                    {masterMilestonesEnabled ? "Hitos Activados" : "Hitos Desactivados"}
+                  </span>
+                  <span className="text-[11px] text-neutral-500">Master Switch</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={masterMilestonesEnabled} 
+                    onChange={(e) => handleToggleAllMilestones(e.target.checked)} 
+                  />
+                  <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Quick Actions & Tabs */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+              {/* Category tabs */}
+              <div className="flex bg-neutral-200/80 p-1 rounded-xl w-full sm:w-auto">
+                <button
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    milestoneFilterTab === "todos" 
+                      ? "bg-white text-neutral-900 shadow-xs" 
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                  onClick={() => setMilestoneFilterTab("todos")}
+                >
+                  Todos ({MILESTONE_DEFINITIONS.length})
+                </button>
+                <button
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    milestoneFilterTab === "equipos" 
+                      ? "bg-white text-blue-700 shadow-xs" 
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                  onClick={() => setMilestoneFilterTab("equipos")}
+                >
+                  🛡️ Equipos ({MILESTONE_DEFINITIONS.filter(m => m.category === "equipos").length})
+                </button>
+                <button
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    milestoneFilterTab === "ciclistas" 
+                      ? "bg-white text-purple-700 shadow-xs" 
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                  onClick={() => setMilestoneFilterTab("ciclistas")}
+                >
+                  🚴 Ciclistas ({MILESTONE_DEFINITIONS.filter(m => m.category === "ciclistas").length})
+                </button>
+              </div>
+
+              {/* Master Bulk Buttons */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleToggleAllMilestones(true)}
+                  className="text-xs flex-1 sm:flex-none border-neutral-300 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                  Activar todos
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleToggleAllMilestones(false)}
+                  className="text-xs flex-1 sm:flex-none border-neutral-300 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                >
+                  <Square className="w-3.5 h-3.5 mr-1.5 text-neutral-400" />
+                  Desactivar todos
+                </Button>
+              </div>
+            </div>
+
+            {/* Individual Milestones List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+              {filteredMilestones.map((milestone) => {
+                const isChecked = masterMilestonesEnabled && (individualMilestones[milestone.id] ?? true);
+
+                return (
+                  <div 
+                    key={milestone.id}
+                    className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                      isChecked 
+                        ? "bg-white border-neutral-200 shadow-2xs hover:border-amber-300" 
+                        : "bg-neutral-100/70 border-neutral-200 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                        milestone.category === "equipos" ? "bg-blue-50" : "bg-purple-50"
+                      }`}>
+                        {renderMilestoneIcon(milestone.iconName)}
+                      </div>
+                      
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs font-bold text-neutral-900 truncate">{milestone.title}</h4>
+                          <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-xs shrink-0 ${
+                            milestone.category === "equipos" 
+                              ? "bg-blue-100 text-blue-700" 
+                              : "bg-purple-100 text-purple-700"
+                          }`}>
+                            {milestone.category === "equipos" ? "Equipo" : "Ciclista"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500 mt-0.5 line-clamp-1">{milestone.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Info 'i' Button */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveInfoMilestone(milestone)}
+                        title="Ver detalles e información del hito"
+                        className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-600 hover:bg-amber-50 transition-colors focus:outline-none"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+
+                      {/* Individual Toggle Switch */}
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={isChecked} 
+                          disabled={!masterMilestonesEnabled}
+                          onChange={(e) => handleToggleIndividualMilestone(milestone.id, e.target.checked)} 
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-disabled:opacity-50"></div>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           
         </div>
         
@@ -395,6 +608,66 @@ export function ConfiguracionView() {
           </Button>
         </div>
       </div>
+
+      {/* Info Modal for Milestone details */}
+      {activeInfoMilestone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-neutral-200 space-y-4 relative">
+            <button 
+              type="button"
+              onClick={() => setActiveInfoMilestone(null)}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-100 text-amber-700 rounded-xl shrink-0">
+                <Info className="w-6 h-6" />
+              </div>
+              <div className="pr-6">
+                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                  activeInfoMilestone.category === "equipos" 
+                    ? "bg-blue-100 text-blue-800" 
+                    : "bg-purple-100 text-purple-800"
+                }`}>
+                  {activeInfoMilestone.category === "equipos" ? "Hito de Equipo" : "Hito de Ciclista"}
+                </span>
+                <h3 className="text-base font-bold text-neutral-900 mt-1 leading-snug">{activeInfoMilestone.title}</h3>
+              </div>
+            </div>
+
+            <div className="space-y-3.5 text-xs text-neutral-700 pt-1">
+              <div>
+                <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Descripción</h4>
+                <p className="text-neutral-600 leading-relaxed bg-neutral-50 p-3 rounded-lg border border-neutral-200/80">
+                  {activeInfoMilestone.description}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Criterio de activación</h4>
+                <p className="font-medium text-neutral-800 bg-amber-50/50 p-3 rounded-lg border border-amber-200/60 leading-relaxed">
+                  {activeInfoMilestone.triggerDetails}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Ejemplo práctico</h4>
+                <p className="text-amber-900 bg-amber-100/60 p-2.5 rounded-lg border border-amber-200 font-mono text-[11px]">
+                  {activeInfoMilestone.example}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <Button onClick={() => setActiveInfoMilestone(null)} variant="outline" size="sm" className="w-full sm:w-auto">
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
