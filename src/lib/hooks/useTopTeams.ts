@@ -6,7 +6,7 @@ import { getVal, parseSafeDateStr } from "../data-processing";
 
 export function useTopTeams(
   teamsMonthFilter: string,
-  teamsCategoryFilter: string = "all",
+  teamsCategoryFilter: string[] = [],
   leaderboardTeamsSearch: string,
   topTeamsSortColumn: string,
   topTeamsSortDirection: string
@@ -68,6 +68,18 @@ export function useTopTeams(
       return raceCategories[trimmed] || raceCategories[trimmed.toLowerCase()] || "";
     };
 
+    const activeCategoryFilters = Array.isArray(teamsCategoryFilter)
+      ? teamsCategoryFilter.filter((c) => c && c !== "all")
+      : typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all"
+      ? [teamsCategoryFilter]
+      : [];
+
+    const isCategoryMatched = (carreraName: string) => {
+      if (activeCategoryFilters.length === 0) return true;
+      const cat = getRaceCat(carreraName);
+      return activeCategoryFilters.includes(cat);
+    };
+
     const isCustomDate = teamsMonthFilter.startsWith("custom_");
     let customStart = "";
     let customEnd = "";
@@ -89,7 +101,7 @@ export function useTopTeams(
         const etapa = getVal(row, "Etapa")?.toString().trim();
         
         if (ciclista && carrera) {
-          if (teamsCategoryFilter !== "all" && getRaceCat(carrera) !== teamsCategoryFilter) {
+          if (!isCategoryMatched(carrera)) {
             return;
           }
           if (isCustomDate) {
@@ -118,7 +130,7 @@ export function useTopTeams(
 
     const teamStats = filteredLeaderboard.map((team, idx) => {
       const filteredDetalles = team.detalles.filter((d) => {
-        if (teamsCategoryFilter !== "all" && getRaceCat(d.carrera) !== teamsCategoryFilter) {
+        if (!isCategoryMatched(d.carrera)) {
           return false;
         }
         if (isCustomDate) {
@@ -141,7 +153,7 @@ export function useTopTeams(
       let wins = 0;
       Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
         if (winnerTeam === team.nombreEquipo) {
-          if (teamsCategoryFilter !== "all" && getRaceCat(raceName) !== teamsCategoryFilter) {
+          if (!isCategoryMatched(raceName)) {
             return;
           }
           if (isCustomDate) {
@@ -158,7 +170,7 @@ export function useTopTeams(
       let partialWins = 0;
       if (globalTeamPartialWinsCount && globalTeamPartialWinsCount.byRace) {
         Object.entries(globalTeamPartialWinsCount.byRace).forEach(([raceName, raceEvents]) => {
-          if (teamsCategoryFilter !== "all" && getRaceCat(raceName) !== teamsCategoryFilter) {
+          if (!isCategoryMatched(raceName)) {
             return;
           }
           if (isCustomDate) {
@@ -255,7 +267,7 @@ export function useTopTeams(
     raceWinners,
     globalTeamPartialWinsCount,
     teamsMonthFilter,
-    teamsCategoryFilter,
+    JSON.stringify(teamsCategoryFilter),
     leaderboardTeamsSearch,
     playerByCyclist,
     playerTeamMap,

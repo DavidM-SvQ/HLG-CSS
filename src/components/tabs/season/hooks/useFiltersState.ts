@@ -27,7 +27,7 @@ export function useFiltersState() {
   const [noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection] = useUrlState<"asc" | "desc">("noDraftCyclistsSortDirection", "desc");
 
   const [teamsMonthFilter, setTeamsMonthFilter] = useUrlState<string>("teamsMonthFilter", "all");
-  const [teamsCategoryFilter, setTeamsCategoryFilter] = useUrlState<string>("teamsCategoryFilter", "all");
+  const [teamsCategoryFilter, setTeamsCategoryFilter] = useUrlState<string[]>("teamsCategoryFilter", []);
   const [historyMonthFilter, setHistoryMonthFilter] = useUrlState<string>("historyMonthFilter", "all");
 
   const [cyclistsTeamFilter, setCyclistsTeamFilter] = useUrlState<string[]>("cyclistsTeamFilter", []);

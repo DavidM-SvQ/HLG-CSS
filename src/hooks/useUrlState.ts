@@ -11,6 +11,7 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
 
   const stringifiedInitialValue = JSON.stringify(initialValue);
   const initialValueRef = useRef(initialValue);
+  const stateRef = useRef<T | undefined>(undefined);
   
   useEffect(() => {
     try {
@@ -68,8 +69,9 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
   // Use state to prevent unnecessary re-renders when url changes but value is same
   const [state, setState] = useState<T>(getUrlValue());
 
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  if (state !== undefined) {
+    stateRef.current = state;
+  }
   const skipSyncRef = useRef(false);
 
   // Sync from URL to state if URL changes externally (e.g. back button)
@@ -87,7 +89,7 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
 
   const setUrlState = useCallback(
     (newVal: T | ((prev: T) => T)) => {
-      const prev = stateRef.current;
+      const prev = stateRef.current as T;
       const computedVal = typeof newVal === "function" ? (newVal as Function)(prev) : newVal;
 
       skipSyncRef.current = true;

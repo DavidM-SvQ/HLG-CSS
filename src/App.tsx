@@ -20,6 +20,8 @@ import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog";
 
 import { MilestoneNotifier } from "./components/MilestoneNotifier";
 
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
 export default function App() {
   const location = useLocation();
   
@@ -198,6 +200,7 @@ export default function App() {
 
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-blue-200 relative flex flex-col">
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.3]" style={{ backgroundImage: "radial-gradient(#94a3b8 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       
@@ -274,5 +277,6 @@ export default function App() {
         </main>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

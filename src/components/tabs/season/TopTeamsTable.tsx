@@ -9,6 +9,7 @@ import { useDebounce } from "../../../lib/hooks/useDebounce";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
+import { MultiSelect } from "../../ui/multi-select";
 import { TopTeamsTableContent } from "./TopTeamsTableContent";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 
@@ -41,6 +42,18 @@ export function TopTeamsTable() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [context.files?.carreras?.data, context.getVal]);
+
+  const categoryOptions = React.useMemo(() => {
+    return uniqueCategories.map((cat) => ({ value: cat, label: cat }));
+  }, [uniqueCategories]);
+
+  const activeCategories = React.useMemo(() => {
+    if (!teamsCategoryFilter) return [];
+    if (Array.isArray(teamsCategoryFilter)) {
+      return teamsCategoryFilter.filter((c) => c && c !== "all");
+    }
+    return typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all" ? [teamsCategoryFilter] : [];
+  }, [teamsCategoryFilter]);
 
   // Keep localCustomDateRange in sync if it changes from outside or initializes
   useEffect(() => {
@@ -90,7 +103,7 @@ export function TopTeamsTable() {
     maxPpd, minPpd
   } = useTopTeams(
     teamsMonthFilter,
-    teamsCategoryFilter || "all",
+    activeCategories,
     leaderboardTeamsSearch,
     topTeamsSortColumn,
     topTeamsSortDirection
@@ -165,9 +178,9 @@ export function TopTeamsTable() {
             </div>
             <h3 className="font-bold text-2xl text-neutral-900 tracking-tight flex items-center gap-2 flex-wrap min-w-0">
               Clasificación de Equipos
-              {teamsCategoryFilter !== "all" && (
+              {activeCategories.length > 0 && (
                 <span className="text-sm font-medium bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                  Categoría: {teamsCategoryFilter}
+                  Categoría{activeCategories.length > 1 ? "s" : ""}: {activeCategories.join(", ")}
                 </span>
               )}
               {teamsMonthFilter !== "all" && (
@@ -200,22 +213,18 @@ export function TopTeamsTable() {
               className="w-full pl-9 pr-4 py-2 text-sm bg-neutral-50 border-neutral-200 rounded-xl focus-visible:ring-blue-500/20 font-medium h-10"
             />
           </div>
-          <select 
-            value={teamsCategoryFilter || "all"} 
-            onChange={(e) => {
-              setTeamsCategoryFilter(e.target.value);
-              setTopTeamsSortColumn("puntos");
-              setTopTeamsSortDirection("desc");
-            }}
-            className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-purple-300 focus-visible:outline-none focus:ring-2 focus:ring-purple-500/20 text-sm h-10 shrink-0"
-          >
-            <option value="all">Todas las categorías</option>
-            {uniqueCategories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="w-full sm:w-auto shrink-0 min-w-[170px]">
+            <MultiSelect
+              options={categoryOptions}
+              value={activeCategories}
+              onChange={(val) => {
+                setTeamsCategoryFilter(val);
+                setTopTeamsSortColumn("puntos");
+                setTopTeamsSortDirection("desc");
+              }}
+              placeholder="Categorías"
+            />
+          </div>
 
           <select 
             value={teamsMonthFilter.startsWith("custom_") ? "custom" : teamsMonthFilter} 
