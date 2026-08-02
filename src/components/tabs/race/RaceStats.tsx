@@ -6,6 +6,7 @@ import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { RaceCyclistsTable } from "./stats/RaceCyclistsTable";
 import { RaceStageBreakdown } from "./stats/RaceStageBreakdown";
 import { RaceRetiredCyclists } from "./stats/RaceRetiredCyclists";
+import { RacePointsPerRound } from "./stats/RacePointsPerRound";
 import { RaceDetailedBreakdown } from "./stats/RaceDetailedBreakdown";
 
 interface RaceStatsProps {
@@ -38,6 +39,7 @@ export const RaceStats = ({
   const [isCyclistsExpanded, setIsCyclistsExpanded] = useState(false);
   const [isStageExpanded, setIsStageExpanded] = useState(false);
   const [isRetiredExpanded, setIsRetiredExpanded] = useState(false);
+  const [isPointsPerRoundExpanded, setIsPointsPerRoundExpanded] = useState(false);
   const [isDetailedBreakdownExpanded, setIsDetailedBreakdownExpanded] = useState(false);
 
   const [isDetailedBreakdownCopying, setIsDetailedBreakdownCopying] = useState<string | null>(null);
@@ -46,11 +48,13 @@ export const RaceStats = ({
   const cyclistsTableRef = useRef<HTMLDivElement>(null);
   const raceBreakdownTableRef = useRef<HTMLDivElement>(null);
   const retiredTableRef = useRef<HTMLDivElement>(null);
+  const pointsPerRoundTableRef = useRef<HTMLDivElement>(null);
   const detailedBreakdownRef = useRef<HTMLDivElement>(null);
 
   const { handleCopyImage: copyCyclists, handleDownloadImage: downloadCyclists, isCopying: isCyclistsCopying } = useTableScreenshot(cyclistsTableRef);
   const { handleCopyImage: copyRaceBreakdown, handleDownloadImage: downloadRaceBreakdown, isCopying: isRaceBreakdownCopying } = useTableScreenshot(raceBreakdownTableRef);
   const { handleCopyImage: copyRetired, handleDownloadImage: downloadRetired, isCopying: isRetiredCopying } = useTableScreenshot(retiredTableRef);
+  const { handleCopyImage: copyPointsPerRound, handleDownloadImage: downloadPointsPerRound, isCopying: isPointsPerRoundCopying } = useTableScreenshot(pointsPerRoundTableRef);
   const { handleCopyImage: copyDetailedBreakdown, handleDownloadImage: downloadDetailedBreakdown } = useTableScreenshot(detailedBreakdownRef);
 
   const handleCopyCyclists = () => copyCyclists({ fileName: "export.png", scale: 3, style: { backgroundColor: "#ffffff" } });
@@ -58,6 +62,9 @@ export const RaceStats = ({
 
   const handleCopyRaceBreakdownImage = () => copyRaceBreakdown({ fileName: "export.png", scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
   const handleDownloadRaceBreakdownImage = () => downloadRaceBreakdown({ fileName: `clasificacion-etapas-${selectedRace.replace(/\s+/g, "-").toLowerCase()}.png`, scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
+
+  const handleCopyPointsPerRoundImage = () => copyPointsPerRound({ fileName: "export.png", scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
+  const handleDownloadPointsPerRoundImage = () => downloadPointsPerRound({ fileName: `puntos-ronda-equipo-${selectedRace.replace(/\s+/g, "-").toLowerCase()}.png`, scale: 3, style: { backgroundColor: "#ffffff", overflow: "visible" } });
 
   const getRetiredOptions = (fileName: string) => ({
     fileName,
@@ -243,6 +250,16 @@ export const RaceStats = ({
         isCopying={isRetiredCopying}
         onDownloadImage={handleDownloadRetiredImage}
         tableRef={retiredTableRef}
+      />
+
+      <RacePointsPerRound
+        raceTeams={raceTeams}
+        isExpanded={isPointsPerRoundExpanded}
+        setIsExpanded={setIsPointsPerRoundExpanded}
+        onCopyImage={handleCopyPointsPerRoundImage}
+        isCopying={isPointsPerRoundCopying}
+        onDownloadImage={handleDownloadPointsPerRoundImage}
+        tableRef={pointsPerRoundTableRef}
       />
 
       <RaceDetailedBreakdown

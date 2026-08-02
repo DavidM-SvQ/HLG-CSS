@@ -126,7 +126,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
 
   const allRounds = useMemo(() => {
     if (!files?.elecciones?.data) return [];
-    return Array.from(new Set(files.elecciones.data.map((d: any) => parseInt(getVal(d, "Ronda"))))).filter((r: unknown) => !isNaN(Number(r))) as number[];
+    return Array.from(new Set(files?.elecciones?.data.map((d: any) => parseInt(getVal(d, "Ronda"))))).filter((r: unknown) => !isNaN(Number(r))) as number[];
   }, [files?.elecciones?.data]);
   const minPossibleRound = allRounds.length > 0 ? Math.min(...allRounds) : 1;
   const maxPossibleRound = allRounds.length > 0 ? Math.max(...allRounds) : 25;
@@ -235,7 +235,7 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
               )}
             </div>
             <div className="max-h-60 overflow-y-auto">
-              {Array.from(new Set(files.elecciones.data.map((d: any) => String(getVal(d, "Nombre_Equipo") || getVal(d, "Nombre_TG"))).filter(Boolean)))
+              {Array.from(new Set(files?.elecciones?.data.map((d: any) => String(getVal(d, "Nombre_Equipo") || getVal(d, "Nombre_TG"))).filter(Boolean)))
                 .sort()
                 .map((team) => (
                   <label key={team as string} className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 cursor-pointer">

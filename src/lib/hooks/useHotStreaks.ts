@@ -28,7 +28,7 @@ export function useHotStreaks(
     const raceWeeks: Record<string, string> = {};
     const weeksWithResults = new Set<string>();
 
-    files.carreras.data.forEach((r: any) => {
+    files?.carreras?.data.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -49,7 +49,7 @@ export function useHotStreaks(
 
     const cyclistToJugador: Record<string, string> = {};
     if (files.elecciones?.data) {
-       files.elecciones.data.forEach((row: any) => {
+       files?.elecciones?.data.forEach((row: any) => {
          const c = (row["Ciclista"] || "").toString().trim();
          const j = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
          if (c && j && j !== "No draft" && j !== "Libre") {
@@ -143,7 +143,7 @@ export function useHotStreaksTeams(
     const raceWeeks: Record<string, string> = {};
     const weeksWithResults = new Set<string>();
 
-    files.carreras.data.forEach((r: any) => {
+    files?.carreras?.data.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -164,7 +164,7 @@ export function useHotStreaksTeams(
 
     const cyclistToJugador: Record<string, string> = {};
     if (files.elecciones?.data) {
-       files.elecciones.data.forEach((row: any) => {
+       files?.elecciones?.data.forEach((row: any) => {
          const c = (row["Ciclista"] || "").toString().trim();
          const j = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
          if (c && j && j !== "No draft" && j !== "Libre") {

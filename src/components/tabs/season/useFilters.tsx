@@ -55,7 +55,7 @@ export function useFilters(context: any) {
     
     let maxMonthIdx = -1;
 
-    files.carreras.data?.forEach((r: any) => {
+    files?.carreras?.data?.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -96,13 +96,13 @@ export function useFilters(context: any) {
       const hasData = Object.keys(m).some((key) => key !== "month" && m[key] > 0);
       return hasData && idx <= activeMaxMonthIdx;
     });
-  }, [files.carreras.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType]);
+  }, [files?.carreras?.data, filteredLeaderboard, selectedEvolutionTeams, raceWinners, winsChartType]);
 
   // 4. Wins History Data (Filtered and Sorted)
   const filteredHistoryRaces = useMemo(() => {
     const raceMonths: Record<string, number> = {};
     const raceDates: Record<string, string> = {};
-    files.carreras.data?.forEach((r: any) => {
+    files?.carreras?.data?.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -194,7 +194,7 @@ export function useFilters(context: any) {
     });
 
     return filtered;
-  }, [uniqueRaces, raceWinners, filteredLeaderboard, files.carreras.data, historyMonthFilter, historyTeamFilter, historySortColumn, historySortDirection]);
+  }, [uniqueRaces, raceWinners, filteredLeaderboard, files?.carreras?.data, historyMonthFilter, historyTeamFilter, historySortColumn, historySortDirection]);
 
   return {
     teamColors,

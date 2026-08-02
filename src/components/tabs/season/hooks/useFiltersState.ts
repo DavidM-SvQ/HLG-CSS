@@ -33,7 +33,13 @@ export function useFiltersState() {
   const [cyclistsTeamFilter, setCyclistsTeamFilter] = useUrlState<string[]>("cyclistsTeamFilter", []);
   const [cyclistsCategoryFilter, setCyclistsCategoryFilter] = useUrlState<string[]>("cyclistsCategoryFilter", []);
   const [cyclistsRoundFilter, setCyclistsRoundFilter] = useUrlState<string[]>("cyclistsRoundFilter", []);
-  const [cyclistsNameSearch, setCyclistsNameSearch] = useUrlState<string>("cyclistsNameSearch", "");
+  const [cyclistsRaceFilter, setCyclistsRaceFilter] = useUrlState<string>("cyclistsRaceFilter", "all");
+  const [cyclistsMinVictorias, setCyclistsMinVictorias] = useUrlState<string>("cyclistsMinVictorias", "");
+  const [cyclistsMinCarreras, setCyclistsMinCarreras] = useUrlState<string>("cyclistsMinCarreras", "");
+  const [cyclistsMinDias, setCyclistsMinDias] = useUrlState<string>("cyclistsMinDias", "");
+  const [cyclistsMinPpc, setCyclistsMinPpc] = useUrlState<string>("cyclistsMinPpc", "");
+  const [cyclistsMinPpd, setCyclistsMinPpd] = useUrlState<string>("cyclistsMinPpd", "");
+  const [cyclistsMinPuntos, setCyclistsMinPuntos] = useUrlState<string>("cyclistsMinPuntos", "");
 
   const [unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter] = useUrlState<string>("unscoredCyclistsTeamFilter", "all");
   const [unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter] = useUrlState<string[]>("unscoredCyclistsRoundFilter", []);
@@ -42,6 +48,14 @@ export function useFiltersState() {
   const [undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter] = useUrlState<string[]>("undebutedCyclistsRoundFilter", []);
 
   const [noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter] = useUrlState<string>("noDraftCyclistsTeamFilter", "all");
+  const [noDraftCyclistsRaceFilter, setNoDraftCyclistsRaceFilter] = useUrlState<string>("noDraftCyclistsRaceFilter", "all");
+  const [noDraftCyclistsCategoryFilter, setNoDraftCyclistsCategoryFilter] = useUrlState<string[]>("noDraftCyclistsCategoryFilter", []);
+  const [noDraftMinVictorias, setNoDraftMinVictorias] = useUrlState<string>("noDraftMinVictorias", "");
+  const [noDraftMinCarreras, setNoDraftMinCarreras] = useUrlState<string>("noDraftMinCarreras", "");
+  const [noDraftMinDias, setNoDraftMinDias] = useUrlState<string>("noDraftMinDias", "");
+  const [noDraftMinPpc, setNoDraftMinPpc] = useUrlState<string>("noDraftMinPpc", "");
+  const [noDraftMinPpd, setNoDraftMinPpd] = useUrlState<string>("noDraftMinPpd", "");
+  const [noDraftMinPuntos, setNoDraftMinPuntos] = useUrlState<string>("noDraftMinPuntos", "");
   
   const [selectedEvolutionTeams, setSelectedEvolutionTeams] = useUrlState<string[]>("selectedEvolutionTeams", []);
   
@@ -63,10 +77,18 @@ export function useFiltersState() {
     noDraftCyclistsSortColumn, setNoDraftCyclistsSortColumn, noDraftCyclistsSortDirection, setNoDraftCyclistsSortDirection,
     teamsMonthFilter, setTeamsMonthFilter, teamsCategoryFilter, setTeamsCategoryFilter, historyMonthFilter, setHistoryMonthFilter,
     cyclistsTeamFilter, setCyclistsTeamFilter, cyclistsCategoryFilter, setCyclistsCategoryFilter,
-    cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsNameSearch, setCyclistsNameSearch,
+    cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsRaceFilter, setCyclistsRaceFilter,
+    cyclistsMinVictorias, setCyclistsMinVictorias, cyclistsMinCarreras, setCyclistsMinCarreras,
+    cyclistsMinDias, setCyclistsMinDias, cyclistsMinPpc, setCyclistsMinPpc,
+    cyclistsMinPpd, setCyclistsMinPpd, cyclistsMinPuntos, setCyclistsMinPuntos,
     unscoredCyclistsTeamFilter, setUnscoredCyclistsTeamFilter, unscoredCyclistsRoundFilter, setUnscoredCyclistsRoundFilter,
     undebutedCyclistsTeamFilter, setUndebutedCyclistsTeamFilter, undebutedCyclistsRoundFilter, setUndebutedCyclistsRoundFilter,
     noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter,
+    noDraftCyclistsRaceFilter, setNoDraftCyclistsRaceFilter,
+    noDraftCyclistsCategoryFilter, setNoDraftCyclistsCategoryFilter,
+    noDraftMinVictorias, setNoDraftMinVictorias, noDraftMinCarreras, setNoDraftMinCarreras,
+    noDraftMinDias, setNoDraftMinDias, noDraftMinPpc, setNoDraftMinPpc,
+    noDraftMinPpd, setNoDraftMinPpd, noDraftMinPuntos, setNoDraftMinPuntos,
     selectedEvolutionTeams, setSelectedEvolutionTeams,
     leaderboardTeamsSearch, setLeaderboardTeamsSearch,
     winsSearch, setWinsSearch, winsHistorySearch, setWinsHistorySearch,

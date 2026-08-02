@@ -73,7 +73,7 @@ export const GestionStartlists = () => {
               {(() => {
                 const finishedRaces = new Set<string>();
                 if (files.resultados?.data) {
-                  files.resultados.data.forEach((r: any) => {
+                  files?.resultados?.data.forEach((r: any) => {
                     const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
                     const raceName = String(getVal(r, "Carrera") || "").trim().toLowerCase();
                     
@@ -89,7 +89,7 @@ export const GestionStartlists = () => {
                   });
                 }
 
-                return files.carreras.data?.map((row: any, idx: number) => {
+                return files?.carreras?.data?.map((row: any, idx: number) => {
                   const carreraName = getVal(row, "Carrera")?.trim();
                   const carreraNameLower = (carreraName || "").toLowerCase();
                   if (!carreraName || finishedRaces.has(carreraNameLower)) return null;
@@ -182,8 +182,8 @@ export const GestionStartlists = () => {
       {/* Uploaded Startlists Summary */}
       <div className="border-t border-neutral-100 bg-neutral-50/50 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-neutral-900">Startlists Subidas ({Array.isArray(files.startlist?.data) ? files.startlist.data.length : 0})</h3>
-          {handleDeleteStartlist && Array.isArray(files.startlist?.data) && files.startlist.data.length > 0 && (
+          <h3 className="text-lg font-semibold text-neutral-900">Startlists Subidas ({Array.isArray(files.startlist?.data) ? files?.startlist?.data.length : 0})</h3>
+          {handleDeleteStartlist && Array.isArray(files.startlist?.data) && files?.startlist?.data.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -199,7 +199,7 @@ export const GestionStartlists = () => {
             </Button>
           )}
         </div>
-        {Array.isArray(files.startlist?.data) && files.startlist.data.length > 0 ? (
+        {Array.isArray(files.startlist?.data) && files?.startlist?.data.length > 0 ? (
           <div className="overflow-x-auto rounded-xl border border-neutral-200 shadow-sm bg-white">
             <table className="w-full text-left text-sm text-neutral-600">
               <thead className="bg-neutral-50 text-neutral-500 uppercase font-medium text-xs border-b border-neutral-200">
@@ -212,7 +212,7 @@ export const GestionStartlists = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {files.startlist.data.map((s: any, i: number) => {
+                {files?.startlist?.data.map((s: any, i: number) => {
                   const numCyclists = s.resultados?.reduce((acc: number, curr: any) => acc + (curr.ciclistas?.length || 0), 0) || 0;
                   const numEquipos = s.resultados?.length || 0;
                   
@@ -221,7 +221,7 @@ export const GestionStartlists = () => {
                   
                   let isFinished = false;
                   if (files.resultados?.data) {
-                    isFinished = files.resultados.data.some((r: any) => {
+                    isFinished = files?.resultados?.data.some((r: any) => {
                       if (String(getVal(r, "Carrera") || "").trim().toLowerCase() !== s.carrera.trim().toLowerCase()) return false;
                       const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
                       return tipoLower.includes("clasificaci") || 
@@ -272,7 +272,9 @@ export const GestionStartlists = () => {
                         <div className="flex items-center justify-center gap-1.5">
                           {fechaCarrera}
                           {isRacePastDate && !isFinished && (
-                            <AlertCircle className="w-4 h-4 text-red-500" title="La fecha de la carrera ya ha pasado" />
+                            <span title="La fecha de la carrera ya ha pasado">
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                            </span>
                           )}
                         </div>
                       </td>
@@ -291,7 +293,9 @@ export const GestionStartlists = () => {
                             minute: "2-digit",
                           }) : "-"}
                           {isUpdatedToday && (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Actualizado hoy" />
+                            <span title="Actualizado hoy">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            </span>
                           )}
                         </div>
                       </td>

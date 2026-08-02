@@ -3,11 +3,12 @@ import { cn } from "../../lib/utils";
 
 interface ChartTooltipProps {
   active?: boolean;
-  payload?: any[];
-  label?: string;
+  payload?: any;
+  label?: any;
   title?: string;
-  formatter?: (value: any, name: string, entry: any, index: number) => React.ReactNode;
-  labelFormatter?: (label: any, payload: any[]) => React.ReactNode;
+  formatter?: any;
+  labelFormatter?: any;
+  [key: string]: any;
 }
 
 export function ChartTooltip({

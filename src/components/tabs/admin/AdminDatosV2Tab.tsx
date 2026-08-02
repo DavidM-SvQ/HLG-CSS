@@ -277,7 +277,7 @@ export const AdminDatosV2Tab = () => {
       base += `#gid=${gidMatch[1]}`;
     }
     if (id === "resultados" && files.resultados?.data) {
-      const rowCount = Array.isArray(files.resultados.data) ? files.resultados.data.length : 0;
+      const rowCount = Array.isArray(files?.resultados?.data) ? files?.resultados?.data.length : 0;
       if (rowCount > 0) {
         // En lugar de enfocar una sola celda, mostramos las últimas 15 celdas y dejamos 100 de margen hacia abajo.
         // Esto previene que se oculten las últimas celdas al editar y facilita el scroll a quien escribe.

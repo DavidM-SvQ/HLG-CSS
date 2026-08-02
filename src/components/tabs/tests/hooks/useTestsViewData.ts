@@ -13,13 +13,13 @@ export function useTestsViewData(
 ) {
 
   const draftData = useMemo(() => {
-    if (!files.elecciones.data) return [];
+    if (!files?.elecciones?.data) return [];
     
     const orderMap: Record<string, number> = {};
     let orderCounter = 1;
     
     try {
-      files.elecciones.data.forEach((row: any) => {
+      files?.elecciones?.data.forEach((row: any) => {
         const ciclista = (row["Ciclista"] || "").toString().trim();
         if (ciclista) {
            orderMap[ciclista] = orderCounter++;
@@ -38,14 +38,14 @@ export function useTestsViewData(
     }
     
     return results.sort((a,b) => a.pickOrder - b.pickOrder);
-  }, [files.elecciones.data, cyclistMetadata]);
+  }, [files?.elecciones?.data, cyclistMetadata]);
 
   const teamDependencyData = useMemo(() => {
-    if (!files.elecciones.data) return [];
+    if (!files?.elecciones?.data) return [];
     
     const playerCyclists: Record<string, { ciclista: string, puntos: number, ronda: string }[]> = {};
     
-    files.elecciones.data.forEach((row: any) => {
+    files?.elecciones?.data.forEach((row: any) => {
       const ciclista = (row["Ciclista"] || "").toString().trim();
       const jugador = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
       const ronda = (row["Ronda"] || "").toString().trim();
@@ -91,17 +91,17 @@ export function useTestsViewData(
     }
     
     return results.sort((a,b) => b.topPercent - a.topPercent);
-  }, [files.elecciones.data, cyclistMetadata, playerTeamMap, dependencyTopCount, cyclistRoundMap, playerOrderMap]);
+  }, [files?.elecciones?.data, cyclistMetadata, playerTeamMap, dependencyTopCount, cyclistRoundMap, playerOrderMap]);
 
   const trendingData = useMemo(() => {
-    if (!files.carreras.data || !files.resultados.data) return { cyclists: [], teams: [], recentRaces: [] };
+    if (!files?.carreras?.data || !files?.resultados?.data) return { cyclists: [], teams: [], recentRaces: [] };
 
-    const racesWithResults = new Set(files.resultados.data.map((r: any) => getVal(r, "Carrera")?.trim()).filter(Boolean));
+    const racesWithResults = new Set(files?.resultados?.data.map((r: any) => getVal(r, "Carrera")?.trim()).filter(Boolean));
 
     const raceDates: Record<string, number> = {};
     let maxDate = 0;
     
-    files.carreras.data.forEach((r: any) => {
+    files?.carreras?.data.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       if (carreraName && fechaFin) {
@@ -154,8 +154,8 @@ export function useTestsViewData(
     });
 
     const cyclistToJugador: Record<string, string> = {};
-    if (files.elecciones.data) {
-       files.elecciones.data.forEach((row: any) => {
+    if (files?.elecciones?.data) {
+       files?.elecciones?.data.forEach((row: any) => {
          const c = (row["Ciclista"] || "").toString().trim();
          const j = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
          if (c && j && j !== "No draft" && j !== "Libre") {
@@ -183,12 +183,12 @@ export function useTestsViewData(
       .slice(0, 5);
 
     return { cyclists: topCyclists, teams: topTeams, recentRaces };
-  }, [files.carreras.data, files.resultados.data, files.elecciones.data, cyclistMetadata, playerTeamMap]);
+  }, [files?.carreras?.data, files?.resultados?.data, files?.elecciones?.data, cyclistMetadata, playerTeamMap]);
 
   const teamsList = useMemo(() => {
     const tSet = new Set<string>();
-    if (files.elecciones.data) {
-       files.elecciones.data.forEach((row: any) => {
+    if (files?.elecciones?.data) {
+       files?.elecciones?.data.forEach((row: any) => {
          const jugador = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
          if (jugador && jugador !== "No draft" && jugador !== "Libre") {
            tSet.add(playerTeamMap[jugador] || jugador);
@@ -196,10 +196,10 @@ export function useTestsViewData(
        });
     }
     return Array.from(tSet).sort();
-  }, [files.elecciones.data, playerTeamMap]);
+  }, [files?.elecciones?.data, playerTeamMap]);
 
   const h2hData = useMemo(() => {
-    if (!teamA || !teamB || !files.elecciones.data) return null;
+    if (!teamA || !teamB || !files?.elecciones?.data) return null;
 
     const getTeamStats = (targetTeam: string) => {
       const players = Object.keys(playerTeamMap).filter(p => playerTeamMap[p] === targetTeam);
@@ -208,7 +208,7 @@ export function useTestsViewData(
       const roster: string[] = [];
       const ages: number[] = [];
       
-      files.elecciones.data.forEach((row: any) => {
+      files?.elecciones?.data.forEach((row: any) => {
         const c = (row["Ciclista"] || "").toString().trim();
         const j = (row["Jugador"] || row["Nombre_TG"] || "").toString().trim();
         const age = parseInt((row["Edad"] || "0").toString().trim());
@@ -231,8 +231,8 @@ export function useTestsViewData(
          }
       });
 
-      if (files.resultados.data) {
-        files.resultados.data.forEach((row: any) => {
+      if (files?.resultados?.data) {
+        files?.resultados?.data.forEach((row: any) => {
            const c = getVal(row, "Ciclista")?.trim();
            const pos = parseInt(getVal(row, "Posición")?.toString() || "999");
            if (c && roster.includes(c) && pos <= 10) {
@@ -259,7 +259,7 @@ export function useTestsViewData(
       A: getTeamStats(teamA),
       B: getTeamStats(teamB)
     };
-  }, [teamA, teamB, files.elecciones.data, files.resultados.data, cyclistMetadata, playerTeamMap]);
+  }, [teamA, teamB, files?.elecciones?.data, files?.resultados?.data, cyclistMetadata, playerTeamMap]);
 
   return {
     draftData,

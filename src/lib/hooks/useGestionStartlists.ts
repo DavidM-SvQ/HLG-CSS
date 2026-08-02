@@ -104,9 +104,9 @@ export function useGestionStartlists(
     setIsSavingStartlist(true);
 
     try {
-      // files.startlist.data is actually expected to be the json array now
-      const currentData = Array.isArray(files.startlist.data)
-        ? files.startlist.data
+      // files?.startlist?.data is actually expected to be the json array now
+      const currentData = Array.isArray(files?.startlist?.data)
+        ? files?.startlist?.data
         : [];
 
       // Upsert: replace if same name, otherwise push
@@ -153,7 +153,7 @@ export function useGestionStartlists(
 
   const handleDeleteStartlist = async (carrera: string) => {
     try {
-      const currentData = Array.isArray(files.startlist.data) ? files.startlist.data : [];
+      const currentData = Array.isArray(files?.startlist?.data) ? files?.startlist?.data : [];
       const newData = currentData.filter((d: any) => d.carrera !== carrera);
       
       const isoDate = new Date().toISOString();

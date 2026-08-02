@@ -10,7 +10,14 @@ export function useTopDraft(
   cyclistsCategoryFilter: string[], 
   cyclistsTeamFilter: string[], 
   cyclistsRoundFilter: string[],
-  topCyclistsLimit: number
+  topCyclistsLimit: number,
+  cyclistsRaceFilter?: string,
+  cyclistsMinVictorias?: string,
+  cyclistsMinCarreras?: string,
+  cyclistsMinDias?: string,
+  cyclistsMinPpc?: string,
+  cyclistsMinPpd?: string,
+  cyclistsMinPuntos?: string
 ) {
   const { files } = useDataStore();
   const { 
@@ -23,7 +30,7 @@ export function useTopDraft(
   } = useComputedStore();
 
   return useMemo(() => {
-    if (!files.carreras.data || !leaderboard) {
+    if (!files?.carreras?.data || !leaderboard) {
       return { sortedStats: [], allStats: [] };
     }
 
@@ -52,7 +59,7 @@ export function useTopDraft(
 
     const raceMonths: Record<string, number> = {};
     const raceCats: Record<string, string> = {};
-    files.carreras.data?.forEach((r) => {
+    files?.carreras?.data?.forEach((r) => {
       const carreraName = getVal(r, "Carrera")?.toString().trim();
       const fechaFin = getVal(r, "Fecha")?.toString().trim();
       const cat = getVal(r, "Categoría")?.toString().trim();
@@ -71,6 +78,9 @@ export function useTopDraft(
 
     leaderboard?.forEach((player) => {
       player?.detalles?.forEach((d) => {
+        if (cyclistsRaceFilter && cyclistsRaceFilter !== "all" && d.carrera !== cyclistsRaceFilter) {
+          return;
+        }
         if (cyclistsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(cyclistsMonthFilter)) {
           return;
         }
@@ -115,7 +125,7 @@ export function useTopDraft(
           stats.victorias += 1;
         }
 
-        const raceData = files.carreras.data?.find((r) => getVal(r, "Carrera")?.trim() === d.carrera);
+        const raceData = files?.carreras?.data?.find((r) => getVal(r, "Carrera")?.trim() === d.carrera);
         if (raceData) {
           const diasStr = getVal(raceData, "Días");
           if (diasStr) {
@@ -134,6 +144,19 @@ export function useTopDraft(
         if (data.nombreEquipo === "No draft" || data.nombreEquipo === "No draft [99]") return false;
         if (cyclistsTeamFilter.length > 0 && !cyclistsTeamFilter.includes(data.nombreEquipo)) return false;
         if (cyclistsRoundFilter.length > 0 && !cyclistsRoundFilter.includes(data.ronda)) return false;
+        if (cyclistsRaceFilter && cyclistsRaceFilter !== "all" && data.carreras.size === 0) return false;
+
+        const numCarreras = data.carreras.size;
+        const ppc = numCarreras > 0 ? parseFloat((data.puntos / numCarreras).toFixed(1)) : 0;
+        const ppd = data.dias > 0 ? parseFloat((data.puntos / data.dias).toFixed(1)) : 0;
+
+        if (cyclistsMinVictorias !== undefined && cyclistsMinVictorias !== "" && data.victorias < Number(cyclistsMinVictorias)) return false;
+        if (cyclistsMinCarreras !== undefined && cyclistsMinCarreras !== "" && numCarreras < Number(cyclistsMinCarreras)) return false;
+        if (cyclistsMinDias !== undefined && cyclistsMinDias !== "" && data.dias < Number(cyclistsMinDias)) return false;
+        if (cyclistsMinPpc !== undefined && cyclistsMinPpc !== "" && ppc < Number(cyclistsMinPpc)) return false;
+        if (cyclistsMinPpd !== undefined && cyclistsMinPpd !== "" && ppd < Number(cyclistsMinPpd)) return false;
+        if (cyclistsMinPuntos !== undefined && cyclistsMinPuntos !== "" && data.puntos < Number(cyclistsMinPuntos)) return false;
+
         return true;
       })
       .sort((a, b) => b.puntos - a.puntos)
@@ -156,7 +179,7 @@ export function useTopDraft(
       sortedStats: allStats.slice(0, limit === 9999 ? undefined : limit)
     };
   }, [
-    files.carreras.data,
+    files?.carreras?.data,
     leaderboard,
     playerByCyclist,
     playerTeamMap,
@@ -167,6 +190,13 @@ export function useTopDraft(
     cyclistsCategoryFilter,
     cyclistsTeamFilter,
     cyclistsRoundFilter,
-    topCyclistsLimit
+    topCyclistsLimit,
+    cyclistsRaceFilter,
+    cyclistsMinVictorias,
+    cyclistsMinCarreras,
+    cyclistsMinDias,
+    cyclistsMinPpc,
+    cyclistsMinPpd,
+    cyclistsMinPuntos
   ]);
 }

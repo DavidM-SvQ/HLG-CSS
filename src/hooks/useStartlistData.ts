@@ -34,8 +34,8 @@ export function useStartlistData(
 ) {
   const startlistArray = useMemo(() => {
     if (!files?.startlist?.data) return [];
-    if (Array.isArray(files.startlist.data)) return files.startlist.data;
-    return [files.startlist.data];
+    if (Array.isArray(files?.startlist?.data)) return files?.startlist?.data;
+    return [files?.startlist?.data];
   }, [files]);
   
   useEffect(() => {
@@ -49,7 +49,7 @@ export function useStartlistData(
 
   const raceCategory = useMemo(() => {
     if (!publicStartlistRace || !files?.carreras?.data) return "";
-    let data = files.carreras.data;
+    let data = files?.carreras?.data;
     if (!Array.isArray(data)) data = [data];
     const raceObj = data.find((c: any) => getVal(c, "Carrera") === publicStartlistRace);
     return raceObj ? getVal(raceObj, "Categoría") || "" : "";
@@ -57,7 +57,7 @@ export function useStartlistData(
 
   const racePoints = useMemo(() => {
     if (!raceCategory || !files?.puntos?.data) return [];
-    let data = files.puntos.data;
+    let data = files?.puntos?.data;
     if (!Array.isArray(data)) data = [data];
     return data.filter((p: any) => getVal(p, "Categoría") === raceCategory);
   }, [raceCategory, files?.puntos?.data]);

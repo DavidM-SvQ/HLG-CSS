@@ -26,7 +26,7 @@ export function useTeamData({
     const teamWins = Object.values(raceWinners).filter((w) => w === selectedTeam).length;
     const teamPartialWins = globalTeamPartialWinsCount.totals[selectedTeam] || 0;
 
-    const teamCyclistsData = files.elecciones.data?.filter(
+    const teamCyclistsData = files?.elecciones?.data?.filter(
       (r: any) => (getVal(r, "Nombre_Equipo") || getVal(r, "Nombre_TG")) === selectedTeam
     ) || [];
 

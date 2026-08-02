@@ -15,6 +15,61 @@ export const RaceStageBreakdown = ({
   onDownloadImage,
   tableRef,
 }: any) => {
+  const [sortConfig, setSortConfig] = React.useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "desc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="ml-1 opacity-20 text-[10px]">↕</span>;
+    }
+    return sortConfig.direction === "asc" ? (
+      <span className="ml-1 text-[10px] text-blue-400">↑</span>
+    ) : (
+      <span className="ml-1 text-[10px] text-blue-400">↓</span>
+    );
+  };
+
+  const sortedTeamStagePoints = React.useMemo(() => {
+    if (!teamStagePoints) return [];
+    if (!sortConfig) return teamStagePoints;
+
+    const list = [...teamStagePoints];
+    list.sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      if (sortConfig.key === "pos") {
+        aVal = a.pos || 999;
+        bVal = b.pos || 999;
+      } else if (sortConfig.key === "equipo") {
+        aVal = a.nombreEquipo || a.jugador || "";
+        bVal = b.nombreEquipo || b.jugador || "";
+      } else if (sortConfig.key === "total") {
+        aVal = a.total || 0;
+        bVal = b.total || 0;
+      } else {
+        aVal = a.pointsByCol ? (a.pointsByCol[sortConfig.key] || 0) : 0;
+        bVal = b.pointsByCol ? (b.pointsByCol[sortConfig.key] || 0) : 0;
+      }
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      return sortConfig.direction === "asc"
+        ? (aVal < bVal ? -1 : 1)
+        : (aVal > bVal ? -1 : 1);
+    });
+    return list;
+  }, [teamStagePoints, sortConfig]);
+
   if (!(finalColumns.length > 1 || finalColumns.some((c: any) => /^\d+/.test(c.formatted)))) return null;
 
   return (
@@ -44,29 +99,39 @@ export const RaceStageBreakdown = ({
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
-              <thead className={cn("bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10")}>
+              <thead className={cn("bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10 select-none")}>
                 <tr>
-                  <th className="px-4 py-3.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px]">
-                    Pos
+                  <th 
+                    className="px-4 py-3.5 font-bold sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 text-center min-w-[32px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("pos")}
+                  >
+                    Pos {getSortIcon("pos")}
                   </th>
-                  <th className="px-4 py-3.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700 w-48">
-                    Equipo [#Orden]
+                  <th 
+                    className="px-4 py-3.5 font-bold sticky left-[32px] bg-[#1e293b] z-20 border-r border-slate-700 w-48 cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("equipo")}
+                  >
+                    Equipo [#Orden] {getSortIcon("equipo")}
                   </th>
                   {finalColumns.map((col: any) => (
                     <th
                       key={col.formatted}
-                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700"
+                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
+                      onClick={() => requestSort(col.formatted)}
                     >
-                      {col.formatted}
+                      {col.formatted} {getSortIcon(col.formatted)}
                     </th>
                   ))}
-                  <th className="px-4 py-3.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px]">
-                    Puntos
+                  <th 
+                    className="px-4 py-3.5 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("total")}
+                  >
+                    Puntos {getSortIcon("total")}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 italic md:not-italic">
-                {teamStagePoints.map((team: any, index: number) => {
+                {sortedTeamStagePoints.map((team: any, index: number) => {
                   const maxTotal = Math.max(
                     ...teamStagePoints.map((t: any) => t.total)
                   );

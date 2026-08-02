@@ -18,7 +18,7 @@ export const GhostDraftView = ({
   mode = 'puntos'
 }: any) => {
   const ghostDataRaw = useGhostDraft(
-    files.elecciones.data,
+    files?.elecciones?.data,
     cyclistMetadata,
     playerTeamMap,
     playerOrderMap,
@@ -31,7 +31,7 @@ export const GhostDraftView = ({
   const uniqueRounds = useMemo(() => {
     if (!files.elecciones?.data) return [];
     const rnds = new Set<string>();
-    files.elecciones.data.forEach((d: any) => {
+    files?.elecciones?.data.forEach((d: any) => {
       const r = getVal(d, "Ronda");
       if (r) rnds.add(String(r));
     });
@@ -76,7 +76,7 @@ export const GhostDraftView = ({
   const uniqueTeams = useMemo(() => {
     if (!files.elecciones?.data) return [];
     const ts = new Set<string>();
-    files.elecciones.data.forEach((d: any) => {
+    files?.elecciones?.data.forEach((d: any) => {
       const j = getVal(d, "Jugador") || getVal(d, "Nombre_TG");
       if (j && playerTeamMap[j]) ts.add(String(playerTeamMap[j]));
       else if (j) ts.add(String(j));

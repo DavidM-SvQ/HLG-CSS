@@ -14,6 +14,14 @@ export function NoDraftCyclists() {
     cyclistMetadata, 
     getVal,
     noDraftCyclistsMonthFilter: monthFilter, setNoDraftCyclistsMonthFilter: setMonthFilter,
+    noDraftCyclistsRaceFilter: raceFilter, setNoDraftCyclistsRaceFilter: setRaceFilter,
+    noDraftCyclistsCategoryFilter: categoryFilter, setNoDraftCyclistsCategoryFilter: setCategoryFilter,
+    noDraftMinVictorias: minVictorias, setNoDraftMinVictorias: setMinVictorias,
+    noDraftMinCarreras: minCarreras, setNoDraftMinCarreras: setMinCarreras,
+    noDraftMinDias: minDias, setNoDraftMinDias: setMinDias,
+    noDraftMinPpc: minPpc, setNoDraftMinPpc: setMinPpc,
+    noDraftMinPpd: minPpd, setNoDraftMinPpd: setMinPpd,
+    noDraftMinPuntos: minPuntos, setNoDraftMinPuntos: setMinPuntos,
     noDraftCyclistsSortColumn: sortColumn, setNoDraftCyclistsSortColumn: setSortColumn,
     noDraftCyclistsSortDirection: sortDirection, setNoDraftCyclistsSortDirection: setSortDirection,
     noDraftCyclistsTeamFilter, setNoDraftCyclistsTeamFilter
@@ -73,15 +81,20 @@ export function NoDraftCyclists() {
     const noDraftPlayer = leaderboard?.find((p: any) => p.jugador === "No draft");
     if (!noDraftPlayer) return { sortedStats: [], allStatsCount: 0, maxPuntos: 0, minPuntos: 0 };
 
-    // Map races to months
+    // Map races to months and categories
     const raceMonths: Record<string, number> = {};
-    files.carreras.data?.forEach((r: any) => {
+    const raceCats: Record<string, string> = {};
+    files?.carreras?.data?.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.toString().trim();
       const fechaFin = getVal(r, "Fecha")?.toString().trim();
-      if (carreraName && fechaFin) {
-        const parts = fechaFin.split(/[-/]/);
-        if (parts.length >= 2) {
-          raceMonths[carreraName] = parseInt(parts[1]) - 1;
+      const cat = getVal(r, "Categoría")?.toString().trim();
+      if (carreraName) {
+        if (cat) raceCats[carreraName] = cat;
+        if (fechaFin) {
+          const parts = fechaFin.split(/[-/]/);
+          if (parts.length >= 2) {
+            raceMonths[carreraName] = parseInt(parts[1]) - 1;
+          }
         }
       }
     });
@@ -89,8 +102,15 @@ export function NoDraftCyclists() {
     const cyclistStats: Record<string, any> = {};
 
     noDraftPlayer.detalles.forEach((d: any) => {
+      if (raceFilter && raceFilter !== "all" && d.carrera !== raceFilter) {
+        return;
+      }
       if (monthFilter !== "all" && raceMonths[d.carrera] !== parseInt(monthFilter)) {
         return;
+      }
+      if (categoryFilter && categoryFilter.length > 0) {
+        const cat = raceCats[d.carrera];
+        if (!cat || !categoryFilter.includes(cat)) return;
       }
 
       if (!cyclistStats[d.ciclista]) {
@@ -101,6 +121,7 @@ export function NoDraftCyclists() {
           equipoBreve: meta?.equipoBreve || "",
           victorias: 0,
           carreras: new Set<string>(),
+          dias: 0,
         };
       }
 
@@ -114,9 +135,32 @@ export function NoDraftCyclists() {
         "Clasificación final (Crono equipos)", "Clásica"
       ].includes(d.tipoResultado);
       if (isPos01 && isValidType) stats.victorias += 1;
+
+      const raceData = files?.carreras?.data?.find((r: any) => getVal(r, "Carrera")?.trim() === d.carrera);
+      if (raceData) {
+        const diasStr = getVal(raceData, "Días");
+        stats.dias += diasStr ? (parseInt(diasStr) || 1) : 1;
+      } else {
+        stats.dias += 1;
+      }
     });
 
     const allStats = Object.entries(cyclistStats)
+      .filter(([_, data]: [string, any]) => {
+        if (raceFilter && raceFilter !== "all" && data.carreras.size === 0) return false;
+        const numCarreras = data.carreras.size;
+        const ppc = numCarreras > 0 ? parseFloat((data.puntos / numCarreras).toFixed(1)) : 0;
+        const ppd = data.dias > 0 ? parseFloat((data.puntos / data.dias).toFixed(1)) : 0;
+
+        if (minVictorias !== undefined && String(minVictorias) !== "" && data.victorias < Number(minVictorias)) return false;
+        if (minCarreras !== undefined && String(minCarreras) !== "" && numCarreras < Number(minCarreras)) return false;
+        if (minDias !== undefined && String(minDias) !== "" && data.dias < Number(minDias)) return false;
+        if (minPpc !== undefined && String(minPpc) !== "" && ppc < Number(minPpc)) return false;
+        if (minPpd !== undefined && String(minPpd) !== "" && ppd < Number(minPpd)) return false;
+        if (minPuntos !== undefined && String(minPuntos) !== "" && data.puntos < Number(minPuntos)) return false;
+
+        return true;
+      })
       .sort((a, b) => b[1].puntos - a[1].puntos)
       .map(([name, data]: [string, any], index) => {
         const numCarreras = data.carreras.size;
@@ -124,7 +168,9 @@ export function NoDraftCyclists() {
           name,
           data,
           numCarreras,
+          dias: data.dias,
           ppc: numCarreras > 0 ? parseFloat((data.puntos / numCarreras).toFixed(1)) : 0,
+          ppd: data.dias > 0 ? parseFloat((data.puntos / data.dias).toFixed(1)) : 0,
           originalPos: index + 1,
         };
       });
@@ -139,7 +185,9 @@ export function NoDraftCyclists() {
         case "pais": valA = a.data.pais; valB = b.data.pais; break;
         case "victorias": valA = a.data.victorias; valB = b.data.victorias; break;
         case "carreras": valA = a.numCarreras; valB = b.numCarreras; break;
+        case "dias": valA = a.dias; valB = b.dias; break;
         case "ppc": valA = a.ppc; valB = b.ppc; break;
+        case "ppd": valA = a.ppd; valB = b.ppd; break;
         case "puntos":
         default: valA = a.data.puntos; valB = b.data.puntos; break;
       }
@@ -152,16 +200,20 @@ export function NoDraftCyclists() {
 
     const limit = Math.max(0, Number(topLimit) || 25);
     const limitedStats = allStats.slice(0, limit);
-    const maxPuntos = limitedStats.length > 0 ? Math.max(...limitedStats.map(s => s.data.puntos)) : 0;
-    const minPuntos = limitedStats.length > 0 ? Math.min(...limitedStats.map(s => s.data.puntos)) : 0;
+    const maxPuntosVal = limitedStats.length > 0 ? Math.max(...limitedStats.map(s => s.data.puntos)) : 0;
+    const minPuntosVal = limitedStats.length > 0 ? Math.min(...limitedStats.map(s => s.data.puntos)) : 0;
 
     return { 
       sortedStats: limitedStats, 
       allStatsCount: allStats.length,
-      maxPuntos,
-      minPuntos
+      maxPuntos: maxPuntosVal,
+      minPuntos: minPuntosVal
     };
-  }, [leaderboard, monthFilter, sortColumn, sortDirection, topLimit, files.carreras.data, cyclistMetadata, getVal]);
+  }, [
+    leaderboard, monthFilter, raceFilter, categoryFilter,
+    minVictorias, minCarreras, minDias, minPpc, minPpd, minPuntos,
+    sortColumn, sortDirection, topLimit, files?.carreras?.data, cyclistMetadata, getVal
+  ]);
 
   return (
     <div className="space-y-8">
@@ -169,6 +221,16 @@ export function NoDraftCyclists() {
         <NoDraftFilters 
           monthFilter={monthFilter}
           setMonthFilter={setMonthFilter}
+          raceFilter={raceFilter}
+          setRaceFilter={setRaceFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          minVictorias={minVictorias} setMinVictorias={setMinVictorias}
+          minCarreras={minCarreras} setMinCarreras={setMinCarreras}
+          minDias={minDias} setMinDias={setMinDias}
+          minPpc={minPpc} setMinPpc={setMinPpc}
+          minPpd={minPpd} setMinPpd={setMinPpd}
+          minPuntos={minPuntos} setMinPuntos={setMinPuntos}
           topLimit={topLimit}
           setTopLimit={setTopLimit}
           isExpanded={isExpanded}
@@ -179,6 +241,8 @@ export function NoDraftCyclists() {
           handleCopyText={handleCopyText}
           handleDownload={handleDownload}
           allStatsCount={processedData.allStatsCount}
+          files={files}
+          getVal={getVal}
         />
         
         <NoDraftTable 

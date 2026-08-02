@@ -15,8 +15,17 @@ export function TopDraftCyclistsFilters(props: any) {
     cyclistsCategoryFilter, setCyclistsCategoryFilter, allCategories,
     isCyclistsRoundFilterOpen, setIsCyclistsRoundFilterOpen,
     cyclistsRoundFilter, setCyclistsRoundFilter, cyclistsRoundMap,
+    cyclistsRaceFilter, setCyclistsRaceFilter,
+    cyclistsMinVictorias, setCyclistsMinVictorias,
+    cyclistsMinCarreras, setCyclistsMinCarreras,
+    cyclistsMinDias, setCyclistsMinDias,
+    cyclistsMinPpc, setCyclistsMinPpc,
+    cyclistsMinPpd, setCyclistsMinPpd,
+    cyclistsMinPuntos, setCyclistsMinPuntos,
     cyclistsNameSearch, setCyclistsNameSearch, setTopCyclistsLimit
   , leaderboard, files, cyclistsMonthFilter, setCyclistsMonthFilter } = props;
+
+  const [isValueFiltersOpen, setIsValueFiltersOpen] = React.useState(false);
 
   const uniqueTeams = React.useMemo(() => {
     return Array.from(
@@ -41,6 +50,16 @@ export function TopDraftCyclistsFilters(props: any) {
       )
     ).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b));
   }, [cyclistsRoundMap]);
+
+  const uniqueRaces = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        files?.carreras?.data?.map((r: any) => getVal(r, "Carrera"))?.map((c: any) => c?.trim())?.filter(Boolean) as string[]
+      )
+    ).sort((a: string, b: string) => a.localeCompare(b));
+  }, [files?.carreras?.data, getVal]);
+
+  const hasActiveValueFilters = Boolean(cyclistsMinVictorias || cyclistsMinCarreras || cyclistsMinDias || cyclistsMinPpc || cyclistsMinPpd || cyclistsMinPuntos);
 
   const limit = Math.max(0, Number(topCyclistsLimit) || 25);
   const count = limit === 9999 ? (leaderboard?.length || 0) : limit;
@@ -74,6 +93,20 @@ export function TopDraftCyclistsFilters(props: any) {
               numBlocks={numBlocks}
             />
           </div>
+
+          {/* Race Filter */}
+          <select
+            value={cyclistsRaceFilter || "all"}
+            onChange={(e) => setCyclistsRaceFilter(e.target.value)}
+            className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 max-w-[200px] truncate cursor-pointer"
+          >
+            <option value="all">Todas las carreras</option>
+            {uniqueRaces.map((race) => (
+              <option key={race} value={race}>
+                {race}
+              </option>
+            ))}
+          </select>
 
           <div className="relative">
             <Button variant="outline" onClick={() => setIsCyclistsTeamFilterOpen(!isCyclistsTeamFilterOpen)} className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]">
@@ -175,6 +208,120 @@ export function TopDraftCyclistsFilters(props: any) {
                       <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
                     </label>
                   ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Value Filters Popover */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              onClick={() => setIsValueFiltersOpen(!isValueFiltersOpen)}
+              className={cn(
+                "flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]",
+                hasActiveValueFilters && "border-blue-500 bg-blue-50/50 text-blue-700 font-medium"
+              )}
+            >
+              <span className="truncate">
+                {hasActiveValueFilters ? "Valores (filtrados)" : "Filtros de valor"}
+              </span>
+              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isValueFiltersOpen && "rotate-180")} />
+            </Button>
+
+            {isValueFiltersOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsValueFiltersOpen(false)} />
+                <div className="absolute right-0 mt-2 w-72 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-3 space-y-2 text-xs">
+                  <div className="flex justify-between items-center border-b border-neutral-100 pb-1 mb-2">
+                    <span className="font-bold text-neutral-700 uppercase tracking-wider text-[10px]">Valores mínimos (≥)</span>
+                    {hasActiveValueFilters && (
+                      <button
+                        onClick={() => {
+                          setCyclistsMinVictorias("");
+                          setCyclistsMinCarreras("");
+                          setCyclistsMinDias("");
+                          setCyclistsMinPpc("");
+                          setCyclistsMinPpd("");
+                          setCyclistsMinPuntos("");
+                        }}
+                        className="text-[10px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                      >
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Victorias</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 1"
+                        value={cyclistsMinVictorias || ""}
+                        onChange={(e) => setCyclistsMinVictorias(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Carreras</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 2"
+                        value={cyclistsMinCarreras || ""}
+                        onChange={(e) => setCyclistsMinCarreras(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Días</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 5"
+                        value={cyclistsMinDias || ""}
+                        onChange={(e) => setCyclistsMinDias(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">P/C</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Ej. 10.0"
+                        value={cyclistsMinPpc || ""}
+                        onChange={(e) => setCyclistsMinPpc(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">P/D</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Ej. 5.0"
+                        value={cyclistsMinPpd || ""}
+                        onChange={(e) => setCyclistsMinPpd(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Puntos</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 50"
+                        value={cyclistsMinPuntos || ""}
+                        onChange={(e) => setCyclistsMinPuntos(e.target.value)}
+                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </>
             )}

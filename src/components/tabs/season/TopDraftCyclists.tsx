@@ -23,6 +23,13 @@ export function TopDraftCyclists() {
     cyclistsTeamFilter, setCyclistsTeamFilter,
     cyclistsCategoryFilter, setCyclistsCategoryFilter,
     cyclistsRoundFilter, setCyclistsRoundFilter,
+    cyclistsRaceFilter, setCyclistsRaceFilter,
+    cyclistsMinVictorias, setCyclistsMinVictorias,
+    cyclistsMinCarreras, setCyclistsMinCarreras,
+    cyclistsMinDias, setCyclistsMinDias,
+    cyclistsMinPpc, setCyclistsMinPpc,
+    cyclistsMinPpd, setCyclistsMinPpd,
+    cyclistsMinPuntos, setCyclistsMinPuntos,
     cyclistsNameSearch, setCyclistsNameSearch,
     cyclistsSortColumn, setCyclistsSortColumn,
     cyclistsSortDirection, setCyclistsSortDirection
@@ -84,7 +91,14 @@ export function TopDraftCyclists() {
     cyclistsCategoryFilter,
     cyclistsTeamFilter,
     cyclistsRoundFilter,
-    topCyclistsLimit
+    topCyclistsLimit,
+    cyclistsRaceFilter,
+    cyclistsMinVictorias,
+    cyclistsMinCarreras,
+    cyclistsMinDias,
+    cyclistsMinPpc,
+    cyclistsMinPpd,
+    cyclistsMinPuntos
   );
 
   const limit = Math.max(0, Number(topCyclistsLimit) || 25);
@@ -192,6 +206,13 @@ export function TopDraftCyclists() {
                                     cyclistsNameSearch={cyclistsNameSearch} setCyclistsNameSearch={setCyclistsNameSearch} setTopCyclistsLimit={setTopCyclistsLimit}
                                     leaderboard={leaderboard} files={files}
                                     cyclistsMonthFilter={cyclistsMonthFilter} setCyclistsMonthFilter={setCyclistsMonthFilter}
+                                    cyclistsRaceFilter={cyclistsRaceFilter} setCyclistsRaceFilter={setCyclistsRaceFilter}
+                                    cyclistsMinVictorias={cyclistsMinVictorias} setCyclistsMinVictorias={setCyclistsMinVictorias}
+                                    cyclistsMinCarreras={cyclistsMinCarreras} setCyclistsMinCarreras={setCyclistsMinCarreras}
+                                    cyclistsMinDias={cyclistsMinDias} setCyclistsMinDias={setCyclistsMinDias}
+                                    cyclistsMinPpc={cyclistsMinPpc} setCyclistsMinPpc={setCyclistsMinPpc}
+                                    cyclistsMinPpd={cyclistsMinPpd} setCyclistsMinPpd={setCyclistsMinPpd}
+                                    cyclistsMinPuntos={cyclistsMinPuntos} setCyclistsMinPuntos={setCyclistsMinPuntos}
                                 />
                                 <TopDraftCyclistsTable
                                     isTopCyclistsDraftExpanded={isTopCyclistsDraftExpanded} topCyclistsDraftRefContainer={topCyclistsDraftRefContainer}

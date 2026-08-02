@@ -73,7 +73,7 @@ export function UnscoredCyclists() {
   // Data Processing
   const processedData = useMemo(() => {
     // Get all cyclists from elecciones
-    const unscored = files.elecciones.data?.map((row: any) => {
+    const unscored = files?.elecciones?.data?.map((row: any) => {
       const ciclista = getVal(row, "Ciclista")?.trim();
       const jugador = getVal(row, "Nombre_TG")?.trim();
       const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim();
@@ -144,7 +144,7 @@ export function UnscoredCyclists() {
       maxCarreras,
       maxDias
     };
-  }, [files.elecciones.data, teamFilter, roundFilter, sortColumn, sortDirection, playerOrderMap, cyclistRoundMap, leaderboard, cyclistMetadata, getVal]);
+  }, [files?.elecciones?.data, teamFilter, roundFilter, sortColumn, sortDirection, playerOrderMap, cyclistRoundMap, leaderboard, cyclistMetadata, getVal]);
 
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm mt-8">

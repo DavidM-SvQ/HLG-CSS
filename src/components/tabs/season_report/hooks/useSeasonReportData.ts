@@ -17,7 +17,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
   const raceMonths = useMemo(() => {
     const map: Record<string, number> = {};
     if (!files?.carreras?.data) return map;
-    files.carreras.data.forEach((r: any) => {
+    files?.carreras?.data.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.toString().trim();
       const fechaFin = getVal(r, "Fecha")?.toString().trim();
       if (carreraName && fechaFin) {
@@ -220,7 +220,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const teamTotalCompDays: Record<string, number> = {};
     if (files?.carreras?.data && leaderboard) {
       const raceDaysRaw: Record<string, number> = {};
-      files.carreras.data.forEach((r: any) => {
+      files?.carreras?.data.forEach((r: any) => {
         const name = getVal(r, "Carrera")?.toString();
         if (name) {
           raceDaysRaw[norm(name)] = parseInt(getVal(r, "Días")) || 1;
@@ -294,7 +294,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const raceCats: Record<string, string> = {};
     const raceDays: Record<string, number> = {};
     if (files?.carreras?.data) {
-      files.carreras.data.forEach((r: any) => {
+      files?.carreras?.data.forEach((r: any) => {
         const name = getVal(r, "Carrera")?.toString();
         const cat = getVal(r, "Categoría")?.toString().trim();
         const diasStr = getVal(r, "Días");
@@ -307,7 +307,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
 
     const cyclistMetadata: Record<string, { pais: string }> = {};
     if (files?.ciclistas?.data) {
-      files.ciclistas.data.forEach((c: any) => {
+      files?.ciclistas?.data.forEach((c: any) => {
         const name = getVal(c, "Ciclista")?.trim();
         const pais = getVal(c, "País")?.trim();
         if (name && pais) {
@@ -368,7 +368,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       stats.dias = 0; // reset
     });
     if (files?.resultados?.data) {
-      files.resultados.data.forEach((r: any) => {
+      files?.resultados?.data.forEach((r: any) => {
          const ciclista = getVal(r, "Ciclista")?.trim();
          const tipo = getVal(r, "Tipo")?.trim();
          const carrera = getVal(r, "Carrera")?.trim();
@@ -403,13 +403,13 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     const eleccionesList: { ciclista: string; team: string; round: string }[] = [];
     if (files?.elecciones?.data) {
       const uniquePlayersSet = new Set<string>();
-      files.elecciones.data.forEach((row: any) => {
+      files?.elecciones?.data.forEach((row: any) => {
         const jugador = String(getVal(row, "Nombre_TG") || getVal(row, "Jugador") || getVal(row, "Manager") || "").trim();
         if (jugador) uniquePlayersSet.add(jugador);
       });
       const numPlayers = uniquePlayersSet.size;
 
-      files.elecciones.data.forEach((row: any, idx: number) => {
+      files?.elecciones?.data.forEach((row: any, idx: number) => {
         const ciclista = String(getVal(row, "Ciclista") || "").trim();
         if (!ciclista) return;
 
@@ -525,7 +525,7 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
         let eq = "-";
         let pais = "-";
         if (files?.ciclistas?.data) {
-           const match = files.ciclistas.data?.find((c: any) => getVal(c, "Ciclista")?.trim() === cyclist);
+           const match = files?.ciclistas?.data?.find((c: any) => getVal(c, "Ciclista")?.trim() === cyclist);
            if (match) {
              const teamFromCiclistas = getVal(match, "Equipo")?.trim();
              if (teamFromCiclistas && files?.equipos?.data) {
@@ -658,6 +658,6 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
       allRounds,
       allTeams,
     };
-  }, [selectedMonths, leaderboard, visibleRaces, raceMonths, files.carreras.data, files.ciclistas.data, files.equipos.data, files.resultados?.data, requireSelectedMonths]);
+  }, [selectedMonths, leaderboard, visibleRaces, raceMonths, files?.carreras?.data, files?.ciclistas?.data, files.equipos.data, files.resultados?.data, requireSelectedMonths]);
   return { availableMonths, monthReportData };
 }

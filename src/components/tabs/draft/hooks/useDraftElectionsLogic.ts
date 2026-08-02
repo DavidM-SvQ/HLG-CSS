@@ -15,7 +15,7 @@ export function useDraftElectionsLogic(
 ) {
   const draftFilteredData = useMemo(() => {
     if (!files?.elecciones?.data) return [];
-    return files.elecciones.data.filter((row: any) => {
+    return files?.elecciones?.data.filter((row: any) => {
       const ciclista = getVal(row, 'Ciclista') as string;
       const matchesSearch = ciclista
         ?.toLowerCase()

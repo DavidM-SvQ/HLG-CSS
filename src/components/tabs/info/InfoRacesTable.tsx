@@ -79,7 +79,7 @@ export function InfoRacesTable({
               <SelectItem value="all">Todas las categorías</SelectItem>
               {[
                 ...new Set(
-                  files.carreras.data?.map((r: any) =>
+                  files?.carreras?.data?.map((r: any) =>
                     getVal(r, "Categoría")?.trim(),
                   ),
                 ),

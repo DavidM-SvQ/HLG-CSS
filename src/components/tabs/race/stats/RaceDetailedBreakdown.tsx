@@ -52,7 +52,16 @@ export const RaceDetailedBreakdown = ({
         const cyclistMap = new Map<string, { ronda: string; total: number; concepts: any[]; }>();
         team?.details?.forEach((d: any) => {
           if (!cyclistMap.has(d.ciclista)) {
-            cyclistMap.set(d.ciclista, { ronda: d.ronda, total: 0, concepts: [] });
+            let rStr = "FA";
+            if (d.ronda !== undefined && d.ronda !== null && d.ronda !== "") {
+              const num = parseInt(d.ronda.toString(), 10);
+              if (!isNaN(num) && num > 0) {
+                rStr = String(num).padStart(2, '0');
+              } else if (d.ronda.toString().toUpperCase() !== "FA") {
+                rStr = d.ronda.toString();
+              }
+            }
+            cyclistMap.set(d.ciclista, { ronda: rStr, total: 0, concepts: [] });
           }
           const c = cyclistMap.get(d.ciclista)!;
           c.total += d.puntosObtenidos;

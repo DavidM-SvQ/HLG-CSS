@@ -75,7 +75,7 @@ export const PublishedRacesTracker = ({ files, uniqueRaces }: PublishedRacesTrac
   // Determine finished races
   const finishedRacesSet = new Set<string>();
   if (files.resultados?.data) {
-    files.resultados.data.forEach((row: any) => {
+    files?.resultados?.data.forEach((row: any) => {
       const type = getVal(row, "Tipo")?.trim();
       if (type && type.match(/Clasificación final/i)) {
          const race = getVal(row, "Carrera")?.trim();

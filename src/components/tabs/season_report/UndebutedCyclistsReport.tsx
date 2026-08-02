@@ -42,7 +42,7 @@ export const UndebutedCyclistsReport: React.FC<UndebutedCyclistsReportProps> = (
   const [isUndebutedRoundFilterOpen, setIsUndebutedRoundFilterOpen] = useState(false);
 
   const undebutedList = useMemo(() => {
-    return files.elecciones.data?.map((row: any) => {
+    return files?.elecciones?.data?.map((row: any) => {
       const ciclista = getVal(row, "Ciclista")?.trim();
       if (!ciclista) return null;
       const meta = cyclistMetadata[ciclista];

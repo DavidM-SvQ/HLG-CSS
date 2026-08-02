@@ -13,8 +13,63 @@ export const RaceRetiredCyclists = ({
   onDownloadImage,
   tableRef,
 }: any) => {
-  // Always render the table so it's visible even when empty
-  // if (!retiredCyclists || retiredCyclists.length === 0) return null;
+  const [sortConfig, setSortConfig] = React.useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "desc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="ml-1 opacity-20 text-[10px]">↕</span>;
+    }
+    return sortConfig.direction === "asc" ? (
+      <span className="ml-1 text-[10px] text-blue-400">↑</span>
+    ) : (
+      <span className="ml-1 text-[10px] text-blue-400">↓</span>
+    );
+  };
+
+  const sortedRetiredCyclists = React.useMemo(() => {
+    if (!retiredCyclists) return [];
+    if (!sortConfig) return retiredCyclists;
+
+    const list = [...retiredCyclists];
+    list.sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      if (sortConfig.key === "ciclista") {
+        aVal = a.ciclista || "";
+        bVal = b.ciclista || "";
+      } else if (sortConfig.key === "equipo") {
+        aVal = a.equipo || "";
+        bVal = b.equipo || "";
+      } else if (sortConfig.key === "status") {
+        aVal = a.status || "";
+        bVal = b.status || "";
+      } else if (sortConfig.key === "tempPoints") {
+        aVal = a.tempPoints || 0;
+        bVal = b.tempPoints || 0;
+      } else if (sortConfig.key === "racePoints") {
+        aVal = a.racePoints || 0;
+        bVal = b.racePoints || 0;
+      }
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      return sortConfig.direction === "asc"
+        ? (aVal < bVal ? -1 : 1)
+        : (aVal > bVal ? -1 : 1);
+    });
+    return list;
+  }, [retiredCyclists, sortConfig]);
 
   const maxRetiredPoints = retiredCyclists && retiredCyclists.length > 0 ? Math.max(...retiredCyclists.map((c: any) => c.racePoints), 1) : 1;
   const getRetiredPointsColor = (points: number) => {
@@ -52,24 +107,49 @@ export const RaceRetiredCyclists = ({
         >
           <div className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-sm text-left border-collapse mx-auto">
-              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10">
+              <thead className="bg-[#1e293b] text-white border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wider sticky top-0 z-10 select-none">
                 <tr>
-                  <th className="px-4 py-3 min-w-[140px]">Ciclista &lt;Ronda&gt;</th>
-                  <th className="px-4 py-3 min-w-[140px]">Equipo [#Orden]</th>
-                  <th className="px-4 py-3 text-center">Estado</th>
-                  <th className="px-4 py-3 text-center">Ptos Temp.</th>
-                  <th className="px-4 py-3 text-center">Ptos Carrera</th>
+                  <th 
+                    className="px-4 py-3 min-w-[140px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("ciclista")}
+                  >
+                    Ciclista &lt;Ronda&gt; {getSortIcon("ciclista")}
+                  </th>
+                  <th 
+                    className="px-4 py-3 min-w-[140px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("equipo")}
+                  >
+                    Equipo [#Orden] {getSortIcon("equipo")}
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("status")}
+                  >
+                    Estado {getSortIcon("status")}
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("tempPoints")}
+                  >
+                    Ptos Temp. {getSortIcon("tempPoints")}
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("racePoints")}
+                  >
+                    Ptos Carrera {getSortIcon("racePoints")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50">
-                {(!retiredCyclists || retiredCyclists.length === 0) && (
+                {(!sortedRetiredCyclists || sortedRetiredCyclists.length === 0) && (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-neutral-500 font-medium text-sm">
                       No hay abandonos en esta carrera
                     </td>
                   </tr>
                 )}
-                {retiredCyclists && retiredCyclists.map((c: any, idx: number) => {
+                {sortedRetiredCyclists && sortedRetiredCyclists.map((c: any, idx: number) => {
                   const ptosColor = getRetiredPointsColor(typeof c.racePoints === 'number' ? c.racePoints : 0);
                   return (
                     <tr key={idx} className="hover:bg-red-50/30 transition-colors">

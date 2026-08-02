@@ -92,7 +92,7 @@ export function useDraftStats({
       const roundTotals: Record<string, number> = {};
       const validTeams = new Set<string>();
 
-      files.elecciones.data.forEach((row: any) => {
+      files?.elecciones?.data.forEach((row: any) => {
         const teamName = String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG") || "");
         if (draftDatosTeamFilter.length > 0 && !draftDatosTeamFilter.includes(teamName)) return;
 
@@ -137,7 +137,7 @@ export function useDraftStats({
 
       const picksByRound: Record<string, { equipo: string, ciclista: string, pts: number }[]> = {};
 
-      files.elecciones.data.forEach((row: any) => {
+      files?.elecciones?.data.forEach((row: any) => {
          const teamName = String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG") || "");
          if (!validTeams.has(teamName)) return;
          

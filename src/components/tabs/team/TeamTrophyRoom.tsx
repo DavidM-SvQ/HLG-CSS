@@ -36,12 +36,12 @@ export const TeamTrophyRoom = ({
                   ?.reduce((sum: number, d: any) => sum + d.puntosObtenidos, 0) || 0;
 
               // Calculate total points for the race category to determine importance
-              const raceData = files.carreras.data?.find(
+              const raceData = files?.carreras?.data?.find(
                 (r: any) => getVal(r, "Carrera") === race,
               );
               const category = raceData ? getVal(raceData, "Categoría") : null;
               const totalRacePoints = category
-                ? files.puntos.data
+                ? files?.puntos?.data
                     ?.filter((p: any) => getVal(p, "Categoría") === category)
                     ?.reduce(
                       (sum: number, p: any) =>

@@ -54,7 +54,7 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
 
     // Parse all races to date and category mapping
     const raceMeta: Record<string, { date: string; dateObj: Date; category: string }> = {};
-    files.carreras.data.forEach((r: any) => {
+    files?.carreras?.data.forEach((r: any) => {
       const name = (getVal(r, "Carrera") || getVal(r, "Prueba"))?.trim();
       const dateStr = getVal(r, "Fecha")?.trim();
       const cat = (getVal(r, "Categoría") || getVal(r, "Categoria"))?.trim();

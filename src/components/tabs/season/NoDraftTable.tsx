@@ -81,7 +81,9 @@ export function NoDraftTable({
                 { id: "pais", label: "País" },
                 { id: "victorias", label: "Vic" },
                 { id: "carreras", label: "Carr" },
+                { id: "dias", label: "Días" },
                 { id: "ppc", label: "P/C" },
+                { id: "ppd", label: "P/D" },
                 { id: "puntos", label: "Pts" },
               ].map((col) => (
                 <th
@@ -102,7 +104,7 @@ export function NoDraftTable({
           <tbody className="divide-y md:divide-neutral-50/50 hover:[&>tr]:bg-neutral-50/50 block md:table-row-group">
             {sortedStats.length === 0 ? (
               <tr className="block flex items-center justify-center">
-                <td colSpan={8} className="px-6 py-10 text-center text-neutral-400 italic block w-full">
+                <td colSpan={10} className="px-6 py-10 text-center text-neutral-400 italic block w-full">
                   No hay ciclistas no elegidos que coincidan con los criterios.
                 </td>
               </tr>
@@ -169,11 +171,29 @@ export function NoDraftTable({
                         </div>
                       </td>
 
+                      <td className="py-2 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                          <span className="text-center text-neutral-900 font-medium font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {s.dias || 0}
+                          </span>
+                        </div>
+                      </td>
+
                       <td className="pb-2 pt-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
                         <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
                           <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ptos/Carrera</span>
                           <span className="text-center text-neutral-900 font-medium font-mono tabular-nums text-[13px] md:text-[11px]">
                             {s.ppc.toFixed(1)}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="pb-2 pt-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ptos/Día</span>
+                          <span className="text-center text-neutral-900 font-medium font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {(s.ppd || 0).toFixed(1)}
                           </span>
                         </div>
                       </td>
@@ -195,7 +215,7 @@ export function NoDraftTable({
               ))
             ) : (
               <>
-                {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={8} /></tr>}
+                {paddingTop > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingTop}px`}} colSpan={10} /></tr>}
                 {virtualItems.map((virtualRow) => {
                   const s = sortedStats[virtualRow.index];
                   return (
@@ -260,11 +280,29 @@ export function NoDraftTable({
                         </div>
                       </td>
 
+                      <td className="py-2 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Días</span>
+                          <span className="text-center text-neutral-600 font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {s.dias || 0}
+                          </span>
+                        </div>
+                      </td>
+
                       <td className="pb-2 pt-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
                         <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
                           <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ptos/Carrera</span>
                           <span className="text-center text-neutral-600 font-mono tabular-nums text-[13px] md:text-[11px]">
                             {s.ppc.toFixed(1)}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="pb-2 pt-0 px-4 md:p-0 flex flex-row md:table-cell gap-2 border-none md:border-solid">
+                        <div className="flex-1 flex justify-between items-center md:justify-center md:h-full md:px-4 md:py-1">
+                          <span className="text-[10px] font-semibold text-neutral-400 uppercase md:hidden tracking-wider">Ptos/Día</span>
+                          <span className="text-center text-neutral-600 font-mono tabular-nums text-[13px] md:text-[11px]">
+                            {(s.ppd || 0).toFixed(1)}
                           </span>
                         </div>
                       </td>
@@ -285,7 +323,7 @@ export function NoDraftTable({
                     </tr>
                   );
                 })}
-                {paddingBottom > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingBottom}px`}} colSpan={8} /></tr>}
+                {paddingBottom > 0 && <tr className="hidden md:table-row"><td style={{height: `${paddingBottom}px`}} colSpan={10} /></tr>}
               </>
             )}
           </tbody>

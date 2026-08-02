@@ -15,7 +15,7 @@ export function useTopTeams(
   const { leaderboard, raceWinners, globalTeamPartialWinsCount, playerByCyclist, playerTeamMap } = useComputedStore();
 
   return useMemo(() => {
-    if (!leaderboard || !files.carreras.data) {
+    if (!leaderboard || !files?.carreras?.data) {
       return { 
         sortedTeams: [], 
         maxPoints: 1, 
@@ -41,7 +41,7 @@ export function useTopTeams(
     const raceDates: Record<string, string> = {}; // YYYY-MM-DD
     const raceCategories: Record<string, string> = {};
 
-    files.carreras.data.forEach((r) => {
+    files?.carreras?.data.forEach((r) => {
       const carreraName = getVal(r, "Carrera")?.trim();
       const fechaFin = getVal(r, "Fecha");
       const cat = getVal(r, "Categoría")?.trim();
@@ -95,7 +95,7 @@ export function useTopTeams(
     const teamDiasCount = new Map<string, number>();
 
     if (files.resultados?.data) {
-      files.resultados.data.forEach((row) => {
+      files?.resultados?.data.forEach((row) => {
         const ciclista = getVal(row, "Ciclista")?.trim();
         const carrera = getVal(row, "Carrera")?.trim();
         const etapa = getVal(row, "Etapa")?.toString().trim();
@@ -261,8 +261,8 @@ export function useTopTeams(
     };
 
   }, [
-    files.carreras.data,
-    files.resultados.data,
+    files?.carreras?.data,
+    files?.resultados?.data,
     leaderboard,
     raceWinners,
     globalTeamPartialWinsCount,

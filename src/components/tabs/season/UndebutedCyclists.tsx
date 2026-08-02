@@ -67,7 +67,7 @@ export function UndebutedCyclists() {
   };
 
   const filtered = useMemo(() => {
-    const raw = files.elecciones.data
+    const raw = files?.elecciones?.data
       ?.map((row) => {
         const ciclista = getVal(row, "Ciclista")?.trim();
         const jugador = playerByCyclist[ciclista || ""] || "No draft";

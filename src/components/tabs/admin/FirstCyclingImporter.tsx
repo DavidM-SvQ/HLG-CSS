@@ -58,14 +58,14 @@ export const FirstCyclingImporter = () => {
 
     if (normInput) {
       // First try exact normalized match
-      matchedRaceRow = files.carreras.data.find(
+      matchedRaceRow = files?.carreras?.data.find(
         (r: any) => normalize(getVal(r, "Carrera") || "") === normInput
       );
       if (matchedRaceRow) {
         isExactMatch = true;
       } else {
         // Try substring match
-        matchedRaceRow = files.carreras.data.find((r: any) => {
+        matchedRaceRow = files?.carreras?.data.find((r: any) => {
           const normSheet = normalize(getVal(r, "Carrera") || "");
           return normSheet.includes(normInput) || normInput.includes(normSheet);
         });
@@ -79,7 +79,7 @@ export const FirstCyclingImporter = () => {
     let hasPointsConfig = false;
     let pointsTableMatches = 0;
     if (categoria && files.puntos?.data) {
-      const matches = files.puntos.data.filter((p: any) => {
+      const matches = files?.puntos?.data.filter((p: any) => {
         const catPuntos = normalize(getVal(p, "Categoría") || "");
         return catPuntos === normalize(categoria);
       });
@@ -239,13 +239,13 @@ export const FirstCyclingImporter = () => {
 
     // Populate races from calendario, excluding finished races
     if (files.carreras?.data) {
-      const allRaces = files.carreras.data
+      const allRaces = files?.carreras?.data
         .map((r: any) => String(getVal(r, "Carrera") || "").trim())
         .filter((r: string) => r !== "");
       
       const finishedRaces = new Set<string>();
       if (files.resultados?.data) {
-         files.resultados.data.forEach((r: any) => {
+         files?.resultados?.data.forEach((r: any) => {
             const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
             const raceName = String(getVal(r, "Carrera") || "").trim();
             if (tipoLower.includes("clasificaci") && (tipoLower.includes("final") || tipoLower.includes("general") || tipoLower === "cg" || tipoLower.includes("crono equipos"))) {

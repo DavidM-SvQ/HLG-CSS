@@ -114,17 +114,17 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
 
   const raceTypeByName = useMemo(() => {
     const map: Record<string, string> = {};
-    files.carreras.data?.forEach((row: any) => {
+    files?.carreras?.data?.forEach((row: any) => {
       const c = getVal(row, "Carrera")?.trim();
       const cat = getVal(row, "Categoría")?.trim();
       if (c && cat) map[c] = cat;
     });
     return map;
-  }, [files.carreras.data]);
+  }, [files?.carreras?.data]);
 
   const pointsLookup = useMemo(() => {
     const map: Record<string, number> = {};
-    files.puntos.data?.forEach((row: any) => {
+    files?.puntos?.data?.forEach((row: any) => {
       const cat = getVal(row, "Categoría")?.trim();
       const tip = getVal(row, "Tipo")?.trim();
       const pos = getVal(row, "Posición")?.toString().trim();
@@ -134,7 +134,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
       }
     });
     return map;
-  }, [files.puntos.data]);
+  }, [files?.puntos?.data]);
 
   const allFilteredItems = useMemo(() => {
     if (!selectedCyclistDetail) return [];
@@ -150,7 +150,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
     const ronda = cyclistRoundMap[selectedCyclistDetail] || "-";
     const ciclistaText = `${selectedCyclistDetail} <${ronda}>`;
 
-    return (files.resultados.data || [])
+    return (files?.resultados?.data || [])
       .filter((r: any) => getVal(r, "Ciclista")?.toString().trim() === selectedCyclistDetail)
       .map((r: any) => {
         const carrera = getVal(r, "Carrera")?.toString().trim() || "";
@@ -164,7 +164,7 @@ export const CyclistDetailView: React.FC<CyclistDetailViewProps> = ({
         const puntos = pointsLookup[pointsKey] || 0;
         return { ciclistaText, eqText, carrera, categoria, fecha, tipo, etapa, pos: posicion, puntos };
       });
-  }, [selectedCyclistDetail, files.resultados.data, raceTypeByName, pointsLookup, playerByCyclist, playerOrderMap, playerTeamMap, cyclistRoundMap]);
+  }, [selectedCyclistDetail, files?.resultados?.data, raceTypeByName, pointsLookup, playerByCyclist, playerOrderMap, playerTeamMap, cyclistRoundMap]);
 
   return (
     <div className="space-y-8">

@@ -4,12 +4,12 @@ import { getVal } from '../../../../lib/data-processing';
 
 export function useFormattedTeams(files: AppState | null) {
   return useMemo(() => {
-    if (!files || !files.elecciones || !files.elecciones.data) return [];
+    if (!files || !files.elecciones || !files?.elecciones?.data) return [];
 
     const teamData: Record<string, string> = {}; // teamName -> order
     const uniquePlayers = [
       ...new Set(
-        files.elecciones.data
+        files?.elecciones?.data
           .map((r: any) => getVal(r, "Nombre_TG")?.trim())
           .filter(Boolean),
       ),

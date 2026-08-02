@@ -1,11 +1,3 @@
-const https = require('https');
-https.get('https://unsplash.com/s/photos/cycling-race', {
-  headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
-}, (res) => {
-  let data = '';
-  res.on('data', d => data += d);
-  res.on('end', () => {
-    const matches = data.match(/images\.unsplash\.com\/photo-[a-zA-Z0-9-]+/g) || [];
-    console.log([...new Set(matches)].slice(0, 20).join('\n'));
-  });
-});
+const roundTeamPoints = { "1": 1, "0": 2, "FA": 3, "2": 4 };
+const allRounds = Array.from(new Set(Object.keys(roundTeamPoints))).sort((a,b) => parseInt(a) - parseInt(b));
+console.log(allRounds);

@@ -36,7 +36,7 @@ export function TopTeamsTable() {
   const uniqueCategories = React.useMemo(() => {
     if (!context.files?.carreras?.data) return [];
     const set = new Set<string>();
-    context.files.carreras.data.forEach((r: any) => {
+    context.files?.carreras?.data.forEach((r: any) => {
       const cat = context.getVal(r, "Categoría")?.trim();
       if (cat) set.add(cat);
     });

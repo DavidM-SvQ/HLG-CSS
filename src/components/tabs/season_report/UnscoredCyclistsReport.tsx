@@ -42,7 +42,7 @@ export const UnscoredCyclistsReport: React.FC<UnscoredCyclistsReportProps> = ({
   const [isUnscoredRoundFilterOpen, setIsUnscoredRoundFilterOpen] = useState(false);
 
   const unscoredList = useMemo(() => {
-    return files.elecciones.data?.map((row: any) => {
+    return files?.elecciones?.data?.map((row: any) => {
       const ciclista = getVal(row, "Ciclista")?.trim();
       const jugador = getVal(row, "Nombre_TG")?.trim();
       const nombreEquipo = getVal(row, "Nombre_Equipo")?.trim();

@@ -6,8 +6,10 @@ interface ReportCardProps {
   title: ReactNode;
   subtitle?: ReactNode;
   icon?: ReactNode;
+  iconClassName?: string;
   filename?: string;
   className?: string;
+  style?: React.CSSProperties;
   headerClassName?: string;
   bodyClassName?: string;
   children: ReactNode;
@@ -23,6 +25,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(({
   title,
   subtitle,
   icon,
+  iconClassName,
   filename = "export",
   className,
   headerClassName,
@@ -44,7 +47,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(({
       <div className={cn("px-6 py-6 border-b border-blue-100/50 bg-white/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full relative z-30 group-[.is-exporting]:justify-center group-[.is-exporting]:pb-4", headerClassName)}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 min-w-0 pr-4 group-[.is-exporting]:justify-center group-[.is-exporting]:pr-0 group-[.is-exporting]:flex-none group-[.is-exporting]:w-full">
           {icon && (
-            <div className="p-3 bg-blue-500/10 text-blue-700 rounded-2xl shrink-0 backdrop-blur-md self-start sm:self-center shadow-sm [&>svg]:w-6 [&>svg]:h-6 group-[.is-exporting]:self-center">
+            <div className={cn("p-3 bg-blue-500/10 text-blue-700 rounded-2xl shrink-0 backdrop-blur-md self-start sm:self-center shadow-sm [&>svg]:w-6 [&>svg]:h-6 group-[.is-exporting]:self-center", iconClassName)}>
               {icon}
             </div>
           )}

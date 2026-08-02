@@ -70,7 +70,7 @@ export function InfoPointsTable({
               <SelectItem value="all">Todas las categorías</SelectItem>
               {[
                 ...new Set(
-                  files.puntos.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
+                  files?.puntos?.data?.map((r: any) => getVal(r, "Categoría")?.trim()),
                 ),
               ]
                 .filter(Boolean)

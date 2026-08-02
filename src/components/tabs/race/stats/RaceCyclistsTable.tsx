@@ -38,6 +38,27 @@ export const RaceCyclistsTable = ({
     return Math.max(...(raceCyclists || []).map((c: any) => c.victorias || 0), 0);
   }, [raceCyclists]);
 
+  const [sortConfig, setSortConfig] = React.useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "desc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <span className="ml-1 opacity-20 text-[10px]">↕</span>;
+    }
+    return sortConfig.direction === "asc" ? (
+      <span className="ml-1 text-[10px] text-blue-400">↑</span>
+    ) : (
+      <span className="ml-1 text-[10px] text-blue-400">↓</span>
+    );
+  };
+
   const filteredRaceCyclists = React.useMemo(() => {
     if (!raceCyclists) return [];
     
@@ -56,8 +77,42 @@ export const RaceCyclistsTable = ({
       });
     });
 
-    return raceCyclists.filter((c: any) => top25Ids.has(c.ciclista) || winnerIds.has(c.ciclista));
-  }, [raceCyclists, finalColumns, maxPointsByCol]);
+    const baseList = raceCyclists.filter((c: any) => top25Ids.has(c.ciclista) || winnerIds.has(c.ciclista));
+
+    if (sortConfig) {
+      baseList.sort((a, b) => {
+        let aVal: any;
+        let bVal: any;
+        if (sortConfig.key === "ciclista") {
+          aVal = a.ciclista;
+          bVal = b.ciclista;
+        } else if (sortConfig.key === "jugador") {
+          aVal = a.jugador;
+          bVal = b.jugador;
+        } else if (sortConfig.key === "victorias") {
+          aVal = a.victorias || 0;
+          bVal = b.victorias || 0;
+        } else if (sortConfig.key === "puntos") {
+          aVal = a.puntos || 0;
+          bVal = b.puntos || 0;
+        } else {
+          aVal = a.pointsByCol ? (a.pointsByCol[sortConfig.key] || 0) : 0;
+          bVal = b.pointsByCol ? (b.pointsByCol[sortConfig.key] || 0) : 0;
+        }
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortConfig.direction === "asc"
+            ? aVal.localeCompare(bVal)
+            : bVal.localeCompare(aVal);
+        }
+        return sortConfig.direction === "asc"
+          ? (aVal < bVal ? -1 : 1)
+          : (aVal > bVal ? -1 : 1);
+      });
+    }
+
+    return baseList;
+  }, [raceCyclists, finalColumns, maxPointsByCol, sortConfig]);
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -174,22 +229,41 @@ export const RaceCyclistsTable = ({
         >
           <div ref={scrollRef} className="table-responsive-wrapper min-h-[300px] overflow-auto w-full h-full crosshair-container">
             <table className="w-full min-w-[600px] text-[10px] text-left whitespace-nowrap border-collapse mx-auto">
-              <thead className="bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10 shadow-sm">
+              <thead className="bg-[#1e293b] text-white uppercase text-[9px] font-bold tracking-tight sticky top-0 z-10 shadow-sm select-none">
                 <tr>
-                  <th className="px-4 py-3 min-w-[140px] sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700">Ciclista</th>
-                  <th className="px-4 py-3 w-48 sticky left-[140px] shadow-[4px_0_12px_rgba(0,0,0,0.2)] bg-[#1e293b] z-20 border-r border-slate-700">
-                    Equipo [#Orden]
+                  <th 
+                    className="px-4 py-3 min-w-[140px] sticky left-0 bg-[#1e293b] z-20 border-r border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("ciclista")}
+                  >
+                    Ciclista {getSortIcon("ciclista")}
                   </th>
-                  <th className="px-4 py-3 text-center border-r border-slate-700 min-w-[50px]">Vict.</th>
+                  <th 
+                    className="px-4 py-3 w-48 sticky left-[140px] shadow-[4px_0_12px_rgba(0,0,0,0.2)] bg-[#1e293b] z-20 border-r border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("jugador")}
+                  >
+                    Equipo [#Orden] {getSortIcon("jugador")}
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-center border-r border-slate-700 min-w-[50px] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("victorias")}
+                  >
+                    Vict. {getSortIcon("victorias")}
+                  </th>
                   {finalColumns?.map((col: any) => (
                     <th
                       key={col.formatted}
-                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700 min-w-[36px]"
+                      className="px-1.5 py-1.5 text-center font-bold border-r border-slate-700 min-w-[36px] cursor-pointer hover:bg-slate-700 transition-colors"
+                      onClick={() => requestSort(col.formatted)}
                     >
-                      {col.formatted}
+                      {col.formatted} {getSortIcon(col.formatted)}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px] shadow-[-4px_0_12px_rgba(0,0,0,0.2)]">Puntos</th>
+                  <th 
+                    className="px-4 py-3 text-center font-bold sticky right-0 bg-[#1e293b] z-20 border-l border-slate-700 min-w-[50px] shadow-[-4px_0_12px_rgba(0,0,0,0.2)] cursor-pointer hover:bg-slate-700 transition-colors"
+                    onClick={() => requestSort("puntos")}
+                  >
+                    Puntos {getSortIcon("puntos")}
+                  </th>
                 </tr>
               </thead>
               <VirtualizedTableBody

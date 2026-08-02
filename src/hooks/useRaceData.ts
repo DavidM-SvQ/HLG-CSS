@@ -104,7 +104,7 @@ export function useRaceData(
                 );
     
                 const allRaceResults =
-                  files.resultados.data?.filter(
+                  files?.resultados?.data?.filter(
                     (r) => getVal(r, "Carrera")?.toString().trim() === selectedRace,
                   ) || [];
     
@@ -395,7 +395,7 @@ export function useRaceData(
                 
                 let __isOneDayRace = false;
                 if (files?.carreras?.data) {
-                  const currRace = files.carreras.data.find((c: any) => getVal(c, "Carrera")?.trim() === selectedRace.trim());
+                  const currRace = files?.carreras?.data.find((c: any) => getVal(c, "Carrera")?.trim() === selectedRace.trim());
                   if (currRace) {
                     const cat = getVal(currRace, "Categoría") || "";
                     __isOneDayRace = cat.startsWith("1.") || /^mon/i.test(cat) || /monumento/i.test(cat) || /campeonato/i.test(cat) || /ruta/i.test(cat);

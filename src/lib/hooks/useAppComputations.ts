@@ -59,7 +59,7 @@ export function useAppComputations() {
     });
 
     const cyclistToInfo: Record<string, any> = {};
-    files.ciclistas.data?.forEach((row: any) => {
+    files?.ciclistas?.data?.forEach((row: any) => {
       const ciclista = String(getVal(row, "Ciclista") || "").trim();
       const pais = String(getVal(row, "Pais") || "").trim();
       const full = String(getVal(row, "Equipo") || "").trim().toLowerCase();
@@ -130,7 +130,7 @@ export function useAppComputations() {
       }
     });
 
-    files.ciclistas.data?.forEach((row: any) => {
+    files?.ciclistas?.data?.forEach((row: any) => {
       const ciclista = String(getVal(row, "Ciclista") || "").trim();
       if (ciclista) {
         cyclistMetadata[ciclista] = {
