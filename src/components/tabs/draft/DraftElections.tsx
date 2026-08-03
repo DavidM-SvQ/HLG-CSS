@@ -66,10 +66,10 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   }, [debouncedSearch, draftSearchTerm, setDraftSearchTerm]);
 
   useEffect(() => {
-    if (draftSearchTerm !== localSearch) {
+    if (draftSearchTerm !== debouncedSearch) {
       setLocalSearch(draftSearchTerm);
     }
-  }, [draftSearchTerm, localSearch, setLocalSearch]);
+  }, [draftSearchTerm]); // Only sync when URL state changes externally
 
   const debouncedDraftStatsFilters = useDebounce(localDraftStatsFilters, 500);
   useEffect(() => {
@@ -79,10 +79,10 @@ export const DraftElections: React.FC<DraftElectionsProps> = ({
   }, [debouncedDraftStatsFilters, draftStatsFilters, setDraftStatsFilters]);
   
   useEffect(() => {
-    if (JSON.stringify(draftStatsFilters) !== JSON.stringify(localDraftStatsFilters)) {
+    if (JSON.stringify(draftStatsFilters) !== JSON.stringify(debouncedDraftStatsFilters)) {
       setLocalDraftStatsFilters(draftStatsFilters);
     }
-  }, [draftStatsFilters, localDraftStatsFilters, setLocalDraftStatsFilters]);
+  }, [draftStatsFilters]); // Only sync when URL state changes externally
 
   const draftTableRef = useRef<HTMLDivElement>(null);
 
