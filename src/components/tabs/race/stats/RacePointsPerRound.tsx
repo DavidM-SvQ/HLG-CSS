@@ -1,4 +1,5 @@
-import React, { useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Grid, ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { useTableScreenshot } from "../../../../hooks/useTableScreenshot";
@@ -36,11 +37,22 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
   const [hoverInfo, setHoverInfo] = useState<{
     team: string;
     round: string;
-    x: number;
-    y: number;
+    rect: DOMRect;
   } | null>(null);
 
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (hoverInfo) {
+        setHoverInfo(null);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [hoverInfo]);
 
   const handleCellMouseEnter = (e: React.MouseEvent<HTMLTableCellElement>, team: string, round: string) => {
     if (leaveTimeoutRef.current) {
@@ -51,26 +63,14 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
     setHoverInfo({
       team,
       round,
-      x: rect.left + rect.width / 2,
-      y: rect.top,
+      rect,
     });
   };
 
   const handleCellMouseLeave = () => {
     leaveTimeoutRef.current = setTimeout(() => {
       setHoverInfo(null);
-    }, 200);
-  };
-
-  const handleTooltipMouseEnter = () => {
-    if (leaveTimeoutRef.current) {
-      clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
-    }
-  };
-
-  const handleTooltipMouseLeave = () => {
-    setHoverInfo(null);
+    }, 150);
   };
 
   const handleSort = (column: string) => {
@@ -347,12 +347,9 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
       <div className="flex justify-center w-full bg-neutral-50/30">
         <div
           id="race-points-per-round-table"
-          className={cn(
-            "overflow-hidden relative max-h-[75vh] w-full max-w-full",
-            isExpanded ? "max-h-none" : ""
-          )}
+          className="relative w-full max-w-full"
         >
-          <div className={cn("table-responsive-wrapper overflow-auto w-full crosshair-container", isExpanded ? "max-h-none" : "max-h-[500px]")}>
+          <div className="table-responsive-wrapper overflow-x-auto w-full crosshair-container">
             <table className="w-full text-xs text-left whitespace-nowrap border-separate border-spacing-0">
               <thead>
               <tr>
@@ -453,32 +450,58 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
       </div>
     </div>
 
-      {/* Floating Detailed Tooltip on Cell Hover */}
-      {hoverInfo && (() => {
-        const { team, round, x, y } = hoverInfo;
-        const pts = reportData.roundTeamPoints[round]?.[team] || 0;
-        const hasRider = reportData.roundTeamHasRider[round]?.[team];
-        const cyclists = reportData.roundTeamDetails[round]?.[team] || [];
+      {/* Floating Detailed Tooltip on Cell Hover (Portaled to document.body) */}
+      {hoverInfo && typeof document !== "undefined" && document.body && createPortal((() => {
+        const { team, round, rect } = hoverInfo;
+        const pts = reportData?.roundTeamPoints?.[round]?.[team] || 0;
+        const hasRider = reportData?.roundTeamHasRider?.[round]?.[team];
+        const cyclists = reportData?.roundTeamDetails?.[round]?.[team] || [];
         const roundLabel = round === "0" || round.toUpperCase() === "FA" ? "FA" : (parseInt(round, 10) > 0 ? `R${String(parseInt(round, 10)).padStart(2, '0')}` : `R${round}`);
         
-        const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-        const showAbove = y > viewportHeight * 0.5;
+        // Accurate viewport measurement
+        const docEl = document.documentElement || document.body;
+        const viewportWidth = window?.innerWidth || docEl?.clientWidth || 1200;
+        const viewportHeight = window?.innerHeight || docEl?.clientHeight || 800;
+
+        const tooltipWidth = Math.min(320, Math.max(260, viewportWidth - 24));
+        const cellCenterX = rect ? rect.left + rect.width / 2 : viewportWidth / 2;
         
-        const calculatedTop = showAbove ? y - 10 : y + 28;
-        const clampedTop = Math.max(16, Math.min(viewportHeight - 340, calculatedTop));
+        // Calculate target left coordinate centered on cell
+        let targetLeft = cellCenterX - tooltipWidth / 2;
+
+        // Strictly keep within viewport margins (at least 16px from edges)
+        if (targetLeft + tooltipWidth > viewportWidth - 16) {
+          targetLeft = viewportWidth - tooltipWidth - 16;
+        }
+        if (targetLeft < 16) {
+          targetLeft = 16;
+        }
+
+        const spaceAbove = rect ? rect.top : 0;
+        const spaceBelow = rect ? viewportHeight - rect.bottom : viewportHeight;
+        const showAbove = spaceBelow < 240 && spaceAbove > spaceBelow;
+
+        const positionStyles: React.CSSProperties = {
+          position: "fixed",
+          left: `${Math.round(targetLeft)}px`,
+          width: `${Math.round(tooltipWidth)}px`,
+          maxWidth: `calc(100vw - 32px)`,
+          zIndex: 999999,
+          pointerEvents: "none",
+        };
+
+        if (showAbove && rect) {
+          positionStyles.bottom = `${Math.max(12, Math.round(viewportHeight - rect.top + 8))}px`;
+          positionStyles.maxHeight = `${Math.max(120, Math.min(380, spaceAbove - 20))}px`;
+        } else if (rect) {
+          positionStyles.top = `${Math.max(12, Math.round(rect.bottom + 8))}px`;
+          positionStyles.maxHeight = `${Math.max(120, Math.min(380, spaceBelow - 20))}px`;
+        }
 
         return (
           <div
-            onMouseEnter={handleTooltipMouseEnter}
-            onMouseLeave={handleTooltipMouseLeave}
-            className={cn(
-              "fixed z-50 pointer-events-auto -translate-x-1/2 bg-slate-900 text-slate-100 rounded-xl p-3.5 shadow-2xl border border-slate-700/80 backdrop-blur-md w-80 text-xs transition-all duration-150",
-              showAbove ? "-translate-y-full" : ""
-            )}
-            style={{
-              left: Math.max(160, Math.min(window.innerWidth - 160, x)),
-              top: clampedTop,
-            }}
+            className="fixed z-[999999] pointer-events-none bg-slate-900 text-slate-100 rounded-xl p-3.5 shadow-2xl border border-slate-700/80 backdrop-blur-md text-xs flex flex-col transition-opacity duration-150 animate-in fade-in zoom-in-95 box-border"
+            style={positionStyles}
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 select-none">
@@ -504,7 +527,7 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
                 Sin datos de ciclista para esta ronda.
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-800/40 [&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <div className="space-y-2.5 overflow-y-auto pr-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-800/40 [&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar-thumb]:rounded-full">
                 {cyclists.map((c, idx) => {
                   const maxStagePts = Math.max(...(c.concepts || []).map((det: any) => det.puntosObtenidos || 0), 0);
 
@@ -551,7 +574,7 @@ export const RacePointsPerRound: React.FC<RacePointsPerRoundProps> = ({
             )}
           </div>
         );
-      })()}
+      })(), document.body)}
     </ReportCard>
   );
 };

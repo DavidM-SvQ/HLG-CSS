@@ -6,7 +6,7 @@ import { Textarea } from "../../ui/textarea";
 import { Checkbox } from "../../ui/checkbox";
 import { Download, ClipboardCopy, CheckCircle2, AlertTriangle, XCircle, Info, ShieldCheck, Check, Search } from "lucide-react";
 import { useDataStore } from "../../../lib/stores/useDataStore";
-import { getVal } from "../../../lib/data-processing";
+import { getVal, isSameRace, normalizeRaceName, getCategoryAliases } from "../../../lib/data-processing";
 
 const TIPOS_RESULTADO = [
   "Clasificación final",
@@ -56,14 +56,14 @@ export const FirstCyclingImporter = () => {
     let matchedRaceRow: any = null;
     let isExactMatch = false;
 
-    if (normInput) {
-      // First try exact normalized match
+    if (cleanInputRace) {
+      // First try isSameRace or exact match
       matchedRaceRow = files?.carreras?.data.find(
-        (r: any) => normalize(getVal(r, "Carrera") || "") === normInput
+        (r: any) => isSameRace(getVal(r, "Carrera") || "", cleanInputRace)
       );
       if (matchedRaceRow) {
         isExactMatch = true;
-      } else {
+      } else if (normInput) {
         // Try substring match
         matchedRaceRow = files?.carreras?.data.find((r: any) => {
           const normSheet = normalize(getVal(r, "Carrera") || "");
@@ -73,15 +73,29 @@ export const FirstCyclingImporter = () => {
     }
 
     const sheetRaceName = matchedRaceRow ? (getVal(matchedRaceRow, "Carrera") || "").trim() : "";
-    const categoria = matchedRaceRow ? (getVal(matchedRaceRow, "Categoría") || "").trim() : "";
+    let categoria = matchedRaceRow ? (getVal(matchedRaceRow, "Categoría") || "").trim() : "";
+
+    // If it's Vuelta a España / La Vuelta ciclista a España, strictly ensure category is Vuelta a España
+    if (normalizeRaceName(cleanInputRace) === "vuelta a espana" || isSameRace(cleanInputRace, "Vuelta a España")) {
+      const vueltaPointsRow = files.puntos?.data?.find((p: any) => {
+        const catPuntos = normalize(getVal(p, "Categoría") || "");
+        return catPuntos.includes("vuelta");
+      });
+      if (vueltaPointsRow) {
+        categoria = getVal(vueltaPointsRow, "Categoría") || "Vuelta a España";
+      } else if (!categoria) {
+        categoria = "Vuelta a España";
+      }
+    }
 
     // 2. Validate Puntos
     let hasPointsConfig = false;
     let pointsTableMatches = 0;
     if (categoria && files.puntos?.data) {
+      const catAliases = getCategoryAliases(categoria);
       const matches = files?.puntos?.data.filter((p: any) => {
         const catPuntos = normalize(getVal(p, "Categoría") || "");
-        return catPuntos === normalize(categoria);
+        return catAliases.includes(catPuntos);
       });
       pointsTableMatches = matches.length;
       hasPointsConfig = matches.length > 0;

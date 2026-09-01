@@ -36,24 +36,31 @@ console.error = (...args) => {
 };
 
 window.onerror = function (message, source, lineno, colno, error) {
-  if (message === "ResizeObserver loop completed with undelivered notifications." || message === "ResizeObserver loop limit exceeded") {
+  const msgStr = typeof message === "string" ? message : "";
+  if (
+    msgStr.includes("ResizeObserver") ||
+    msgStr.includes("WebSocket") ||
+    msgStr.includes("vite")
+  ) {
     return true; 
   }
-  const div = document.createElement("div");
-  div.style.padding = "20px";
-  div.style.background = "#fee";
-  div.style.color = "#900";
-  div.innerHTML = "<h3>Fatal Global Error</h3><pre>" + (error?.stack || message) + "</pre>";
-  document.body.prepend(div);
+  console.error("Global Error:", message, error);
+  return false;
 };
 
 window.addEventListener("unhandledrejection", (e) => {
-  const div = document.createElement("div");
-  div.style.padding = "20px";
-  div.style.background = "#fee";
-  div.style.color = "#900";
-  div.innerHTML = "<h3>Unhandled Promise Rejection</h3><pre>" + (e.reason?.stack || e.reason) + "</pre>";
-  document.body.prepend(div);
+  const reason = e.reason?.message || String(e.reason || "");
+  if (
+    reason.includes("WebSocket") ||
+    reason.includes("vite") ||
+    reason.includes("ResizeObserver") ||
+    reason.includes("aborted") ||
+    reason.includes("canceled")
+  ) {
+    e.preventDefault();
+    return;
+  }
+  console.warn("Unhandled promise rejection:", e.reason);
 });
 
 createRoot(document.getElementById('root')!).render(

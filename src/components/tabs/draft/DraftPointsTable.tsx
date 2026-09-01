@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronUp, ChevronDown, X, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { getVal, getCategoryColorStyle } from '../../../lib/data-processing';
+import { getVal, getCategoryColorStyle, normalizeRaceName } from '../../../lib/data-processing';
 import { useDraftStats } from './hooks/useDraftStats';
 import { Button } from "../../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
@@ -63,15 +63,34 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
     const carrera = getVal(row, "Carrera")?.trim();
     const categoria = getVal(row, "Categoría")?.trim();
     const fecha = getVal(row, "Fecha")?.trim();
-    if (carrera && categoria) raceTypeByName[carrera] = categoria;
-    if (carrera && fecha) raceDateByName[carrera] = fecha;
+    if (carrera) {
+      const canonical = normalizeRaceName(carrera);
+      if (categoria) {
+        raceTypeByName[carrera] = categoria;
+        raceTypeByName[canonical] = categoria;
+      }
+      if (fecha) {
+        raceDateByName[carrera] = fecha;
+        raceDateByName[canonical] = fecha;
+      }
+    }
   });
+
+  const getDraftRaceCat = (carrera: string) => {
+    if (!carrera) return "";
+    return raceTypeByName[carrera] || raceTypeByName[normalizeRaceName(carrera)] || "";
+  };
+
+  const getDraftRaceDate = (carrera: string) => {
+    if (!carrera) return "";
+    return raceDateByName[carrera] || raceDateByName[normalizeRaceName(carrera)] || "";
+  };
 
   const cyclistPoints: Record<string, number> = {};
   const cyclistWins: Record<string, number> = {};
   leaderboard?.forEach((player: any) => {
     player?.detalles?.forEach((d: any) => {
-      const dateStr = raceDateByName[d.carrera] || d.fecha;
+      const dateStr = getDraftRaceDate(d.carrera) || d.fecha;
       let matchesMonth = true;
       if (draftDatosMonthFilter.length > 0) {
         if (!dateStr) matchesMonth = false;
@@ -87,7 +106,7 @@ export const DraftPointsTable: React.FC<DraftPointsTableProps> = ({
 
       let matchesCategory = true;
       if (draftDatosCategoryFilter.length > 0) {
-        const cat = raceTypeByName[d.carrera];
+        const cat = getDraftRaceCat(d.carrera);
         if (!cat || !draftDatosCategoryFilter.includes(cat)) matchesCategory = false;
       }
 

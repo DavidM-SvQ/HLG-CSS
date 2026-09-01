@@ -1,7 +1,16 @@
 import { useEffect } from 'react';
 import { useDataStore } from '../stores/useDataStore';
 import { useComputedStore } from '../stores/useComputedStore';
-import { getVal, getFlagEmoji, parseSafeDateStr } from '../data-processing';
+import {
+  getVal,
+  getFlagEmoji,
+  parseSafeDateStr,
+  normalizeRaceName,
+  isSameRace,
+  getCategoryAliases,
+  getResultTypeAliases,
+  getPositionAliases,
+} from '../data-processing';
 
 export function useAppComputations() {
   const { files } = useDataStore();
@@ -200,16 +209,54 @@ export function useAppComputations() {
     
     const raceTypeByName: Record<string, string> = {};
     const raceDateByName: Record<string, string> = {};
+    const carrerasList: Array<{ original: string; norm: string; canonical: string; categoria: string; fecha: string }> = [];
+
+    const puntosCategories = Array.from(
+      new Set(
+        puntos.data!
+          .map((row: any) => String(getVal(row, "Categoría") || "").trim())
+          .filter(Boolean)
+      )
+    );
+    const vueltaCategoryInPoints = puntosCategories.find((cat) => {
+      const n = norm(cat);
+      return n.includes("vuelta") || n.includes("vueltaciclista");
+    }) || "Vuelta a España";
 
     carreras.data!.forEach((row: any) => {
       const carrera = String(getVal(row, "Carrera") || "").trim();
-      const categoria = String(getVal(row, "Categoría") || "").trim();
+      let categoria = String(getVal(row, "Categoría") || "").trim();
       const fecha = String(getVal(row, "Fecha") || "").trim();
-      if (carrera && categoria) {
-        raceTypeByName[norm(carrera)] = categoria;
-      }
-      if (carrera && fecha) {
-        raceDateByName[norm(carrera)] = parseSafeDateStr(fecha);
+      if (carrera) {
+        const normKey = norm(carrera);
+        const canonicalKey = normalizeRaceName(carrera);
+        const safeDate = fecha ? parseSafeDateStr(fecha) : "";
+
+        // Strictly ensure "La Vuelta ciclista a España" / "Vuelta a España" uses "Vuelta a España" points category
+        if (canonicalKey === "vuelta a espana") {
+          categoria = vueltaCategoryInPoints;
+        }
+
+        if (categoria) {
+          raceTypeByName[normKey] = categoria;
+          raceTypeByName[canonicalKey] = categoria;
+          raceTypeByName[carrera] = categoria;
+          raceTypeByName[carrera.toLowerCase()] = categoria;
+        }
+        if (fecha) {
+          raceDateByName[normKey] = safeDate;
+          raceDateByName[canonicalKey] = safeDate;
+          raceDateByName[carrera] = safeDate;
+          raceDateByName[carrera.toLowerCase()] = safeDate;
+        }
+
+        carrerasList.push({
+          original: carrera,
+          norm: normKey,
+          canonical: canonicalKey,
+          categoria,
+          fecha: safeDate
+        });
       }
     });
 
@@ -220,9 +267,29 @@ export function useAppComputations() {
       const posicion = String(getVal(row, "Posición") || "").trim();
       const pts = getVal(row, "Puntos");
 
-      if (categoria && tipo && posicion && pts !== undefined) {
-        const key = `${norm(categoria)}_${norm(tipo)}_${norm(posicion)}`;
-        pointsLookup[key] = Number(pts);
+      if (categoria && tipo && pts !== undefined && pts !== null && pts !== "") {
+        const numPts = Number(pts);
+        if (!isNaN(numPts)) {
+          // Direct base key
+          const key = `${norm(categoria)}_${norm(tipo)}_${norm(posicion)}`;
+          pointsLookup[key] = numPts;
+
+          // Multi-alias keys for robust lookup across variations
+          const catAliases = getCategoryAliases(categoria);
+          const typeAliases = getResultTypeAliases(tipo);
+          const posAliases = getPositionAliases(posicion, tipo);
+
+          for (const cA of catAliases) {
+            for (const tA of typeAliases) {
+              for (const pA of posAliases) {
+                const aliasKey = `${cA}_${tA}_${pA}`;
+                if (pointsLookup[aliasKey] === undefined) {
+                  pointsLookup[aliasKey] = numPts;
+                }
+              }
+            }
+          }
+        }
       }
     });
 
@@ -285,13 +352,37 @@ export function useAppComputations() {
           return;
       }
 
-
       const jugador = playerByCyclist[ciclista] || "No draft";
-      const tipoCarrera = raceTypeByName[norm(carrera)];
+      
+      // Resolve tipoCarrera with robust multi-layer fallback
+      const isVueltaRace =
+        normalizeRaceName(carrera) === "vuelta a espana" ||
+        isSameRace(carrera, "La Vuelta ciclista a España") ||
+        isSameRace(carrera, "Vuelta a España");
+
+      let tipoCarrera = isVueltaRace
+        ? (vueltaCategoryInPoints || "Vuelta a España")
+        : (
+            raceTypeByName[carrera] ||
+            raceTypeByName[normalizeRaceName(carrera)] ||
+            raceTypeByName[norm(carrera)] ||
+            raceTypeByName[carrera.toLowerCase().trim()]
+          );
+
+      if (!tipoCarrera) {
+        const matched = carrerasList.find((r) => isSameRace(r.original, carrera));
+        if (matched) {
+          tipoCarrera = matched.categoria;
+        }
+      }
+
+      if (isVueltaRace && vueltaCategoryInPoints) {
+        tipoCarrera = vueltaCategoryInPoints;
+      }
       
       const debugPts = (pts: number, reason: string) => {
           if (pts === 0) {
-              const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : raceDateByName[norm(carrera)];
+              const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : (raceDateByName[carrera] || raceDateByName[norm(carrera)] || raceDateByName[normalizeRaceName(carrera)]);
               const timestamp = raceDateStr ? new Date(raceDateStr).getTime() : 0;
               unassignedPointsLog.push({ciclista, carrera, tipoResultado, posicion, reason, timestamp, originalIndex});
           }
@@ -310,8 +401,30 @@ export function useAppComputations() {
           /campeonato/i.test(tipoCarrera)
       );
 
-      const pointsKey = `${norm(tipoCarrera)}_${norm(tipoResultado)}_${norm(posicion)}`;
-      const puntosObtenidos = pointsLookup[pointsKey] || 0;
+      // Points resolution with aliases fallback
+      let puntosObtenidos = 0;
+      const directPointsKey = `${norm(tipoCarrera)}_${norm(tipoResultado)}_${norm(posicion)}`;
+      if (pointsLookup[directPointsKey] !== undefined) {
+        puntosObtenidos = pointsLookup[directPointsKey];
+      } else {
+        const candidateCats = getCategoryAliases(tipoCarrera);
+        const candidateTypes = getResultTypeAliases(tipoResultado);
+        const candidatePositions = getPositionAliases(posicion, tipoResultado);
+
+        for (const cat of candidateCats) {
+          if (puntosObtenidos > 0) break;
+          for (const type of candidateTypes) {
+            if (puntosObtenidos > 0) break;
+            for (const pos of candidatePositions) {
+              const k = `${cat}_${type}_${pos}`;
+              if (pointsLookup[k] !== undefined && pointsLookup[k] > 0) {
+                puntosObtenidos = pointsLookup[k];
+                break;
+              }
+            }
+          }
+        }
+      }
 
       if (puntosObtenidos === 0) {
           const isRetired = ["DNF", "DNS", "OTL", "DSQ", "OOT"].includes(posicion.toString().trim().toUpperCase());
@@ -323,7 +436,7 @@ export function useAppComputations() {
             debugPts(0, errorMsg);
           }
       } else {
-          const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : raceDateByName[norm(carrera)];
+          const raceDateStr = fechaEspecifica && fechaEspecifica.length > 0 ? parseSafeDateStr(fechaEspecifica) : (raceDateByName[carrera] || raceDateByName[norm(carrera)] || raceDateByName[normalizeRaceName(carrera)]);
           const timestamp = raceDateStr ? new Date(raceDateStr).getTime() : 0;
           assignedPointsLog.push({
             ciclista, 
@@ -426,22 +539,32 @@ export function useAppComputations() {
     if (carreras.data && resultados.data) {
       const races = carreras.data.map((r: any) => getVal(r, "Carrera")).filter(Boolean) as string[];
       races.forEach((race) => {
-        const hasFinalClassification = resultados.data?.some(
-          (r: any) => getVal(r, "Carrera") === race && getVal(r, "Tipo")?.match(/Clasificación final/i),
-        );
+        const hasFinalClassification = resultados.data?.some((r: any) => {
+          const rCarrera = getVal(r, "Carrera");
+          const rTipo = getVal(r, "Tipo");
+          return isSameRace(rCarrera, race) && getResultTypeAliases(rTipo).includes("clasificacionfinal");
+        });
         if (!hasFinalClassification) return;
 
         let maxPoints = 0;
         let winnerTeam = "";
         sortedLeaderboard.forEach((player: any) => {
           if (player.nombreEquipo === "No draft" || player.nombreEquipo === "No draft [99]") return;
-          const pts = player.detalles.filter((d: any) => d.carrera === race).reduce((sum: number, d: any) => sum + d.puntosObtenidos, 0);
+          const pts = player.detalles
+            .filter((d: any) => isSameRace(d.carrera, race))
+            .reduce((sum: number, d: any) => sum + d.puntosObtenidos, 0);
           if (pts > maxPoints) {
             maxPoints = pts;
             winnerTeam = player.nombreEquipo;
           }
         });
-        if (winnerTeam) raceWinners[race] = winnerTeam;
+        if (winnerTeam) {
+          raceWinners[race] = winnerTeam;
+          const normKey = norm(race);
+          if (normKey) raceWinners[normKey] = winnerTeam;
+          const canonicalKey = normalizeRaceName(race);
+          if (canonicalKey) raceWinners[canonicalKey] = winnerTeam;
+        }
       });
     }
 
@@ -452,9 +575,15 @@ export function useAppComputations() {
         globalTeamWinsCount[p.nombreEquipo] = 0;
       }
     });
-    Object.values(raceWinners).forEach((teamName) => {
-      if (globalTeamWinsCount[teamName] !== undefined) {
-        globalTeamWinsCount[teamName]++;
+    // Count wins using distinct races
+    const evaluatedRaces = new Set<string>();
+    Object.entries(raceWinners).forEach(([raceKey, teamName]) => {
+      const canonical = normalizeRaceName(raceKey) || norm(raceKey);
+      if (!evaluatedRaces.has(canonical)) {
+        evaluatedRaces.add(canonical);
+        if (globalTeamWinsCount[teamName] !== undefined) {
+          globalTeamWinsCount[teamName]++;
+        }
       }
     });
 
@@ -464,13 +593,18 @@ export function useAppComputations() {
 
     if (carreras.data && resultados.data) {
       const eventPoints: Record<string, Record<string, Record<string, number>>> = {};
-      const validTypes = ["Etapa", "Etapa (Crono equipos)", "Clasificación final", "Clasificación final (Crono equipos)"];
 
       sortedLeaderboard.forEach((player: any) => {
         if (player.nombreEquipo === "No draft" || player.nombreEquipo === "No draft [99]") return;
         partialWins[player.nombreEquipo] = 0;
         player.detalles?.forEach((d: any) => {
-          if (!validTypes.includes(d.tipoResultado || "")) return;
+          const tipoNorm = norm(d.tipoResultado || "");
+          const isStage = tipoNorm.includes("etapa") || tipoNorm === "cri" || tipoNorm.includes("crono");
+          const isFinal = getResultTypeAliases(d.tipoResultado || "").includes("clasificacionfinal");
+          const isLeaderOrSpecial = tipoNorm.includes("lider") || tipoNorm.includes("regularidad") || tipoNorm.includes("montana") || tipoNorm.includes("joven");
+          
+          if (!isStage && !isFinal && !isLeaderOrSpecial) return;
+
           const raceName = d.carrera || "";
           const eventKey = `${d.tipoResultado}_${d.etapa || ""}`;
           if (!eventPoints[raceName]) eventPoints[raceName] = {};

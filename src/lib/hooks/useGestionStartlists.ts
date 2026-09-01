@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "../../supabase";
 import localforage from "localforage";
 import { AppState } from "../types";
+import { useDataStore } from "../stores/useDataStore";
 
 export function useGestionStartlists(
   files: AppState, 
@@ -9,8 +10,9 @@ export function useGestionStartlists(
   playerByCyclist: Record<string, string>, 
   playerTeamMap: Record<string, string>,
   isSupabaseConfigured: boolean,
-  fetchGlobalFile: (id: string, force?: boolean, isSupabaseConfigured?: boolean) => Promise<void>
+  fetchGlobalFile: (id: any, force?: boolean, isSupabaseConfigured?: boolean, seasonOverride?: string) => Promise<void>
 ) {
+  const { selectedSeason, activeSeason } = useDataStore();
   const [startlistText, setStartlistText] = useState("");
   const [startlistRace, setStartlistRace] = useState("");
   const [parsedStartlist, setParsedStartlist] = useState<{
@@ -121,22 +123,39 @@ export function useGestionStartlists(
         newData.push(parsedStartlist);
       }
 
+      const season = selectedSeason || "2026";
+      const seasonScopedId = `${season}_startlist`;
       const isoDate = new Date().toISOString();
+
       if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
-          id: "startlist",
+          id: seasonScopedId,
           data: newData,
           updated_at: isoDate,
         });
         if (error) console.error("Supabase upsert error:", error);
+
+        if (season === activeSeason || season === "2026") {
+          await supabase.from("global_files").upsert({
+            id: "startlist",
+            data: newData,
+            updated_at: isoDate,
+          });
+        }
       }
 
-      await localforage.setItem("global_file_startlist", {
+      await localforage.setItem(`global_file_${seasonScopedId}`, {
         data: newData,
         updated_at: isoDate,
       });
+      if (season === activeSeason || season === "2026") {
+        await localforage.setItem("global_file_startlist", {
+          data: newData,
+          updated_at: isoDate,
+        });
+      }
 
-      await fetchGlobalFile("startlist", true, isSupabaseConfigured);
+      await fetchGlobalFile("startlist", true, isSupabaseConfigured, season);
 
       // Reset form
       setStartlistText("");
@@ -153,25 +172,41 @@ export function useGestionStartlists(
 
   const handleDeleteStartlist = async (carrera: string) => {
     try {
+      const season = selectedSeason || "2026";
+      const seasonScopedId = `${season}_startlist`;
       const currentData = Array.isArray(files?.startlist?.data) ? files?.startlist?.data : [];
       const newData = currentData.filter((d: any) => d.carrera !== carrera);
       
       const isoDate = new Date().toISOString();
       if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
-          id: "startlist",
+          id: seasonScopedId,
           data: newData,
           updated_at: isoDate,
         });
         if (error) console.error("Supabase delete error:", error);
+
+        if (season === activeSeason || season === "2026") {
+          await supabase.from("global_files").upsert({
+            id: "startlist",
+            data: newData,
+            updated_at: isoDate,
+          });
+        }
       }
 
-      await localforage.setItem("global_file_startlist", {
+      await localforage.setItem(`global_file_${seasonScopedId}`, {
         data: newData,
         updated_at: isoDate,
       });
+      if (season === activeSeason || season === "2026") {
+        await localforage.setItem("global_file_startlist", {
+          data: newData,
+          updated_at: isoDate,
+        });
+      }
 
-      await fetchGlobalFile("startlist", true, isSupabaseConfigured);
+      await fetchGlobalFile("startlist", true, isSupabaseConfigured, season);
 
     } catch (err: any) {
       console.error("Error deleting startlist:", err);
@@ -180,22 +215,38 @@ export function useGestionStartlists(
 
   const handleDeleteAllStartlists = async () => {
     try {
+      const season = selectedSeason || "2026";
+      const seasonScopedId = `${season}_startlist`;
       const isoDate = new Date().toISOString();
       if (navigator.onLine && isSupabaseConfigured && user) {
         const { error } = await supabase.from("global_files").upsert({
-          id: "startlist",
+          id: seasonScopedId,
           data: [],
           updated_at: isoDate,
         });
         if (error) console.error("Supabase delete all error:", error);
+
+        if (season === activeSeason || season === "2026") {
+          await supabase.from("global_files").upsert({
+            id: "startlist",
+            data: [],
+            updated_at: isoDate,
+          });
+        }
       }
 
-      await localforage.setItem("global_file_startlist", {
+      await localforage.setItem(`global_file_${seasonScopedId}`, {
         data: [],
         updated_at: isoDate,
       });
+      if (season === activeSeason || season === "2026") {
+        await localforage.setItem("global_file_startlist", {
+          data: [],
+          updated_at: isoDate,
+        });
+      }
 
-      await fetchGlobalFile("startlist", true, isSupabaseConfigured);
+      await fetchGlobalFile("startlist", true, isSupabaseConfigured, season);
 
     } catch (err: any) {
       console.error("Error deleting all startlists:", err);

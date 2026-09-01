@@ -1,16 +1,53 @@
 import React from "react";
-import { Globe, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Globe, Clock, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "../../../../lib/utils";
 import { AppState } from "../../../../lib/types";
+import { useDataStore } from "../../../../lib/stores/useDataStore";
 
 export const AdminDatosFileList = ({ files, FILE_TYPES, handleFileUpload, user, isComputing }: any) => {
+  const { selectedSeason, setSelectedSeason, availableSeasons, activeSeason, seasonOptions } = useDataStore();
+
+  const options = seasonOptions && seasonOptions.length > 0
+    ? seasonOptions
+    : availableSeasons.map((s) => ({
+        id: s,
+        label: `${s} ${s === activeSeason ? "(En curso)" : "(Histórico)"}`,
+        visible: true,
+      }));
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold mb-1">Gestión de Datos</h2>
-        <p className="text-sm text-neutral-500 mb-4">
-          Sube y sincroniza los archivos maestros del juego.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold mb-1">Gestión de Datos</h2>
+          <p className="text-sm text-neutral-500">
+            Sube y sincroniza los archivos maestros del juego.
+          </p>
+        </div>
+
+        {/* Season Selector */}
+        <div className="flex items-center gap-2 bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 w-fit">
+          <Calendar className="w-4 h-4 text-neutral-500 ml-1.5" />
+          <span className="text-xs font-semibold text-neutral-600">Temporada:</span>
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="bg-white text-xs font-bold text-neutral-800 rounded-lg px-2.5 py-1 border border-neutral-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          >
+            {options.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between">
+        <span>
+          Subiendo datos para la <strong>Temporada {selectedSeason}</strong>
+          {selectedSeason === activeSeason ? " (Temporada activa)" : " (Archivo histórico)"}
+        </span>
       </div>
 
       {!user && (

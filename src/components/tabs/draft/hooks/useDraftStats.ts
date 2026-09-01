@@ -1,6 +1,6 @@
 import { AppState, PlayerScore } from '../../../../lib/types';
 import { useMemo } from 'react';
-import { getVal } from '../../../../lib/data-processing';
+import { getVal, normalizeRaceName, isSameRace } from '../../../../lib/data-processing';
 
 export interface DraftStatsParams {
   files: AppState;
@@ -28,13 +28,32 @@ export function useDraftStats({
       const carrera = getVal(row, "Carrera")?.trim();
       const categoria = getVal(row, "Categoría")?.trim();
       const fecha = getVal(row, "Fecha")?.trim();
-      if (carrera && categoria) raceTypeByName[carrera] = categoria;
-      if (carrera && fecha) raceDateByName[carrera] = fecha;
+      if (carrera) {
+        const canonicalKey = normalizeRaceName(carrera);
+        if (categoria) {
+          raceTypeByName[carrera] = categoria;
+          raceTypeByName[canonicalKey] = categoria;
+        }
+        if (fecha) {
+          raceDateByName[carrera] = fecha;
+          raceDateByName[canonicalKey] = fecha;
+        }
+      }
     });
+
+    const getRaceCat = (carrera: string) => {
+      if (!carrera) return "";
+      return raceTypeByName[carrera] || raceTypeByName[normalizeRaceName(carrera)] || "";
+    };
+
+    const getRaceDate = (carrera: string) => {
+      if (!carrera) return "";
+      return raceDateByName[carrera] || raceDateByName[normalizeRaceName(carrera)] || "";
+    };
 
     leaderboard?.forEach((player: any) => {
       player?.detalles?.forEach((d: any) => {
-        const dateStr = raceDateByName[d.carrera] || d.fecha;
+        const dateStr = getRaceDate(d.carrera) || d.fecha;
         if (dateStr) {
           const monthStr = dateStr.split("/")[1];
           if (monthStr) {
@@ -44,7 +63,7 @@ export function useDraftStats({
             availableMonths.add(monthNames[parseInt(monthStr, 10) - 1]);
           }
         }
-        const cat = raceTypeByName[d.carrera];
+        const cat = getRaceCat(d.carrera);
         if (cat) availableCategories.add(cat);
       });
     });
@@ -57,7 +76,7 @@ export function useDraftStats({
     const cyclistPoints: Record<string, number> = {};
     leaderboard?.forEach((player: any) => {
       player?.detalles?.forEach((d: any) => {
-        const dateStr = raceDateByName[d.carrera] || d.fecha;
+        const dateStr = getRaceDate(d.carrera) || d.fecha;
         let matchesMonth = true;
         if (draftDatosMonthFilter.length > 0) {
           if (!dateStr) matchesMonth = false;
@@ -75,7 +94,7 @@ export function useDraftStats({
 
         let matchesCategory = true;
         if (draftDatosCategoryFilter.length > 0) {
-          const cat = raceTypeByName[d.carrera];
+          const cat = getRaceCat(d.carrera);
           if (!cat || !draftDatosCategoryFilter.includes(cat)) matchesCategory = false;
         }
 

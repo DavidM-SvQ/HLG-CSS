@@ -1,6 +1,6 @@
 import { AppState, PlayerScore } from '../lib/types';
 import { useMemo } from 'react';
-import { getVal } from '../lib/data-processing';
+import { getVal, isSameRace } from '../lib/data-processing';
 
 export function useRaceData(
   selectedRace: string,
@@ -18,7 +18,7 @@ export function useRaceData(
                   leaderboard
                     ?.map((player) => {
                       const details = player.detalles.filter(
-                        (d) => d.carrera === selectedRace,
+                        (d) => isSameRace(d.carrera, selectedRace),
                       );
                       const totalPoints = details.reduce(
                         (sum, d) => sum + d.puntosObtenidos,
@@ -105,7 +105,7 @@ export function useRaceData(
     
                 const allRaceResults =
                   files?.resultados?.data?.filter(
-                    (r) => getVal(r, "Carrera")?.toString().trim() === selectedRace,
+                    (r) => isSameRace(getVal(r, "Carrera")?.toString() || "", selectedRace),
                   ) || [];
     
                 const formatTipoResultado = (tipo: string) => {
@@ -117,7 +117,8 @@ export function useRaceData(
                     return "CM";
                   if (tipo.match(/Clasificación.*Puntos|CP|Regularidad final/i))
                     return "CP";
-                  if (tipo.match(/Clasificación.*Jóvenes|CJ/i)) return "CJ";
+                  if (tipo.match(/Clasificación.*Jóvenes|CJ|Mejor joven|Jóvenes final/i)) return "CJ";
+                  if (tipo.match(/Líder|Maillot|Líder etapa|Líder diario/i)) return "CL";
                   return tipo;
                 };
     
@@ -395,7 +396,7 @@ export function useRaceData(
                 
                 let __isOneDayRace = false;
                 if (files?.carreras?.data) {
-                  const currRace = files?.carreras?.data.find((c: any) => getVal(c, "Carrera")?.trim() === selectedRace.trim());
+                  const currRace = files?.carreras?.data.find((c: any) => isSameRace(getVal(c, "Carrera") || "", selectedRace));
                   if (currRace) {
                     const cat = getVal(currRace, "Categoría") || "";
                     __isOneDayRace = cat.startsWith("1.") || /^mon/i.test(cat) || /monumento/i.test(cat) || /campeonato/i.test(cat) || /ruta/i.test(cat);
@@ -419,7 +420,7 @@ export function useRaceData(
                 leaderboard?.forEach((player) => {
                   if (player.nombreEquipo === "No draft" || player.nombreEquipo === "No draft [99]") return;
                   player.detalles?.forEach((d) => {
-                    if (d.carrera !== selectedRace) return;
+                    if (!isSameRace(d.carrera, selectedRace)) return;
                     const pos = String(d.posicion || "").trim();
                     if (pos === "1" || pos === "01") {
                       const tipoLower = String(d.tipoResultado || "").toLowerCase();
@@ -523,10 +524,10 @@ Victoria para ${__winnerNombreTG} (${__winnerWins}ª de la temporada)
 
                   player.detalles?.forEach((d: any) => {
                       tempPointsByCyc.set(d.ciclista, (tempPointsByCyc.get(d.ciclista) || 0) + d.puntosObtenidos);
-                      if(d.carrera === selectedRace) {
+                      if (isSameRace(d.carrera, selectedRace)) {
                           racePointsByCyc.set(d.ciclista, (racePointsByCyc.get(d.ciclista) || 0) + d.puntosObtenidos);
                       }
-                      if(d.ronda) {
+                      if (d.ronda) {
                           rondaByCyc.set(d.ciclista, d.ronda);
                       }
                   });

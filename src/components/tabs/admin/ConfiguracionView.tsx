@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useDataStore } from "../../../lib/stores/useDataStore";
+import { useDataStore, parseSeasonConfigFromData } from "../../../lib/stores/useDataStore";
+import { SeasonOption } from "../../../lib/types";
 import { supabase } from "../../../supabase";
 import { toast } from "sonner";
-import { Save, Loader2, Palette, Image as ImageIcon, Zap, Upload, Check, Trash2, Eye, Award, Info, Trophy, Crown, Globe, Users, X, CheckSquare, Square } from "lucide-react";
+import { 
+  Save, Loader2, Palette, Image as ImageIcon, Zap, Upload, Check, Trash2, 
+  Eye, EyeOff, Award, Info, Trophy, Crown, Globe, Users, X, CheckSquare, Square, 
+  Calendar, Plus, Archive, ArrowUp, ArrowDown, ListOrdered, CheckCircle2, AlertCircle 
+} from "lucide-react";
 import { Button } from "../../ui/button";
 import { MILESTONE_DEFINITIONS, MilestoneDef } from "./milestonesConfigData";
 
 export function ConfiguracionView() {
-  const { files, fetchGlobalFile } = useDataStore();
+  const { files, fetchGlobalFile, setActiveSeason, setAvailableSeasons, setSeasonOptions } = useDataStore();
   const configuracionData = files.configuracion?.data || [];
 
   const getValue = (key: string, defaultValue: any) => {
@@ -65,6 +70,34 @@ export function ConfiguracionView() {
     "https://images.unsplash.com/photo-1471506480208-91b3a4cc78be?q=80&w=2070&auto=format&fit=crop"
   ];
 
+  const parseStoredSeasons = (raw: any): string[] => {
+    if (!raw) return ["2026", "2027"];
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      if (typeof raw === "string") return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
+    }
+    return ["2026", "2027"];
+  };
+
+  const [activeSeasonConfig, setActiveSeasonConfig] = useState<string>(() => getValue("active_season", "2026"));
+  const [seasonOptionsConfig, setSeasonOptionsConfig] = useState<SeasonOption[]>(() => {
+    const { seasonOptions } = parseSeasonConfigFromData(configuracionData);
+    if (seasonOptions && seasonOptions.length > 0) return seasonOptions;
+    const initialAvailable = parseStoredSeasons(getValue("available_seasons", ["2026", "2027"]));
+    const active = getValue("active_season", "2026");
+    return initialAvailable.map(s => ({
+      id: s,
+      label: s === active ? `${s} (En curso)` : `${s} (Histórico)`,
+      visible: true,
+    }));
+  });
+
+  const [newSeasonId, setNewSeasonId] = useState("");
+  const [newSeasonLabel, setNewSeasonLabel] = useState("");
+  const [newSeasonVisible, setNewSeasonVisible] = useState(true);
+
   const [themesEnabled, setThemesEnabled] = useState(getValue("themes_enabled", true));
   const [animationsEnabled, setAnimationsEnabled] = useState(getValue("animations_enabled", true));
   const [heroBannerEnabled, setHeroBannerEnabled] = useState(getValue("hero_banner_enabled", true));
@@ -101,6 +134,25 @@ export function ConfiguracionView() {
   const configuracionDataString = JSON.stringify(configuracionData);
 
   useEffect(() => {
+    const { activeSeason, seasonOptions } = parseSeasonConfigFromData(configuracionData);
+    if (activeSeason) {
+      setActiveSeasonConfig(activeSeason);
+    } else {
+      setActiveSeasonConfig(getValue("active_season", "2026"));
+    }
+
+    if (seasonOptions && seasonOptions.length > 0) {
+      setSeasonOptionsConfig(seasonOptions);
+    } else {
+      const initialAvailable = parseStoredSeasons(getValue("available_seasons", ["2026", "2027"]));
+      const active = activeSeason || getValue("active_season", "2026");
+      setSeasonOptionsConfig(initialAvailable.map(s => ({
+        id: s,
+        label: s === active ? `${s} (En curso)` : `${s} (Histórico)`,
+        visible: true,
+      })));
+    }
+
     setThemesEnabled(getValue("themes_enabled", true));
     setAnimationsEnabled(getValue("animations_enabled", true));
     setHeroBannerEnabled(getValue("hero_banner_enabled", true));
@@ -118,10 +170,68 @@ export function ConfiguracionView() {
     setIndividualMilestones(newMap);
   }, [configuracionDataString]);
 
+  const handleAddSeason = () => {
+    const idTrimmed = newSeasonId.trim();
+    if (!idTrimmed) {
+      toast.error("Introduce el identificador / año de la temporada (ej. 2025)");
+      return;
+    }
+    if (seasonOptionsConfig.some(s => s.id === idTrimmed)) {
+      toast.error(`La temporada ${idTrimmed} ya existe en la lista`);
+      return;
+    }
+    const labelTrimmed = newSeasonLabel.trim() || `${idTrimmed}`;
+    const newOption: SeasonOption = {
+      id: idTrimmed,
+      label: labelTrimmed,
+      visible: newSeasonVisible,
+    };
+    setSeasonOptionsConfig(prev => [...prev, newOption]);
+    setNewSeasonId("");
+    setNewSeasonLabel("");
+    setNewSeasonVisible(true);
+    toast.success(`Temporada ${idTrimmed} añadida a la lista`);
+  };
+
+  const handleUpdateSeasonLabel = (id: string, label: string) => {
+    setSeasonOptionsConfig(prev => prev.map(s => s.id === id ? { ...s, label } : s));
+  };
+
+  const handleToggleSeasonVisibility = (id: string, visible: boolean) => {
+    setSeasonOptionsConfig(prev => prev.map(s => s.id === id ? { ...s, visible } : s));
+  };
+
+  const handleRemoveSeason = (idToRemove: string) => {
+    if (idToRemove === activeSeasonConfig) {
+      toast.error("No puedes eliminar la temporada activa actual. Cambia primero la temporada activa.");
+      return;
+    }
+    if (seasonOptionsConfig.length <= 1) {
+      toast.error("Debe existir al menos una temporada configurada");
+      return;
+    }
+    setSeasonOptionsConfig(prev => prev.filter(s => s.id !== idToRemove));
+    toast.success(`Temporada ${idToRemove} eliminada`);
+  };
+
+  const handleMoveSeason = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= seasonOptionsConfig.length) return;
+    const updated = [...seasonOptionsConfig];
+    const item = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = item;
+    setSeasonOptionsConfig(updated);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const availableSeasonsIds = seasonOptionsConfig.map(s => s.id);
       const updatedData = [
+        { key: "active_season", value: activeSeasonConfig },
+        { key: "available_seasons", value: JSON.stringify(availableSeasonsIds) },
+        { key: "season_options", value: JSON.stringify(seasonOptionsConfig) },
         { key: "themes_enabled", value: themesEnabled.toString() },
         { key: "animations_enabled", value: animationsEnabled.toString() },
         { key: "hero_banner_enabled", value: heroBannerEnabled.toString() },
@@ -146,6 +256,9 @@ export function ConfiguracionView() {
         });
 
       if (error) throw error;
+      setActiveSeason(activeSeasonConfig);
+      setAvailableSeasons(availableSeasonsIds);
+      setSeasonOptions(seasonOptionsConfig);
       toast.success("Configuración guardada correctamente");
       fetchGlobalFile("configuracion", true, true);
     } catch (e: any) {
@@ -217,6 +330,295 @@ export function ConfiguracionView() {
 
   return (
     <div className="space-y-6">
+      {/* SEASONS MANAGEMENT CARD */}
+      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-neutral-900">Gestión de Temporadas y Desplegable Superior</h2>
+              <p className="text-sm text-neutral-500 mt-1">
+                Elige qué temporadas mostrar en el menú desplegable superior, personaliza el texto exacto con el que aparecen y define la temporada activa por defecto.
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="w-full sm:w-auto"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Guardar cambios
+          </Button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Active Season Select */}
+          <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-neutral-900">Temporada Activa (Por Defecto)</h3>
+                <span className="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                  En curso
+                </span>
+              </div>
+              <p className="text-sm text-neutral-500 mt-1 max-w-xl">
+                Es la temporada que se cargará por defecto a todos los visitantes cuando abran la web.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={activeSeasonConfig}
+                onChange={(e) => setActiveSeasonConfig(e.target.value)}
+                className="bg-white border border-neutral-300 text-neutral-900 font-bold text-sm rounded-lg px-3 py-2 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+              >
+                {seasonOptionsConfig.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label} ({opt.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Live Preview of Header Dropdown */}
+          <div className="p-4 bg-neutral-900 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-neutral-800 rounded-lg text-amber-400">
+                <Eye className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
+                  Vista Previa del Desplegable en la Cabecera Superior
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  Así verán los usuarios las opciones visibles en la barra de navegación:
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 w-fit">
+              <Calendar className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="text-xs text-neutral-400 font-medium">Temp:</span>
+              <select
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+                defaultValue={activeSeasonConfig}
+              >
+                {seasonOptionsConfig.filter(o => o.visible).map((opt) => (
+                  <option key={opt.id} value={opt.id} className="text-neutral-900">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Season Options Configuration List */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+                  <ListOrdered className="w-4 h-4 text-blue-600" />
+                  Temporadas y Textos del Desplegable
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Activa o desactiva la visibilidad en el menú superior y escribe el texto exacto con el que deseas que aparezca cada temporada.
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-lg w-fit border border-neutral-200">
+                {seasonOptionsConfig.filter(s => s.visible).length} de {seasonOptionsConfig.length} visibles
+              </span>
+            </div>
+
+            <div className="border border-neutral-200 rounded-xl overflow-hidden divide-y divide-neutral-100 bg-white">
+              <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-neutral-50 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                <div className="col-span-2 sm:col-span-1 text-center">Orden</div>
+                <div className="col-span-3 sm:col-span-2 text-center">Mostrar</div>
+                <div className="col-span-3 sm:col-span-2">ID / Año</div>
+                <div className="col-span-4 sm:col-span-6">Texto a Mostrar en el Desplegable</div>
+                <div className="hidden sm:block sm:col-span-1 text-right">Acción</div>
+              </div>
+
+              {seasonOptionsConfig.map((opt, idx) => {
+                const isActive = opt.id === activeSeasonConfig;
+                return (
+                  <div 
+                    key={opt.id} 
+                    className={`grid grid-cols-12 gap-2 px-4 py-3 items-center transition-colors ${
+                      opt.visible ? "bg-white" : "bg-neutral-50/80 text-neutral-400 opacity-75"
+                    }`}
+                  >
+                    {/* Order buttons */}
+                    <div className="col-span-2 sm:col-span-1 flex items-center justify-center gap-0.5">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveSeason(idx, "up")}
+                        className="p-1 rounded text-neutral-400 hover:text-neutral-700 disabled:opacity-20 hover:bg-neutral-100 transition-colors"
+                        title="Subir"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === seasonOptionsConfig.length - 1}
+                        onClick={() => handleMoveSeason(idx, "down")}
+                        className="p-1 rounded text-neutral-400 hover:text-neutral-700 disabled:opacity-20 hover:bg-neutral-100 transition-colors"
+                        title="Bajar"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Visibility Toggle */}
+                    <div className="col-span-3 sm:col-span-2 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSeasonVisibility(opt.id, !opt.visible)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                          opt.visible
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-neutral-100 text-neutral-500 border-neutral-200 hover:bg-neutral-200"
+                        }`}
+                        title={opt.visible ? "Ocultar del desplegable superior" : "Mostrar en el desplegable superior"}
+                      >
+                        {opt.visible ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Visible</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-neutral-400" />
+                            <span>Oculto</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Season ID */}
+                    <div className="col-span-3 sm:col-span-2 flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-xs bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded border border-neutral-200">
+                        {opt.id}
+                      </span>
+                      {isActive && (
+                        <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                          Activa
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Custom Dropdown Label */}
+                    <div className="col-span-4 sm:col-span-6 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={opt.label}
+                        onChange={(e) => handleUpdateSeasonLabel(opt.id, e.target.value)}
+                        placeholder={`Ej. Temporada ${opt.id}`}
+                        className="w-full text-xs md:text-sm font-semibold bg-neutral-50 hover:bg-white focus:bg-white border border-neutral-200 focus:border-blue-500 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-neutral-900"
+                      />
+                    </div>
+
+                    {/* Delete Action */}
+                    <div className="hidden sm:flex col-span-1 justify-end">
+                      {isActive ? (
+                        <span className="text-[11px] text-neutral-400 italic" title="No se puede eliminar la activa">
+                          -
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSeason(opt.id)}
+                          className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title={`Eliminar temporada ${opt.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Add Season Section */}
+          <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-3">
+            <h4 className="font-semibold text-xs text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5 text-blue-600" />
+              Añadir Nueva Temporada al Desplegable
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+              <div className="sm:col-span-3">
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">
+                  Año / ID (ej. 2025)
+                </label>
+                <input
+                  type="text"
+                  value={newSeasonId}
+                  onChange={(e) => setNewSeasonId(e.target.value)}
+                  placeholder="2025"
+                  maxLength={10}
+                  className="w-full bg-white border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-bold text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">
+                  Texto a mostrar en el desplegable
+                </label>
+                <input
+                  type="text"
+                  value={newSeasonLabel}
+                  onChange={(e) => setNewSeasonLabel(e.target.value)}
+                  placeholder="Ej. Temporada 2025 (Histórico)"
+                  className="w-full bg-white border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSeason();
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex items-center sm:pt-4">
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newSeasonVisible}
+                    onChange={(e) => setNewSeasonVisible(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                  />
+                  <span>Visible</span>
+                </label>
+              </div>
+
+              <div className="sm:col-span-2 sm:pt-4">
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleAddSeason}
+                  className="w-full flex items-center justify-center gap-1.5 font-semibold text-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Añadir
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-6 border-b border-neutral-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">

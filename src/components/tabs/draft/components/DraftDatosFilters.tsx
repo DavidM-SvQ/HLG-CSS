@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Button } from "../../../ui/button";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../../../../lib/utils";
-import { getVal } from '../../../../lib/data-processing';
+import { getVal, normalizeRaceName } from '../../../../lib/data-processing';
 import { MultiSelect } from "../../../ui/multi-select";
 
 export interface DraftDatosFiltersProps {
@@ -33,12 +33,15 @@ export const DraftDatosFilters: React.FC<DraftDatosFiltersProps> = ({
     files?.carreras?.data?.forEach((row: any) => {
       const carrera = getVal(row, "Carrera")?.trim();
       const categoria = getVal(row, "Categoría")?.trim();
-      if (carrera && categoria) raceTypeByName[carrera] = categoria;
+      if (carrera && categoria) {
+        raceTypeByName[carrera] = categoria;
+        raceTypeByName[normalizeRaceName(carrera)] = categoria;
+      }
     });
     const availableCategories = new Set<string>();
     leaderboard?.forEach((player: any) => {
       player?.detalles?.forEach((d: any) => {
-        const cat = raceTypeByName[d.carrera];
+        const cat = raceTypeByName[d.carrera] || raceTypeByName[normalizeRaceName(d.carrera)];
         if (cat) availableCategories.add(cat);
       });
     });

@@ -7,10 +7,13 @@ import { supabase } from "../../supabase";
 import { FILE_TYPES } from "../config/fileTypes";
 
 export function useFileUpload(isSupabaseConfigured: boolean) {
-  const { setFiles, fetchGlobalFile } = useDataStore();
+  const { setFiles, selectedSeason, activeSeason } = useDataStore();
   const { user } = useAuth();
 
   const handleFileUpload = (id: keyof AppState, file: File) => {
+    const season = selectedSeason || "2026";
+    const seasonScopedId = `${season}_${id}`;
+
     setFiles((prev) => ({
       ...prev,
       [id]: { file, data: null, error: null, loading: true },
@@ -63,24 +66,40 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
 
               const isoDate = new Date().toISOString();
               if (navigator.onLine && isSupabaseConfigured && user) {
+                // Upsert season-scoped record
                 const { error } = await supabase.from("global_files").upsert({
-                  id,
+                  id: seasonScopedId,
                   data: parsedData,
                   updated_at: isoDate,
                 });
                 if (error) {
-                  console.error("Supabase upsert manual error:", error);
+                  console.error("Supabase upsert season record error:", error);
                   throw new Error(`Error en la nube: ${error.message || "Permiso denegado al intentar reemplazar tabla general"}`);
+                }
+
+                // If active season, also update legacy record for seamless backwards compatibility
+                if (season === activeSeason || season === "2026") {
+                  await supabase.from("global_files").upsert({
+                    id,
+                    data: parsedData,
+                    updated_at: isoDate,
+                  });
                 }
               }
 
-              await localforage.setItem(`global_file_${id}`, {
+              // Local cache update
+              await localforage.setItem(`global_file_${seasonScopedId}`, {
                 data: parsedData,
                 updated_at: isoDate,
               });
+              if (season === activeSeason || season === "2026") {
+                await localforage.setItem(`global_file_${id}`, {
+                  data: parsedData,
+                  updated_at: isoDate,
+                });
+              }
 
-              // Instead of fetching from remote and potentially racing with our own update,
-              // we just update the local state manually if we succeeded uploading it.
+              // Update local state
               setFiles((prev) => ({
                 ...prev,
                 [id]: {

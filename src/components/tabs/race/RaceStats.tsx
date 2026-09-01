@@ -2,6 +2,7 @@ import { PlayerScore } from '../../../lib/types';
 import React, { useRef, useState } from "react";
 import { copyTextToClipboard } from "../../../lib/clipboard";
 import { cn } from "../../../lib/utils";
+import { isSameRace } from "../../../lib/data-processing";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { RaceCyclistsTable } from "./stats/RaceCyclistsTable";
 import { RaceStageBreakdown } from "./stats/RaceStageBreakdown";
@@ -143,7 +144,7 @@ export const RaceStats = ({
     const teams = leaderboard
       ?.map((player) => {
         const details = player.detalles.filter(
-          (d: any) => d.carrera === selectedRace,
+          (d: any) => isSameRace(d.carrera, selectedRace),
         );
         const totalPoints = details.reduce(
           (sum: any, d: any) => sum + d.puntosObtenidos,

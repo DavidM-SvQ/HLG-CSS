@@ -17,6 +17,12 @@ export interface FileState {
   updatedAt?: string;
 }
 
+export interface SeasonOption {
+  id: string;
+  label: string;
+  visible: boolean;
+}
+
 export interface AppState {
   carreras: FileState;
   ciclistas: FileState;

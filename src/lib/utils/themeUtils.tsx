@@ -8,21 +8,28 @@ export function getRaceTheme(raceName: string, isThemesEnabled: boolean) {
     };
   }
 
-  const raceLower = raceName.toLowerCase();
+  const cleanStr = (str: string) =>
+    str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  const raceLower = cleanStr(raceName);
   
-  const isTour = raceLower.includes("tour de france");
-  const isGiro = raceLower.includes("giro d'italia") || raceLower.includes("giro de italia");
-  const isVuelta = raceLower.includes("vuelta a españa") || raceLower.includes("vuelta a espana");
+  const isTour = raceLower.includes("tour de france") || raceLower.includes("tour de francia") || raceLower === "tour" || raceLower.includes("le tour");
+  const isGiro = raceLower.includes("giro d'italia") || raceLower.includes("giro d’italia") || raceLower.includes("giro de italia") || raceLower.includes("giro d italia") || raceLower.includes("giro di italia") || raceLower === "giro" || raceLower.includes("il giro");
+  const isVuelta = 
+    raceLower.includes("vuelta a espana") || 
+    raceLower.includes("vuelta ciclista a espana") || 
+    raceLower.includes("la vuelta") || 
+    (raceLower.includes("vuelta") && raceLower.includes("espana"));
   
   const isMonument = 
-    raceLower.includes("milano-sanremo") || raceLower.includes("milán-san remo") ||
-    raceLower.includes("ronde van vlaanderen") || raceLower.includes("tour des flandres") || raceLower.includes("tour de flandes") ||
-    raceLower.includes("paris-roubaix") || raceLower.includes("parís-roubaix") ||
-    raceLower.includes("liège-bastogne-liège") || raceLower.includes("lieja-bastogne-lieja") ||
-    raceLower.includes("il lombardia") || raceLower.includes("giro de lombardia");
+    raceLower.includes("milano-sanremo") || raceLower.includes("milan-san remo") || raceLower.includes("milan san remo") || raceLower.includes("milano sanremo") ||
+    raceLower.includes("ronde van vlaanderen") || raceLower.includes("tour des flandres") || raceLower.includes("tour de flandes") || raceLower.includes("tour of flanders") ||
+    raceLower.includes("paris-roubaix") || raceLower.includes("paris roubaix") ||
+    raceLower.includes("liege-bastogne-liege") || raceLower.includes("lieja-bastogne-lieja") || raceLower.includes("lieja-bastona-lieja") || raceLower.includes("lieja bastona lieja") ||
+    raceLower.includes("il lombardia") || raceLower.includes("giro de lombardia") || raceLower.includes("giro di lombardia");
     
-  const isClassic = raceLower.includes("clásica") || raceLower.includes("clasica") || raceLower.includes("classic") || 
-                    raceLower.includes("strade bianche") || raceLower.includes("amstel gold") || raceLower.includes("la flèche") || raceLower.includes("flecha valona");
+  const isClassic = raceLower.includes("clasica") || raceLower.includes("classic") || 
+                    raceLower.includes("strade bianche") || raceLower.includes("amstel gold") || raceLower.includes("la fleche") || raceLower.includes("flecha valona");
 
   const pattern = "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")";
 
