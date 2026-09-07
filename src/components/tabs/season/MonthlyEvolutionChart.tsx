@@ -55,44 +55,53 @@ export function MonthlyEvolutionChart() {
     "Dic",
   ];
 
-  const activeTeams = filteredLeaderboard?.filter(t => !t.nombreEquipo.toLowerCase().includes("no draft")) || [];
+  const activeTeams = React.useMemo(() => {
+    return filteredLeaderboard?.filter(t => !t.nombreEquipo.toLowerCase().includes("no draft")) || [];
+  }, [filteredLeaderboard]);
 
-  let dataMaxMonthIdx = -1;
-  let dataMaxWIdx = -1;
+  const { currentMonthIdx, currentWIdx } = React.useMemo(() => {
+    let dataMaxMonthIdx = -1;
+    let dataMaxWIdx = -1;
 
-  activeTeams.forEach((team) => {
-    team.detalles.forEach((d: any) => {
-      if (!d.fecha) return;
-      const parts = d.fecha.split("-");
-      if (parts.length >= 3) {
-        const monthIndex = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        if (!isNaN(monthIndex) && !isNaN(day)) {
-          if (monthIndex > dataMaxMonthIdx) dataMaxMonthIdx = monthIndex;
-          let weekIndex = 1;
-          if (day > 7 && day <= 14) weekIndex = 2;
-          else if (day > 14 && day <= 21) weekIndex = 3;
-          else if (day > 21) weekIndex = 4;
-          const wIdx = monthIndex * 4 + (weekIndex - 1);
-          if (wIdx > dataMaxWIdx) dataMaxWIdx = wIdx;
+    activeTeams.forEach((team) => {
+      team.detalles?.forEach((d: any) => {
+        if (!d.fecha) return;
+        const parts = d.fecha.split("-");
+        if (parts.length >= 3) {
+          const monthIndex = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          if (!isNaN(monthIndex) && !isNaN(day)) {
+            if (monthIndex > dataMaxMonthIdx) dataMaxMonthIdx = monthIndex;
+            let weekIndex = 1;
+            if (day > 7 && day <= 14) weekIndex = 2;
+            else if (day > 14 && day <= 21) weekIndex = 3;
+            else if (day > 21) weekIndex = 4;
+            const wIdx = monthIndex * 4 + (weekIndex - 1);
+            if (wIdx > dataMaxWIdx) dataMaxWIdx = wIdx;
+          }
         }
-      }
+      });
     });
-  });
 
-  const currentMonthIdx = dataMaxMonthIdx >= 0 ? dataMaxMonthIdx : new Date().getMonth();
-  const currentWIdx = dataMaxWIdx >= 0 ? dataMaxWIdx : new Date().getMonth() * 4 + 3;
+    return {
+      currentMonthIdx: dataMaxMonthIdx >= 0 ? dataMaxMonthIdx : new Date().getMonth(),
+      currentWIdx: dataMaxWIdx >= 0 ? dataMaxWIdx : new Date().getMonth() * 4 + 3,
+    };
+  }, [activeTeams]);
 
-  const teamColors: Record<string, string> = {};
-  activeTeams.forEach((team, idx) => {
-    const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
-    if (idx === 0) teamColors[teamKey] = "#fbbf24"; // Gold
-    else if (idx === 1) teamColors[teamKey] = "#94a3b8"; // Silver
-    else if (idx === 2) teamColors[teamKey] = "#fb923c"; // Bronze
-    else teamColors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
-  });
+  const teamColors = React.useMemo(() => {
+    const colors: Record<string, string> = {};
+    activeTeams.forEach((team, idx) => {
+      const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+      if (idx === 0) colors[teamKey] = "#fbbf24"; // Gold
+      else if (idx === 1) colors[teamKey] = "#94a3b8"; // Silver
+      else if (idx === 2) colors[teamKey] = "#fb923c"; // Bronze
+      else colors[teamKey] = LINE_COLORS[(idx - 3) % LINE_COLORS.length];
+    });
+    return colors;
+  }, [activeTeams]);
 
-  const getEvolutionData = () => {
+  const evolutionData = React.useMemo(() => {
     const isCustomDate = evolutionTimeFilter.startsWith("custom_");
     let customStart = "";
     let customEnd = "";
@@ -114,37 +123,33 @@ export function MonthlyEvolutionChart() {
       
       const pointsByWeek = weeks.map(w => ({ month: w, scores: {} as Record<string, number> }));
       
-      activeTeams.forEach(team => {
+      activeTeams.forEach((team) => {
         const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
-        let accumulated = 0;
-        
-        months.forEach((m, mIdx) => {
-          for (let w = 1; w <= 4; w++) {
-            const wIdx = mIdx * 4 + (w - 1);
-            const weekPoints = team.detalles.reduce((sum: number, d: any) => {
-              if (!d.fecha) return sum;
-              if (isCustomDate) {
-                if (d.fecha < customStart || d.fecha > customEnd) return sum;
-              }
-              const parts = d.fecha.split("-");
-              if (parts.length < 3) return sum;
-              const monthIndex = parseInt(parts[1], 10) - 1;
-              const day = parseInt(parts[2], 10);
-              if (isNaN(monthIndex) || isNaN(day)) return sum;
+        const weekPoints = new Array(48).fill(0);
 
-              let weekIndex = 1;
-              if (day > 7 && day <= 14) weekIndex = 2;
-              else if (day > 14 && day <= 21) weekIndex = 3;
-              else if (day > 21) weekIndex = 4;
+        team.detalles?.forEach((d: any) => {
+          if (!d.fecha) return;
+          if (isCustomDate && (d.fecha < customStart || d.fecha > customEnd)) return;
+          const parts = d.fecha.split("-");
+          if (parts.length < 3) return;
+          const monthIndex = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          if (isNaN(monthIndex) || isNaN(day) || monthIndex < 0 || monthIndex > 11) return;
 
-              if (monthIndex === mIdx && weekIndex === w) return sum + (typeof d.puntosObtenidos === 'number' ? d.puntosObtenidos : 0);
-              return sum;
-            }, 0);
-            
-            accumulated += weekPoints;
-            pointsByWeek[wIdx].scores[teamKey] = accumulated;
-          }
+          let weekIndex = 1;
+          if (day > 7 && day <= 14) weekIndex = 2;
+          else if (day > 14 && day <= 21) weekIndex = 3;
+          else if (day > 21) weekIndex = 4;
+
+          const wIdx = monthIndex * 4 + (weekIndex - 1);
+          weekPoints[wIdx] += (typeof d.puntosObtenidos === 'number' ? d.puntosObtenidos : 0);
         });
+
+        let accumulated = 0;
+        for (let wIdx = 0; wIdx < 48; wIdx++) {
+          accumulated += weekPoints[wIdx];
+          pointsByWeek[wIdx].scores[teamKey] = accumulated;
+        }
       });
 
       const chartData: any[] = [];
@@ -268,29 +273,28 @@ export function MonthlyEvolutionChart() {
 
     activeTeams.forEach((team) => {
       const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+      const monthPoints = new Array(12).fill(0);
 
-      let accumulated = 0;
-
-      months.forEach((m, mIdx) => {
-        const monthPoints = team.detalles.reduce((sum, d) => {
-          if (!d.fecha) return sum;
-          if (isCustomDate) {
-            if (d.fecha < customStart || d.fecha > customEnd) return sum;
-          }
-          const parts = d.fecha.split("-");
-          if (parts.length < 3) return sum;
-          const monthIndex = parseInt(parts[1], 10) - 1;
-          if (monthIndex === mIdx) return sum + d.puntosObtenidos;
-          return sum;
-        }, 0);
-
-        if (evolutionMode === "acumulado") {
-          accumulated += monthPoints;
-          dataByMonth[mIdx][teamKey] = accumulated;
-        } else {
-          dataByMonth[mIdx][teamKey] = monthPoints;
+      team.detalles?.forEach((d: any) => {
+        if (!d.fecha) return;
+        if (isCustomDate && (d.fecha < customStart || d.fecha > customEnd)) return;
+        const parts = d.fecha.split("-");
+        if (parts.length < 3) return;
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthPoints[monthIndex] += (typeof d.puntosObtenidos === 'number' ? d.puntosObtenidos : 0);
         }
       });
+
+      let accumulated = 0;
+      for (let mIdx = 0; mIdx < 12; mIdx++) {
+        if (evolutionMode === "acumulado") {
+          accumulated += monthPoints[mIdx];
+          dataByMonth[mIdx][teamKey] = accumulated;
+        } else {
+          dataByMonth[mIdx][teamKey] = monthPoints[mIdx];
+        }
+      }
     });
 
     return dataByMonth.filter((m, idx) => {
@@ -314,9 +318,7 @@ export function MonthlyEvolutionChart() {
       );
       return hasData && idx <= currentMonthIdx;
     });
-  };
-
-  const evolutionData = getEvolutionData();
+  }, [activeTeams, evolutionMode, evolutionTimeFilter, currentWIdx, currentMonthIdx]);
 
   const EvolutionTooltip = (props: any) => {
     const { active, payload, label } = props;

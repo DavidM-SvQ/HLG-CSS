@@ -342,12 +342,61 @@ export const useDataStore = create<DataStore>((set, get) => ({
     }
   },
 
-  initializeGlobalFiles: (isSupabaseConfigured) => {
-    // First fetch global configuracion
+  initializeGlobalFiles: async (isSupabaseConfigured) => {
+    const season = get().selectedSeason || get().activeSeason || "2026";
+    const essentialFiles: (keyof AppState)[] = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados", "startlist"];
+
+    // 1. Read all localforage caches in parallel for instant, atomic startup
+    try {
+      const [configCache, ...seasonCaches] = await Promise.all([
+        localforage.getItem("global_file_configuracion") as Promise<any>,
+        ...essentialFiles.map(async (id) => {
+          const seasonScopedId = `${season}_${id}`;
+          let item: any = await localforage.getItem(`global_file_${seasonScopedId}`);
+          if (!item && season === "2026") {
+            item = await localforage.getItem(`global_file_${id}`);
+          }
+          return { id, item };
+        })
+      ]);
+
+      set((prev) => {
+        const nextFiles = { ...prev.files };
+        if (configCache) {
+          nextFiles.configuracion = {
+            ...nextFiles.configuracion,
+            data: configCache.data,
+            loading: false,
+            updatedAt: configCache.updated_at,
+          };
+        }
+        seasonCaches.forEach(({ id, item }) => {
+          if (item) {
+            nextFiles[id] = {
+              file: null,
+              data: item.data,
+              error: null,
+              loading: false,
+              updatedAt: item.updated_at,
+            };
+          }
+        });
+        return { files: nextFiles };
+      });
+
+      if (configCache && Array.isArray(configCache.data)) {
+        const { activeSeason, availableSeasons, seasonOptions } = parseSeasonConfigFromData(configCache.data);
+        if (activeSeason) set({ activeSeason });
+        if (availableSeasons) set({ availableSeasons });
+        if (seasonOptions) set({ seasonOptions });
+      }
+    } catch (e) {
+      console.warn("Could not batch load cached files from localforage:", e);
+    }
+
+    // 2. Fetch configuracion and sync files in background if online
     get().fetchGlobalFile("configuracion", false, isSupabaseConfigured);
 
-    // Fetch essential files for current season
-    const essentialFiles: (keyof AppState)[] = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados", "startlist"];
     essentialFiles.forEach((id) => {
       get().fetchGlobalFile(id, false, isSupabaseConfigured);
     });

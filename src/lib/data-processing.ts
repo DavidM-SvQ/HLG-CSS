@@ -119,8 +119,12 @@ export const parseDate = (d: string) => {
   return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
 };
 
+const raceNameNormCache: Record<string, string> = {};
+
 export const normalizeRaceName = (race: string): string => {
   if (!race) return "";
+  if (raceNameNormCache[race] !== undefined) return raceNameNormCache[race];
+
   let clean = race
     .toLowerCase()
     .normalize("NFD")
@@ -135,6 +139,8 @@ export const normalizeRaceName = (race: string): string => {
   else if (clean.startsWith("il")) clean = clean.substring(2);
   else if (clean.startsWith("the")) clean = clean.substring(3);
 
+  let result = clean;
+
   // Canonical Grand Tours
   if (
     clean.includes("vueltaespana") ||
@@ -145,10 +151,8 @@ export const normalizeRaceName = (race: string): string => {
     (clean.includes("vuelta") && (clean.includes("espana") || clean.includes("spain"))) ||
     clean === "vuelta"
   ) {
-    return "vuelta a espana";
-  }
-
-  if (
+    result = "vuelta a espana";
+  } else if (
     clean.includes("tourdefrance") ||
     clean.includes("tourdefrancia") ||
     clean.includes("letourdefrance") ||
@@ -156,10 +160,8 @@ export const normalizeRaceName = (race: string): string => {
     clean === "letour" ||
     clean.includes("tourfrance")
   ) {
-    return "tour de france";
-  }
-
-  if (
+    result = "tour de france";
+  } else if (
     clean.includes("giroditalia") ||
     clean.includes("girodeitalia") ||
     clean.includes("girodiitalia") ||
@@ -167,50 +169,88 @@ export const normalizeRaceName = (race: string): string => {
     clean === "ilgiro" ||
     clean.includes("giroitalia")
   ) {
-    return "giro d italia";
+    result = "giro d italia";
+  } else if (clean.includes("parisnice") || clean.includes("parisniza")) {
+    result = "paris niza";
+  } else if (clean.includes("tirrenoadriatico")) {
+    result = "tirreno adriatico";
+  } else if (clean.includes("itzulia") || clean.includes("paisvasco")) {
+    result = "itzulia";
+  } else if (clean.includes("catalunya") || clean.includes("cataluna")) {
+    result = "volta a catalunya";
+  } else if (clean.includes("romandie") || clean.includes("romandia")) {
+    result = "tour de romandie";
+  } else if (clean.includes("dauphine") || clean.includes("delfinado")) {
+    result = "criterium du dauphine";
+  } else if (clean.includes("suisse") || clean.includes("suiza")) {
+    result = "tour de suisse";
+  } else if (clean.includes("pologne") || clean.includes("polonia")) {
+    result = "tour de pologne";
+  } else if (clean.includes("milanosanremo") || clean.includes("milansanremo")) {
+    result = "milano sanremo";
+  } else if (clean.includes("flandes") || clean.includes("flandres") || clean.includes("vlaanderen")) {
+    result = "tour de flandes";
+  } else if (clean.includes("roubaix")) {
+    result = "paris roubaix";
+  } else if (clean.includes("lieja") || clean.includes("liege")) {
+    result = "lieja bastona lieja";
+  } else if (clean.includes("lombardia")) {
+    result = "il lombardia";
+  } else if (clean.includes("amstel")) {
+    result = "amstel gold race";
+  } else if (clean.includes("flechavalona") || clean.includes("flechewallonne")) {
+    result = "flecha valona";
+  } else if (clean.includes("sansebastian") || clean.includes("klasikoa")) {
+    result = "clasica san sebastian";
   }
 
-  // Canonical Classics & Stage Races
-  if (clean.includes("parisnice") || clean.includes("parisniza")) return "paris niza";
-  if (clean.includes("tirrenoadriatico")) return "tirreno adriatico";
-  if (clean.includes("itzulia") || clean.includes("paisvasco")) return "itzulia";
-  if (clean.includes("catalunya") || clean.includes("cataluna")) return "volta a catalunya";
-  if (clean.includes("romandie") || clean.includes("romandia")) return "tour de romandie";
-  if (clean.includes("dauphine") || clean.includes("delfinado")) return "criterium du dauphine";
-  if (clean.includes("suisse") || clean.includes("suiza")) return "tour de suisse";
-  if (clean.includes("pologne") || clean.includes("polonia")) return "tour de pologne";
-  if (clean.includes("milanosanremo") || clean.includes("milansanremo")) return "milano sanremo";
-  if (clean.includes("flandes") || clean.includes("flandres") || clean.includes("vlaanderen")) return "tour de flandes";
-  if (clean.includes("roubaix")) return "paris roubaix";
-  if (clean.includes("lieja") || clean.includes("liege")) return "lieja bastona lieja";
-  if (clean.includes("lombardia")) return "il lombardia";
-  if (clean.includes("amstel")) return "amstel gold race";
-  if (clean.includes("flechavalona") || clean.includes("flechewallonne")) return "flecha valona";
-  if (clean.includes("sansebastian") || clean.includes("klasikoa")) return "clasica san sebastian";
-
-  return clean;
+  raceNameNormCache[race] = result;
+  return result;
 };
+
+const sameRaceCache: Record<string, boolean> = {};
 
 export const isSameRace = (raceA: string, raceB: string): boolean => {
   if (!raceA || !raceB) return false;
-  if (raceA.trim().toLowerCase() === raceB.trim().toLowerCase()) return true;
+  if (raceA === raceB) return true;
+
+  const key1 = `${raceA}###${raceB}`;
+  if (sameRaceCache[key1] !== undefined) return sameRaceCache[key1];
+
+  if (raceA.trim().toLowerCase() === raceB.trim().toLowerCase()) {
+    sameRaceCache[key1] = true;
+    return true;
+  }
   
   const normA = normalizeRaceName(raceA);
   const normB = normalizeRaceName(raceB);
-  if (normA === normB) return true;
+  if (normA === normB) {
+    sameRaceCache[key1] = true;
+    return true;
+  }
 
   const rawA = normalizeStr(raceA);
   const rawB = normalizeStr(raceB);
-  if (rawA === rawB) return true;
+  if (rawA === rawB) {
+    sameRaceCache[key1] = true;
+    return true;
+  }
 
   // Substring fallback if both long enough
   if (rawA.length > 5 && rawB.length > 5) {
-    if (rawA.includes(rawB) || rawB.includes(rawA)) return true;
+    if (rawA.includes(rawB) || rawB.includes(rawA)) {
+      sameRaceCache[key1] = true;
+      return true;
+    }
     if (normA.length > 5 && normB.length > 5) {
-      if (normA.includes(normB) || normB.includes(normA)) return true;
+      if (normA.includes(normB) || normB.includes(normA)) {
+        sameRaceCache[key1] = true;
+        return true;
+      }
     }
   }
 
+  sameRaceCache[key1] = false;
   return false;
 };
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDataStore } from '../stores/useDataStore';
 import { useComputedStore } from '../stores/useComputedStore';
 import {
@@ -16,6 +16,7 @@ export function useAppComputations() {
   const { files } = useDataStore();
   const setComputedData = useComputedStore((s) => s.setComputedData);
   const setIsComputing = useComputedStore((s) => s.setIsComputing);
+  const lastDataSig = useRef<string>("");
 
   useEffect(() => {
     // Only require the strictly necessary files to start computing
@@ -28,18 +29,16 @@ export function useAppComputations() {
       files.ciclistas?.data;
 
     if (!hasMinimumFiles) {
-      console.warn("Faltan archivos mínimos para computar", {
-        res: !!files.resultados?.data?.length,
-        eq: !!files.equipos?.data?.length,
-        pt: !!files.puntos?.data?.length,
-        el: !!files.elecciones?.data?.length,
-        car: !!files.carreras?.data?.length,
-        cic: !!files.ciclistas?.data?.length
-      });
+      return;
+    }
+
+    const currentSig = `${files.resultados?.data?.length || 0}_${files.equipos?.data?.length || 0}_${files.puntos?.data?.length || 0}_${files.elecciones?.data?.length || 0}_${files.carreras?.data?.length || 0}_${files.ciclistas?.data?.length || 0}_${files.resultados?.updatedAt || ""}`;
+    if (currentSig === lastDataSig.current && lastDataSig.current !== "") {
       return;
     }
 
     const timer = setTimeout(() => {
+      lastDataSig.current = currentSig;
       setIsComputing(true);
 
       requestAnimationFrame(() => {
@@ -297,6 +296,9 @@ export function useAppComputations() {
     const cyclistPointsTotals: Record<string, number> = {};
     const cyclistPointsByRace: Record<string, Record<string, number>> = {};
 
+    const raceCategoryResolutionCache: Record<string, string> = {};
+    const pointsResolutionCache: Record<string, number> = {};
+
     let unassignedPointsLog: any[] = [];
     let assignedPointsLog: any[] = [];
     let processingExceptions = 0;
@@ -354,30 +356,31 @@ export function useAppComputations() {
 
       const jugador = playerByCyclist[ciclista] || "No draft";
       
-      // Resolve tipoCarrera with robust multi-layer fallback
-      const isVueltaRace =
-        normalizeRaceName(carrera) === "vuelta a espana" ||
-        isSameRace(carrera, "La Vuelta ciclista a España") ||
-        isSameRace(carrera, "Vuelta a España");
+      // Resolve tipoCarrera with robust multi-layer fallback and fast memoization
+      let tipoCarrera = raceCategoryResolutionCache[carrera];
+      if (tipoCarrera === undefined) {
+        const isVueltaRace =
+          normalizeRaceName(carrera) === "vuelta a espana" ||
+          isSameRace(carrera, "La Vuelta ciclista a España") ||
+          isSameRace(carrera, "Vuelta a España");
 
-      let tipoCarrera = isVueltaRace
-        ? (vueltaCategoryInPoints || "Vuelta a España")
-        : (
+        if (isVueltaRace) {
+          tipoCarrera = vueltaCategoryInPoints || "Vuelta a España";
+        } else {
+          tipoCarrera =
             raceTypeByName[carrera] ||
             raceTypeByName[normalizeRaceName(carrera)] ||
             raceTypeByName[norm(carrera)] ||
-            raceTypeByName[carrera.toLowerCase().trim()]
-          );
+            raceTypeByName[carrera.toLowerCase().trim()] || "";
 
-      if (!tipoCarrera) {
-        const matched = carrerasList.find((r) => isSameRace(r.original, carrera));
-        if (matched) {
-          tipoCarrera = matched.categoria;
+          if (!tipoCarrera) {
+            const matched = carrerasList.find((r) => isSameRace(r.original, carrera));
+            if (matched) {
+              tipoCarrera = matched.categoria;
+            }
+          }
         }
-      }
-
-      if (isVueltaRace && vueltaCategoryInPoints) {
-        tipoCarrera = vueltaCategoryInPoints;
+        raceCategoryResolutionCache[carrera] = tipoCarrera;
       }
       
       const debugPts = (pts: number, reason: string) => {
@@ -401,11 +404,14 @@ export function useAppComputations() {
           /campeonato/i.test(tipoCarrera)
       );
 
-      // Points resolution with aliases fallback
+      // Points resolution with fast cache & aliases fallback
       let puntosObtenidos = 0;
       const directPointsKey = `${norm(tipoCarrera)}_${norm(tipoResultado)}_${norm(posicion)}`;
-      if (pointsLookup[directPointsKey] !== undefined) {
+      if (pointsResolutionCache[directPointsKey] !== undefined) {
+        puntosObtenidos = pointsResolutionCache[directPointsKey];
+      } else if (pointsLookup[directPointsKey] !== undefined) {
         puntosObtenidos = pointsLookup[directPointsKey];
+        pointsResolutionCache[directPointsKey] = puntosObtenidos;
       } else {
         const candidateCats = getCategoryAliases(tipoCarrera);
         const candidateTypes = getResultTypeAliases(tipoResultado);
@@ -424,6 +430,7 @@ export function useAppComputations() {
             }
           }
         }
+        pointsResolutionCache[directPointsKey] = puntosObtenidos;
       }
 
       if (puntosObtenidos === 0) {
@@ -534,36 +541,67 @@ export function useAppComputations() {
       });
     }
 
-    // Compute raceWinners
+    // Compute raceWinners efficiently in O(N)
     const raceWinners: Record<string, string> = {};
     if (carreras.data && resultados.data) {
-      const races = carreras.data.map((r: any) => getVal(r, "Carrera")).filter(Boolean) as string[];
-      races.forEach((race) => {
-        const hasFinalClassification = resultados.data?.some((r: any) => {
-          const rCarrera = getVal(r, "Carrera");
-          const rTipo = getVal(r, "Tipo");
-          return isSameRace(rCarrera, race) && getResultTypeAliases(rTipo).includes("clasificacionfinal");
+      // 1. Collect races with final classification in a single O(N) pass
+      const racesWithFinal = new Set<string>();
+      resultados.data.forEach((r: any) => {
+        const rTipo = String(getVal(r, "Tipo") || "").trim();
+        const tipoNorm = norm(rTipo);
+        if (
+          tipoNorm.includes("clasificacionfinal") ||
+          tipoNorm.includes("generalfinal") ||
+          tipoNorm.includes("clasificaciongeneral") ||
+          tipoNorm === "cg" ||
+          tipoNorm === "gc" ||
+          tipoNorm === "final" ||
+          tipoNorm === "general"
+        ) {
+          const rCarrera = String(getVal(r, "Carrera") || "").trim();
+          if (rCarrera) {
+            racesWithFinal.add(normalizeRaceName(rCarrera));
+            racesWithFinal.add(norm(rCarrera));
+          }
+        }
+      });
+
+      // 2. Accumulate points per race and per team in a single pass over player details
+      const raceTeamPoints: Record<string, Record<string, number>> = {};
+      sortedLeaderboard.forEach((player: any) => {
+        const teamName = player.nombreEquipo;
+        if (!teamName || teamName === "No draft" || teamName === "No draft [99]") return;
+        player.detalles?.forEach((d: any) => {
+          if (!d.puntosObtenidos || !d.carrera) return;
+          const canRace = normalizeRaceName(d.carrera) || norm(d.carrera);
+          if (!raceTeamPoints[canRace]) raceTeamPoints[canRace] = {};
+          raceTeamPoints[canRace][teamName] = (raceTeamPoints[canRace][teamName] || 0) + d.puntosObtenidos;
         });
-        if (!hasFinalClassification) return;
+      });
+
+      // 3. For each race in carreras.data, find winner
+      const races = carreras.data.map((r: any) => String(getVal(r, "Carrera") || "").trim()).filter(Boolean) as string[];
+      races.forEach((race) => {
+        const canRace = normalizeRaceName(race) || norm(race);
+        const normRace = norm(race);
+        if (!racesWithFinal.has(canRace) && !racesWithFinal.has(normRace)) return;
+
+        const teamScores = raceTeamPoints[canRace];
+        if (!teamScores) return;
 
         let maxPoints = 0;
         let winnerTeam = "";
-        sortedLeaderboard.forEach((player: any) => {
-          if (player.nombreEquipo === "No draft" || player.nombreEquipo === "No draft [99]") return;
-          const pts = player.detalles
-            .filter((d: any) => isSameRace(d.carrera, race))
-            .reduce((sum: number, d: any) => sum + d.puntosObtenidos, 0);
+        for (const [teamName, pts] of Object.entries(teamScores)) {
           if (pts > maxPoints) {
             maxPoints = pts;
-            winnerTeam = player.nombreEquipo;
+            winnerTeam = teamName;
           }
-        });
+        }
+
         if (winnerTeam) {
           raceWinners[race] = winnerTeam;
-          const normKey = norm(race);
-          if (normKey) raceWinners[normKey] = winnerTeam;
-          const canonicalKey = normalizeRaceName(race);
-          if (canonicalKey) raceWinners[canonicalKey] = winnerTeam;
+          if (normRace) raceWinners[normRace] = winnerTeam;
+          if (canRace) raceWinners[canRace] = winnerTeam;
         }
       });
     }
@@ -600,7 +638,14 @@ export function useAppComputations() {
         player.detalles?.forEach((d: any) => {
           const tipoNorm = norm(d.tipoResultado || "");
           const isStage = tipoNorm.includes("etapa") || tipoNorm === "cri" || tipoNorm.includes("crono");
-          const isFinal = getResultTypeAliases(d.tipoResultado || "").includes("clasificacionfinal");
+          const isFinal =
+            tipoNorm.includes("clasificacionfinal") ||
+            tipoNorm.includes("generalfinal") ||
+            tipoNorm.includes("clasificaciongeneral") ||
+            tipoNorm === "cg" ||
+            tipoNorm === "gc" ||
+            tipoNorm === "final" ||
+            tipoNorm === "general";
           const isLeaderOrSpecial = tipoNorm.includes("lider") || tipoNorm.includes("regularidad") || tipoNorm.includes("montana") || tipoNorm.includes("joven");
           
           if (!isStage && !isFinal && !isLeaderOrSpecial) return;
@@ -668,7 +713,7 @@ export function useAppComputations() {
     setIsComputing(false);
         }, 10);
       });
-    }, 500); // Debounce delay
+    }, 50); // Fast responsive debounce delay
 
     return () => clearTimeout(timer);
   }, [files, setComputedData, setIsComputing]);
