@@ -94,8 +94,8 @@ export function useTopTeams(
     const teamCarrerasLog = new Map<string, Set<string>>();
     const teamDiasCount = new Map<string, number>();
 
-    if (files.resultados?.data) {
-      files?.resultados?.data.forEach((row) => {
+    if (Array.isArray(files.resultados?.data)) {
+      files.resultados.data.forEach((row) => {
         const ciclista = getVal(row, "Ciclista")?.trim();
         const carrera = getVal(row, "Carrera")?.trim();
         const etapa = getVal(row, "Etapa")?.toString().trim();

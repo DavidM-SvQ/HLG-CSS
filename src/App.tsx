@@ -139,7 +139,9 @@ export default function App() {
         },
         (payload) => {
           const id = (payload.new as any)?.id || (payload.old as any)?.id;
-          if (id) fetchGlobalFile(id as keyof AppState, false, isSupabaseConfigured);
+          if (id && typeof id === "string" && !id.includes("__chunk_")) {
+            fetchGlobalFile(id as keyof AppState, false, isSupabaseConfigured);
+          }
         },
       )
       .subscribe();

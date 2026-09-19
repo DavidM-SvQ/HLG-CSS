@@ -9,6 +9,7 @@ import { parse } from "papaparse";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { supabase } from "../../../supabase";
+import { saveGlobalFile } from "../../../lib/supabaseStorage";
 import { FirstCyclingImporter } from "./FirstCyclingImporter";
 
 
@@ -358,30 +359,20 @@ export const AdminDatosV2Tab = () => {
           // PostgreSQL JSONB no soporta null bytes (\u0000)
           let safeData = JSON.parse(JSON.stringify(parseResult.data).replace(/\\u0000/g, ''));
           
-          if (id === "resultados") {
-            const neededColumns = ["Ciclista", "Carrera", "Tipo", "Etapa", "Posición", "Pos", "Fecha", "Equipo", "Nacido", "País", "Pais"];
-            safeData = safeData.map(row => {
-               const newRow = {};
-               for (const col of neededColumns) {
-                  if (row[col] !== undefined && row[col] !== null && row[col] !== "") {
-                     newRow[col] = row[col];
-                  }
-               }
-               return newRow;
-            }).filter(row => row["Ciclista"] && (row["Posición"] || row["Pos"]));
+          if (Array.isArray(safeData)) {
+            // Limpiar valores vacíos para aligerar la estructura conservando TODAS las columnas
+            safeData = safeData.map((row: any) => {
+              const cleanRow: any = {};
+              for (const [key, val] of Object.entries(row)) {
+                if (val !== undefined && val !== null && val !== "") {
+                  cleanRow[key] = val;
+                }
+              }
+              return cleanRow;
+            }).filter((row: any) => Object.keys(row).length > 0);
           }
           
-          const { error } = await supabase
-            .from("global_files")
-            .upsert({
-              id,
-              data: safeData,
-              updated_at: new Date().toISOString()
-            });
-          if (error) {
-            console.error("Error al guardar en Supabase:", error);
-            throw new Error(`Error Supabase al guardar ${id}: ${error.message || JSON.stringify(error)}`);
-          }
+          await saveGlobalFile(supabase, id, safeData);
         } catch (err: any) {
           console.error("Error al guardar en Supabase:", err);
           throw new Error(err.message || "Error al guardar en Supabase");

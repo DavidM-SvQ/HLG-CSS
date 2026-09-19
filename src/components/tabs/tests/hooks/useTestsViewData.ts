@@ -231,8 +231,8 @@ export function useTestsViewData(
          }
       });
 
-      if (files?.resultados?.data) {
-        files?.resultados?.data.forEach((row: any) => {
+      if (Array.isArray(files?.resultados?.data)) {
+        files.resultados.data.forEach((row: any) => {
            const c = getVal(row, "Ciclista")?.trim();
            const pos = parseInt(getVal(row, "Posición")?.toString() || "999");
            if (c && roster.includes(c) && pos <= 10) {

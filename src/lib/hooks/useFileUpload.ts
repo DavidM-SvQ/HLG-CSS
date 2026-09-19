@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 import Papa from "papaparse";
 import localforage from "localforage";
 import { supabase } from "../../supabase";
+import { saveGlobalFile } from "../supabaseStorage";
 import { FILE_TYPES } from "../config/fileTypes";
 
 export function useFileUpload(isSupabaseConfigured: boolean) {
@@ -67,23 +68,11 @@ export function useFileUpload(isSupabaseConfigured: boolean) {
               const isoDate = new Date().toISOString();
               if (navigator.onLine && isSupabaseConfigured && user) {
                 // Upsert season-scoped record
-                const { error } = await supabase.from("global_files").upsert({
-                  id: seasonScopedId,
-                  data: parsedData,
-                  updated_at: isoDate,
-                });
-                if (error) {
-                  console.error("Supabase upsert season record error:", error);
-                  throw new Error(`Error en la nube: ${error.message || "Permiso denegado al intentar reemplazar tabla general"}`);
-                }
+                await saveGlobalFile(supabase, seasonScopedId, parsedData, isoDate);
 
                 // If active season, also update legacy record for seamless backwards compatibility
                 if (season === activeSeason || season === "2026") {
-                  await supabase.from("global_files").upsert({
-                    id,
-                    data: parsedData,
-                    updated_at: isoDate,
-                  });
+                  await saveGlobalFile(supabase, id, parsedData, isoDate);
                 }
               }
 

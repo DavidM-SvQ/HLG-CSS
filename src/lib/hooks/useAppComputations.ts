@@ -21,12 +21,12 @@ export function useAppComputations() {
   useEffect(() => {
     // Only require the strictly necessary files to start computing
     const hasMinimumFiles = 
-      files.resultados?.data && 
-      files.equipos?.data && 
-      files.puntos?.data && 
-      files.elecciones?.data &&
-      files.carreras?.data &&
-      files.ciclistas?.data;
+      Array.isArray(files.resultados?.data) && 
+      Array.isArray(files.equipos?.data) && 
+      Array.isArray(files.puntos?.data) && 
+      Array.isArray(files.elecciones?.data) &&
+      Array.isArray(files.carreras?.data) &&
+      Array.isArray(files.ciclistas?.data);
 
     if (!hasMinimumFiles) {
       return;

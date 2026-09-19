@@ -72,8 +72,8 @@ export const GestionStartlists = () => {
               <option value="">-- Selecciona una carrera --</option>
               {(() => {
                 const finishedRaces = new Set<string>();
-                if (files.resultados?.data) {
-                  files?.resultados?.data.forEach((r: any) => {
+                if (Array.isArray(files.resultados?.data)) {
+                  files.resultados.data.forEach((r: any) => {
                     const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
                     const raceName = String(getVal(r, "Carrera") || "").trim().toLowerCase();
                     
@@ -220,8 +220,8 @@ export const GestionStartlists = () => {
                   const fechaCarrera = matchCarrera ? (getVal(matchCarrera, "Fecha") || "-") : "-";
                   
                   let isFinished = false;
-                  if (files.resultados?.data) {
-                    isFinished = files?.resultados?.data.some((r: any) => {
+                  if (Array.isArray(files.resultados?.data)) {
+                    isFinished = files.resultados.data.some((r: any) => {
                       if (String(getVal(r, "Carrera") || "").trim().toLowerCase() !== s.carrera.trim().toLowerCase()) return false;
                       const tipoLower = String(getVal(r, "Tipo") || "").trim().toLowerCase();
                       return tipoLower.includes("clasificaci") || 

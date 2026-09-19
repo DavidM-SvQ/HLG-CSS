@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../../supabase';
 import localforage from 'localforage';
+import { loadGlobalFileData } from '../supabaseStorage';
 
 import { AppState, FileState, SeasonOption } from '../types';
 
@@ -226,8 +227,19 @@ export const useDataStore = create<DataStore>((set, get) => ({
         cachedEntry = await localforage.getItem(`global_file_${legacyId}`);
       }
 
+      // Sanitize cachedEntry: if it's chunked metadata or not an array, it cannot be used directly
+      if (cachedEntry?.data && (cachedEntry.data.__isChunked || !Array.isArray(cachedEntry.data))) {
+        cachedEntry = null;
+        try {
+          await localforage.removeItem(`global_file_${seasonScopedId}`);
+          await localforage.removeItem(`global_file_${legacyId}`);
+        } catch {
+          // ignore
+        }
+      }
+
       if (!isSupabaseConfigured) {
-        if (cachedEntry) {
+        if (cachedEntry && Array.isArray(cachedEntry.data)) {
           set((prev) => ({
             files: {
               ...prev.files,
@@ -247,7 +259,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
         return;
       }
       
-      if (!force && cachedEntry) {
+      if (!force && cachedEntry && Array.isArray(cachedEntry.data)) {
         set((prev) => ({
           files: {
             ...prev.files,
@@ -295,8 +307,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
         .maybeSingle();
 
       if (scopedRecord) {
-        remoteData = scopedRecord.data;
-        remoteUpdatedAt = scopedRecord.updated_at;
+        const loaded = await loadGlobalFileData(supabase, scopedRecord);
+        remoteData = loaded?.data;
+        remoteUpdatedAt = loaded?.updated_at;
       } else {
         // Fallback to legacy id (e.g. for initial 2026 data)
         const { data: legacyRecord } = await supabase
@@ -306,23 +319,42 @@ export const useDataStore = create<DataStore>((set, get) => ({
           .maybeSingle();
 
         if (legacyRecord) {
-          remoteData = legacyRecord.data;
-          remoteUpdatedAt = legacyRecord.updated_at;
+          const loaded = await loadGlobalFileData(supabase, legacyRecord);
+          remoteData = loaded?.data;
+          remoteUpdatedAt = loaded?.updated_at;
         }
       }
 
       if (remoteData) {
-        await localforage.setItem(`global_file_${seasonScopedId}`, {
-          data: remoteData,
-          updated_at: remoteUpdatedAt,
-        });
+        // Double check remoteData is reconstructed array and not a manifest
+        if (remoteData && typeof remoteData === "object" && remoteData.__isChunked) {
+          const loaded = await loadGlobalFileData(supabase, {
+            id: scopedRecord ? seasonScopedId : legacyId,
+            data: remoteData,
+            updated_at: remoteUpdatedAt,
+          });
+          remoteData = loaded?.data;
+        }
+
+        if (Array.isArray(remoteData)) {
+          await localforage.setItem(`global_file_${seasonScopedId}`, {
+            data: remoteData,
+            updated_at: remoteUpdatedAt,
+          });
+          if (season === "2026" || season === get().activeSeason) {
+            await localforage.setItem(`global_file_${legacyId}`, {
+              data: remoteData,
+              updated_at: remoteUpdatedAt,
+            });
+          }
+        }
         
         set((prev) => ({
           files: {
             ...prev.files,
             [id]: {
               file: null,
-              data: remoteData,
+              data: Array.isArray(remoteData) ? remoteData : (prev.files[id]?.data || null),
               error: null,
               loading: false,
               updatedAt: remoteUpdatedAt,
@@ -356,6 +388,15 @@ export const useDataStore = create<DataStore>((set, get) => ({
           if (!item && season === "2026") {
             item = await localforage.getItem(`global_file_${id}`);
           }
+          if (item?.data && (item.data.__isChunked || !Array.isArray(item.data))) {
+            item = null;
+            try {
+              await localforage.removeItem(`global_file_${seasonScopedId}`);
+              await localforage.removeItem(`global_file_${id}`);
+            } catch {
+              // ignore
+            }
+          }
           return { id, item };
         })
       ]);
@@ -371,7 +412,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
           };
         }
         seasonCaches.forEach(({ id, item }) => {
-          if (item) {
+          if (item && Array.isArray(item.data)) {
             nextFiles[id] = {
               file: null,
               data: item.data,

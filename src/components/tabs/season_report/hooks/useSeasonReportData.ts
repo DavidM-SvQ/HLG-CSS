@@ -367,8 +367,8 @@ export function useSeasonReportData({ files, leaderboard, selectedMonths, requir
     Object.values(cyclistStats).forEach(stats => {
       stats.dias = 0; // reset
     });
-    if (files?.resultados?.data) {
-      files?.resultados?.data.forEach((r: any) => {
+    if (Array.isArray(files?.resultados?.data)) {
+      files.resultados.data.forEach((r: any) => {
          const ciclista = getVal(r, "Ciclista")?.trim();
          const tipo = getVal(r, "Tipo")?.trim();
          const carrera = getVal(r, "Carrera")?.trim();
