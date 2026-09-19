@@ -13,13 +13,29 @@ export function getRaceTheme(raceName: string, isThemesEnabled: boolean) {
 
   const raceLower = cleanStr(raceName);
   
-  const isTour = raceLower.includes("tour de france") || raceLower.includes("tour de francia") || raceLower === "tour" || raceLower.includes("le tour");
-  const isGiro = raceLower.includes("giro d'italia") || raceLower.includes("giro d’italia") || raceLower.includes("giro de italia") || raceLower.includes("giro d italia") || raceLower.includes("giro di italia") || raceLower === "giro" || raceLower.includes("il giro");
+  const isTour = 
+    raceLower.includes("tour de france") || 
+    raceLower.includes("tour de francia") || 
+    raceLower === "tour" || 
+    raceLower === "le tour";
+
+  const isGiro = 
+    raceLower.includes("giro d'italia") || 
+    raceLower.includes("giro d’italia") || 
+    raceLower.includes("giro de italia") || 
+    raceLower.includes("giro d italia") || 
+    raceLower.includes("giro di italia") || 
+    (raceLower.includes("giro") && raceLower.includes("italia")) ||
+    raceLower === "giro" || 
+    raceLower === "il giro";
+
   const isVuelta = 
     raceLower.includes("vuelta a espana") || 
     raceLower.includes("vuelta ciclista a espana") || 
-    raceLower.includes("la vuelta") || 
-    (raceLower.includes("vuelta") && raceLower.includes("espana"));
+    raceLower.includes("la vuelta ciclista a espana") || 
+    (raceLower.includes("vuelta") && raceLower.includes("espana")) ||
+    raceLower === "la vuelta" || 
+    raceLower === "vuelta";
   
   const isMonument = 
     raceLower.includes("milano-sanremo") || raceLower.includes("milan-san remo") || raceLower.includes("milan san remo") || raceLower.includes("milano sanremo") ||

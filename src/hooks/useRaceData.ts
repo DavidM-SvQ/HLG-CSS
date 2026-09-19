@@ -1,6 +1,6 @@
 import { AppState, PlayerScore } from '../lib/types';
 import { useMemo } from 'react';
-import { getVal, isSameRace } from '../lib/data-processing';
+import { getVal, isSameRace, parseDate, normalizeStr, normalizeRaceName } from '../lib/data-processing';
 
 export function useRaceData(
   selectedRace: string,
@@ -372,10 +372,48 @@ export function useRaceData(
                 const __winnerNombreTG = __winnerPlayer
                   ? __winnerPlayer.nombreEquipo
                   : "...";
-                const __winnerWins =
-                  __raceWinnerTeam && globalTeamWinsCount
-                    ? globalTeamWinsCount[__raceWinnerTeam] || 1
-                    : 1;
+
+                let __winnerWins = 1;
+                if (__raceWinnerTeam && files?.carreras?.data) {
+                  const carrerasData = files.carreras.data;
+                  const currentIdx = carrerasData.findIndex((c: any) =>
+                    isSameRace(getVal(c, "Carrera") || "", selectedRace)
+                  );
+
+                  // Collect all races won by this team and sort them chronologically
+                  const teamWonRaces = carrerasData
+                    .map((c: any, idx: number) => {
+                      const cName = getVal(c, "Carrera") || "";
+                      const wTeam =
+                        raceWinners?.[cName] ||
+                        raceWinners?.[normalizeRaceName(cName)] ||
+                        raceWinners?.[normalizeStr(cName)];
+                      return {
+                        raceName: cName,
+                        date: parseDate(getVal(c, "Fecha") || ""),
+                        index: idx,
+                        winner: wTeam,
+                      };
+                    })
+                    .filter((r: any) => r.winner === __raceWinnerTeam);
+
+                  teamWonRaces.sort((a: any, b: any) => {
+                    if (a.date !== b.date) return a.date - b.date;
+                    return a.index - b.index;
+                  });
+
+                  const winOrder = teamWonRaces.findIndex(
+                    (r: any) => isSameRace(r.raceName, selectedRace) || (currentIdx !== -1 && r.index === currentIdx)
+                  );
+
+                  if (winOrder !== -1) {
+                    __winnerWins = winOrder + 1;
+                  } else if (globalTeamWinsCount?.[__raceWinnerTeam]) {
+                    __winnerWins = globalTeamWinsCount[__raceWinnerTeam];
+                  }
+                } else if (__raceWinnerTeam && globalTeamWinsCount) {
+                  __winnerWins = globalTeamWinsCount[__raceWinnerTeam] || 1;
+                }
     
                 const __bestCyclist =
                   raceCyclists.length > 0 ? raceCyclists[0] : null;

@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ReportCard } from "../ui/ReportCard";
-import { getVal, formatNumberSpanish } from "../../lib/data-processing";
+import { getVal, formatNumberSpanish, normalizeStr, isSameRace } from "../../lib/data-processing";
 import { domToBlob, domToDataUrl } from "modern-screenshot";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { useDebounce } from "../../lib/hooks/useDebounce";
