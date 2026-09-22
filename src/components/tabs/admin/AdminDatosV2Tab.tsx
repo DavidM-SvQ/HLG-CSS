@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "../../
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { supabase } from "../../../supabase";
 import { saveGlobalFile } from "../../../lib/supabaseStorage";
+import localforage from "localforage";
 import { FirstCyclingImporter } from "./FirstCyclingImporter";
 
 
@@ -269,27 +270,13 @@ export const AdminDatosV2Tab = () => {
     return csvUrl;
   };
 
-  const extractIframeUrl = (url: string, id: string) => {
+  const extractIframeUrl = (url: string) => {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return null;
     let base = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?rm=minimal`;
     const gidMatch = url.match(/gid=([0-9]+)/);
     if (gidMatch) {
       base += `#gid=${gidMatch[1]}`;
-    }
-    if (id === "resultados" && files.resultados?.data) {
-      const rowCount = Array.isArray(files?.resultados?.data) ? files?.resultados?.data.length : 0;
-      if (rowCount > 0) {
-        // En lugar de enfocar una sola celda, mostramos las últimas 15 celdas y dejamos 100 de margen hacia abajo.
-        // Esto previene que se oculten las últimas celdas al editar y facilita el scroll a quien escribe.
-        const targetRowStart = Math.max(1, rowCount - 15);
-        const targetRowEnd = rowCount + 100;
-        if (base.includes("#")) {
-          base += `&range=A${targetRowStart}:Z${targetRowEnd}`;
-        } else {
-          base += `#range=A${targetRowStart}:Z${targetRowEnd}`;
-        }
-      }
     }
     return base;
   };
@@ -372,7 +359,30 @@ export const AdminDatosV2Tab = () => {
             }).filter((row: any) => Object.keys(row).length > 0);
           }
           
-          await saveGlobalFile(supabase, id, safeData);
+          const season = useDataStore.getState().selectedSeason || "2026";
+          const activeSeason = useDataStore.getState().activeSeason || "2026";
+          const seasonScopedId = `${season}_${id}`;
+          const isoDate = new Date().toISOString();
+
+          // Guardar registro con ámbito de temporada (ej. 2026_resultados)
+          await saveGlobalFile(supabase, seasonScopedId, safeData, isoDate);
+
+          // Si es la temporada activa o 2026, guardar también el registro global/legacy
+          if (season === activeSeason || season === "2026") {
+            await saveGlobalFile(supabase, id, safeData, isoDate);
+          }
+
+          // Actualizar caché local para disponibilidad instantánea sin desajustes
+          await localforage.setItem(`global_file_${seasonScopedId}`, {
+            data: safeData,
+            updated_at: isoDate,
+          });
+          if (season === activeSeason || season === "2026") {
+            await localforage.setItem(`global_file_${id}`, {
+              data: safeData,
+              updated_at: isoDate,
+            });
+          }
         } catch (err: any) {
           console.error("Error al guardar en Supabase:", err);
           throw new Error(err.message || "Error al guardar en Supabase");
@@ -465,8 +475,9 @@ export const AdminDatosV2Tab = () => {
         <div className="grid grid-cols-1 gap-8">
           {orderedFileTypes.map((ft) => {
             const url = sheetUrls[ft.id] || "";
-            const iframeUrl = extractIframeUrl(url, ft.id);
+            const iframeUrl = extractIframeUrl(url);
             const isIframeExpanded = !!expandedIframes[ft.id];
+            const currentRows = Array.isArray(files[ft.id]?.data) ? files[ft.id].data.length : 0;
 
             return (
               <div key={ft.id} className="border border-neutral-200 rounded-xl overflow-hidden bg-neutral-50 flex flex-col">
@@ -475,7 +486,14 @@ export const AdminDatosV2Tab = () => {
                      <div className="flex items-center gap-2">
                        {isIframeExpanded ? <ChevronDown className="w-5 h-5 text-neutral-400" /> : <ChevronRight className="w-5 h-5 text-neutral-400" />}
                        <div>
-                         <h3 className="font-bold text-neutral-900">{ft.name}</h3>
+                         <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+                           {ft.name}
+                           {currentRows > 0 && (
+                             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                               {currentRows.toLocaleString()} filas sincronizadas
+                             </span>
+                           )}
+                         </h3>
                          <p className="text-xs text-neutral-500">{(ft as any).description}</p>
                        </div>
                      </div>
