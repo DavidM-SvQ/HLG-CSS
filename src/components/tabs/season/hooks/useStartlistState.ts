@@ -11,12 +11,11 @@ export function useStartlistState() {
     "sort_dir",
     "asc"
   );
-  const [startlistFilterTeam, setStartlistFilterTeam] = useUrlState<string>(
-    "team",
-    "All"
-  );
+  const [startlistFilterTeam, setStartlistFilterTeam] = useUrlState<
+    string[] | string
+  >("team", []);
   const [startlistFilterRondas, setStartlistFilterRondas] = useUrlState<
-    string[]
+    string[] | string
   >("rondas", []);
   const [startlistFilterDiasMin, setStartlistFilterDiasMin] = useUrlState<
     number | ""

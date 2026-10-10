@@ -22,8 +22,8 @@ export function useStartlistData(
   cyclistRoundMap: Record<string, string>,
   playerTeamMap: Record<string, string>,
   playerOrderMap: Record<string, string>,
-  filterTeam: string,
-  filterRondas: string[],
+  filterTeam: string[] | string,
+  filterRondas: string[] | string,
   filterDiasMin: number | '',
   filterDiasMax: number | '',
   filterDebut: string,
@@ -117,8 +117,27 @@ export function useStartlistData(
     ).sort() as string[];
 
     const filteredRows = rows.filter((r) => {
-      if (filterTeam !== "All" && r.jugador !== filterTeam) return false;
-      if (Array.isArray(filterRondas) && filterRondas.length > 0 && !filterRondas.includes(r.ronda)) return false;
+      // Team filtering
+      if (Array.isArray(filterTeam)) {
+        if (filterTeam.includes("__NONE__")) return false;
+        if (filterTeam.length > 0 && !filterTeam.includes("All") && !filterTeam.includes("Todos")) {
+          if (!filterTeam.includes(r.jugador)) return false;
+        }
+      } else if (typeof filterTeam === "string" && filterTeam !== "All" && filterTeam !== "Todos" && filterTeam !== "") {
+        if (filterTeam === "__NONE__") return false;
+        if (r.jugador !== filterTeam) return false;
+      }
+
+      // Rondas filtering
+      if (Array.isArray(filterRondas)) {
+        if (filterRondas.includes("__NONE__")) return false;
+        if (filterRondas.length > 0 && !filterRondas.includes("All") && !filterRondas.includes("Todas")) {
+          if (!filterRondas.includes(r.ronda)) return false;
+        }
+      } else if (typeof filterRondas === "string" && filterRondas !== "All" && filterRondas !== "Todas" && filterRondas !== "") {
+        if (filterRondas === "__NONE__") return false;
+        if (r.ronda !== filterRondas) return false;
+      }
       
       if (filterDiasMin !== '' && r.dias < filterDiasMin) return false;
       if (filterDiasMax !== '' && r.dias > filterDiasMax) return false;

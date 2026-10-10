@@ -243,11 +243,12 @@ export const StartlistView = () => {
               const teamRowPagination = calculatePages(teamRows, 30);
 
               const toggleRonda = (ronda: string) => {
-                setStartlistFilterRondas((prev) =>
-                  prev.includes(ronda)
-                    ? prev.filter((r) => r !== ronda)
-                    : [...prev, ronda],
-                );
+                setStartlistFilterRondas((prev) => {
+                  const arr = Array.isArray(prev) ? prev : prev ? [prev] : [];
+                  return arr.includes(ronda)
+                    ? arr.filter((r) => r !== ronda)
+                    : [...arr, ronda];
+                });
               };
 
               return (
