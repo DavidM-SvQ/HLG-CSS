@@ -1,30 +1,27 @@
 import { useCallback, useState, useRef, useEffect } from "react";
-import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 let pendingParams: URLSearchParams | null = null;
 let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((prev: T) => T)) => void] {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const stringifiedInitialValue = JSON.stringify(initialValue);
   const initialValueRef = useRef(initialValue);
   const stateRef = useRef<T | undefined>(undefined);
-  
-  useEffect(() => {
+
+  // Synchronously update initialValueRef ONLY when stringifiedInitialValue actually changes (prevents render loops when passing inline objects/arrays)
+  const prevStringifiedInitialRef = useRef(stringifiedInitialValue);
+  if (prevStringifiedInitialRef.current !== stringifiedInitialValue) {
+    prevStringifiedInitialRef.current = stringifiedInitialValue;
     try {
-      if (stringifiedInitialValue) {
-        initialValueRef.current = JSON.parse(stringifiedInitialValue);
-      } else {
-        initialValueRef.current = initialValue;
-      }
+      initialValueRef.current = stringifiedInitialValue ? JSON.parse(stringifiedInitialValue) : initialValue;
     } catch {
       initialValueRef.current = initialValue;
     }
-  }, [stringifiedInitialValue, initialValue]);
-
+  }
 
   // Parse value from URL
   const getUrlValue = useCallback(() => {
@@ -33,11 +30,11 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
       if (Array.isArray(initialValueRef.current)) {
         if (val.trim() === "") {
           if (Array.isArray(stateRef.current) && stateRef.current.length === 0) return stateRef.current;
-          return [] as unknown as T;
+          return initialValueRef.current;
         }
         const arr = val.split(",").filter(v => v.trim() !== "") as unknown as T;
         if (JSON.stringify(arr) === JSON.stringify(stateRef.current)) {
-          return stateRef.current;
+          return stateRef.current as T;
         }
         return arr;
       }
@@ -54,7 +51,7 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
         try {
           const parsed = JSON.parse(val) as T;
           if (JSON.stringify(parsed) === JSON.stringify(stateRef.current)) {
-            return stateRef.current;
+            return stateRef.current as T;
           }
           return parsed;
         } catch {
@@ -67,7 +64,7 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
   }, [key, searchParams]);
 
   // Use state to prevent unnecessary re-renders when url changes but value is same
-  const [state, setState] = useState<T>(getUrlValue());
+  const [state, setState] = useState<T>(() => getUrlValue());
 
   if (state !== undefined) {
     stateRef.current = state;
@@ -75,17 +72,14 @@ export function useUrlState<T>(key: string, initialValue: T): [T, (val: T | ((pr
   const skipSyncRef = useRef(false);
 
   // Sync from URL to state if URL changes externally (e.g. back button)
-  const stateStr = JSON.stringify(state);
-  const urlValStr = JSON.stringify(getUrlValue());
-  
   useEffect(() => {
-    if (!skipSyncRef.current && stateStr !== urlValStr) {
+    if (!skipSyncRef.current) {
       const nextVal = getUrlValue();
-      if (JSON.stringify(state) !== JSON.stringify(nextVal)) {
+      if (JSON.stringify(stateRef.current) !== JSON.stringify(nextVal)) {
         setState(nextVal);
       }
     }
-  }, [urlValStr, stateStr, getUrlValue, state]);
+  }, [key, searchParams, getUrlValue]);
 
   const setUrlState = useCallback(
     (newVal: T | ((prev: T) => T)) => {
