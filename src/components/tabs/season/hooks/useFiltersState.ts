@@ -5,7 +5,7 @@ export function useFiltersState() {
   
   const [teamsSortColumn, setTeamsSortColumn] = useUrlState("teamsSortColumn", "totalPoints");
   const [teamsSortDirection, setTeamsSortDirection] = useUrlState("teamsSortDirection", "desc");
-  const [historyTeamFilter, setHistoryTeamFilter] = useUrlState("historyTeamFilter", "all");
+  const [historyTeamFilter, setHistoryTeamFilter] = useUrlState<string[]>("historyTeamFilter", []);
   const [historySortColumn, setHistorySortColumn] = useUrlState("historySortColumn", "fecha");
   const [historySortDirection, setHistorySortDirection] = useUrlState("historySortDirection", "desc");
   const [cyclistsMonthFilter, setCyclistsMonthFilter] = useUrlState("cyclistsMonthFilter", "all");

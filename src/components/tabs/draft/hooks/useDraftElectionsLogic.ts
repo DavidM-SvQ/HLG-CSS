@@ -5,8 +5,8 @@ import { AppState, CyclistMetadata } from '../../../../lib/types';
 export function useDraftElectionsLogic(
   files: AppState,
   draftSearchTerm: string,
-  draftRoundFilter: string[],
-  draftTeamFilter: string[],
+  draftRoundFilter: string[] | string,
+  draftTeamFilter: string[] | string,
   draftStatsFilters: Record<string, number | string | undefined>,
   draftCyclistStats: Record<string, { puntos: number; victorias: number }>,
   cyclistMetadata: Record<string, CyclistMetadata>,
@@ -20,14 +20,30 @@ export function useDraftElectionsLogic(
       const matchesSearch = ciclista
         ?.toLowerCase()
         .includes(draftSearchTerm.toLowerCase());
-      const matchesRound =
-        draftRoundFilter.length === 0 ||
-        draftRoundFilter.includes(String(getVal(row, 'Ronda')));
-      const matchesTeam =
-        draftTeamFilter.length === 0 ||
-        draftTeamFilter.includes(
-          String(getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG'))
-        );
+
+      // Round filtering
+      let matchesRound = true;
+      const roundVal = String(getVal(row, 'Ronda'));
+      if (Array.isArray(draftRoundFilter)) {
+        if (draftRoundFilter.includes('__NONE__')) matchesRound = false;
+        else if (draftRoundFilter.length > 0 && !draftRoundFilter.includes('All') && !draftRoundFilter.includes('Todas')) {
+          matchesRound = draftRoundFilter.includes(roundVal);
+        }
+      } else if (typeof draftRoundFilter === 'string' && draftRoundFilter !== '' && draftRoundFilter !== 'All' && draftRoundFilter !== 'Todas') {
+        matchesRound = draftRoundFilter === '__NONE__' ? false : roundVal === draftRoundFilter;
+      }
+
+      // Team filtering
+      let matchesTeam = true;
+      const teamVal = String(getVal(row, 'Nombre_Equipo') || getVal(row, 'Nombre_TG'));
+      if (Array.isArray(draftTeamFilter)) {
+        if (draftTeamFilter.includes('__NONE__')) matchesTeam = false;
+        else if (draftTeamFilter.length > 0 && !draftTeamFilter.includes('All') && !draftTeamFilter.includes('Todos')) {
+          matchesTeam = draftTeamFilter.includes(teamVal);
+        }
+      } else if (typeof draftTeamFilter === 'string' && draftTeamFilter !== '' && draftTeamFilter !== 'All' && draftTeamFilter !== 'Todos') {
+        matchesTeam = draftTeamFilter === '__NONE__' ? false : teamVal === draftTeamFilter;
+      }
 
       let matchesStats = true;
       if (ciclista) {

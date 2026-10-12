@@ -1,5 +1,6 @@
-import React, { useContext, useState, useEffect } from "react";
-import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X, ArrowRight } from "lucide-react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { History, Maximize2, Copy, CheckCircle2, ClipboardList, UploadCloud, ChevronUp, ChevronDown, Trophy, X, ArrowRight, Search, RotateCcw } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { useFilters } from "./useFilters";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
@@ -9,6 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { performTextCopy } from "./hooks/useExportHandlers";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { MultiSelectDropdown } from "../../ui/MultiSelectDropdown";
+import { EvolutionDateFilter } from "./EvolutionDateFilter";
 
 export function WinsHistoryTable() {
   const context = useContext(SeasonViewContext)!;
@@ -21,6 +25,7 @@ export function WinsHistoryTable() {
     historyMonthFilter, setHistoryMonthFilter,
     historySortColumn, setHistorySortColumn,
     historySortDirection, setHistorySortDirection,
+    winsHistorySearch, setWinsHistorySearch,
     formatNumberSpanish
   } = context;
 
@@ -87,13 +92,41 @@ export function WinsHistoryTable() {
     }
   };
 
-  const { filteredHistoryRaces } = useFilters({
+  const { filteredHistoryRaces, availableDateRange } = useFilters({
     ...context,
     historyTeamFilter,
     historyMonthFilter,
     historySortColumn,
-    historySortDirection
+    historySortDirection,
+    winsHistorySearch,
   });
+
+  const uniqueTeamNames = useMemo(() => {
+    return [...filteredLeaderboard]
+      .map((t) => t.nombreEquipo)
+      .sort((a, b) => a.localeCompare(b));
+  }, [filteredLeaderboard]);
+
+  const selectedTeams = useMemo(() => {
+    if (Array.isArray(historyTeamFilter)) {
+      return historyTeamFilter.filter((t: string) => t !== "all" && t !== "Todos");
+    }
+    if (historyTeamFilter && historyTeamFilter !== "all") {
+      return [historyTeamFilter];
+    }
+    return [];
+  }, [historyTeamFilter]);
+
+  const isTeamFilterActive = selectedTeams.length > 0;
+  const isMonthFilterActive = Boolean(historyMonthFilter && historyMonthFilter !== "all");
+  const isSearchActive = Boolean(winsHistorySearch && winsHistorySearch.trim() !== "");
+  const hasActiveFilters = isTeamFilterActive || isMonthFilterActive || isSearchActive;
+
+  const handleClearFilters = () => {
+    setHistoryTeamFilter([]);
+    setHistoryMonthFilter("all");
+    if (setWinsHistorySearch) setWinsHistorySearch("");
+  };
 
   const numBlocks = Math.ceil(filteredHistoryRaces.length / 50);
 
@@ -129,63 +162,92 @@ export function WinsHistoryTable() {
         ref={winsHistoryRef}
         className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm group relative mt-8"
       >
-        <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-3">
-          <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 flex-wrap md:flex-nowrap">
-            <History className="w-5 h-5 text-purple-600" />
-            Historial de Ganadores por Carrera
-          </h3>
-          <p className="text-sm text-neutral-500 max-w-full">
-            Relación cronológica de las victorias obtenidas por los equipos en cada carrera.
-          </p>
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
-            <ExportToolbar
-              isExpanded={false}
-              onExpand={() => setIsWinsHistoryExpanded(true)}
-              onCopyImage={handleCopyWinsHistory}
-              isImageCopying={isWinsHistoryCopying}
-              onDownloadImage={handleDownloadWinsHistory}
-              onCopyText={handleCopyWinsHistoryText}
-              isTextCopying={isWinsHistoryTextCopying}
-              textCopyLabel="Texto"
-              useClipboardIconForText={true}
-              filename="historial-ganadores"
-              numBlocks={numBlocks}
-            />
-            <div className="flex gap-2 flex-wrap">
-              <select
-                value={historyTeamFilter}
-                onChange={(e) => setHistoryTeamFilter(e.target.value)}
-                className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 min-w-[140px]"
-              >
-                <option value="all">Todos los equipos</option>
-                {[...filteredLeaderboard]
-                  .sort((a, b) => a.nombreEquipo.localeCompare(b.nombreEquipo))
-                  .map((t) => (
-                    <option key={t.nombreEquipo} value={t.nombreEquipo}>
-                      {t.nombreEquipo}
-                    </option>
-                  ))}
-              </select>
-              <select
-                value={historyMonthFilter}
-                onChange={(e) => setHistoryMonthFilter(e.target.value)}
-                className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 min-w-[140px]"
-              >
-                <option value="all">Todos los meses</option>
-                <option value="0">Enero</option>
-                <option value="1">Febrero</option>
-                <option value="2">Marzo</option>
-                <option value="3">Abril</option>
-                <option value="4">Mayo</option>
-                <option value="5">Junio</option>
-                <option value="6">Julio</option>
-                <option value="7">Agosto</option>
-                <option value="8">Septiembre</option>
-                <option value="9">Octubre</option>
-                <option value="10">Noviembre</option>
-                <option value="11">Diciembre</option>
-              </select>
+        <div className="px-6 py-5 border-b border-neutral-100 bg-neutral-50/50 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-900 flex items-center gap-2 flex-wrap">
+                <History className="w-5 h-5 text-purple-600 shrink-0" />
+                <span>Historial de Ganadores por Carrera</span>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60">
+                  {filteredHistoryRaces.length} {filteredHistoryRaces.length === 1 ? "carrera" : "carreras"}
+                </span>
+              </h3>
+              <p className="text-sm text-neutral-500 mt-1 max-w-full">
+                Relación cronológica de las victorias obtenidas por los equipos en cada carrera.
+              </p>
             </div>
+            <div className="copy-button-ignore shrink-0">
+              <ExportToolbar
+                isExpanded={false}
+                onExpand={() => setIsWinsHistoryExpanded(true)}
+                onCopyImage={handleCopyWinsHistory}
+                isImageCopying={isWinsHistoryCopying}
+                onDownloadImage={handleDownloadWinsHistory}
+                onCopyText={handleCopyWinsHistoryText}
+                isTextCopying={isWinsHistoryTextCopying}
+                textCopyLabel="Texto"
+                useClipboardIconForText={true}
+                filename="historial-ganadores"
+                numBlocks={numBlocks}
+              />
+            </div>
+          </div>
+
+          {/* Controles de Filtros Modernos */}
+          <div className="flex flex-wrap items-center justify-start sm:justify-end gap-3 w-full pt-3 border-t border-neutral-200/60 relative z-10">
+            {/* Buscador de Carreras o Equipos */}
+            <div className="relative w-full sm:w-64 max-w-full">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <Input
+                type="text"
+                placeholder="Buscar carrera o equipo..."
+                value={winsHistorySearch || ""}
+                onChange={(e) => setWinsHistorySearch && setWinsHistorySearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm bg-white border-neutral-200 rounded-xl focus-visible:ring-purple-500/20 font-medium h-10"
+              />
+            </div>
+
+            {/* Selector moderno MultiSelectDropdown para Equipos */}
+            <div className="w-full sm:w-auto shrink-0 min-w-[180px]">
+              <MultiSelectDropdown
+                allItems={uniqueTeamNames}
+                selectedItems={selectedTeams}
+                onChange={(val) => {
+                  setHistoryTeamFilter(val);
+                }}
+                placeholderAll="Todos los equipos"
+                placeholderNone="Ningún equipo"
+                unitLabelSingular="equipo"
+                unitLabelPlural="equipos"
+                allCountLabel="Todos"
+                className="min-w-[180px]"
+                buttonClassName="bg-white border-neutral-200 h-10 font-medium"
+              />
+            </div>
+
+            {/* Selector moderno EvolutionDateFilter para Fechas/Meses/Semanas */}
+            <div className="w-full sm:w-auto shrink-0">
+              <EvolutionDateFilter
+                value={historyMonthFilter || "all"}
+                onChange={(newVal) => {
+                  setHistoryMonthFilter(newVal);
+                }}
+                availableDateRange={availableDateRange}
+              />
+            </div>
+
+            {/* Botón para Limpiar Filtros activos */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-10 text-xs text-neutral-500 hover:text-neutral-800 flex items-center gap-1.5 rounded-xl border border-dashed border-neutral-200 hover:border-neutral-300"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Limpiar
+              </Button>
+            )}
           </div>
         </div>
         <div className="overflow-x-auto overflow-y-auto max-h-[75vh] px-2 md:px-0">
@@ -375,8 +437,8 @@ export function WinsHistoryTable() {
         </div>
       </div>
 
-      {isWinsHistoryExpanded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {isWinsHistoryExpanded && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-4 md:p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
               <h3 className="text-lg md:text-xl font-bold text-neutral-800 flex items-center gap-2">
@@ -450,7 +512,8 @@ export function WinsHistoryTable() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

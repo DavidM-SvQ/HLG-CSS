@@ -13,6 +13,7 @@ export function useFilters(context: any) {
     historyTeamFilter,
     historySortColumn,
     historySortDirection,
+    winsHistorySearch,
   } = context;
 
   const currentMonthIdx = new Date().getMonth();
@@ -144,9 +145,99 @@ export function useFilters(context: any) {
     });
 
     const filtered = raceData.filter((item: any) => {
-      const monthMatch = historyMonthFilter === "all" || item.month === parseInt(historyMonthFilter);
-      const teamMatch = historyTeamFilter === "all" || item.winnerTeamName === historyTeamFilter;
-      return monthMatch && teamMatch;
+      // 1. Modern Date Filter (EvolutionDateFilter support)
+      let monthMatch = true;
+      if (historyMonthFilter && historyMonthFilter !== "all") {
+        if (historyMonthFilter.startsWith("custom_")) {
+          const parts = historyMonthFilter.split("_");
+          if (parts.length >= 3) {
+            const s = parts[1];
+            const e = parts[2];
+            monthMatch = item.date ? item.date >= s && item.date <= e : false;
+          }
+        } else if (historyMonthFilter.startsWith("mrange_")) {
+          const parts = historyMonthFilter.split("_");
+          const s = parseInt(parts[1], 10);
+          const e = parseInt(parts[2], 10);
+          if (item.month !== undefined && !isNaN(item.month)) {
+            monthMatch = item.month >= Math.min(s, e) && item.month <= Math.max(s, e);
+          } else if (item.date) {
+            const partsD = item.date.split(/[-/]/);
+            if (partsD.length >= 2) {
+              const m = parseInt(partsD[1], 10) - 1;
+              monthMatch = m >= Math.min(s, e) && m <= Math.max(s, e);
+            }
+          }
+        } else if (historyMonthFilter.startsWith("wrange_")) {
+          const parts = historyMonthFilter.split("_");
+          const sW = parseInt(parts[1], 10);
+          const eW = parseInt(parts[2], 10);
+          if (item.date) {
+            const partsD = item.date.split(/[-/]/);
+            if (partsD.length >= 3) {
+              const m = parseInt(partsD[1], 10) - 1;
+              const day = parseInt(partsD[2], 10);
+              const wInM = Math.min(3, Math.floor((day - 1) / 7));
+              const wIdx = m * 4 + wInM;
+              monthMatch = wIdx >= Math.min(sW, eW) && wIdx <= Math.max(sW, eW);
+            }
+          }
+        } else if (historyMonthFilter.startsWith("w_")) {
+          const parts = historyMonthFilter.split("_");
+          const targetW = parseInt(parts[1], 10);
+          if (item.date) {
+            const partsD = item.date.split(/[-/]/);
+            if (partsD.length >= 3) {
+              const m = parseInt(partsD[1], 10) - 1;
+              const day = parseInt(partsD[2], 10);
+              const wInM = Math.min(3, Math.floor((day - 1) / 7));
+              const wIdx = m * 4 + wInM;
+              monthMatch = wIdx === targetW;
+            }
+          }
+        } else if (historyMonthFilter.includes("-")) {
+          const [s, e] = historyMonthFilter.split("-").map(Number);
+          if (item.month !== undefined && !isNaN(item.month)) {
+            monthMatch = item.month >= s && item.month <= e;
+          }
+        } else {
+          const parsedM = parseInt(historyMonthFilter, 10);
+          if (!isNaN(parsedM)) {
+            if (item.month !== undefined && !isNaN(item.month)) {
+              monthMatch = item.month === parsedM;
+            } else if (item.date) {
+              const partsD = item.date.split(/[-/]/);
+              if (partsD.length >= 2) {
+                monthMatch = parseInt(partsD[1], 10) - 1 === parsedM;
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Modern Team Filter (MultiSelectDropdown support)
+      let teamMatch = true;
+      if (historyTeamFilter && historyTeamFilter !== "all") {
+        if (Array.isArray(historyTeamFilter)) {
+          if (historyTeamFilter.length > 0 && !historyTeamFilter.includes("all") && !historyTeamFilter.includes("Todos")) {
+            teamMatch = item.winnerTeamName ? historyTeamFilter.includes(item.winnerTeamName) : false;
+          }
+        } else {
+          teamMatch = item.winnerTeamName === historyTeamFilter;
+        }
+      }
+
+      // 3. Search Filter
+      let searchMatch = true;
+      if (winsHistorySearch && typeof winsHistorySearch === "string" && winsHistorySearch.trim() !== "") {
+        const q = winsHistorySearch.trim().toLowerCase();
+        searchMatch =
+          Boolean(item.race && item.race.toLowerCase().includes(q)) ||
+          Boolean(item.winnerTeamName && item.winnerTeamName.toLowerCase().includes(q)) ||
+          Boolean(item.winnerDisplayName && item.winnerDisplayName.toLowerCase().includes(q));
+      }
+
+      return monthMatch && teamMatch && searchMatch;
     });
 
     filtered.sort((a: any, b: any) => {
@@ -194,12 +285,29 @@ export function useFilters(context: any) {
     });
 
     return filtered;
-  }, [uniqueRaces, raceWinners, filteredLeaderboard, files?.carreras?.data, historyMonthFilter, historyTeamFilter, historySortColumn, historySortDirection]);
+  }, [uniqueRaces, raceWinners, filteredLeaderboard, files?.carreras?.data, historyMonthFilter, historyTeamFilter, historySortColumn, historySortDirection, winsHistorySearch]);
+
+  const availableDateRange = useMemo(() => {
+    let minDate = "";
+    let maxDate = "";
+    files?.carreras?.data?.forEach((r: any) => {
+      const f = getVal(r, "Fecha");
+      if (f) {
+        const parsed = parseSafeDateStr(f);
+        if (parsed && parsed.length === 10) {
+          if (!minDate || parsed < minDate) minDate = parsed;
+          if (!maxDate || parsed > maxDate) maxDate = parsed;
+        }
+      }
+    });
+    return minDate && maxDate ? { minDate, maxDate } : undefined;
+  }, [files?.carreras?.data]);
 
   return {
     teamColors,
     teamWinsRankingData,
     monthlyWinsEvolutionData,
     filteredHistoryRaces,
+    availableDateRange,
   };
 }

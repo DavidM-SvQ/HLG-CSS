@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { createPortal } from "react-dom";
 import { BarChart3, X } from "lucide-react";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Cell, LabelList } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
@@ -190,8 +191,8 @@ export function GeneralClassificationChart() {
         </div>
       </div>
 
-      {isChartExpanded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {isChartExpanded && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
               <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2 whitespace-nowrap">
@@ -356,7 +357,8 @@ export function GeneralClassificationChart() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

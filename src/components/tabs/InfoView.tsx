@@ -1,7 +1,9 @@
-import { InfoPointsTable } from "./info/InfoPointsTable";
-import { InfoRacesTable } from "./info/InfoRacesTable";
+import React, { useState, useMemo, useRef, useEffect, Suspense } from "react";
+import { TableSkeleton } from "../ui/Skeleton";
+
+const InfoPointsTable = React.lazy(() => import("./info/InfoPointsTable").then(m => ({ default: m.InfoPointsTable })));
+const InfoRacesTable = React.lazy(() => import("./info/InfoRacesTable").then(m => ({ default: m.InfoRacesTable })));
 import { copyImageToClipboard, copyTextToClipboard } from "../../lib/clipboard";
-import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useUrlState } from "../../hooks/useUrlState";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Copy, Maximize2, Trophy, UploadCloud, Users, ClipboardList, FileSpreadsheet, Flag, X } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -276,49 +278,53 @@ export const InfoView = () => {
                 )}
 
                 {infoSubTab === "puntuaciones" && (
-                  <InfoPointsTable
-                    setInfoSubTab={setInfoSubTab}
-                    pointsTableRef={pointsTableRef}
-                    isPointsExpanded={isPointsExpanded}
-                    setIsPointsExpanded={setIsPointsExpanded}
-                    handleCopyPoints={handleCopyPoints}
-                    isPointsTextCopying={isPointsTextCopying}
-                    handleCopyPointsImage={handleCopyPointsImage}
-                    isPointsImageCopying={isPointsImageCopying}
-                    handleDownloadPointsImage={handleDownloadPointsImage}
-                    localRaceSearch={localRaceSearch}
-                    setLocalRaceSearch={setLocalRaceSearch}
-                    pointsCategoryFilter={pointsCategoryFilter}
-                    setPointsCategoryFilter={setPointsCategoryFilter}
-                    files={files}
-                    memoizedPointsData={memoizedPointsData}
-                  />
+                  <Suspense fallback={<div className="p-6 bg-white rounded-2xl border border-neutral-200"><TableSkeleton rows={8} /></div>}>
+                    <InfoPointsTable
+                      setInfoSubTab={setInfoSubTab}
+                      pointsTableRef={pointsTableRef}
+                      isPointsExpanded={isPointsExpanded}
+                      setIsPointsExpanded={setIsPointsExpanded}
+                      handleCopyPoints={handleCopyPoints}
+                      isPointsTextCopying={isPointsTextCopying}
+                      handleCopyPointsImage={handleCopyPointsImage}
+                      isPointsImageCopying={isPointsImageCopying}
+                      handleDownloadPointsImage={handleDownloadPointsImage}
+                      localRaceSearch={localRaceSearch}
+                      setLocalRaceSearch={setLocalRaceSearch}
+                      pointsCategoryFilter={pointsCategoryFilter}
+                      setPointsCategoryFilter={setPointsCategoryFilter}
+                      files={files}
+                      memoizedPointsData={memoizedPointsData}
+                    />
+                  </Suspense>
                 )}
 
                 {infoSubTab === "carreras" && (
-                  <InfoRacesTable
-                    setInfoSubTab={setInfoSubTab}
-                    racesTableRef={racesTableRef}
-                    isRacesExpanded={isRacesExpanded}
-                    setIsRacesExpanded={setIsRacesExpanded}
-                    handleCopyRaces={handleCopyRaces}
-                    isRacesTextCopying={isRacesTextCopying}
-                    handleCopyRacesImage={handleCopyRacesImage}
-                    isRacesImageCopying={isRacesImageCopying}
-                    handleDownloadRacesImage={handleDownloadRacesImage}
-                    racesFilter={racesFilter}
-                    setRacesFilter={setRacesFilter}
-                    racesCategoryFilter={racesCategoryFilter}
-                    setRacesCategoryFilter={setRacesCategoryFilter}
-                    racesMonthFilter={racesMonthFilter}
-                    setRacesMonthFilter={setRacesMonthFilter}
-                    files={files}
-                    setInfoCarrerasSortDir={setInfoCarrerasSortDir}
-                    infoCarrerasSortDir={infoCarrerasSortDir}
-                    memoizedRacesData={memoizedRacesData}
-                    raceWinners={raceWinners}
-                    now={new Date().getTime()}
-                  />
+                  <Suspense fallback={<div className="p-6 bg-white rounded-2xl border border-neutral-200"><TableSkeleton rows={8} /></div>}>
+                    <InfoRacesTable
+                      setInfoSubTab={setInfoSubTab}
+                      racesTableRef={racesTableRef}
+                      isRacesExpanded={isRacesExpanded}
+                      setIsRacesExpanded={setIsRacesExpanded}
+                      handleCopyRaces={handleCopyRaces}
+                      isRacesTextCopying={isRacesTextCopying}
+                      handleCopyRacesImage={handleCopyRacesImage}
+                      isRacesImageCopying={isRacesImageCopying}
+                      handleDownloadRacesImage={handleDownloadRacesImage}
+                      racesFilter={racesFilter}
+                      setRacesFilter={setRacesFilter}
+                      racesCategoryFilter={racesCategoryFilter}
+                      setRacesCategoryFilter={setRacesCategoryFilter}
+                      racesMonthFilter={racesMonthFilter}
+                      setRacesMonthFilter={setRacesMonthFilter}
+                      files={files}
+                      setInfoCarrerasSortDir={setInfoCarrerasSortDir}
+                      infoCarrerasSortDir={infoCarrerasSortDir}
+                      memoizedRacesData={memoizedRacesData}
+                      raceWinners={raceWinners}
+                      now={new Date().getTime()}
+                    />
+                  </Suspense>
                 )}
               </div>
   );

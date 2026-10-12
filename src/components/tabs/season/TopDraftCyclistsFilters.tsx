@@ -1,8 +1,10 @@
 import React from "react";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, User, X } from "lucide-react";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
 import { ExportToolbar } from "../../ui/ExportToolbar";
+import { MultiSelectDropdown } from "../../ui/MultiSelectDropdown";
+import { EvolutionDateFilter } from "./EvolutionDateFilter";
 
 export function TopDraftCyclistsFilters(props: any) {
   const {
@@ -28,11 +30,11 @@ export function TopDraftCyclistsFilters(props: any) {
   const [isValueFiltersOpen, setIsValueFiltersOpen] = React.useState(false);
 
   const uniqueTeams = React.useMemo(() => {
-    return Array.from(
+    return (Array.from(
       new Set(
         leaderboard?.filter((p: any) => p.jugador !== "No draft").map((p: any) => p.nombreEquipo) || []
       )
-    ).filter(Boolean).sort((a: any, b: any) => (a as string).localeCompare(b as string));
+    ).filter(Boolean) as string[]).sort((a: string, b: string) => a.localeCompare(b));
   }, [leaderboard]);
 
   const uniqueCategories = React.useMemo(() => {
@@ -95,122 +97,65 @@ export function TopDraftCyclistsFilters(props: any) {
           </div>
 
           {/* Race Filter */}
-          <select
-            value={cyclistsRaceFilter || "all"}
-            onChange={(e) => setCyclistsRaceFilter(e.target.value)}
-            className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 max-w-[200px] truncate cursor-pointer"
-          >
-            <option value="all">Todas las carreras</option>
-            {uniqueRaces.map((race) => (
-              <option key={race} value={race}>
-                {race}
-              </option>
-            ))}
-          </select>
-
           <div className="relative">
-            <Button variant="outline" onClick={() => setIsCyclistsTeamFilterOpen(!isCyclistsTeamFilterOpen)} className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]">
-              <span className="truncate">
-                {cyclistsTeamFilter.length === 0 ? "Todos los equipos" : cyclistsTeamFilter.length + " equipos"}
-              </span>
-              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isCyclistsTeamFilterOpen && "rotate-180")} />
-            </Button>
-
-            {isCyclistsTeamFilterOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsCyclistsTeamFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">Equipos</span>
-                    {cyclistsTeamFilter.length > 0 && (
-                      <Button variant="outline" onClick={() => setCyclistsTeamFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>
-                    )}
-                  </div>
-                  {uniqueTeams.map((team: any) => (
-                    <label key={team} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">
-                      <input type="checkbox" className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" checked={cyclistsTeamFilter.includes(team)} onChange={(e) => {
-                        if (e.target.checked) {
-                          setCyclistsTeamFilter([...cyclistsTeamFilter, team]);
-                        } else {
-                          setCyclistsTeamFilter(cyclistsTeamFilter.filter((t: any) => t !== team));
-                        }
-                      }} />
-                      <span className="ml-2 text-sm text-neutral-700 truncate">{team}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
+            <select
+              value={cyclistsRaceFilter || "all"}
+              onChange={(e) => setCyclistsRaceFilter(e.target.value)}
+              className="appearance-none pr-8 pl-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 max-w-[200px] truncate cursor-pointer hover:border-neutral-300 transition-colors"
+            >
+              <option value="all">Todas las carreras</option>
+              {uniqueRaces.map((race) => (
+                <option key={race} value={race}>
+                  {race}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
-          <div className="relative">
-            <Button variant="outline" onClick={() => setIsCyclistsCategoryFilterOpen(!isCyclistsCategoryFilterOpen)} className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[150px]">
-              <span className="truncate">
-                {cyclistsCategoryFilter.length === 0 ? "Todas las categorías" : cyclistsCategoryFilter.length + " categorías"}
-              </span>
-              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isCyclistsCategoryFilterOpen && "rotate-180")} />
-            </Button>
-
-            {isCyclistsCategoryFilterOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsCyclistsCategoryFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">Categorías</span>
-                    {cyclistsCategoryFilter.length > 0 && (
-                      <Button variant="outline" onClick={() => setCyclistsCategoryFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>
-                    )}
-                  </div>
-                  {uniqueCategories.map((cat: any) => (
-                    <label key={cat} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">
-                      <input type="checkbox" className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" checked={cyclistsCategoryFilter.includes(cat)} onChange={(e) => {
-                        if (e.target.checked) {
-                          setCyclistsCategoryFilter([...cyclistsCategoryFilter, cat]);
-                        } else {
-                          setCyclistsCategoryFilter(cyclistsCategoryFilter.filter((c: any) => c !== cat));
-                        }
-                      }} />
-                      <span className="ml-2 text-sm text-neutral-700 truncate">{cat}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
+          {/* Team Filter */}
+          <div className="min-w-[150px]">
+            <MultiSelectDropdown
+              allItems={uniqueTeams}
+              selectedItems={cyclistsTeamFilter}
+              onChange={setCyclistsTeamFilter}
+              placeholderAll="Todos los equipos"
+              placeholderNone="Ningún equipo"
+              unitLabelSingular="equipo"
+              unitLabelPlural="equipos"
+              allCountLabel="Todos"
+              className="min-w-[150px]"
+            />
           </div>
 
-          <div className="relative">
-            <Button variant="outline" onClick={() => setIsCyclistsRoundFilterOpen(!isCyclistsRoundFilterOpen)} className="flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm hover:bg-neutral-50 transition-colors min-w-[140px]">
-              <span className="truncate">
-                {cyclistsRoundFilter.length === 0 ? "Todas las rondas" : cyclistsRoundFilter.length + " rondas"}
-              </span>
-              <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isCyclistsRoundFilterOpen && "rotate-180")} />
-            </Button>
+          <div className="min-w-[150px]">
+            <MultiSelectDropdown
+              allItems={uniqueCategories}
+              selectedItems={cyclistsCategoryFilter}
+              onChange={setCyclistsCategoryFilter}
+              placeholderAll="Todas las categorías"
+              placeholderNone="Ninguna categoría"
+              unitLabelSingular="categoría"
+              unitLabelPlural="categorías"
+              allCountLabel="Todas"
+              className="min-w-[150px]"
+            />
+          </div>
 
-            {isCyclistsRoundFilterOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsCyclistsRoundFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-max max-w-[90vw] sm:max-w-xs bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-2 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1 border-b border-neutral-100 mb-1 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase">Rondas</span>
-                    {cyclistsRoundFilter.length > 0 && (
-                      <Button variant="outline" onClick={() => setCyclistsRoundFilter([])} className="text-[10px] text-blue-600 hover:text-blue-700 font-medium">Limpiar</Button>
-                    )}
-                  </div>
-                  {uniqueRounds.map((ronda: any) => (
-                    <label key={ronda} className="flex items-center px-3 py-2 hover:bg-neutral-50 cursor-pointer transition-colors">
-                      <input type="checkbox" className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" checked={cyclistsRoundFilter.includes(ronda)} onChange={(e) => {
-                        if (e.target.checked) {
-                          setCyclistsRoundFilter([...cyclistsRoundFilter, ronda]);
-                        } else {
-                          setCyclistsRoundFilter(cyclistsRoundFilter.filter((r: any) => r !== ronda));
-                        }
-                      }} />
-                      <span className="ml-2 text-sm text-neutral-700">Ronda {ronda}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
+          {/* Round Filter */}
+          <div className="min-w-[140px]">
+            <MultiSelectDropdown
+              allItems={uniqueRounds}
+              selectedItems={cyclistsRoundFilter}
+              onChange={setCyclistsRoundFilter}
+              placeholderAll="Todas las rondas"
+              placeholderNone="Ninguna ronda"
+              unitLabelSingular="ronda"
+              unitLabelPlural="rondas"
+              allCountLabel="Todas"
+              formatItemLabel={(r) => (r.toLowerCase().startsWith("ronda") ? r : `Ronda ${r}`)}
+              className="min-w-[140px]"
+            />
           </div>
 
           {/* Value Filters Popover */}
@@ -231,63 +176,72 @@ export function TopDraftCyclistsFilters(props: any) {
 
             {isValueFiltersOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsValueFiltersOpen(false)} />
-                <div className="absolute right-0 mt-2 w-72 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 p-3 space-y-2 text-xs">
-                  <div className="flex justify-between items-center border-b border-neutral-100 pb-1 mb-2">
-                    <span className="font-bold text-neutral-700 uppercase tracking-wider text-[10px]">Valores mínimos (≥)</span>
-                    {hasActiveValueFilters && (
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsValueFiltersOpen(false)} />
+                <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] z-50 bg-white border border-neutral-200 rounded-xl shadow-xl p-3 space-y-2 text-xs">
+                  <div className="flex justify-between items-center border-b border-neutral-100 pb-2 sm:pb-1 mb-1">
+                    <span className="font-bold text-neutral-700 uppercase tracking-wider text-[11px] sm:text-[10px]">Valores mínimos (≥)</span>
+                    <div className="flex items-center gap-2">
+                      {hasActiveValueFilters && (
+                        <button
+                          onClick={() => {
+                            setCyclistsMinVictorias("");
+                            setCyclistsMinCarreras("");
+                            setCyclistsMinDias("");
+                            setCyclistsMinPpc("");
+                            setCyclistsMinPpd("");
+                            setCyclistsMinPuntos("");
+                          }}
+                          className="text-xs sm:text-[10px] text-blue-600 hover:text-blue-700 font-semibold cursor-pointer px-1 py-0.5 rounded hover:bg-blue-50"
+                        >
+                          Limpiar
+                        </button>
+                      )}
                       <button
-                        onClick={() => {
-                          setCyclistsMinVictorias("");
-                          setCyclistsMinCarreras("");
-                          setCyclistsMinDias("");
-                          setCyclistsMinPpc("");
-                          setCyclistsMinPpd("");
-                          setCyclistsMinPuntos("");
-                        }}
-                        className="text-[10px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                        onClick={() => setIsValueFiltersOpen(false)}
+                        className="sm:hidden text-neutral-400 hover:text-neutral-700 p-1 rounded-full hover:bg-neutral-100"
+                        aria-label="Cerrar"
                       >
-                        Limpiar
+                        <X className="w-4 h-4" />
                       </button>
-                    )}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-2">
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Victorias</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">Victorias</label>
                       <input
                         type="number"
                         min="0"
                         placeholder="Ej. 1"
                         value={cyclistsMinVictorias || ""}
                         onChange={(e) => setCyclistsMinVictorias(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Carreras</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">Carreras</label>
                       <input
                         type="number"
                         min="0"
                         placeholder="Ej. 2"
                         value={cyclistsMinCarreras || ""}
                         onChange={(e) => setCyclistsMinCarreras(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Días</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">Días</label>
                       <input
                         type="number"
                         min="0"
                         placeholder="Ej. 5"
                         value={cyclistsMinDias || ""}
                         onChange={(e) => setCyclistsMinDias(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">P/C</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">P/C</label>
                       <input
                         type="number"
                         step="0.1"
@@ -295,11 +249,11 @@ export function TopDraftCyclistsFilters(props: any) {
                         placeholder="Ej. 10.0"
                         value={cyclistsMinPpc || ""}
                         onChange={(e) => setCyclistsMinPpc(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">P/D</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">P/D</label>
                       <input
                         type="number"
                         step="0.1"
@@ -307,41 +261,42 @@ export function TopDraftCyclistsFilters(props: any) {
                         placeholder="Ej. 5.0"
                         value={cyclistsMinPpd || ""}
                         onChange={(e) => setCyclistsMinPpd(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-neutral-500 font-semibold mb-0.5">Puntos</label>
+                      <label className="block text-[11px] sm:text-[10px] text-neutral-500 font-semibold mb-0.5">Puntos</label>
                       <input
                         type="number"
                         min="0"
                         placeholder="Ej. 50"
                         value={cyclistsMinPuntos || ""}
                         onChange={(e) => setCyclistsMinPuntos(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2.5 sm:px-2 py-1.5 sm:py-1 border border-neutral-200 rounded-lg sm:rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
+                  </div>
+
+                  <div className="sm:hidden pt-2 border-t border-neutral-100">
+                    <Button
+                      size="sm"
+                      onClick={() => setIsValueFiltersOpen(false)}
+                      className="w-full h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+                    >
+                      Aplicar
+                    </Button>
                   </div>
                 </div>
               </>
             )}
           </div>
 
-          <select value={cyclistsMonthFilter} onChange={(e) => setCyclistsMonthFilter(e.target.value)} className="px-3 py-2 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            <option value="all">Todos los meses</option>
-            <option value="0">Enero</option>
-            <option value="1">Febrero</option>
-            <option value="2">Marzo</option>
-            <option value="3">Abril</option>
-            <option value="4">Mayo</option>
-            <option value="5">Junio</option>
-            <option value="6">Julio</option>
-            <option value="7">Agosto</option>
-            <option value="8">Septiembre</option>
-            <option value="9">Octubre</option>
-            <option value="10">Noviembre</option>
-            <option value="11">Diciembre</option>
-          </select>
+          <div className="w-full sm:w-auto shrink-0">
+            <EvolutionDateFilter
+              value={cyclistsMonthFilter}
+              onChange={setCyclistsMonthFilter}
+            />
+          </div>
 
           <div className="flex bg-neutral-100 p-1 rounded-lg">
             <Button variant="outline" onClick={() => setTopCyclistsLimit(25)} className={cn("px-3 py-1 rounded-md text-xs font-medium transition-all", (Number(topCyclistsLimit) || 25) === 25 ? "bg-white text-blue-600 shadow-sm" : "text-neutral-500 hover:text-neutral-700")}>Top 25</Button>

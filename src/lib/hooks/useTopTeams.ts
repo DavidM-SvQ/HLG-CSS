@@ -68,28 +68,105 @@ export function useTopTeams(
       return raceCategories[trimmed] || raceCategories[trimmed.toLowerCase()] || "";
     };
 
+    const hasNoneCategory = Array.isArray(teamsCategoryFilter) 
+      ? teamsCategoryFilter.includes("__NONE__")
+      : teamsCategoryFilter === "__NONE__";
+
     const activeCategoryFilters = Array.isArray(teamsCategoryFilter)
-      ? teamsCategoryFilter.filter((c) => c && c !== "all")
-      : typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all"
+      ? teamsCategoryFilter.filter((c) => c && c !== "all" && c !== "__NONE__")
+      : typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all" && teamsCategoryFilter !== "__NONE__"
       ? [teamsCategoryFilter]
       : [];
 
     const isCategoryMatched = (carreraName: string) => {
+      if (hasNoneCategory) return false;
       if (activeCategoryFilters.length === 0) return true;
       const cat = getRaceCat(carreraName);
       return activeCategoryFilters.includes(cat);
     };
 
-    const isCustomDate = teamsMonthFilter.startsWith("custom_");
-    let customStart = "";
-    let customEnd = "";
-    if (isCustomDate) {
-      const parts = teamsMonthFilter.split("_");
-      if (parts.length === 3) {
-        customStart = parts[1];
-        customEnd = parts[2];
+    const matchesDateFilter = (dateStr: string | undefined, monthIdx: number | undefined) => {
+      if (!teamsMonthFilter || teamsMonthFilter === "all") return true;
+
+      if (teamsMonthFilter.startsWith("custom_")) {
+        const parts = teamsMonthFilter.split("_");
+        if (parts.length >= 3) {
+          const s = parts[1];
+          const e = parts[2];
+          return dateStr ? dateStr >= s && dateStr <= e : false;
+        }
       }
-    }
+
+      if (teamsMonthFilter.startsWith("mrange_")) {
+        const parts = teamsMonthFilter.split("_");
+        const s = parseInt(parts[1], 10);
+        const e = parseInt(parts[2], 10);
+        if (monthIdx !== undefined && !isNaN(monthIdx)) {
+          return monthIdx >= Math.min(s, e) && monthIdx <= Math.max(s, e);
+        }
+        if (dateStr) {
+          const partsD = dateStr.split(/[-/]/);
+          if (partsD.length >= 2) {
+            const m = parseInt(partsD[1], 10) - 1;
+            return m >= Math.min(s, e) && m <= Math.max(s, e);
+          }
+        }
+        return false;
+      }
+
+      if (teamsMonthFilter.startsWith("wrange_")) {
+        const parts = teamsMonthFilter.split("_");
+        const sW = parseInt(parts[1], 10);
+        const eW = parseInt(parts[2], 10);
+        if (!dateStr) return false;
+        const partsD = dateStr.split(/[-/]/);
+        if (partsD.length >= 3) {
+          const m = parseInt(partsD[1], 10) - 1;
+          const day = parseInt(partsD[2], 10);
+          const wInM = Math.min(3, Math.floor((day - 1) / 7));
+          const wIdx = m * 4 + wInM;
+          return wIdx >= Math.min(sW, eW) && wIdx <= Math.max(sW, eW);
+        }
+        return false;
+      }
+
+      if (teamsMonthFilter.startsWith("w_")) {
+        const parts = teamsMonthFilter.split("_");
+        const targetW = parseInt(parts[1], 10);
+        if (!dateStr) return false;
+        const partsD = dateStr.split(/[-/]/);
+        if (partsD.length >= 3) {
+          const m = parseInt(partsD[1], 10) - 1;
+          const day = parseInt(partsD[2], 10);
+          const wInM = Math.min(3, Math.floor((day - 1) / 7));
+          const wIdx = m * 4 + wInM;
+          return wIdx === targetW;
+        }
+        return false;
+      }
+
+      if (teamsMonthFilter.includes("-")) {
+        const [s, e] = teamsMonthFilter.split("-").map(Number);
+        if (monthIdx !== undefined && !isNaN(monthIdx)) {
+          return monthIdx >= s && monthIdx <= e;
+        }
+      }
+
+      const parsedM = parseInt(teamsMonthFilter, 10);
+      if (!isNaN(parsedM)) {
+        if (monthIdx !== undefined && !isNaN(monthIdx)) {
+          return monthIdx === parsedM;
+        }
+        if (dateStr) {
+          const partsD = dateStr.split(/[-/]/);
+          if (partsD.length >= 2) {
+            return parseInt(partsD[1], 10) - 1 === parsedM;
+          }
+        }
+      }
+
+      return true;
+    };
 
     const teamCarrerasLog = new Map<string, Set<string>>();
     const teamDiasCount = new Map<string, number>();
@@ -104,12 +181,7 @@ export function useTopTeams(
           if (!isCategoryMatched(carrera)) {
             return;
           }
-          if (isCustomDate) {
-            const raceDate = raceDates[carrera];
-            if (!raceDate || raceDate < customStart || raceDate > customEnd) {
-              return;
-            }
-          } else if (teamsMonthFilter !== "all" && raceMonths[carrera] !== parseInt(teamsMonthFilter)) {
+          if (!matchesDateFilter(raceDates[carrera], raceMonths[carrera])) {
             return;
           }
           const jugador = playerByCyclist?.[ciclista];
@@ -133,14 +205,9 @@ export function useTopTeams(
         if (!isCategoryMatched(d.carrera)) {
           return false;
         }
-        if (isCustomDate) {
-          // Si el detalle tiene fecha (evolución) la usamos, o sino la de la carrera
-          let dDate = d.fecha;
-          if (!dDate) dDate = raceDates[d.carrera];
-          if (!dDate || dDate < customStart || dDate > customEnd) {
-             return false;
-          }
-        } else if (teamsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(teamsMonthFilter)) {
+        const dDate = d.fecha || raceDates[d.carrera];
+        const dMonth = raceMonths[d.carrera];
+        if (!matchesDateFilter(dDate, dMonth)) {
           return false;
         }
         return true;
@@ -156,14 +223,12 @@ export function useTopTeams(
           if (!isCategoryMatched(raceName)) {
             return;
           }
-          if (isCustomDate) {
-            const raceDate = raceDates[raceName];
-            if (raceDate && raceDate >= customStart && raceDate <= customEnd) {
-              wins++;
-            }
-          } else if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
-            wins++;
+          const raceDate = raceDates[raceName];
+          const raceMonth = raceMonths[raceName];
+          if (!matchesDateFilter(raceDate, raceMonth)) {
+            return;
           }
+          wins++;
         }
       });
 
@@ -173,20 +238,16 @@ export function useTopTeams(
           if (!isCategoryMatched(raceName)) {
             return;
           }
-          if (isCustomDate) {
-            const raceDate = raceDates[raceName];
-            if (raceDate && raceDate >= customStart && raceDate <= customEnd) {
-              Object.values(raceEvents).forEach((winnerTeams) => {
-                if (winnerTeams.includes(team.nombreEquipo)) partialWins++;
-              });
-            }
-          } else if (teamsMonthFilter === "all" || raceMonths[raceName] === parseInt(teamsMonthFilter)) {
-            Object.values(raceEvents).forEach((winnerTeams) => {
-              if (winnerTeams.includes(team.nombreEquipo)) {
-                partialWins++;
-              }
-            });
+          const raceDate = raceDates[raceName];
+          const raceMonth = raceMonths[raceName];
+          if (!matchesDateFilter(raceDate, raceMonth)) {
+            return;
           }
+          Object.values(raceEvents).forEach((winnerTeams) => {
+            if (winnerTeams.includes(team.nombreEquipo)) {
+              partialWins++;
+            }
+          });
         });
       }
 

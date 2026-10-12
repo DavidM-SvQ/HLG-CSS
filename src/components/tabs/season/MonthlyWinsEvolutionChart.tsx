@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { createPortal } from "react-dom";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { TrendingUp, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from "recharts";
@@ -214,8 +215,8 @@ export function MonthlyWinsEvolutionChart() {
         </div>
       </div>
 
-      {isWinsEvolutionExpanded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {isWinsEvolutionExpanded && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
               <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
@@ -281,7 +282,8 @@ export function MonthlyWinsEvolutionChart() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

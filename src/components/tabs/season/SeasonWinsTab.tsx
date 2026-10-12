@@ -1,17 +1,28 @@
-import React, { useContext } from "react";
-import { SeasonViewContext } from "./SeasonViewContext";
-import { TeamWinsRankingChart } from "./TeamWinsRankingChart";
-import { MonthlyWinsEvolutionChart } from "./MonthlyWinsEvolutionChart";
-import { WinsHistoryTable } from "./WinsHistoryTable";
+import React, { Suspense } from "react";
+import { TableSkeleton } from "../../ui/Skeleton";
+
+const TeamWinsRankingChart = React.lazy(() =>
+  import("./TeamWinsRankingChart").then((m) => ({ default: m.TeamWinsRankingChart }))
+);
+const MonthlyWinsEvolutionChart = React.lazy(() =>
+  import("./MonthlyWinsEvolutionChart").then((m) => ({ default: m.MonthlyWinsEvolutionChart }))
+);
+const WinsHistoryTable = React.lazy(() =>
+  import("./WinsHistoryTable").then((m) => ({ default: m.WinsHistoryTable }))
+);
 
 export function SeasonWinsTab() {
-  const context = useContext(SeasonViewContext)!;
-
   return (
     <div className="space-y-8">
-      <TeamWinsRankingChart />
-      <MonthlyWinsEvolutionChart />
-      <WinsHistoryTable />
+      <Suspense fallback={<div className="p-6 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={4} /></div>}>
+        <TeamWinsRankingChart />
+      </Suspense>
+      <Suspense fallback={<div className="p-6 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={4} /></div>}>
+        <MonthlyWinsEvolutionChart />
+      </Suspense>
+      <Suspense fallback={<div className="p-6 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={6} /></div>}>
+        <WinsHistoryTable />
+      </Suspense>
     </div>
   );
 }

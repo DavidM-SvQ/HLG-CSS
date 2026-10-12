@@ -9,7 +9,8 @@ import { useDebounce } from "../../../lib/hooks/useDebounce";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
-import { MultiSelect } from "../../ui/multi-select";
+import { MultiSelectDropdown } from "../../ui/MultiSelectDropdown";
+import { EvolutionDateFilter } from "./EvolutionDateFilter";
 import { TopTeamsTableContent } from "./TopTeamsTableContent";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 
@@ -50,9 +51,10 @@ export function TopTeamsTable() {
   const activeCategories = React.useMemo(() => {
     if (!teamsCategoryFilter) return [];
     if (Array.isArray(teamsCategoryFilter)) {
+      if (teamsCategoryFilter.includes("__NONE__")) return [];
       return teamsCategoryFilter.filter((c) => c && c !== "all");
     }
-    return typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all" ? [teamsCategoryFilter] : [];
+    return typeof teamsCategoryFilter === "string" && teamsCategoryFilter !== "all" && teamsCategoryFilter !== "__NONE__" ? [teamsCategoryFilter] : [];
   }, [teamsCategoryFilter]);
 
   // Keep localCustomDateRange in sync if it changes from outside or initializes
@@ -185,7 +187,7 @@ export function TopTeamsTable() {
               )}
               {teamsMonthFilter !== "all" && (
                 <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                  Solo data del mes seleccionado
+                  Filtro de fecha aplicado
                 </span>
               )}
             </h3>
@@ -214,90 +216,34 @@ export function TopTeamsTable() {
             />
           </div>
           <div className="w-full sm:w-auto shrink-0 min-w-[170px]">
-            <MultiSelect
-              options={categoryOptions}
-              value={activeCategories}
+            <MultiSelectDropdown
+              allItems={uniqueCategories}
+              selectedItems={teamsCategoryFilter}
               onChange={(val) => {
                 setTeamsCategoryFilter(val);
                 setTopTeamsSortColumn("puntos");
                 setTopTeamsSortDirection("desc");
               }}
-              placeholder="Categorías"
+              placeholderAll="Todas las categorías"
+              placeholderNone="Ninguna categoría"
+              unitLabelSingular="categoría"
+              unitLabelPlural="categorías"
+              allCountLabel="Todas"
+              className="min-w-[170px]"
+              buttonClassName="bg-white border-neutral-200 h-10 font-medium"
             />
           </div>
 
-          <select 
-            value={teamsMonthFilter.startsWith("custom_") ? "custom" : teamsMonthFilter} 
-            onChange={(e) => {
-              if (e.target.value === "custom") {
-                const currentYear = new Date().getFullYear();
-                const today = new Date().toISOString().split('T')[0];
-                setTeamsMonthFilter(`custom_${currentYear}-01-01_${today}`);
-              } else {
-                setTeamsMonthFilter(e.target.value);
-              }
-              setTopTeamsSortColumn("puntos");
-              setTopTeamsSortDirection("desc");
-            }}
-            className="w-full sm:w-auto px-4 py-2 font-semibold bg-white border border-neutral-200 rounded-xl shadow-sm hover:border-blue-300 focus-visible:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm h-10 shrink-0"
-          >
-            <option value="all">Todos los meses</option>
-            <option value="custom">Rango de fechas</option>
-            {(() => {
-              const months = [
-                "Enero",
-                "Febrero",
-                "Marzo",
-                "Abril",
-                "Mayo",
-                "Junio",
-                "Julio",
-                "Agosto",
-                "Septiembre",
-                "Octubre",
-                "Noviembre",
-                "Diciembre",
-              ];
-              return months.map((m, i) => (
-                <option key={i} value={i.toString()}>
-                  {m}
-                </option>
-              ));
-            })()}
-          </select>
-          {teamsMonthFilter.startsWith("custom_") && (
-            <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2 w-full sm:w-auto">
-              <Input 
-                type="date" 
-                className="w-full sm:w-auto py-1 text-sm bg-neutral-50 h-10"
-                value={localCustomDateRange.start}
-                onChange={(e) => {
-                  setLocalCustomDateRange(prev => ({ ...prev, start: e.target.value }));
-                }}
-              />
-              <span className="text-neutral-500 font-medium hidden sm:inline">a</span>
-              <Input 
-                type="date" 
-                className="w-full sm:w-auto py-1 text-sm bg-neutral-50 h-10"
-                value={localCustomDateRange.end}
-                onChange={(e) => {
-                  setLocalCustomDateRange(prev => ({ ...prev, end: e.target.value }));
-                }}
-              />
-              <Button 
-                size="sm" 
-                variant="default"
-                onClick={() => {
-                  setTeamsMonthFilter(`custom_${localCustomDateRange.start}_${localCustomDateRange.end}`);
-                  setTopTeamsSortColumn("puntos");
-                  setTopTeamsSortDirection("desc");
-                }}
-                className="h-10 w-full sm:w-auto"
-              >
-                Aplicar
-              </Button>
-            </div>
-          )}
+          <div className="w-full sm:w-auto shrink-0">
+            <EvolutionDateFilter
+              value={teamsMonthFilter}
+              onChange={(newVal) => {
+                setTeamsMonthFilter(newVal);
+                setTopTeamsSortColumn("puntos");
+                setTopTeamsSortDirection("desc");
+              }}
+            />
+          </div>
         </div>
         <div className="w-full overflow-x-auto">
           <TopTeamsTableContent {...tableProps} />

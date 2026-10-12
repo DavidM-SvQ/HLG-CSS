@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Toaster } from "sonner";
 import { useDataStore } from "./lib/stores/useDataStore";
 import { useAppComputations } from "./lib/hooks/useAppComputations";
 import { AlertCircle } from "lucide-react";
-import { PublicLayout } from "./components/layouts/PublicLayout";
-import { AdminLayout } from "./components/layouts/AdminLayout";
 import { AppHeader } from "./components/AppHeader";
 import { OfflineIndicator } from "./components/ui/OfflineIndicator";
 import { useLocation } from "react-router-dom";
+import { TableSkeleton } from "./components/ui/Skeleton";
 
 import { supabase } from "./supabase";
 import { useAuth } from "./lib/auth/AuthContext";
@@ -18,9 +17,11 @@ import { usePageView } from "./lib/analytics/usePageView";
 import { Button } from "./components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog";
 
-import { MilestoneNotifier } from "./components/MilestoneNotifier";
-
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+const PublicLayout = React.lazy(() => import("./components/layouts/PublicLayout").then(m => ({ default: m.PublicLayout })));
+const AdminLayout = React.lazy(() => import("./components/layouts/AdminLayout").then(m => ({ default: m.AdminLayout })));
+const MilestoneNotifier = React.lazy(() => import("./components/MilestoneNotifier").then(m => ({ default: m.MilestoneNotifier })));
 
 export default function App() {
   const location = useLocation();
@@ -105,11 +106,20 @@ export default function App() {
 
 
 
-  // Automatically switch to admin view if user is admin
+  // Automatically switch view mode based on admin status and current route
   useEffect(() => {
-    if (isAdmin) setView("admin");
-    else setView("public");
-  }, [isAdmin]);
+    if (!isAdmin) {
+      setView("public");
+    } else {
+      const publicPaths = ["/season", "/race", "/startlist", "/team", "/draft", "/info"];
+      const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
+      if (isPublicPath) {
+        setView("public");
+      } else if (location.pathname.startsWith("/admin") || location.pathname === "/") {
+        setView("admin");
+      }
+    }
+  }, [isAdmin, location.pathname]);
 
   const essentialFiles = ["carreras", "ciclistas", "elecciones", "equipos", "puntos", "resultados"];
   const allFilesUploaded = essentialFiles.every(
@@ -208,7 +218,9 @@ export default function App() {
       
       <div className="relative z-10 flex-1 flex flex-col">
         <Toaster position="top-center" richColors />
-        <MilestoneNotifier />
+        <Suspense fallback={null}>
+          <MilestoneNotifier />
+        </Suspense>
         <OfflineIndicator />
           
           <Dialog open={showFrameWarning} onOpenChange={setShowFrameWarning}>
@@ -271,11 +283,13 @@ export default function App() {
             </div>
           )}
 
-          {view === "admin" ? (
-            <AdminLayout />
-          ) : (
-            <PublicLayout />
-          )}
+          <Suspense fallback={<div className="p-8 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={8} /></div>}>
+            {view === "admin" ? (
+              <AdminLayout />
+            ) : (
+              <PublicLayout />
+            )}
+          </Suspense>
         </main>
       </div>
     </div>

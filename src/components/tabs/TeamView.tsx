@@ -1,12 +1,13 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { CheckCircle2, Camera, CloudDownload } from "lucide-react";
 import { useTableScreenshot } from "../../hooks/useTableScreenshot";
 import { useTeamData } from "./team/hooks/useTeamData";
 import { useFormattedTeams } from "./team/hooks/useFormattedTeams";
+import { TableSkeleton } from "../ui/Skeleton";
 
-import { TeamKPIs } from "./team/TeamKPIs";
-import { TeamTrophyRoom } from "./team/TeamTrophyRoom";
-import { TeamCyclistsTable } from "./team/TeamCyclistsTable";
+const TeamKPIs = React.lazy(() => import("./team/TeamKPIs").then(m => ({ default: m.TeamKPIs })));
+const TeamTrophyRoom = React.lazy(() => import("./team/TeamTrophyRoom").then(m => ({ default: m.TeamTrophyRoom })));
+const TeamCyclistsTable = React.lazy(() => import("./team/TeamCyclistsTable").then(m => ({ default: m.TeamCyclistsTable })));
 import { TeamSelector } from "./team/TeamSelector";
 import { Button } from "../ui/button";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -86,31 +87,37 @@ export const TeamView = () => {
               </p>
             </div>
 
-            <TeamKPIs 
-              teamPlayer={teamComputedData.teamPlayer}
-              teamWins={teamComputedData.teamWins}
-              teamPartialWins={teamComputedData.teamPartialWins}
-              avgAge={teamComputedData.avgAge}
-              unscoredCount={teamComputedData.unscoredCount}
-              undebutedCount={teamComputedData.undebutedCount}
-              currentPuesto={teamComputedData.currentPuesto}
-              difConOrden={teamComputedData.difConOrden}
-            />
+            <Suspense fallback={<div className="p-4"><TableSkeleton rows={3} /></div>}>
+              <TeamKPIs 
+                teamPlayer={teamComputedData.teamPlayer}
+                teamWins={teamComputedData.teamWins}
+                teamPartialWins={teamComputedData.teamPartialWins}
+                avgAge={teamComputedData.avgAge}
+                unscoredCount={teamComputedData.unscoredCount}
+                undebutedCount={teamComputedData.undebutedCount}
+                currentPuesto={teamComputedData.currentPuesto}
+                difConOrden={teamComputedData.difConOrden}
+              />
+            </Suspense>
 
             <div>
-              <TeamTrophyRoom 
-                teamWins={teamComputedData.teamWins}
-                raceWinners={raceWinners}
-                selectedTeam={selectedTeam}
-                teamPlayer={teamComputedData.teamPlayer}
-                files={files}
-              />
+              <Suspense fallback={<div className="p-4"><TableSkeleton rows={4} /></div>}>
+                <TeamTrophyRoom 
+                  teamWins={teamComputedData.teamWins}
+                  raceWinners={raceWinners}
+                  selectedTeam={selectedTeam}
+                  teamPlayer={teamComputedData.teamPlayer}
+                  files={files}
+                />
+              </Suspense>
 
               <h3 className="font-semibold text-xl text-neutral-900 border-b pb-3 mb-4 flex items-center gap-2">
                 Plantilla del Equipo
               </h3>
               
-              <TeamCyclistsTable cyclistStats={teamComputedData.cyclistStats} />
+              <Suspense fallback={<div className="p-4"><TableSkeleton rows={8} /></div>}>
+                <TeamCyclistsTable cyclistStats={teamComputedData.cyclistStats} />
+              </Suspense>
             </div>
           </div>
         </div>

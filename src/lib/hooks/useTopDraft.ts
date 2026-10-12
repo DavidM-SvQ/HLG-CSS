@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useComputedStore } from "../stores/useComputedStore";
 import { useDataStore } from "../stores/useDataStore";
 import { getVal, parseSafeDateStr } from "../data-processing";
+import { matchesDateFilter } from "../dateFilterUtils";
 
 
 export function useTopDraft(
@@ -58,6 +59,7 @@ export function useTopDraft(
     });
 
     const raceMonths: Record<string, number> = {};
+    const raceDates: Record<string, string> = {};
     const raceCats: Record<string, string> = {};
     files?.carreras?.data?.forEach((r) => {
       const carreraName = getVal(r, "Carrera")?.toString().trim();
@@ -67,6 +69,7 @@ export function useTopDraft(
         if (cat) raceCats[carreraName] = cat;
         if (fechaFin) {
           const parsedStr = parseSafeDateStr(fechaFin);
+          raceDates[carreraName] = parsedStr;
           const parts = parsedStr.split(/[-/]/);
           if (parts.length >= 2) {
             const monthIndex = parseInt(parts[1]) - 1;
@@ -81,7 +84,7 @@ export function useTopDraft(
         if (cyclistsRaceFilter && cyclistsRaceFilter !== "all" && d.carrera !== cyclistsRaceFilter) {
           return;
         }
-        if (cyclistsMonthFilter !== "all" && raceMonths[d.carrera] !== parseInt(cyclistsMonthFilter)) {
+        if (!matchesDateFilter(cyclistsMonthFilter, raceDates[d.carrera], raceMonths[d.carrera])) {
           return;
         }
         if (cyclistsCategoryFilter.length > 0) {
@@ -142,8 +145,10 @@ export function useTopDraft(
     const allStats = Object.values(cyclistStats)
       .filter((data) => {
         if (data.nombreEquipo === "No draft" || data.nombreEquipo === "No draft [99]") return false;
-        if (cyclistsTeamFilter.length > 0 && !cyclistsTeamFilter.includes(data.nombreEquipo)) return false;
-        if (cyclistsRoundFilter.length > 0 && !cyclistsRoundFilter.includes(data.ronda)) return false;
+        if (cyclistsTeamFilter.includes("__NONE__")) return false;
+        if (cyclistsTeamFilter.length > 0 && !cyclistsTeamFilter.includes("All") && !cyclistsTeamFilter.includes("Todos") && !cyclistsTeamFilter.includes(data.nombreEquipo)) return false;
+        if (cyclistsRoundFilter.includes("__NONE__")) return false;
+        if (cyclistsRoundFilter.length > 0 && !cyclistsRoundFilter.includes("All") && !cyclistsRoundFilter.includes("Todas") && !cyclistsRoundFilter.includes(data.ronda)) return false;
         if (cyclistsRaceFilter && cyclistsRaceFilter !== "all" && data.carreras.size === 0) return false;
 
         const numCarreras = data.carreras.size;

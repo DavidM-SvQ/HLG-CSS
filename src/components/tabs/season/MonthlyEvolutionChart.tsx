@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { createPortal } from "react-dom";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { TrendingUp, X } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
@@ -7,6 +8,7 @@ import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { useDataStore } from "../../../lib/stores/useDataStore";
+import { EvolutionDateFilter } from "./EvolutionDateFilter";
 
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
@@ -59,13 +61,18 @@ export function MonthlyEvolutionChart() {
     return filteredLeaderboard?.filter(t => !t.nombreEquipo.toLowerCase().includes("no draft")) || [];
   }, [filteredLeaderboard]);
 
-  const { currentMonthIdx, currentWIdx } = React.useMemo(() => {
+  const { currentMonthIdx, currentWIdx, availableDateRange } = React.useMemo(() => {
     let dataMaxMonthIdx = -1;
     let dataMaxWIdx = -1;
+    let minDate = "";
+    let maxDate = "";
 
     activeTeams.forEach((team) => {
       team.detalles?.forEach((d: any) => {
         if (!d.fecha) return;
+        if (!minDate || d.fecha < minDate) minDate = d.fecha;
+        if (!maxDate || d.fecha > maxDate) maxDate = d.fecha;
+
         const parts = d.fecha.split("-");
         if (parts.length >= 3) {
           const monthIndex = parseInt(parts[1], 10) - 1;
@@ -86,6 +93,7 @@ export function MonthlyEvolutionChart() {
     return {
       currentMonthIdx: dataMaxMonthIdx >= 0 ? dataMaxMonthIdx : new Date().getMonth(),
       currentWIdx: dataMaxWIdx >= 0 ? dataMaxWIdx : new Date().getMonth() * 4 + 3,
+      availableDateRange: minDate && maxDate ? { minDate, maxDate } : undefined,
     };
   }, [activeTeams]);
 
@@ -102,16 +110,60 @@ export function MonthlyEvolutionChart() {
   }, [activeTeams]);
 
   const evolutionData = React.useMemo(() => {
-    const isCustomDate = evolutionTimeFilter.startsWith("custom_");
+    // Parse filter mode
+    let filterKind: "all" | "custom_date" | "month_range" | "week_range" | "single_week" | "single_month" = "all";
     let customStart = "";
     let customEnd = "";
-    if (isCustomDate) {
+    let mRangeStart = 0;
+    let mRangeEnd = 11;
+    let wRangeStart = 0;
+    let wRangeEnd = 47;
+    let singleWeekIdx = 0;
+    let singleMonthIdx = 0;
+
+    if (!evolutionTimeFilter || evolutionTimeFilter === "all") {
+      filterKind = "all";
+    } else if (evolutionTimeFilter.startsWith("custom_")) {
+      filterKind = "custom_date";
       const parts = evolutionTimeFilter.split("_");
       if (parts.length === 3) {
         customStart = parts[1];
         customEnd = parts[2];
       }
+    } else if (evolutionTimeFilter.startsWith("mrange_")) {
+      filterKind = "month_range";
+      const parts = evolutionTimeFilter.split("_");
+      mRangeStart = parseInt(parts[1], 10) || 0;
+      mRangeEnd = parseInt(parts[2], 10) || 0;
+    } else if (evolutionTimeFilter.startsWith("wrange_")) {
+      filterKind = "week_range";
+      const parts = evolutionTimeFilter.split("_");
+      wRangeStart = parseInt(parts[1], 10) || 0;
+      wRangeEnd = parseInt(parts[2], 10) || 0;
+    } else if (evolutionTimeFilter.startsWith("w_")) {
+      filterKind = "single_week";
+      const parts = evolutionTimeFilter.split("_");
+      singleWeekIdx = parseInt(parts[1], 10) || 0;
+    } else if (evolutionTimeFilter.includes("-")) {
+      filterKind = "month_range";
+      const [start, end] = evolutionTimeFilter.split("-").map(Number);
+      mRangeStart = !isNaN(start) ? start : 0;
+      mRangeEnd = !isNaN(end) ? end : 2;
+    } else {
+      const parsedMonth = parseInt(evolutionTimeFilter, 10);
+      if (!isNaN(parsedMonth)) {
+        filterKind = "single_month";
+        singleMonthIdx = parsedMonth;
+      }
     }
+
+    const matchesDateString = (dateStr: string) => {
+      if (filterKind !== "custom_date") return true;
+      if (!customStart && !customEnd) return true;
+      if (customStart && dateStr < customStart) return false;
+      if (customEnd && dateStr > customEnd) return false;
+      return true;
+    };
 
     if (evolutionMode === "posiciones") {
       const weeks: string[] = [];
@@ -129,7 +181,7 @@ export function MonthlyEvolutionChart() {
 
         team.detalles?.forEach((d: any) => {
           if (!d.fecha) return;
-          if (isCustomDate && (d.fecha < customStart || d.fecha > customEnd)) return;
+          if (!matchesDateString(d.fecha)) return;
           const parts = d.fecha.split("-");
           if (parts.length < 3) return;
           const monthIndex = parseInt(parts[1], 10) - 1;
@@ -156,17 +208,17 @@ export function MonthlyEvolutionChart() {
       let started = false;
 
       pointsByWeek.forEach((weekData, wIdx) => {
-        if (wIdx > currentWIdx && !isCustomDate) return;
+        if (wIdx > currentWIdx && filterKind === "all") return;
         
         const hasPoints = Object.values(weekData.scores).some(val => val > 0);
-        if (!hasPoints && !started && !isCustomDate) return;
+        if (!hasPoints && !started && filterKind === "all") return;
         started = true;
         
         const teamsScoreArray = Object.entries(weekData.scores).map(([team, score]) => ({ team, score }));
         teamsScoreArray.sort((a, b) => b.score - a.score || a.team.localeCompare(b.team));
         
         const mIdx = Math.floor(wIdx / 4);
-        const rankData: any = { month: weekData.month, mIdx };
+        const rankData: any = { month: weekData.month, mIdx, wIdx };
         
         teamsScoreArray.forEach((ts, idx) => {
           rankData[ts.team] = idx + 1;
@@ -176,18 +228,19 @@ export function MonthlyEvolutionChart() {
       });
 
       return chartData.filter((w) => {
-        if (isCustomDate) {
+        if (filterKind === "custom_date") {
           const mIdx = w.mIdx;
-          const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
-          const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+          const startMIdx = customStart ? parseInt(customStart.split("-")[1], 10) - 1 : 0;
+          const endMIdx = customEnd ? parseInt(customEnd.split("-")[1], 10) - 1 : 11;
           if (mIdx < startMIdx || mIdx > endMIdx) return false;
-        } else if (evolutionTimeFilter !== "all") {
-          if (evolutionTimeFilter.includes("-")) {
-            const [start, end] = evolutionTimeFilter.split("-").map(Number);
-            if (w.mIdx < start || w.mIdx > end) return false;
-          } else {
-            if (w.mIdx !== parseInt(evolutionTimeFilter)) return false;
-          }
+        } else if (filterKind === "month_range") {
+          if (w.mIdx < mRangeStart || w.mIdx > mRangeEnd) return false;
+        } else if (filterKind === "single_month") {
+          if (w.mIdx !== singleMonthIdx) return false;
+        } else if (filterKind === "week_range") {
+          if (w.wIdx < wRangeStart || w.wIdx > wRangeEnd) return false;
+        } else if (filterKind === "single_week") {
+          if (w.wIdx !== singleWeekIdx) return false;
         }
         return true;
       });
@@ -200,7 +253,7 @@ export function MonthlyEvolutionChart() {
           weeks.push(`${months[i]} S${w}`);
         }
       }
-      const dataByWeek: any[] = weeks.map((w) => ({ month: w }));
+      const dataByWeek: any[] = weeks.map((w, idx) => ({ month: w, wIdx: idx }));
       activeTeams.forEach((team) => {
         const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
 
@@ -210,9 +263,7 @@ export function MonthlyEvolutionChart() {
             const wIdx = mIdx * 4 + (w - 1);
             const weekPoints = team.detalles.reduce((sum, d) => {
               if (!d.fecha) return sum;
-              if (isCustomDate) {
-                if (d.fecha < customStart || d.fecha > customEnd) return sum;
-              }
+              if (!matchesDateString(d.fecha)) return sum;
               const parts = d.fecha.split("-");
               if (parts.length < 3) return sum;
               const monthIndex = parseInt(parts[1], 10) - 1;
@@ -239,27 +290,32 @@ export function MonthlyEvolutionChart() {
       });
 
       const firstWeekWithData = dataByWeek.findIndex((w) =>
-        Object.keys(w).some((key) => key !== "month" && w[key] > 0),
+        Object.keys(w).some((key) => key !== "month" && key !== "wIdx" && w[key] > 0),
       );
 
       return dataByWeek.filter((w, wIdx) => {
-        if (!isCustomDate && wIdx > currentWIdx) return false;
-        if (!isCustomDate && firstWeekWithData === -1) return false;
+        if (filterKind === "all" && wIdx > currentWIdx) return false;
+        if (filterKind === "all" && firstWeekWithData === -1) return false;
 
-        if (isCustomDate) {
+        if (filterKind === "custom_date") {
           const mIdx = Math.floor(wIdx / 4);
-          const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
-          const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+          const startMIdx = customStart ? parseInt(customStart.split("-")[1], 10) - 1 : 0;
+          const endMIdx = customEnd ? parseInt(customEnd.split("-")[1], 10) - 1 : 11;
           if (mIdx < startMIdx || mIdx > endMIdx) return false;
           return true;
-        } else if (evolutionTimeFilter !== "all") {
+        } else if (filterKind === "month_range") {
           const mIdx = Math.floor(wIdx / 4);
-          if (evolutionTimeFilter.includes("-")) {
-            const [start, end] = evolutionTimeFilter.split("-").map(Number);
-            if (mIdx < start || mIdx > end) return false;
-          } else {
-            if (mIdx !== parseInt(evolutionTimeFilter)) return false;
-          }
+          if (mIdx < mRangeStart || mIdx > mRangeEnd) return false;
+          return true;
+        } else if (filterKind === "single_month") {
+          const mIdx = Math.floor(wIdx / 4);
+          if (mIdx !== singleMonthIdx) return false;
+          return true;
+        } else if (filterKind === "week_range") {
+          if (wIdx < wRangeStart || wIdx > wRangeEnd) return false;
+          return true;
+        } else if (filterKind === "single_week") {
+          if (wIdx !== singleWeekIdx) return false;
           return true;
         }
 
@@ -267,8 +323,10 @@ export function MonthlyEvolutionChart() {
       });
     }
 
-    const dataByMonth: any[] = months.map((m) => ({
+    // Modalidad mensual o acumulado mensual
+    const dataByMonth: any[] = months.map((m, idx) => ({
       month: m,
+      mIdx: idx
     }));
 
     activeTeams.forEach((team) => {
@@ -277,7 +335,7 @@ export function MonthlyEvolutionChart() {
 
       team.detalles?.forEach((d: any) => {
         if (!d.fecha) return;
-        if (isCustomDate && (d.fecha < customStart || d.fecha > customEnd)) return;
+        if (!matchesDateString(d.fecha)) return;
         const parts = d.fecha.split("-");
         if (parts.length < 3) return;
         const monthIndex = parseInt(parts[1], 10) - 1;
@@ -298,23 +356,27 @@ export function MonthlyEvolutionChart() {
     });
 
     return dataByMonth.filter((m, idx) => {
-      if (isCustomDate) {
-        const startMIdx = parseInt(customStart.split("-")[1], 10) - 1;
-        const endMIdx = parseInt(customEnd.split("-")[1], 10) - 1;
+      if (filterKind === "custom_date") {
+        const startMIdx = customStart ? parseInt(customStart.split("-")[1], 10) - 1 : 0;
+        const endMIdx = customEnd ? parseInt(customEnd.split("-")[1], 10) - 1 : 11;
         return idx >= startMIdx && idx <= endMIdx;
       }
       
-      if (evolutionTimeFilter !== "all") {
-        if (evolutionTimeFilter.includes("-")) {
-          const [start, end] = evolutionTimeFilter.split("-").map(Number);
-          if (idx < start || idx > end) return false;
-        } else {
-          if (idx !== parseInt(evolutionTimeFilter)) return false;
-        }
+      if (filterKind === "month_range") {
+        if (idx < mRangeStart || idx > mRangeEnd) return false;
+      } else if (filterKind === "single_month") {
+        if (idx !== singleMonthIdx) return false;
+      } else if (filterKind === "week_range") {
+        const startM = Math.floor(wRangeStart / 4);
+        const endM = Math.floor(wRangeEnd / 4);
+        if (idx < startM || idx > endM) return false;
+      } else if (filterKind === "single_week") {
+        const targetM = Math.floor(singleWeekIdx / 4);
+        if (idx !== targetM) return false;
       }
 
       const hasData = Object.keys(m).some(
-        (key) => key !== "month" && m[key] > 0,
+        (key) => key !== "month" && key !== "mIdx" && m[key] > 0,
       );
       return hasData && idx <= currentMonthIdx;
     });
@@ -449,69 +511,11 @@ export function MonthlyEvolutionChart() {
               </Button>
             </div>
             <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full xl:w-auto">
-              <select
-                value={evolutionTimeFilter.startsWith("custom_") ? "custom" : evolutionTimeFilter}
-                onChange={(e) => {
-                  if (e.target.value === "custom") {
-                    const currentYear = new Date().getFullYear();
-                    const today = new Date().toISOString().split('T')[0];
-                    setEvolutionTimeFilter(`custom_${currentYear}-01-01_${today}`);
-                  } else {
-                    setEvolutionTimeFilter(e.target.value);
-                  }
-                }}
-                className="w-full sm:w-auto px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
-              >
-                <option value="all">Todas las fechas</option>
-                <option value="custom">Rango de fechas</option>
-                <option value="0-2">T1 (Ene-Mar)</option>
-                <option value="3-5">T2 (Abr-Jun)</option>
-                <option value="6-8">T3 (Jul-Sep)</option>
-                <option value="9-11">T4 (Oct-Dic)</option>
-                <option value="0">Enero</option>
-                <option value="1">Febrero</option>
-                <option value="2">Marzo</option>
-                <option value="3">Abril</option>
-                <option value="4">Mayo</option>
-                <option value="5">Junio</option>
-                <option value="6">Julio</option>
-                <option value="7">Agosto</option>
-                <option value="8">Septiembre</option>
-                <option value="9">Octubre</option>
-                <option value="10">Noviembre</option>
-                <option value="11">Diciembre</option>
-              </select>
-              {evolutionTimeFilter.startsWith("custom_") && (
-                <div className="flex flex-wrap items-center gap-2 w-full justify-start xl:justify-end sm:w-auto">
-                  <input
-                    type="date"
-                    className="w-full sm:w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
-                    value={localCustomDateRange.start}
-                    onChange={(e) => {
-                      setLocalCustomDateRange(prev => ({ ...prev, start: e.target.value }));
-                    }}
-                  />
-                  <span className="text-neutral-500 font-medium hidden sm:inline">a</span>
-                  <input
-                    type="date"
-                    className="w-full sm:w-auto px-2 py-1.5 text-sm bg-white border border-neutral-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-[34px]"
-                    value={localCustomDateRange.end}
-                    onChange={(e) => {
-                      setLocalCustomDateRange(prev => ({ ...prev, end: e.target.value }));
-                    }}
-                  />
-                  <Button 
-                    size="sm" 
-                    variant="default"
-                    onClick={() => {
-                      setEvolutionTimeFilter(`custom_${localCustomDateRange.start}_${localCustomDateRange.end}`);
-                    }}
-                    className="h-[34px] w-full sm:w-auto"
-                  >
-                    Aplicar
-                  </Button>
-                </div>
-              )}
+              <EvolutionDateFilter
+                value={evolutionTimeFilter}
+                onChange={setEvolutionTimeFilter}
+                availableDateRange={availableDateRange}
+              />
             </div>
           </div>
         </div>
@@ -694,8 +698,8 @@ export function MonthlyEvolutionChart() {
         </div>
       </div>
 
-      {isEvolutionChartExpanded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {isEvolutionChartExpanded && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-bottom border-neutral-100 flex items-center justify-between bg-neutral-50/50">
               <h3 className="text-xl font-bold text-neutral-800 flex items-center gap-2">
@@ -822,7 +826,8 @@ export function MonthlyEvolutionChart() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

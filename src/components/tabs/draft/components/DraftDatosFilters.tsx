@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
-import { Button } from "../../../ui/button";
-import { ChevronDown } from "lucide-react";
-import { cn } from "../../../../lib/utils";
 import { getVal, normalizeRaceName } from '../../../../lib/data-processing';
-import { MultiSelect } from "../../../ui/multi-select";
+import { MultiSelectDropdown } from "../../../ui/MultiSelectDropdown";
+import { Button } from "../../../ui/button";
+import { RotateCcw } from "lucide-react";
 
 export interface DraftDatosFiltersProps {
   files: any;
@@ -28,7 +27,7 @@ export const DraftDatosFilters: React.FC<DraftDatosFiltersProps> = ({
   draftDatosTeamFilter,
   setDraftDatosTeamFilter
 }) => {
-  const categoryOptions = useMemo(() => {
+  const categoryNames = useMemo(() => {
     const raceTypeByName: Record<string, string> = {};
     files?.carreras?.data?.forEach((row: any) => {
       const carrera = getVal(row, "Carrera")?.trim();
@@ -45,46 +44,96 @@ export const DraftDatosFilters: React.FC<DraftDatosFiltersProps> = ({
         if (cat) availableCategories.add(cat);
       });
     });
-    return Array.from(availableCategories).sort().map(cat => ({ value: cat, label: cat }));
+    return Array.from(availableCategories).sort();
   }, [files?.carreras?.data, leaderboard]);
 
-  const teamOptions = useMemo(() => {
+  const teamNames = useMemo(() => {
     const availableTeams = new Set<string>();
     files?.elecciones?.data?.forEach((row: any) => {
       const teamName = getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG");
       if (teamName) availableTeams.add(teamName as string);
     });
-    return Array.from(availableTeams).sort().map(team => ({ value: team, label: team }));
+    return Array.from(availableTeams).sort();
   }, [files?.elecciones?.data]);
 
-  const monthOptions = MONTHS.map(m => ({ value: m, label: m }));
+  const hasActiveFilters = useMemo(() => {
+    const isMonthsActive = draftDatosMonthFilter.length > 0 && 
+      !draftDatosMonthFilter.includes("All") && 
+      !draftDatosMonthFilter.includes("Todos");
+    const isCategoriesActive = draftDatosCategoryFilter.length > 0 && 
+      !draftDatosCategoryFilter.includes("All") && 
+      !draftDatosCategoryFilter.includes("Todas");
+    const isTeamsActive = draftDatosTeamFilter.length > 0 && 
+      !draftDatosTeamFilter.includes("All") && 
+      !draftDatosTeamFilter.includes("Todos");
+    return isMonthsActive || isCategoriesActive || isTeamsActive;
+  }, [draftDatosMonthFilter, draftDatosCategoryFilter, draftDatosTeamFilter]);
+
+  const handleClearAll = () => {
+    setDraftDatosMonthFilter([]);
+    setDraftDatosCategoryFilter([]);
+    setDraftDatosTeamFilter([]);
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="min-w-[140px]">
-        <MultiSelect 
-          options={monthOptions} 
-          value={draftDatosMonthFilter} 
-          onChange={setDraftDatosMonthFilter} 
-          placeholder="Meses" 
+        <MultiSelectDropdown
+          allItems={MONTHS}
+          selectedItems={draftDatosMonthFilter}
+          onChange={setDraftDatosMonthFilter}
+          placeholderAll="Todos los meses"
+          placeholderNone="Ningún mes"
+          unitLabelSingular="mes"
+          unitLabelPlural="meses"
+          allCountLabel="Todos"
+          className="min-w-[140px]"
+          buttonClassName="bg-white/90 border-neutral-200"
         />
       </div>
-      <div className="min-w-[140px]">
-        <MultiSelect 
-          options={categoryOptions} 
-          value={draftDatosCategoryFilter} 
-          onChange={setDraftDatosCategoryFilter} 
-          placeholder="Categorías" 
+
+      <div className="min-w-[160px]">
+        <MultiSelectDropdown
+          allItems={categoryNames}
+          selectedItems={draftDatosCategoryFilter}
+          onChange={setDraftDatosCategoryFilter}
+          placeholderAll="Todas las categorías"
+          placeholderNone="Ninguna categoría"
+          unitLabelSingular="categoría"
+          unitLabelPlural="categorías"
+          allCountLabel="Todas"
+          className="min-w-[160px]"
+          buttonClassName="bg-white/90 border-neutral-200"
         />
       </div>
-      <div className="min-w-[140px]">
-        <MultiSelect 
-          options={teamOptions} 
-          value={draftDatosTeamFilter} 
-          onChange={setDraftDatosTeamFilter} 
-          placeholder="Equipos" 
+
+      <div className="min-w-[170px]">
+        <MultiSelectDropdown
+          allItems={teamNames}
+          selectedItems={draftDatosTeamFilter}
+          onChange={setDraftDatosTeamFilter}
+          placeholderAll="Todos los equipos"
+          placeholderNone="Ningún equipo"
+          unitLabelSingular="equipo"
+          unitLabelPlural="equipos"
+          allCountLabel="Todos"
+          className="min-w-[170px]"
+          buttonClassName="bg-white/90 border-neutral-200"
         />
       </div>
+
+      {hasActiveFilters && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleClearAll}
+          className="h-9 px-2 text-xs text-neutral-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-1 transition-colors"
+          title="Limpiar todos los filtros"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Limpiar</span>
+        </Button>
+      )}
     </div>
   );
 };

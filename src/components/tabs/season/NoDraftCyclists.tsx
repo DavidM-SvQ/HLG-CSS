@@ -3,6 +3,8 @@ import { SeasonViewContext } from "./SeasonViewContext";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { performTextCopy } from "./hooks/useExportHandlers";
+import { parseSafeDateStr } from "../../../lib/data-processing";
+import { matchesDateFilter } from "../../../lib/dateFilterUtils";
 import { NoDraftFilters } from "./NoDraftFilters";
 import { NoDraftTable } from "./NoDraftTable";
 
@@ -81,8 +83,9 @@ export function NoDraftCyclists() {
     const noDraftPlayer = leaderboard?.find((p: any) => p.jugador === "No draft");
     if (!noDraftPlayer) return { sortedStats: [], allStatsCount: 0, maxPuntos: 0, minPuntos: 0 };
 
-    // Map races to months and categories
+    // Map races to dates, months and categories
     const raceMonths: Record<string, number> = {};
+    const raceDates: Record<string, string> = {};
     const raceCats: Record<string, string> = {};
     files?.carreras?.data?.forEach((r: any) => {
       const carreraName = getVal(r, "Carrera")?.toString().trim();
@@ -91,7 +94,9 @@ export function NoDraftCyclists() {
       if (carreraName) {
         if (cat) raceCats[carreraName] = cat;
         if (fechaFin) {
-          const parts = fechaFin.split(/[-/]/);
+          const parsedStr = parseSafeDateStr(fechaFin);
+          raceDates[carreraName] = parsedStr;
+          const parts = parsedStr.split(/[-/]/);
           if (parts.length >= 2) {
             raceMonths[carreraName] = parseInt(parts[1]) - 1;
           }
@@ -105,7 +110,7 @@ export function NoDraftCyclists() {
       if (raceFilter && raceFilter !== "all" && d.carrera !== raceFilter) {
         return;
       }
-      if (monthFilter !== "all" && raceMonths[d.carrera] !== parseInt(monthFilter)) {
+      if (!matchesDateFilter(monthFilter, raceDates[d.carrera], raceMonths[d.carrera])) {
         return;
       }
       if (categoryFilter && categoryFilter.length > 0) {

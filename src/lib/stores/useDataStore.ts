@@ -435,11 +435,51 @@ export const useDataStore = create<DataStore>((set, get) => ({
       console.warn("Could not batch load cached files from localforage:", e);
     }
 
-    // 2. Fetch configuracion and sync files in background if online
-    get().fetchGlobalFile("configuracion", false, isSupabaseConfigured);
+    // 2. Efficient single-query background sync check if online and configured
+    if (!isSupabaseConfigured || !navigator.onLine) {
+      // Set any remaining loading states to false if offline
+      set((prev) => {
+        const nextFiles = { ...prev.files };
+        (Object.keys(nextFiles) as (keyof AppState)[]).forEach((key) => {
+          if (nextFiles[key].loading && !nextFiles[key].data) {
+            nextFiles[key] = { ...nextFiles[key], loading: false };
+          }
+        });
+        return { files: nextFiles };
+      });
+      return;
+    }
 
-    essentialFiles.forEach((id) => {
-      get().fetchGlobalFile(id, false, isSupabaseConfigured);
-    });
+    try {
+      // Query metadata timestamps for all files in ONE fast call
+      const { data: remoteMeta } = await supabase
+        .from("global_files")
+        .select("id, updated_at");
+
+      if (Array.isArray(remoteMeta)) {
+        const metaMap = new Map<string, string>(remoteMeta.map((m: any) => [m.id, m.updated_at]));
+
+        // Check configuracion
+        const currentConfig = get().files.configuracion;
+        const configRemoteUpdated = metaMap.get("configuracion");
+        if (!currentConfig.data || (configRemoteUpdated && currentConfig.updatedAt !== configRemoteUpdated)) {
+          get().fetchGlobalFile("configuracion", true, isSupabaseConfigured);
+        }
+
+        // Check essential seasonal files
+        essentialFiles.forEach((id) => {
+          const seasonScopedId = `${season}_${id}`;
+          const legacyId = id;
+          const remoteUpdated = metaMap.get(seasonScopedId) || metaMap.get(legacyId);
+          const currentFile = get().files[id];
+
+          if (!currentFile.data || (remoteUpdated && currentFile.updatedAt !== remoteUpdated)) {
+            get().fetchGlobalFile(id, true, isSupabaseConfigured);
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("Background metadata check failed:", err);
+    }
   }
 }));

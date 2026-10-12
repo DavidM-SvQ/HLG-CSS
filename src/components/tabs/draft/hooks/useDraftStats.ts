@@ -78,9 +78,17 @@ export function useDraftStats({
       player?.detalles?.forEach((d: any) => {
         const dateStr = getRaceDate(d.carrera) || d.fecha;
         let matchesMonth = true;
-        if (draftDatosMonthFilter.length > 0) {
-          if (!dateStr) matchesMonth = false;
-          else {
+        if (draftDatosMonthFilter.includes("__NONE__")) {
+          matchesMonth = false;
+        } else if (
+          draftDatosMonthFilter.length > 0 &&
+          !draftDatosMonthFilter.includes("All") &&
+          !draftDatosMonthFilter.includes("Todos") &&
+          !draftDatosMonthFilter.includes("Todas")
+        ) {
+          if (!dateStr) {
+            matchesMonth = false;
+          } else {
             const monthStr = dateStr.split("/")[1];
             if (monthStr) {
               const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -93,7 +101,14 @@ export function useDraftStats({
         }
 
         let matchesCategory = true;
-        if (draftDatosCategoryFilter.length > 0) {
+        if (draftDatosCategoryFilter.includes("__NONE__")) {
+          matchesCategory = false;
+        } else if (
+          draftDatosCategoryFilter.length > 0 &&
+          !draftDatosCategoryFilter.includes("All") &&
+          !draftDatosCategoryFilter.includes("Todos") &&
+          !draftDatosCategoryFilter.includes("Todas")
+        ) {
           const cat = getRaceCat(d.carrera);
           if (!cat || !draftDatosCategoryFilter.includes(cat)) matchesCategory = false;
         }
@@ -113,7 +128,14 @@ export function useDraftStats({
 
       files?.elecciones?.data.forEach((row: any) => {
         const teamName = String(getVal(row, "Nombre_Equipo") || getVal(row, "Nombre_TG") || "");
-        if (draftDatosTeamFilter.length > 0 && !draftDatosTeamFilter.includes(teamName)) return;
+        if (draftDatosTeamFilter.includes("__NONE__")) return;
+        if (
+          draftDatosTeamFilter.length > 0 &&
+          !draftDatosTeamFilter.includes("All") &&
+          !draftDatosTeamFilter.includes("Todos") &&
+          !draftDatosTeamFilter.includes("Todas") &&
+          !draftDatosTeamFilter.includes(teamName)
+        ) return;
 
         validTeams.add(teamName);
         const ciclista = getVal(row, "Ciclista") as string;
