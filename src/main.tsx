@@ -63,6 +63,8 @@ window.addEventListener("unhandledrejection", (e) => {
   console.warn("Unhandled promise rejection:", e.reason);
 });
 
+document.title = "Fantasy Ciclismo HLG";
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>

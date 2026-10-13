@@ -87,6 +87,10 @@ export default function App() {
   useAppComputations();
   const currentTabName = location.pathname.split("/")[1] || "season";
   
+  useEffect(() => {
+    document.title = "Fantasy Ciclismo HLG";
+  }, []);
+
   // Extract URL parameters for analytics
   const searchParams = new window.URLSearchParams(location.search);
   const selectedTeam = searchParams.get("selected_team");
@@ -111,7 +115,7 @@ export default function App() {
     if (!isAdmin) {
       setView("public");
     } else {
-      const publicPaths = ["/season", "/race", "/startlist", "/team", "/draft", "/cyclists", "/ciclistas", "/info"];
+      const publicPaths = ["/season", "/race", "/startlist", "/team", "/draft", "/info"];
       const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
       if (isPublicPath) {
         setView("public");
