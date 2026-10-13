@@ -18,6 +18,7 @@ import {
   Sparkles,
   Zap,
   Grid,
+  Target,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { getVal } from "../../../lib/data-processing";
@@ -31,6 +32,12 @@ import {
   Line,
   AreaChart,
   Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Legend,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -188,6 +195,65 @@ const CustomPointsTooltip = ({ active, payload, teamA, teamB }: any) => {
   return null;
 };
 
+// Custom Tooltip for Radar Chart comparing 20 Picks (normalized 0-100% per round)
+const CustomRadarTooltip = ({ active, payload, teamA, teamB }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-neutral-900 text-white p-3.5 rounded-xl shadow-xl border border-neutral-700 text-xs space-y-2 z-50 min-w-[260px]">
+        <div className="border-b border-neutral-800 pb-1.5 flex items-center justify-between gap-2">
+          <span className="font-bold text-neutral-200">Ronda {data.ronda} (Pick #{parseInt(data.ronda, 10)})</span>
+          <span className="text-[10px] text-amber-400 font-mono bg-amber-950/80 border border-amber-800/80 px-1.5 py-0.5 rounded">
+            Máx Liga: {data.maxPtsInRound.toLocaleString()} pts
+          </span>
+        </div>
+
+        {/* Team A */}
+        <div className="space-y-0.5">
+          <div className="flex items-center justify-between text-orange-400 font-bold">
+            <span className="truncate max-w-[150px]">🟠 {teamA}:</span>
+            <span className="font-mono">{data.ptsA.toLocaleString()} pts</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-neutral-300">
+            <span className="truncate text-neutral-400 max-w-[130px]">{data.cyclistA}</span>
+            <span className="font-mono shrink-0 ml-2">
+              <span className="text-amber-300 font-semibold">{data.rankA === 1 ? "👑 1º" : `${data.rankA}º`}/{data.totalInRoundA}</span>
+              <span className="text-neutral-400 text-[10px] ml-1">({data.valA}%)</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Team B */}
+        <div className="space-y-0.5 pt-1 border-t border-neutral-800/60">
+          <div className="flex items-center justify-between text-purple-400 font-bold">
+            <span className="truncate max-w-[150px]">🟣 {teamB}:</span>
+            <span className="font-mono">{data.ptsB.toLocaleString()} pts</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-neutral-300">
+            <span className="truncate text-neutral-400 max-w-[130px]">{data.cyclistB}</span>
+            <span className="font-mono shrink-0 ml-2">
+              <span className="text-purple-300 font-semibold">{data.rankB === 1 ? "👑 1º" : `${data.rankB}º`}/{data.totalInRoundB}</span>
+              <span className="text-neutral-400 text-[10px] ml-1">({data.valB}%)</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="pt-1.5 text-[10px] text-neutral-400 border-t border-neutral-800 font-mono flex items-center justify-between">
+          <span>Diferencia pick:</span>
+          <span className="font-bold text-white">
+            {data.ptsA > data.ptsB
+              ? `+${(data.ptsA - data.ptsB).toLocaleString()} pts para ${teamA}`
+              : data.ptsB > data.ptsA
+              ? `+${(data.ptsB - data.ptsA).toLocaleString()} pts para ${teamB}`
+              : "Empate en este pick"}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
   files,
   leaderboard,
@@ -233,6 +299,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
   const [isExpandedCharts, setIsExpandedCharts] = React.useState(false);
   const [isExpandedTiers, setIsExpandedTiers] = React.useState(false);
   const [isExpandedMVPs, setIsExpandedMVPs] = React.useState(false);
+  const [isExpandedRadar, setIsExpandedRadar] = React.useState(false);
 
   const [isLinkCopied, setIsLinkCopied] = React.useState(false);
   const [isTextCopied, setIsTextCopied] = React.useState(false);
@@ -297,7 +364,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
       }
     });
 
-    const rankMap: Record<string, { rank: number; totalInRound: number; isBest: boolean; isWorst: boolean }> = {};
+    const rankMap: Record<string, { rank: number; totalInRound: number; isBest: boolean; isWorst: boolean; maxPtsInRound: number }> = {};
 
     Object.entries(byRound).forEach(([ronda, cyclists]) => {
       const sorted = [...cyclists].sort((a, b) => b.pts - a.pts);
@@ -315,6 +382,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
           totalInRound,
           isBest,
           isWorst,
+          maxPtsInRound: maxPts,
         };
       });
     });
@@ -397,6 +465,38 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
       finalCumulativeDiff: cumulativeDiff,
     };
   }, [files, teamA, teamB, availableTeams, cyclistTotalPoints]);
+
+  // Compute radar chart data for comparing the 20 picks (scaled 0-100% per round)
+  const radarData = useMemo(() => {
+    if (!comparisonData?.rounds || comparisonData.rounds.length === 0) return [];
+    return comparisonData.rounds.map((r) => {
+      const infoA = roundPicksMap[`${r.ronda}_${r.pickA.ciclista}`];
+      const infoB = roundPicksMap[`${r.ronda}_${r.pickB.ciclista}`];
+      const maxPtsInRound = infoA?.maxPtsInRound ?? infoB?.maxPtsInRound ?? Math.max(r.pickA.puntos, r.pickB.puntos, 1);
+
+      const valA = maxPtsInRound > 0 ? Math.round((r.pickA.puntos / maxPtsInRound) * 1000) / 10 : 0;
+      const valB = maxPtsInRound > 0 ? Math.round((r.pickB.puntos / maxPtsInRound) * 1000) / 10 : 0;
+
+      return {
+        ronda: r.ronda,
+        roundLabel: `R${parseInt(r.ronda, 10)}`,
+        fullLabel: `Ronda ${r.ronda}`,
+        cyclistA: r.pickA.ciclista,
+        ptsA: r.pickA.puntos,
+        valA, // 0 - 100%
+        rankA: infoA?.rank || 0,
+        totalInRoundA: infoA?.totalInRound || 1,
+
+        cyclistB: r.pickB.ciclista,
+        ptsB: r.pickB.puntos,
+        valB, // 0 - 100%
+        rankB: infoB?.rank || 0,
+        totalInRoundB: infoB?.totalInRound || 1,
+
+        maxPtsInRound,
+      };
+    });
+  }, [comparisonData, roundPicksMap]);
 
   // Copy plain text summary to clipboard
   const handleCopyText = () => {
@@ -997,6 +1097,64 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
             </div>
           </div>
 
+          {/* RADAR CHART: 20 PICKS COMPARISON (Placed immediately after KPIs) */}
+          {(activeViewMode === "all" || activeViewMode === "rondas" || activeViewMode === "draft") && radarData.length > 0 && (
+            <ReportCard
+              title="Radar Comparativo de los 20 Picks del Draft"
+              subtitle="Escala normalizada (0% a 100%) donde cada radio toma como referencia el mejor ciclista de toda la liga en esa ronda."
+              icon={<Target className="w-5 h-5 text-orange-600" />}
+              filename={`radar-20-picks-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
+              toolbarProps={{
+                isExpanded: isExpandedRadar,
+                onExpand: () => setIsExpandedRadar(!isExpandedRadar),
+              }}
+              bodyClassName="p-6 pt-2"
+            >
+              <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm">
+                <div className="h-[380px] sm:h-[420px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                      <PolarGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+                      <PolarAngleAxis
+                        dataKey="roundLabel"
+                        tick={{ fill: "#374151", fontSize: 11, fontWeight: 700 }}
+                      />
+                      <PolarRadiusAxis
+                        angle={30}
+                        domain={[0, 100]}
+                        tickFormatter={(val) => `${val}%`}
+                        stroke="#9ca3af"
+                        tick={{ fill: "#6b7280", fontSize: 10 }}
+                      />
+                      <Radar
+                        name={summaryA?.name || teamA}
+                        dataKey="valA"
+                        stroke="#ea580c"
+                        fill="#ea580c"
+                        fillOpacity={0.35}
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      />
+                      <Radar
+                        name={summaryB?.name || teamB}
+                        dataKey="valB"
+                        stroke="#9333ea"
+                        fill="#9333ea"
+                        fillOpacity={0.35}
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      />
+                      <RechartsTooltip content={<CustomRadarTooltip teamA={summaryA?.name || teamA} teamB={summaryB?.name || teamB} />} />
+                      <Legend
+                        wrapperStyle={{ paddingTop: "12px", fontSize: "12px", fontWeight: "bold" }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </ReportCard>
+          )}
+
           {/* SECTION 1: ROUND BY ROUND COMPARISON TABLE */}
           {showRondas && (
             <ReportCard
@@ -1210,6 +1368,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                             strokeWidth={3}
                             dot={{ r: 4, fill: "#ea580c", strokeWidth: 2, stroke: "#ffffff" }}
                             activeDot={{ r: 7 }}
+                            isAnimationActive={false}
                           />
                           <Line
                             type="monotone"
@@ -1219,6 +1378,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                             strokeWidth={3}
                             dot={{ r: 4, fill: "#9333ea", strokeWidth: 2, stroke: "#ffffff" }}
                             activeDot={{ r: 7 }}
+                            isAnimationActive={false}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1275,6 +1435,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                             strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#colorA)"
+                            isAnimationActive={false}
                           />
                           <Area
                             type="monotone"
@@ -1284,6 +1445,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                             strokeWidth={2.5}
                             fillOpacity={1}
                             fill="url(#colorB)"
+                            isAnimationActive={false}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
