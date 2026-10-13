@@ -111,7 +111,7 @@ export default function App() {
     if (!isAdmin) {
       setView("public");
     } else {
-      const publicPaths = ["/season", "/race", "/startlist", "/team", "/draft", "/info"];
+      const publicPaths = ["/season", "/race", "/startlist", "/team", "/draft", "/cyclists", "/ciclistas", "/info"];
       const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
       if (isPublicPath) {
         setView("public");

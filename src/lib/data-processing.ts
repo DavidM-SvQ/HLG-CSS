@@ -112,6 +112,43 @@ export const formatNumberSpanish = (val: number | string | undefined | null) => 
   return new Intl.NumberFormat("es-ES").format(num);
 };
 
+export const getMonthIndexFromDate = (dStr: any): number => {
+  if (!dStr) return -1;
+  const s = dStr.toString().trim();
+  if (!s) return -1;
+
+  const parts = s.split(/[-/.]/);
+  if (parts.length === 3) {
+    // If YYYY-MM-DD or YYYY/MM/DD
+    if (parts[0].length === 4) {
+      const m = parseInt(parts[1], 10) - 1;
+      if (m >= 0 && m <= 11) return m;
+    }
+    // If DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+    if (parts[2].length === 4) {
+      const m = parseInt(parts[1], 10) - 1;
+      if (m >= 0 && m <= 11) return m;
+    }
+  } else if (parts.length === 2) {
+    if (parts[1].length === 4) {
+      const m = parseInt(parts[0], 10) - 1;
+      if (m >= 0 && m <= 11) return m;
+    } else {
+      const m = parseInt(parts[1], 10) - 1;
+      if (m >= 0 && m <= 11) return m;
+    }
+  }
+
+  // Excel serial number fallback
+  const num = parseFloat(s);
+  if (!isNaN(num) && num > 10000) {
+    const d = new Date((num - 25569) * 86400 * 1000);
+    return d.getUTCMonth();
+  }
+
+  return -1;
+};
+
 export const parseDate = (d: string) => {
   if (!d) return 0;
   const p = d.split(/[-/]/);

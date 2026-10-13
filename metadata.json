@@ -1,6 +1,6 @@
 {
-  "name": "Fantasy Ciclismo HLG",
-  "description": "Calculadora de puntos para juego de draft de ciclismo basado en resultados y reglas personalizadas.",
+  "name": "Aventura Primaria 2º - Juego Educativo",
+  "description": "Juego educativo interactivo para niños de 7 años (2º de Primaria) con matemáticas divertidas, retos de lengua, ciencias del mundo y cromos coleccionables.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

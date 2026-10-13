@@ -1,5 +1,5 @@
 import React, { useContext, useRef, Suspense } from "react";
-import { Users, AlertCircle } from "lucide-react";
+import { Users, AlertCircle, ArrowLeftRight } from "lucide-react";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { TableSkeleton } from "../../ui/Skeleton";
 import { Button } from "../../ui/button";
@@ -10,6 +10,7 @@ const UnscoredCyclists = React.lazy(() => import("./UnscoredCyclists").then(m =>
 const UndebutedCyclists = React.lazy(() => import("./UndebutedCyclists").then(m => ({ default: m.UndebutedCyclists })));
 const HotStreakCyclists = React.lazy(() => import("./HotStreakCyclists").then(m => ({ default: m.HotStreakCyclists })));
 const NoDraftCyclists = React.lazy(() => import("./NoDraftCyclists").then(m => ({ default: m.NoDraftCyclists })));
+const CyclistComparaciones = React.lazy(() => import("../cyclists/CyclistComparaciones").then(m => ({ default: m.CyclistComparaciones })));
 
 export function SeasonCyclistsTab() {
   const context = useContext(SeasonViewContext)!;
@@ -29,6 +30,7 @@ export function SeasonCyclistsTab() {
               icon: AlertCircle,
             },
             { id: "detalle", label: "Detalle ciclista", icon: Users },
+            { id: "comparaciones", label: "Comparativa", icon: ArrowLeftRight },
           ].map((tab) => (
             <Button variant="outline"
               key={tab.id}
@@ -72,6 +74,17 @@ export function SeasonCyclistsTab() {
           ) : cyclistsSubTab === "detalle" ? (
             <Suspense fallback={<div className="p-6 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={6} /></div>}>
               <CyclistDetailView files={files} selectedCyclistDetail={selectedCyclistDetail} setSelectedCyclistDetail={setSelectedCyclistDetail} cyclistMetadata={cyclistMetadata} cyclistRoundMap={cyclistRoundMap} playerByCyclist={playerByCyclist} playerOrderMap={playerOrderMap} playerTeamMap={playerTeamMap} />
+            </Suspense>
+          ) : cyclistsSubTab === "comparaciones" ? (
+            <Suspense fallback={<div className="p-6 bg-white rounded-2xl shadow-sm border border-neutral-200"><TableSkeleton rows={6} /></div>}>
+              <CyclistComparaciones
+                files={files}
+                cyclistMetadata={cyclistMetadata}
+                playerByCyclist={playerByCyclist}
+                playerTeamMap={playerTeamMap}
+                cyclistRoundMap={cyclistRoundMap}
+                leaderboard={context.leaderboard}
+              />
             </Suspense>
           ) : null}
         </motion.div>

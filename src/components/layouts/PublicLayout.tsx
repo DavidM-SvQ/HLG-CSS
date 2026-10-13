@@ -2,13 +2,14 @@ import React, { Suspense, useState, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
-import { Trophy, Flag, List, Users, LayoutGrid, Info } from "lucide-react";
+import { Trophy, Flag, List, Users, LayoutGrid, Info, Bike } from "lucide-react";
 import { TableSkeleton } from "../ui/Skeleton";
 import { useDataStore } from "../../lib/stores/useDataStore";
 
 const StartlistView = React.lazy(() => import("../tabs/StartlistView").then(m => ({ default: m.StartlistView })));
 const RaceView = React.lazy(() => import("../tabs/RaceView").then(m => ({ default: m.RaceView })));
 const TeamView = React.lazy(() => import("../tabs/TeamView").then(m => ({ default: m.TeamView })));
+const CyclistsView = React.lazy(() => import("../tabs/CyclistsView").then(m => ({ default: m.CyclistsView })));
 const SeasonView = React.lazy(() => import("../tabs/SeasonView").then(m => ({ default: m.SeasonView })));
 const InfoView = React.lazy(() => import("../tabs/InfoView").then(m => ({ default: m.InfoView })));
 const DraftView = React.lazy(() => import("../tabs/DraftView").then(m => ({ default: m.DraftView })));
@@ -97,6 +98,7 @@ export function PublicLayout() {
     { id: "race", icon: Flag, label: "Clasificación de la carrera", path: "/race" },
     { id: "startlist", icon: List, label: "Startlist carrera", path: "/startlist" },
     { id: "team", icon: Users, label: "Equipos", path: "/team" },
+    { id: "cyclists", icon: Bike, label: "Ciclistas", path: "/cyclists" },
     { id: "draft", icon: LayoutGrid, label: "Draft", path: "/draft" },
     { id: "info", icon: Info, label: "Información", path: "/info" },
   ];
@@ -179,6 +181,8 @@ export function PublicLayout() {
               <Route path="/season" element={<SeasonView />} />
               <Route path="/race" element={<RaceView />} />
               <Route path="/team" element={<TeamView />} />
+              <Route path="/cyclists" element={<CyclistsView />} />
+              <Route path="/ciclistas" element={<Navigate to={{ pathname: "/cyclists", search: location.search, hash: location.hash }} replace />} />
               <Route path="/startlist" element={<StartlistView />} />
               <Route path="/draft" element={<DraftView />} />
               <Route path="/info" element={<InfoView />} />

@@ -21,7 +21,7 @@ import {
   Target,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { getVal } from "../../../lib/data-processing";
+import { getVal, getMonthIndexFromDate } from "../../../lib/data-processing";
 import { Button } from "../../ui/button";
 import { useUrlState } from "../../../hooks/useUrlState";
 import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
@@ -62,17 +62,7 @@ const monthsShortNames = [
 ];
 
 const getMonthIndexFromDateStr = (dateStr?: string): number => {
-  if (!dateStr) return -1;
-  const match = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-  if (match) {
-    const month = parseInt(match[2], 10) - 1;
-    if (month >= 0 && month <= 11) return month;
-  }
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) {
-    return parsed.getMonth();
-  }
-  return -1;
+  return getMonthIndexFromDate(dateStr);
 };
 
 // Normalize category names and aliases (maps "MON", "MONUMENTO", "MONUMENTOS" -> "Monumentos", etc.)
