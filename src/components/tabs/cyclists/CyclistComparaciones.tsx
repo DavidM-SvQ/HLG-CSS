@@ -173,6 +173,107 @@ const CustomRadarMetricsTooltip = ({ active, payload, nameA, nameB }: any) => {
   return null;
 };
 
+// Reusable, homogeneous comparison header badge for section cards and captures
+interface CyclistComparisonCaptureHeaderProps {
+  infoA: any;
+  infoB: any;
+  totalPointsDiff: number;
+  className?: string;
+}
+
+const CyclistComparisonCaptureHeader: React.FC<CyclistComparisonCaptureHeaderProps> = ({
+  infoA,
+  infoB,
+  totalPointsDiff,
+  className,
+}) => {
+  return (
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-neutral-200/90 p-3 mb-4 shadow-2xs overflow-hidden",
+        className
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        {/* Ciclista A (Naranja) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+            {infoA.flag || "A"}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-black text-sm sm:text-base text-neutral-900 truncate">
+                {infoA.name}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-800 px-1.5 py-0.2 rounded">
+                A
+              </span>
+            </div>
+            <div className="text-[11px] text-neutral-500 truncate flex items-center gap-1.5 mt-0.5">
+              <span className="font-medium">{infoA.proTeam}</span>
+              <span>•</span>
+              <span className="font-mono font-black text-orange-700">
+                {infoA.puntos.toLocaleString()} pts
+              </span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">🏆 {infoA.victorias} vic.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Central VS Badge */}
+        <div className="flex flex-col items-center justify-center shrink-0 px-1 sm:px-3">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-neutral-600 bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+            VS
+          </span>
+          <span
+            className={cn(
+              "text-[10px] font-mono font-bold mt-1 px-1.5 py-0.5 rounded",
+              totalPointsDiff > 0
+                ? "text-orange-800 bg-orange-50 border border-orange-200"
+                : totalPointsDiff < 0
+                ? "text-purple-800 bg-purple-50 border border-purple-200"
+                : "text-neutral-600 bg-neutral-100"
+            )}
+          >
+            {totalPointsDiff > 0
+              ? `+${totalPointsDiff.toLocaleString()} A`
+              : totalPointsDiff < 0
+              ? `+${Math.abs(totalPointsDiff).toLocaleString()} B`
+              : "Empate"}
+          </span>
+        </div>
+
+        {/* Ciclista B (Morado) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-end text-right">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 justify-end flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded">
+                B
+              </span>
+              <span className="font-black text-sm sm:text-base text-neutral-900 truncate">
+                {infoB.name}
+              </span>
+            </div>
+            <div className="text-[11px] text-neutral-500 truncate flex items-center justify-end gap-1.5 mt-0.5">
+              <span className="hidden sm:inline">🏆 {infoB.victorias} vic.</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="font-mono font-black text-purple-700">
+                {infoB.puntos.toLocaleString()} pts
+              </span>
+              <span>•</span>
+              <span className="font-medium">{infoB.proTeam}</span>
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+            {infoB.flag || "B"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
   files,
   cyclistMetadata = {},
@@ -1007,6 +1108,9 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
 
       {infoA && infoB && (
         <div ref={comparisonContainerRef} className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl border border-neutral-100 shadow-xs">
+          {/* Header Banner with compared cyclists for screenshots */}
+          <CyclistComparisonCaptureHeader infoA={infoA} infoB={infoB} totalPointsDiff={totalPointsDiff} />
+
           {/* Head-to-Head Comparison Summary Cards */}
           {showKPIs && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1198,7 +1302,14 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
           {/* RADAR CHART: MULTIDIMENSIONAL PROFILE */}
           {showRadar && radarMetricsData.length > 0 && (
             <ReportCard
-              title="Radar de Perfil y Eficiencia"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Radar de Perfil y Eficiencia:</span>
+                  <span className="text-orange-600 font-extrabold">{infoA.name}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{infoB.name}</span>
+                </span>
+              }
               subtitle="Comparación multidimensional relativa (0% a 100%) en métricas clave de competición de ambos ciclistas."
               icon={<Activity className="w-5 h-5 text-amber-600" />}
               filename={`radar-ciclistas-${infoA.name.toLowerCase()}-vs-${infoB.name.toLowerCase()}`}
@@ -1208,6 +1319,7 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
               }}
               bodyClassName="p-6 pt-2"
             >
+              <CyclistComparisonCaptureHeader infoA={infoA} infoB={infoB} totalPointsDiff={totalPointsDiff} />
               <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm">
                 <div className="h-[360px] sm:h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1246,7 +1358,14 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
           {showMeses && (
             <div className="space-y-6 pt-2">
               <ReportCard
-                title="Evolución de Puntos por Meses"
+                title={
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span>Evolución de Puntos por Meses:</span>
+                    <span className="text-orange-600 font-extrabold">{infoA.name}</span>
+                    <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                    <span className="text-purple-600 font-extrabold">{infoB.name}</span>
+                  </span>
+                }
                 subtitle="Trayectoria del aporte de puntos a lo largo de los meses de competición de la temporada."
                 icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
                 filename={`evolucion-meses-${infoA.name.toLowerCase()}-vs-${infoB.name.toLowerCase()}`}
@@ -1257,6 +1376,7 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
                 bodyClassName="p-6 pt-2"
               >
                 <div className="space-y-6">
+                  <CyclistComparisonCaptureHeader infoA={infoA} infoB={infoB} totalPointsDiff={totalPointsDiff} />
                   {/* Chart */}
                   <div className="h-64 w-full bg-white p-4 rounded-xl border border-neutral-200 shadow-xs">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1425,7 +1545,14 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
           {/* SECTION: RACE CATEGORIES BREAKDOWN */}
           {showCategorias && (
             <ReportCard
-              title="Comparativa de Puntos por Categoría de Carrera"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Comparativa por Categorías:</span>
+                  <span className="text-orange-600 font-extrabold">{infoA.name}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{infoB.name}</span>
+                </span>
+              }
               subtitle="Desglose por tipo de prueba según orden jerárquico oficial (Grandes Vueltas, Monumentos, etc.)."
               icon={<Award className="w-5 h-5 text-emerald-600" />}
               filename={`categorias-ciclistas-${infoA.name.toLowerCase()}-vs-${infoB.name.toLowerCase()}`}
@@ -1435,6 +1562,7 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
               }}
               bodyClassName="p-6 pt-2"
             >
+              <CyclistComparisonCaptureHeader infoA={infoA} infoB={infoB} totalPointsDiff={totalPointsDiff} />
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[700px] text-xs">
@@ -1527,7 +1655,14 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
           {/* SECTION: HEAD TO HEAD RACES */}
           {showCarreras && (
             <ReportCard
-              title="Duelo Directo por Carreras Disputadas"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Duelo Directo por Carreras:</span>
+                  <span className="text-orange-600 font-extrabold">{infoA.name}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{infoB.name}</span>
+                </span>
+              }
               subtitle="Desglose carrera a carrera con puntos y resultados obtenidos por cada ciclista."
               icon={<BarChart2 className="w-5 h-5 text-blue-600" />}
               filename={`duelo-carreras-${infoA.name.toLowerCase()}-vs-${infoB.name.toLowerCase()}`}
@@ -1538,6 +1673,7 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
               bodyClassName="p-6 pt-2"
             >
               <div className="space-y-4">
+                <CyclistComparisonCaptureHeader infoA={infoA} infoB={infoB} totalPointsDiff={totalPointsDiff} />
                 {/* Duelos Summary Strip & Filters */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-neutral-50/80 p-3.5 rounded-xl border border-neutral-200">
                   {/* Summary indicators */}

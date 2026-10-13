@@ -244,6 +244,114 @@ const CustomRadarTooltip = ({ active, payload, teamA, teamB }: any) => {
   return null;
 };
 
+// Reusable, homogeneous team comparison header badge for section cards and captures
+interface TeamComparisonCaptureHeaderProps {
+  summaryA: any;
+  summaryB: any;
+  teamA: string;
+  teamB: string;
+  totalPointsDiff: number;
+  className?: string;
+}
+
+const TeamComparisonCaptureHeader: React.FC<TeamComparisonCaptureHeaderProps> = ({
+  summaryA,
+  summaryB,
+  teamA,
+  teamB,
+  totalPointsDiff,
+  className,
+}) => {
+  const nameA = summaryA?.name || teamA;
+  const nameB = summaryB?.name || teamB;
+  const userA = summaryA?.jugador || "";
+  const userB = summaryB?.jugador || "";
+  const ptsA = summaryA?.puntos || 0;
+  const ptsB = summaryB?.puntos || 0;
+
+  return (
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-neutral-200/90 p-3 mb-4 shadow-2xs overflow-hidden",
+        className
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        {/* Equipo A */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+            🛡️
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-black text-sm sm:text-base text-neutral-900 truncate">
+                {nameA}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-800 px-1.5 py-0.2 rounded">
+                A
+              </span>
+            </div>
+            <div className="text-[11px] text-neutral-500 truncate flex items-center gap-1.5 mt-0.5">
+              {userA && <span className="font-medium">👤 {userA}</span>}
+              {userA && <span>•</span>}
+              <span className="font-mono font-black text-orange-700">
+                {ptsA.toLocaleString()} pts
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* VS Badge */}
+        <div className="flex flex-col items-center justify-center shrink-0 px-1 sm:px-3">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-neutral-600 bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+            VS
+          </span>
+          <span
+            className={cn(
+              "text-[10px] font-mono font-bold mt-1 px-1.5 py-0.5 rounded",
+              totalPointsDiff > 0
+                ? "text-orange-800 bg-orange-50 border border-orange-200"
+                : totalPointsDiff < 0
+                ? "text-purple-800 bg-purple-50 border border-purple-200"
+                : "text-neutral-600 bg-neutral-100"
+            )}
+          >
+            {totalPointsDiff > 0
+              ? `+${totalPointsDiff.toLocaleString()} A`
+              : totalPointsDiff < 0
+              ? `+${Math.abs(totalPointsDiff).toLocaleString()} B`
+              : "Empate"}
+          </span>
+        </div>
+
+        {/* Equipo B */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-end text-right">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 justify-end flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded">
+                B
+              </span>
+              <span className="font-black text-sm sm:text-base text-neutral-900 truncate">
+                {nameB}
+              </span>
+            </div>
+            <div className="text-[11px] text-neutral-500 truncate flex items-center justify-end gap-1.5 mt-0.5">
+              <span className="font-mono font-black text-purple-700">
+                {ptsB.toLocaleString()} pts
+              </span>
+              {userB && <span>•</span>}
+              {userB && <span className="font-medium">👤 {userB}</span>}
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+            🛡️
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
   files,
   leaderboard,
@@ -995,6 +1103,9 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
 
       {teamA && teamB && summaryA && summaryB && (
         <div ref={comparisonContainerRef} className="space-y-6 bg-white p-4 sm:p-6 rounded-2xl border border-neutral-100 shadow-xs">
+          {/* Header Banner with compared teams for complete page captures */}
+          <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
+
           {/* Head-to-Head Comparison Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Team A Card (Orange Theme) */}
@@ -1090,7 +1201,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
           {/* RADAR CHART: 20 PICKS COMPARISON (Placed immediately after KPIs) */}
           {(activeViewMode === "all" || activeViewMode === "rondas" || activeViewMode === "draft") && radarData.length > 0 && (
             <ReportCard
-              title="Radar Comparativo de los 20 Picks del Draft"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Radar Comparativo de 20 Picks:</span>
+                  <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                </span>
+              }
               subtitle="Escala normalizada (0% a 100%) donde cada radio toma como referencia el mejor ciclista de toda la liga en esa ronda."
               icon={<Target className="w-5 h-5 text-orange-600" />}
               filename={`radar-20-picks-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1100,6 +1218,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
               }}
               bodyClassName="p-6 pt-2"
             >
+              <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
               <div className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm">
                 <div className="h-[380px] sm:h-[420px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1148,7 +1267,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
           {/* SECTION 1: ROUND BY ROUND COMPARISON TABLE */}
           {showRondas && (
             <ReportCard
-              title="Cara a Cara por Ronda y Diferencia Acumulada"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Cara a Cara por Ronda:</span>
+                  <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                </span>
+              }
               subtitle="Puntos e impacto de cada elección en su ronda, con la posición del ciclista entre todas las elecciones de esa ronda."
               icon={<BarChart2 className="w-5 h-5 text-orange-600" />}
               filename={`comparacion-rondas-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1158,6 +1284,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
               }}
               bodyClassName="p-6 pt-2"
             >
+              <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[850px] text-xs">
@@ -1309,7 +1436,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
           {showMeses && (
             <div className="space-y-6 pt-2">
               <ReportCard
-                title="Evolución de Posiciones y Puntos Mensuales"
+                title={
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span>Evolución Mensual:</span>
+                    <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                    <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                    <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                  </span>
+                }
                 subtitle="Gráficas de trayectoria de puesto oficial en la liga y aceleración de puntos acumulados mes a mes."
                 icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
                 filename={`evolucion-graficas-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1319,6 +1453,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                 }}
                 bodyClassName="p-6 pt-2"
               >
+                <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Chart 1: Monthly Ranking Evolution in League */}
                   <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
@@ -1457,7 +1592,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
 
               {/* Monthly Comparison Table with selective bold and short rank badge */}
               <ReportCard
-                title="Comparativa de puntos y posiciones por meses"
+                title={
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span>Tabla de Puntos por Meses:</span>
+                    <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                    <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                    <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                  </span>
+                }
                 subtitle="Muestra los puntos ganados en el mes y el acumulado. Resaltado en negrita solo el valor máximo de cada duelo."
                 icon={<Calendar className="w-5 h-5 text-orange-600" />}
                 filename={`comparacion-meses-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1467,6 +1609,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                 }}
                 bodyClassName="p-6 pt-2"
               >
+                <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
                 <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto w-full">
                     <table className="w-full text-left border-collapse min-w-[850px] text-xs">
@@ -1583,7 +1726,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
           {/* SECTION 3: RACE CATEGORY COMPARISON TABLE */}
           {showCategorias && (
             <ReportCard
-              title="Comparativa de Puntos por Categoría de Carrera"
+              title={
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span>Puntos por Categoría de Carrera:</span>
+                  <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                  <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                  <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                </span>
+              }
               subtitle="Ordenado por jerarquía oficial: Tour, Giro, Vuelta, Mundiales, Monumentos, Europeos, UWT, Pro (.Pro), .1 y .2. Negrita únicamente en la cifra más alta de cada duelo."
               icon={<Award className="w-5 h-5 text-emerald-600" />}
               filename={`comparacion-categorias-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1593,6 +1743,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
               }}
               bodyClassName="p-6 pt-2"
             >
+              <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
               <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left border-collapse min-w-[850px] text-xs">
@@ -1710,7 +1861,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
               {/* Draft Tiers Performance Breakdown */}
               <ReportCard
-                title="Eficiencia por Tramos del Draft"
+                title={
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span>Eficiencia por Tramos del Draft:</span>
+                    <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                    <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                    <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                  </span>
+                }
                 subtitle="Rendimiento comparativo entre las primeras elecciones y el bloque medio/fondo de armario."
                 icon={<Layers className="w-5 h-5 text-amber-600" />}
                 filename={`eficiencia-tramos-draft-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1720,6 +1878,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                 }}
                 bodyClassName="p-6 pt-2"
               >
+                <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
                 <div className="space-y-3">
                   {draftTiersData.map((tier) => (
                     <div key={tier.tierName} className="p-3.5 rounded-xl border border-neutral-100 bg-neutral-50/50 space-y-2">
@@ -1750,7 +1909,14 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
 
               {/* Top 3 MVPs Head to Head */}
               <ReportCard
-                title="Duelo de MVPs: Top 3 Ciclistas"
+                title={
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span>Duelo de MVPs (Top 3):</span>
+                    <span className="text-orange-600 font-extrabold">{summaryA?.name || teamA}</span>
+                    <span className="text-neutral-400 font-bold text-xs uppercase">vs</span>
+                    <span className="text-purple-600 font-extrabold">{summaryB?.name || teamB}</span>
+                  </span>
+                }
                 subtitle="Los 3 mayores anotadores de puntos en la plantilla de cada equipo."
                 icon={<Crown className="w-5 h-5 text-yellow-500" />}
                 filename={`duelo-mvps-${teamA.toLowerCase()}-vs-${teamB.toLowerCase()}`}
@@ -1760,6 +1926,7 @@ export const DraftComparaciones: React.FC<DraftComparacionesProps> = ({
                 }}
                 bodyClassName="p-6 pt-2"
               >
+                <TeamComparisonCaptureHeader summaryA={summaryA} summaryB={summaryB} teamA={teamA} teamB={teamB} totalPointsDiff={finalCumulativeDiff} />
                 <div className="grid grid-cols-2 gap-4">
                   {/* Team A MVPs (Orange Theme) */}
                   <div className="space-y-2.5">
