@@ -104,7 +104,7 @@ export const SeasonHighlights = ({
               {winnerNames || "-"}
             </p>
             <p className="text-base font-bold text-emerald-600/80">
-              {maxWins} wins
+              {maxWins} {maxWins === 1 ? "Victoria" : "Victorias"}
             </p>
           </div>
         </motion.div>

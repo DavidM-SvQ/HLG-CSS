@@ -1,9 +1,8 @@
 import React, { Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { SeasonViewProvider } from "./season/SeasonViewProvider";
-import { SeasonHighlights } from "./season/SeasonHighlights";
 import { SeasonMilestones } from "./season/SeasonMilestones";
-import { BarChart3, Trophy } from "lucide-react";
+import { BarChart3, Trophy, Flag } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useUrlState } from "../../hooks/useUrlState";
 import { motion, AnimatePresence } from "motion/react";
@@ -51,14 +50,9 @@ export const SeasonView = () => {
       playerOrderMap={playerOrderMap}
     >
       <div className="space-y-8">
-        <SeasonHighlights 
-          leaderboard={leaderboard} 
-          raceWinners={raceWinners} 
-          uniqueRaces={uniqueRaces} 
-          files={files} 
-        />
-        {/* Sub-tabs Navigation */}
-        <div className="flex justify-center mb-4 md:mb-8 w-full">
+        {/* Season Sub-tabs Navigation & Race Progress */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 md:mb-6">
+          {/* Sub-tabs Navigation */}
           <div className="flex bg-neutral-100 p-1 md:p-1.5 rounded-xl shadow-inner w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {[
               { id: "puntos", label: "Puntos", icon: BarChart3 },
@@ -68,7 +62,7 @@ export const SeasonView = () => {
                 key={tab.id}
                 onClick={() => setSeasonSubTab(tab.id as any)}
                 className={cn(
-                  "flex-1 sm:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-3 sm:px-6 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 whitespace-nowrap",
+                  "flex-1 sm:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-4 sm:px-6 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 whitespace-nowrap",
                   seasonSubTab === tab.id
                     ? "bg-white text-blue-600 shadow-md transform sm:scale-105"
                     : "text-neutral-500 hover:text-neutral-700 hover:bg-white/50"
@@ -78,6 +72,31 @@ export const SeasonView = () => {
                 {tab.label}
               </Button>
             ))}
+          </div>
+
+          {/* Carreras Terminadas Metric */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl border border-neutral-200 shadow-xs self-start sm:self-auto">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0 border border-blue-100">
+              <Flag className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Carreras Terminadas
+              </span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-black text-neutral-900 tabular-nums">
+                  {uniqueRaces?.length || 0}
+                </span>
+                <span className="text-xs font-bold text-neutral-400">
+                  / {files?.carreras?.data?.length || 0}
+                </span>
+                {files?.carreras?.data?.length ? (
+                  <span className="text-[11px] font-semibold text-blue-600 ml-1">
+                    ({Math.round(((uniqueRaces?.length || 0) / files.carreras.data.length) * 100)}%)
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
 

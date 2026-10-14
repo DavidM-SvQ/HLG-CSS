@@ -1,6 +1,6 @@
 {
-  "summary": "Plan for normalizing radar chart axes per round based on the league's top pick in each round and displaying real points with round rankings in tooltips.",
-  "updatedAt": "2026-10-12T18:04:10.587150319Z",
+  "summary": "Plan de modernización para la sección 'Clasificación General' en Resultados de Temporada, sustituyendo el gráfico de barras tradicional por un tablero de clasificación moderno e interactivo con podio destacado, métrica de distancia al líder y barras de progreso proporcionales.",
+  "updatedAt": "2026-10-14T06:47:25.135340476Z",
   "requestFeedback": true,
   "userFacing": true
 }

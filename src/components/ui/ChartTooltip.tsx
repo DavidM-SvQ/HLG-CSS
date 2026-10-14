@@ -39,7 +39,10 @@ export function ChartTooltip({
         )}>
           {payload.map((item: any, index: number) => {
             const value = formatter ? formatter(item.value, item.name, item, index) : item.value;
-            const name = item.name || item.dataKey;
+            let name = item.name || item.dataKey;
+            if (name === "wins" || name === "win") {
+              name = "Victorias";
+            }
             const color = item.color || item.fill || "#3b82f6";
 
             return (
