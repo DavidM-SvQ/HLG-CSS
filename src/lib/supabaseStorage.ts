@@ -3,6 +3,35 @@ import { SupabaseClient } from "@supabase/supabase-js";
 export const CHUNK_SIZE = 10000;
 
 /**
+ * Helper to perform upsert with automatic retries and exponential backoff
+ * to shield against transient network or lock hiccups.
+ */
+async function upsertWithRetry(
+  supabase: SupabaseClient | any,
+  row: { id: string; data: any; updated_at: string },
+  maxRetries = 3
+): Promise<{ error: any }> {
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await supabase.from("global_files").upsert(row);
+      if (!res.error) {
+        return { error: null };
+      }
+      lastError = res.error;
+    } catch (err: any) {
+      lastError = err;
+    }
+
+    if (attempt < maxRetries) {
+      // Exponential backoff: 250ms, 500ms...
+      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+    }
+  }
+  return { error: lastError };
+}
+
+/**
  * Saves data to Supabase global_files table.
  * If data is an array with more than CHUNK_SIZE rows, it is automatically chunked
  * into separate rows (e.g. id__chunk_0, id__chunk_1) and a manifest row (id) to prevent
@@ -21,7 +50,7 @@ export async function saveGlobalFile(
     for (let i = 0; i < chunkCount; i++) {
       const slice = data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
       const chunkId = `${id}__chunk_${i}`;
-      const { error } = await supabase.from("global_files").upsert({
+      const { error } = await upsertWithRetry(supabase, {
         id: chunkId,
         data: slice,
         updated_at: isoDate,
@@ -34,13 +63,13 @@ export async function saveGlobalFile(
     }
 
     // 2. Save manifest
-    const { error: manifestError } = await supabase.from("global_files").upsert({
+    const { error: manifestError } = await upsertWithRetry(supabase, {
       id,
       data: { __isChunked: true, chunkCount, totalRows: data.length },
       updated_at: isoDate,
     });
     if (manifestError) {
-      throw new Error(`Error guardando índice principal de ${id}: ${manifestError.message}`);
+      throw new Error(`Error guardando índice principal de ${id}: ${manifestError.message || JSON.stringify(manifestError)}`);
     }
 
     // 3. Clean up any obsolete extra chunks if chunkCount decreased
@@ -65,7 +94,7 @@ export async function saveGlobalFile(
     }
   } else {
     // Normal single-record upsert
-    const { error } = await supabase.from("global_files").upsert({
+    const { error } = await upsertWithRetry(supabase, {
       id,
       data,
       updated_at: isoDate,

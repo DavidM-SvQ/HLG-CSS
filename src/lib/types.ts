@@ -93,6 +93,7 @@ export interface TopDraftStat {
   nombreEquipo: string;
   orden: string;
   ronda: string;
+  posRonda?: number;
   pais: string;
   victorias: number;
   carreras: Set<string>;

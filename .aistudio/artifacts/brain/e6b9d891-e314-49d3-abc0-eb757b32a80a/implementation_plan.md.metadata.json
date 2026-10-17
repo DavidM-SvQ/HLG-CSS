@@ -1,6 +1,6 @@
 {
-  "summary": "Plan de modernización para la sección 'Clasificación General' en Resultados de Temporada, sustituyendo el gráfico de barras tradicional por un tablero de clasificación moderno e interactivo con podio destacado, métrica de distancia al líder y barras de progreso proporcionales.",
-  "updatedAt": "2026-10-14T06:47:25.135340476Z",
+  "summary": "Plan de implementación para la nueva vista de puntos diarios por equipos y comparativa entre fechas en 'Resultados temporada -> Evolución por fechas'. Incluye arquitectura de datos, componentes interactivos, tabla de deltas de posición y puntos, y exportación homogénea.",
+  "updatedAt": "2026-10-16T06:41:26.928028933Z",
   "requestFeedback": true,
   "userFacing": true
 }

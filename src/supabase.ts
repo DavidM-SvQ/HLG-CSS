@@ -9,6 +9,12 @@ export const supabase = createClient(
   {
     auth: {
       flowType: 'implicit',
+      // Custom lock bypass to prevent browser NavigatorLockAcquireTimeoutError:
+      // "Lock 'lock:sb-...-auth-token' was released because another request stole it"
+      // when multiple sequential or concurrent database upserts run during table sync.
+      lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+        return await fn();
+      },
     },
   }
 );

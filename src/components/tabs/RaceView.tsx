@@ -6,6 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
 import { getRaceTheme } from "../../lib/utils/themeUtils";
+import { getVal, isSameRace } from "../../lib/data-processing";
 
 export interface RaceViewProps {
   isAdminReport?: boolean;
@@ -41,7 +42,13 @@ export const RaceView = (props: RaceViewProps) => {
   const initialThemesEnabled = configuracionData.find((item: any) => item.key === "themes_enabled")?.value;
   const isThemesEnabled = initialThemesEnabled !== undefined ? (initialThemesEnabled === "true" || initialThemesEnabled === true) : true;
 
-  const { containerClasses, themeBadge } = getRaceTheme(selectedRace, isThemesEnabled);
+  const selectedRaceCategory = React.useMemo(() => {
+    if (!selectedRace || !files?.carreras?.data) return "";
+    const match = files.carreras.data.find((r: any) => isSameRace(getVal(r, "Carrera"), selectedRace));
+    return match ? (getVal(match, "Categoría") || "") : "";
+  }, [selectedRace, files?.carreras?.data]);
+
+  const { containerClasses, themeBadge, tagInfo } = getRaceTheme(selectedRace, isThemesEnabled, selectedRaceCategory);
 
   return (
     <ErrorBoundary>
@@ -54,6 +61,7 @@ export const RaceView = (props: RaceViewProps) => {
             uniqueRaces={uniqueRaces} 
             selectedRace={selectedRace} 
             setSelectedRace={setSelectedRace} 
+            tagInfo={tagInfo}
           />
 
           {selectedRace ? (

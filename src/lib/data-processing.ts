@@ -3,6 +3,24 @@ import React from 'react';
 export const normalizedKeyCache: Record<string, string> = {};
 const rowLayoutCache: Record<string, Record<string, string>> = {};
 
+// Pre-instantiated Intl.NumberFormat to avoid recreating expensive ICU instances on every render
+const spanishNumberFormatter = new Intl.NumberFormat("es-ES");
+
+// Static aliases defined once at module level rather than recreated on every row lookup
+const STATIC_ALIASES: Record<string, string[]> = {
+  carrera: ["race", "event"],
+  ciclista: ["rider", "name", "corredor"],
+  posicion: ["pos.", "pos", "position", "pos1", "pos2", "pos_1", "pos_2", "posicion1", "posicion2"],
+  "pos.": ["posicion", "position", "pos", "pos1", "pos2", "pos_1", "pos_2"],
+  pos: ["pos.", "posicion", "position", "pos1", "pos2", "pos_1", "pos_2"],
+  etapa: ["stage"],
+  tipo: ["type", "class", "classification"],
+  fecha: ["date"],
+  puntos: ["pts", "points", "uci"],
+  equipo: ["team"],
+  nacido: ["age", "yob", "year"]
+};
+
 export const normalizeStr = (s: string) => {
   if (!s) return "";
   if (normalizedKeyCache[s]) return normalizedKeyCache[s];
@@ -33,22 +51,8 @@ export const getVal = (row: any, key: string) => {
     }
     
     let normalizedKeys = [normalizeStr(key)];
-    // Add common FirstCycling english/spanish aliases
-    const aliases: Record<string, string[]> = {
-      carrera: ["race", "event"],
-      ciclista: ["rider", "name", "corredor"],
-      posicion: ["pos.", "pos", "position", "pos1", "pos2", "pos_1", "pos_2", "posicion1", "posicion2"],
-      "pos.": ["posicion", "position", "pos", "pos1", "pos2", "pos_1", "pos_2"],
-      pos: ["pos.", "posicion", "position", "pos1", "pos2", "pos_1", "pos_2"],
-      etapa: ["stage"],
-      tipo: ["type", "class", "classification"],
-      fecha: ["date"],
-      puntos: ["pts", "points", "uci"],
-      equipo: ["team"],
-      nacido: ["age", "yob", "year"]
-    };
-    if (aliases[normalizedKeys[0]]) {
-      normalizedKeys = normalizedKeys.concat(aliases[normalizedKeys[0]]);
+    if (STATIC_ALIASES[normalizedKeys[0]]) {
+      normalizedKeys = normalizedKeys.concat(STATIC_ALIASES[normalizedKeys[0]]);
     }
 
     let actualKey: string | undefined;
@@ -85,68 +89,93 @@ export const getCategoryColorStyle = (cat: string): React.CSSProperties => {
   return { backgroundColor: "rgba(248, 250, 252, 0.4)" }; // slate-50
 };
 
+// Fast cache for safe dates to avoid re-splitting thousands of identical date strings
+const safeDateCache = new Map<string, string>();
+
 export const parseSafeDateStr = (dStr: any) => {
   if (!dStr) return "";
-  let s = dStr.toString().trim();
+  const key = String(dStr);
+  const cached = safeDateCache.get(key);
+  if (cached !== undefined) return cached;
+
+  let s = key.trim();
+  let result = s;
   
   const parts = s.split(/[-/.]/);
   if (parts.length === 3) {
-    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    if (parts[0].length === 4) result = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    else result = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
   } else if (parts.length === 2) {
-    return `${new Date().getFullYear()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    result = `${new Date().getFullYear()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
   } else {
     const v = parseFloat(s);
     if (!isNaN(v) && v > 10000) { // excel date
       const d = new Date((v - 25569) * 86400 * 1000);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      result = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
   }
-  return s;
+
+  if (safeDateCache.size < 2000) {
+    safeDateCache.set(key, result);
+  }
+  return result;
 };
 
 export const formatNumberSpanish = (val: number | string | undefined | null) => {
   if (val === undefined || val === null) return "";
   const num = typeof val === "string" ? parseFloat(val) : val;
   if (isNaN(num)) return val.toString();
-  return new Intl.NumberFormat("es-ES").format(num);
+  return spanishNumberFormatter.format(num);
 };
+
+// Fast cache for month index
+const monthIndexCache = new Map<string, number>();
 
 export const getMonthIndexFromDate = (dStr: any): number => {
   if (!dStr) return -1;
-  const s = dStr.toString().trim();
+  const key = String(dStr);
+  const cached = monthIndexCache.get(key);
+  if (cached !== undefined) return cached;
+
+  const s = key.trim();
   if (!s) return -1;
 
+  let res = -1;
   const parts = s.split(/[-/.]/);
   if (parts.length === 3) {
     // If YYYY-MM-DD or YYYY/MM/DD
     if (parts[0].length === 4) {
       const m = parseInt(parts[1], 10) - 1;
-      if (m >= 0 && m <= 11) return m;
+      if (m >= 0 && m <= 11) res = m;
     }
     // If DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-    if (parts[2].length === 4) {
+    else if (parts[2].length === 4) {
       const m = parseInt(parts[1], 10) - 1;
-      if (m >= 0 && m <= 11) return m;
+      if (m >= 0 && m <= 11) res = m;
     }
   } else if (parts.length === 2) {
     if (parts[1].length === 4) {
       const m = parseInt(parts[0], 10) - 1;
-      if (m >= 0 && m <= 11) return m;
+      if (m >= 0 && m <= 11) res = m;
     } else {
       const m = parseInt(parts[1], 10) - 1;
-      if (m >= 0 && m <= 11) return m;
+      if (m >= 0 && m <= 11) res = m;
     }
   }
 
   // Excel serial number fallback
-  const num = parseFloat(s);
-  if (!isNaN(num) && num > 10000) {
-    const d = new Date((num - 25569) * 86400 * 1000);
-    return d.getUTCMonth();
+  if (res === -1) {
+    const num = parseFloat(s);
+    if (!isNaN(num) && num > 10000) {
+      const d = new Date((num - 25569) * 86400 * 1000);
+      res = d.getUTCMonth();
+    }
   }
 
-  return -1;
+  if (monthIndexCache.size < 2000) {
+    monthIndexCache.set(key, res);
+  }
+  return res;
 };
 
 export const parseDate = (d: string) => {
@@ -366,6 +395,36 @@ export const getCategoryAliases = (cat: string): string[] => {
   // Monumentos
   if (n.includes("monumento") || n.includes("mon")) {
     return ["monumentos", "monumento", "mon", n];
+  }
+
+  // Mundial Ruta
+  if (n.includes("mundialruta") || n.includes("mundialenruta") || (n.includes("mundial") && n.includes("ruta"))) {
+    return ["mundial ruta", "mundialruta", "campeonato del mundo ruta", "mundial", n];
+  }
+
+  // Mundial Crono
+  if (n.includes("mundialcrono") || (n.includes("mundial") && (n.includes("crono") || n.includes("cri") || n.includes("contrarreloj")))) {
+    return ["mundial crono", "mundialcrono", "mundial cri", "campeonato del mundo crono", "mundial", n];
+  }
+
+  // JJOO Ruta
+  if ((n.includes("jjoo") || n.includes("olimpic")) && n.includes("ruta")) {
+    return ["jjoo ruta", "jjooruta", "juegos olimpicos ruta", "jjoo", n];
+  }
+
+  // JJOO Crono
+  if ((n.includes("jjoo") || n.includes("olimpic")) && (n.includes("crono") || n.includes("cri") || n.includes("contrarreloj"))) {
+    return ["jjoo crono", "jjoocrono", "juegos olimpicos crono", "jjoo", n];
+  }
+
+  // Europeo Ruta
+  if ((n.includes("europeo") || n.includes("europa")) && n.includes("ruta")) {
+    return ["europeo ruta", "europeoruta", "campeonato de europa ruta", "europeo", n];
+  }
+
+  // Europeo Crono
+  if ((n.includes("europeo") || n.includes("europa")) && (n.includes("crono") || n.includes("cri") || n.includes("contrarreloj"))) {
+    return ["europeo crono", "europeocrono", "campeonato de europa crono", "europeo", n];
   }
 
   // 1.UWT

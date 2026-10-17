@@ -35,6 +35,7 @@ export function TopDraftCyclists() {
     cyclistsSortDirection, setCyclistsSortDirection
   } = context;
 
+  const [tableDensity, setTableDensity] = React.useState<"compact" | "comfortable">("compact");
   const [isTopCyclistsDraftExpanded, setIsTopCyclistsDraftExpanded] = React.useState(false);
   const [isCyclistsTeamFilterOpen, setIsCyclistsTeamFilterOpen] = React.useState(false);
   const [isCyclistsCategoryFilterOpen, setIsCyclistsCategoryFilterOpen] = React.useState(false);
@@ -66,7 +67,7 @@ export function TopDraftCyclists() {
     setIsTopCyclistsDraftCopying(type || "full");
     try {
       await copyTopCyclistsImage({
-        fileName: "export.png", scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
+        fileName: "top-ciclistas-draft.png", scale: 2, filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")), backgroundColor: "#ffffff",
         onBeforeCapture: (el) => prepareTableForCopy(el, type),
         onAfterCapture: (el) => resetTableAfterCopy(el)
       });
@@ -109,6 +110,23 @@ export function TopDraftCyclists() {
       switch (cyclistsSortColumn) {
         case "pos": valA = a.originalIndex; valB = b.originalIndex; break;
         case "nombre": valA = a.ciclista; valB = b.ciclista; break;
+        case "ronda": {
+          const numA = parseInt(String(a.ronda || "").replace(/\D/g, ""), 10);
+          const numB = parseInt(String(b.ronda || "").replace(/\D/g, ""), 10);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            valA = numA;
+            valB = numB;
+          } else {
+            valA = a.ronda || "zzz";
+            valB = b.ronda || "zzz";
+          }
+          break;
+        }
+        case "posRonda": {
+          valA = a.posRonda || 9999;
+          valB = b.posRonda || 9999;
+          break;
+        }
         case "equipo": valA = a.nombreEquipo; valB = b.nombreEquipo; break;
         case "pais": valA = a.pais; valB = b.pais; break;
         case "victorias": valA = a.victorias; valB = b.victorias; break;
@@ -213,6 +231,7 @@ export function TopDraftCyclists() {
                                     cyclistsMinPpc={cyclistsMinPpc} setCyclistsMinPpc={setCyclistsMinPpc}
                                     cyclistsMinPpd={cyclistsMinPpd} setCyclistsMinPpd={setCyclistsMinPpd}
                                     cyclistsMinPuntos={cyclistsMinPuntos} setCyclistsMinPuntos={setCyclistsMinPuntos}
+                                    tableDensity={tableDensity} setTableDensity={setTableDensity}
                                 />
                                 <TopDraftCyclistsTable
                                     isTopCyclistsDraftExpanded={isTopCyclistsDraftExpanded} topCyclistsDraftRefContainer={topCyclistsDraftRefContainer}
@@ -220,6 +239,7 @@ export function TopDraftCyclists() {
                                     sortedStats={sortedStats} topCyclistsLimit={topCyclistsLimit} maxVictorias={maxVictorias} maxCarreras={maxCarreras} minCarreras={minCarreras} maxDias={maxDias} minDias={minDias}
                                     maxPpc={maxPpc} minPpc={minPpc} maxPpd={maxPpd} minPpd={minPpd} getFlagEmoji={getFlagEmoji} getColorClass={getColorClass} getPuntosColor={getPuntosColor} formatNumberSpanish={formatNumberSpanish}
                                     isTopCyclistsDraftCopying={isTopCyclistsDraftCopying}
+                                    tableDensity={tableDensity} setTableDensity={setTableDensity}
                                 />
   
                               </motion.div>

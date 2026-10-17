@@ -24,7 +24,8 @@ export function TopDraftCyclistsFilters(props: any) {
     cyclistsMinPpc, setCyclistsMinPpc,
     cyclistsMinPpd, setCyclistsMinPpd,
     cyclistsMinPuntos, setCyclistsMinPuntos,
-    cyclistsNameSearch, setCyclistsNameSearch, setTopCyclistsLimit
+    cyclistsNameSearch, setCyclistsNameSearch, setTopCyclistsLimit,
+    tableDensity, setTableDensity
   , leaderboard, files, cyclistsMonthFilter, setCyclistsMonthFilter } = props;
 
   const [isValueFiltersOpen, setIsValueFiltersOpen] = React.useState(false);
@@ -80,7 +81,7 @@ export function TopDraftCyclistsFilters(props: any) {
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mt-1">
-          <div className="copy-button-ignore pr-3 border-r border-neutral-200 shrink-0">
+          <div className="copy-button-ignore pr-3 border-r border-neutral-200 shrink-0 flex items-center gap-2">
             <ExportToolbar
               filename="top-ciclistas"
               isExpanded={isTopCyclistsDraftExpanded}
@@ -95,6 +96,38 @@ export function TopDraftCyclistsFilters(props: any) {
               numBlocks={numBlocks}
             />
           </div>
+
+          {/* Density selector */}
+          {setTableDensity && (
+            <div className="copy-button-ignore flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/70 text-xs">
+              <button
+                type="button"
+                onClick={() => setTableDensity("compact")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                  tableDensity === "compact"
+                    ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                    : "text-neutral-500 hover:text-neutral-800"
+                )}
+                title="Vista condensada para exportar y ver más ciclistas"
+              >
+                Condensada
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableDensity("comfortable")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                  tableDensity === "comfortable"
+                    ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                    : "text-neutral-500 hover:text-neutral-800"
+                )}
+                title="Vista amplia"
+              >
+                Amplia
+              </button>
+            </div>
+          )}
 
           {/* Race Filter */}
           <div className="relative">

@@ -38,22 +38,40 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
       return item === undefined ? true : (item.value === "true" || item.value === true);
     };
 
+    const seenTMilestones = new Set<string>();
+    const seenCMilestones = new Set<string>();
+
+    const normalizeMilestoneKey = (id: string, label: string) => {
+      const cleanLabel = (label || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      return `${id}_${cleanLabel}`;
+    };
+
     const pushTMilestone = (id: string, milestone: Omit<MilestoneItem, 'category'> & { category?: 'equipos' }) => {
       if (isMilestoneEnabled(id)) {
+        const key = normalizeMilestoneKey(id, milestone.label);
+        if (seenTMilestones.has(key)) return;
+        seenTMilestones.add(key);
         tMilestones.push({ ...milestone, category: 'equipos' });
       }
     };
 
     const pushCMilestone = (id: string, milestone: Omit<MilestoneItem, 'category'> & { category?: 'ciclistas' }) => {
       if (isMilestoneEnabled(id)) {
+        const key = normalizeMilestoneKey(id, milestone.label);
+        if (seenCMilestones.has(key)) return;
+        seenCMilestones.add(key);
         cMilestones.push({ ...milestone, category: 'ciclistas' });
       }
     };
 
     const getDef = (id: string) => MILESTONE_DEFINITIONS.find(d => d.id === id);
 
-    // Parse all races to date and category mapping
-    const raceMeta: Record<string, { date: string; dateObj: Date; category: string }> = {};
+    // Parse all races to date, category, and officialName mapping
+    const raceMeta: Record<string, { date: string; dateObj: Date; category: string; officialName: string }> = {};
     files?.carreras?.data.forEach((r: any) => {
       const name = (getVal(r, "Carrera") || getVal(r, "Prueba"))?.trim();
       const dateStr = getVal(r, "Fecha")?.trim();
@@ -62,33 +80,90 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
         const parts = dateStr.split("/");
         if (parts.length === 3) {
           const dObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-          raceMeta[name.toLowerCase()] = { date: dateStr, dateObj: dObj, category: cat || "" };
+          raceMeta[name.toLowerCase()] = { date: dateStr, dateObj: dObj, category: cat || "", officialName: name };
         }
       }
     });
 
-    const isGt = (lower: string) => {
-      return (
-        lower.includes("tour de france") || lower.includes("tour de francia") ||
-        lower.includes("giro d'italia") || lower.includes("giro de italia") ||
-        lower.includes("vuelta a españa") || lower.includes("vuelta ciclista a españa")
-      );
+    const getGtInfo = (lower: string): { key: "giro" | "tour" | "vuelta"; canonicalName: string } | null => {
+      const clean = (lower || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+      // Giro d'Italia strictly (exclude any other Italian tours like Giro di Sardegna, Trentino, Sicilia, etc.)
+      const isGiro = (
+        clean.includes("giro d'italia") ||
+        clean.includes("giro de italia") ||
+        clean.includes("giro d italia") ||
+        clean.includes("giro ditalia") ||
+        clean === "giro"
+      ) && !clean.includes("sardegna") && !clean.includes("emilia") && !clean.includes("trentino") && !clean.includes("sicilia") && !clean.includes("toscana") && !clean.includes("appennino") && !clean.includes("veneto") && !clean.includes("friuli") && !clean.includes("valle") && !clean.includes("baby") && !clean.includes("next gen");
+
+      if (isGiro) {
+        return { key: "giro", canonicalName: "Giro d'Italia" };
+      }
+
+      // Tour de France strictly (exclude Tour de Suisse, Romandie, Pologne, etc.)
+      const isTour = (
+        clean.includes("tour de france") ||
+        clean.includes("tour de francia") ||
+        clean === "tour"
+      ) && !clean.includes("suisse") && !clean.includes("suiza") && !clean.includes("romandie") && !clean.includes("romandia") && !clean.includes("pologne") && !clean.includes("polonia") && !clean.includes("down under") && !clean.includes("benelux") && !clean.includes("alps") && !clean.includes("alpes") && !clean.includes("britain") && !clean.includes("oman") && !clean.includes("flanders") && !clean.includes("flandes") && !clean.includes("l'avenir") && !clean.includes("avenir") && !clean.includes("vallee");
+
+      if (isTour) {
+        return { key: "tour", canonicalName: "Tour de France" };
+      }
+
+      // Vuelta a España strictly (exclude Vuelta a Murcia, Burgos, Andalucia, Pais Vasco, etc.)
+      const isVuelta = (
+        clean.includes("vuelta a espana") ||
+        clean.includes("vuelta ciclista a espana") ||
+        clean.includes("la vuelta a espana") ||
+        clean === "la vuelta" ||
+        clean === "vuelta" ||
+        clean === "vuelta espana"
+      ) && !clean.includes("murcia") && !clean.includes("burgos") && !clean.includes("andaluc") && !clean.includes("pais vasco") && !clean.includes("valenciana") && !clean.includes("asturias") && !clean.includes("leon") && !clean.includes("castilla") && !clean.includes("rioja") && !clean.includes("madrid") && !clean.includes("mallorca") && !clean.includes("aragon") && !clean.includes("catalun") && !clean.includes("san juan") && !clean.includes("algarve") && !clean.includes("portugal") && !clean.includes("colombia") && !clean.includes("tachira") && !clean.includes("venezuela") && !clean.includes("femenina") && !clean.includes("espana f") && !clean.includes("comunidad");
+
+      if (isVuelta) {
+        return { key: "vuelta", canonicalName: "Vuelta a España" };
+      }
+
+      return null;
     };
 
-    const isMonument = (lowerName: string, lowerCat: string) => {
-      if (lowerCat.includes("monumento")) return true;
-      
-      if (lowerName.includes("a través") || lowerName.includes("a traves") || lowerName.includes("dwars")) return false;
-      
-      const monNames = [
-        "milano-sanremo", "milán-san remo", "milan-san remo", "milan - san remo", "milán - san remo", "milano - sanremo", "milan san remo", "milan sanremo",
-        "ronde van vlaanderen", "tour de flandes", "tour des flandres", "tour of flanders",
-        "paris-roubaix", "parís-roubaix", "parís - roubaix", "paris - roubaix", "paris roubaix",
-        "liège-bastogne-liège", "lieja-bastoña-lieja", "lieja - bastoña - lieja", "liege-bastogne-liege", "liege - bastogne - liege", "liege bastogne liege", "liège - bastogne - liège",
-        "il lombardia", "giro de lombardía", "giro di lombardia", "giro de lombardia"
-      ];
-      return monNames.some(m => lowerName.includes(m));
+    const getGtKey = (lower: string): string | null => getGtInfo(lower)?.key || null;
+    const isGt = (lower: string) => getGtInfo(lower) !== null;
+
+    const getMonumentInfo = (lowerName: string, lowerCat: string = ""): { key: string; canonicalName: string } | null => {
+      const clean = (lowerName || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+      if (clean.includes("a traves") || clean.includes("dwars")) return null;
+      if (clean.includes("milano-sanremo") || clean.includes("milano - sanremo") || clean.includes("san remo") || clean.includes("sanremo")) {
+        return { key: "sanremo", canonicalName: "Milano-Sanremo" };
+      }
+      if (clean.includes("ronde van vlaanderen") || clean.includes("flandes") || clean.includes("vlaanderen") || clean.includes("flanders")) {
+        return { key: "flandes", canonicalName: "Tour de Flandes" };
+      }
+      if (clean.includes("paris-roubaix") || clean.includes("paris - roubaix") || clean.includes("roubaix")) {
+        return { key: "roubaix", canonicalName: "Paris-Roubaix" };
+      }
+      if (clean.includes("liege-bastogne-liege") || clean.includes("lieja-bastona-lieja") || clean.includes("lieja") || clean.includes("liege")) {
+        return { key: "lieja", canonicalName: "Liège-Bastogne-Liège" };
+      }
+      if (clean.includes("lombardia") || clean.includes("lombard")) {
+        return { key: "lombardia", canonicalName: "Il Lombardia" };
+      }
+      return null;
     };
+
+    const getMonumentKey = (lowerName: string, lowerCat: string = ""): string | null => getMonumentInfo(lowerName, lowerCat)?.key || null;
+    const isMonument = (lowerName: string, lowerCat: string = "") => getMonumentInfo(lowerName, lowerCat) !== null;
 
     const teamPointsOverTime: Record<string, { date: Date; pts: number }[]> = {};
     const teams = new Set<string>();
@@ -210,62 +285,75 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     allAnyWins.sort((a, b) => a.date.getTime() - b.date.getTime());
     allResults.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    const raceNamesProcessed = new Set<string>();
-    const cyclistRaceNamesProcessed = new Set<string>();
+    const awardedTeamMonuments = new Set<string>();
+    const awardedTeamGTs = new Set<string>();
+    const awardedTeamMundial = new Set<string>();
     
     // Team Monument & GT Winners based on Fantasy Race Winners
     if (raceWinners) {
       Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
-        const meta = raceMeta[raceName.toLowerCase()];
+        if (!winnerTeam || winnerTeam === "No draft" || winnerTeam.includes("No draft") || winnerTeam === "Libre") return;
+        const lowerName = raceName.trim().toLowerCase();
+        const meta = raceMeta[lowerName];
         if (!meta) return;
         
+        const officialRaceName = meta.officialName || raceName;
         const lowerCat = meta.category.toLowerCase();
-        const lowerName = raceName.toLowerCase();
-        const isMon = isMonument(lowerName, lowerCat);
+        const monInfo = getMonumentInfo(lowerName, lowerCat);
         const isMundial = lowerName.includes("campeonato del mundo") || lowerCat.includes("mundial");
+        const gtInfo = getGtInfo(lowerName);
         const dateFormatted = meta.dateObj.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-        if (isMon) {
+        if (monInfo) {
+          if (awardedTeamMonuments.has(monInfo.key)) return;
+          awardedTeamMonuments.add(monInfo.key);
+
           const def = getDef("team_monument");
           pushTMilestone("team_monument", {
             id: "team_monument",
             title: def?.title || "Ganador de Monumento (Equipo)",
-            label: `Ganador de Monumento (${raceName})`,
+            label: `Ganador de Monumento (${monInfo.canonicalName})`,
             team: getTeamFormatted(winnerTeam),
             date: dateFormatted,
             icon: <Crown className="w-5 h-5 text-amber-500 drop-shadow-sm" />,
             order: meta.dateObj.getTime(),
             explanation: def?.description || "Otorga un reconocimiento al equipo fantasy que gana la clasificación en un Monumento del ciclismo.",
             triggerDetails: def?.triggerDetails || "Se activa cuando se procesan los resultados de un Monumento.",
-            details: `El equipo ${winnerTeam} se proclamó vencedor en la prueba de Monumento "${raceName}" el ${dateFormatted}, acumulando la puntuación conjunta máxima entre todas las escuadras.`
+            details: `El equipo ${winnerTeam} se proclamó vencedor en el Monumento "${monInfo.canonicalName}" el ${dateFormatted}, acumulando la puntuación conjunta máxima entre todas las escuadras.`
           });
         } else if (isMundial) {
+          if (awardedTeamMundial.has("mundial")) return;
+          awardedTeamMundial.add("mundial");
+
           const def = getDef("team_world_championship");
           pushTMilestone("team_world_championship", {
             id: "team_world_championship",
             title: def?.title || "Ganador del Campeonato del Mundo (Equipo)",
-            label: `Ganador del Campeonato del Mundo (${raceName})`,
+            label: `Ganador del Campeonato del Mundo (${officialRaceName})`,
             team: getTeamFormatted(winnerTeam),
             date: dateFormatted,
             icon: <Globe className="w-5 h-5 text-cyan-500 drop-shadow-sm" />,
             order: meta.dateObj.getTime(),
             explanation: def?.description || "Reconoce al equipo fantasy que suma más puntos o se lleva la victoria en la prueba del Mundial.",
             triggerDetails: def?.triggerDetails || "Se activa al finalizar y computar los resultados del Campeonato del Mundo en ruta.",
-            details: `El equipo ${winnerTeam} logró la primera posición en la clasificación de equipos del Campeonato del Mundo (${raceName}) el ${dateFormatted}.`
+            details: `El equipo ${winnerTeam} logró la primera posición en la clasificación de equipos del Campeonato del Mundo (${officialRaceName}) el ${dateFormatted}.`
           });
-        } else if (isGt(lowerName)) {
+        } else if (gtInfo) {
+          if (awardedTeamGTs.has(gtInfo.key)) return;
+          awardedTeamGTs.add(gtInfo.key);
+
           const def = getDef("team_grand_tour");
           pushTMilestone("team_grand_tour", {
             id: "team_grand_tour",
             title: def?.title || "Ganador de Gran Vuelta (Equipo)",
-            label: `Ganador de Gran Vuelta (${raceName})`,
+            label: `Ganador de Gran Vuelta (${gtInfo.canonicalName})`,
             team: getTeamFormatted(winnerTeam),
             date: dateFormatted,
             icon: <Trophy className="w-5 h-5 text-emerald-500 drop-shadow-sm" />,
             order: meta.dateObj.getTime(),
             explanation: def?.description || "Concede el hito máximo a la escuadra que se corona en una de las tres Grandes Vueltas de 3 semanas.",
             triggerDetails: def?.triggerDetails || "Se activa al terminar el Giro d'Italia, el Tour de Francia o la Vuelta a España.",
-            details: `El equipo ${winnerTeam} conquistó la victoria general en la Gran Vuelta "${raceName}" con fecha ${dateFormatted}.`
+            details: `El equipo ${winnerTeam} conquistó la victoria general en la Gran Vuelta "${gtInfo.canonicalName}" con fecha ${dateFormatted}.`
           });
         }
       });
@@ -281,15 +369,20 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     let achievedTeamClassics5 = false;
     let achievedTeamStage5 = false;
 
+    const processedTeamWinRaces = new Set<string>();
     const allTeamRaceWins: { team: string; raceName: string; date: Date; category: string }[] = [];
     if (raceWinners) {
       Object.entries(raceWinners).forEach(([raceName, winnerTeam]) => {
         if (!winnerTeam || winnerTeam === "No draft" || winnerTeam.includes("No draft") || winnerTeam === "Libre") return;
         const meta = raceMeta[raceName.toLowerCase()];
         if (meta) {
+          const canonicalKey = (meta.officialName || raceName).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (processedTeamWinRaces.has(canonicalKey)) return;
+          processedTeamWinRaces.add(canonicalKey);
+
           allTeamRaceWins.push({
             team: winnerTeam,
-            raceName,
+            raceName: meta.officialName || raceName,
             date: meta.dateObj,
             category: meta.category
           });
@@ -713,37 +806,43 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
     const cyclistMonumentWins = new Map<string, Set<string>>();
     
     // Monument and GT Winners for Cyclists
-    cyclistRaceNamesProcessed.clear();
+    const awardedCyclistMonuments = new Set<string>();
+    const awardedCyclistGTs = new Set<string>();
+    const awardedCyclistMundial = new Set<string>();
+
     for (const win of allWins) {
-      if (cyclistRaceNamesProcessed.has(win.raceName)) continue;
-      cyclistRaceNamesProcessed.add(win.raceName);
-      
       const lowerCat = win.category.toLowerCase();
       const lowerName = win.raceName.toLowerCase();
-      const isMon = isMonument(lowerName, lowerCat);
+      const meta = raceMeta[lowerName];
+      const officialRaceName = meta?.officialName || win.raceName;
+      const monInfo = getMonumentInfo(lowerName, lowerCat);
       const isMundial = lowerName.includes("campeonato del mundo") || lowerCat.includes("mundial");
+      const gtInfo = getGtInfo(lowerName);
       const dateFormatted = win.date.toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-      if (isMon) {
+      if (monInfo) {
+        if (awardedCyclistMonuments.has(monInfo.key)) continue;
+        awardedCyclistMonuments.add(monInfo.key);
+
         const def = getDef("cyclist_monument");
         pushCMilestone("cyclist_monument", {
           id: "cyclist_monument",
           title: def?.title || "Ganador de Monumento (Ciclista)",
-          label: `Ganador de Monumento (${win.raceName})`,
+          label: `Ganador de Monumento (${monInfo.canonicalName})`,
           cyclist: getCyclistFormatted(win.cyclist),
           date: dateFormatted,
           icon: <Crown className="w-5 h-5 text-amber-500 drop-shadow-sm" />,
           order: win.date.getTime(),
           explanation: def?.description || "Consagra al vencedor de una de las cinco pruebas más prestigiosas de un día.",
           triggerDetails: def?.triggerDetails || "Se activa para el ciclista que gana en Milán-San Remo, Flandes, Roubaix, Lieja o Lombardía.",
-          details: `${win.cyclist} conquistó la victoria individual absoluta en el prestigioso Monumento "${win.raceName}" el ${dateFormatted}.`
+          details: `${win.cyclist} conquistó la victoria individual absoluta en el prestigioso Monumento "${monInfo.canonicalName}" el ${dateFormatted}.`
         });
         
         if (!cyclistMonumentWins.has(win.cyclist)) cyclistMonumentWins.set(win.cyclist, new Set());
-        if (lowerName.includes("flandes") || lowerName.includes("flanders") || lowerName.includes("vlaanderen")) {
+        if (monInfo.key === "flandes") {
             cyclistMonumentWins.get(win.cyclist)?.add("flandes");
         }
-        if (lowerName.includes("roubaix")) {
+        if (monInfo.key === "roubaix") {
             cyclistMonumentWins.get(win.cyclist)?.add("roubaix");
         }
         const monSet = cyclistMonumentWins.get(win.cyclist);
@@ -764,38 +863,42 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
             });
         }
       } else if (isMundial) {
+        if (awardedCyclistMundial.has("mundial")) continue;
+        awardedCyclistMundial.add("mundial");
+
         const defWorld = getDef("cyclist_world_championship");
         pushCMilestone("cyclist_world_championship", {
           id: "cyclist_world_championship",
           title: defWorld?.title || "Ganador del Campeonato del Mundo (Ciclista)",
-          label: `Ganador del Campeonato del Mundo (${win.raceName})`,
+          label: `Ganador del Campeonato del Mundo (${officialRaceName})`,
           cyclist: getCyclistFormatted(win.cyclist),
           date: dateFormatted,
           icon: <Globe className="w-5 h-5 text-cyan-500 drop-shadow-sm" />,
           order: win.date.getTime(),
           explanation: defWorld?.description || "Corona al nuevo portador del maillot arcoíris.",
           triggerDetails: defWorld?.triggerDetails || "Se activa al ciclista que vence la carrera del Campeonato del Mundo en Ruta.",
-          details: `${win.cyclist} se proclamó Campeón del Mundo en ruta (${win.raceName}) el ${dateFormatted}.`
+          details: `${win.cyclist} se proclamó Campeón del Mundo en ruta (${officialRaceName}) el ${dateFormatted}.`
         });
-      } else if (isGt(lowerName)) {
+      } else if (gtInfo) {
+         if (awardedCyclistGTs.has(gtInfo.key)) continue;
+         awardedCyclistGTs.add(gtInfo.key);
+
          const defGt = getDef("cyclist_grand_tour");
          pushCMilestone("cyclist_grand_tour", {
           id: "cyclist_grand_tour",
           title: defGt?.title || "Ganador de Gran Vuelta (Ciclista)",
-          label: `Ganador de Gran Vuelta (${win.raceName})`,
+          label: `Ganador de Gran Vuelta (${gtInfo.canonicalName})`,
           cyclist: getCyclistFormatted(win.cyclist),
           date: dateFormatted,
           icon: <Trophy className="w-5 h-5 text-emerald-500 drop-shadow-sm" />,
           order: win.date.getTime(),
           explanation: defGt?.description || "Gloria máxima para el vencedor de las 3 semanas de Giro, Tour o Vuelta.",
           triggerDetails: defGt?.triggerDetails || "Se otorga al corredor que conquista la clasificación general final de una Gran Vuelta.",
-          details: `${win.cyclist} se vistió con el jersey de líder final conquistando la Gran Vuelta "${win.raceName}" el ${dateFormatted}.`
+          details: `${win.cyclist} se vistió con el jersey de líder final conquistando la Gran Vuelta "${gtInfo.canonicalName}" el ${dateFormatted}.`
         });
         
         if (!cyclistGTWins.has(win.cyclist)) cyclistGTWins.set(win.cyclist, new Set());
-        if (lowerName.includes("tour")) cyclistGTWins.get(win.cyclist)?.add("tour");
-        if (lowerName.includes("giro")) cyclistGTWins.get(win.cyclist)?.add("giro");
-        if (lowerName.includes("vuelta")) cyclistGTWins.get(win.cyclist)?.add("vuelta");
+        cyclistGTWins.get(win.cyclist)?.add(gtInfo.key);
         
         const gtSet = cyclistGTWins.get(win.cyclist);
         if (gtSet && gtSet.has("giro") && gtSet.has("tour") && !gtSet.has("giro-tour-done")) {
@@ -828,6 +931,22 @@ export const useSeasonMilestonesLogic = ({ leaderboard, files, cyclistMetadata, 
                 explanation: defDoubles?.description || "Reservado a las hazañas históricas dobles en una misma temporada.",
                 triggerDetails: defDoubles?.triggerDetails || "Se activa cuando un mismo ciclista gana en el mismo año Tour + Vuelta.",
                 details: `${win.cyclist} selló el doblete legendario ganando el Tour de Francia y la Vuelta a España en la misma temporada el ${dateFormatted}.`
+            });
+        }
+        if (gtSet && gtSet.has("giro") && gtSet.has("vuelta") && !gtSet.has("giro-vuelta-done")) {
+            gtSet.add("giro-vuelta-done");
+            const defDoubles = getDef("cyclist_legendary_doubles");
+            pushCMilestone("cyclist_legendary_doubles", {
+                id: "cyclist_legendary_doubles",
+                title: defDoubles?.title || "Dobletes Legendarios",
+                label: `Doblete Legendario: Giro y Vuelta`,
+                cyclist: getCyclistFormatted(win.cyclist),
+                date: dateFormatted,
+                icon: <Crown className="w-5 h-5 text-yellow-500 drop-shadow-sm" />,
+                order: win.date.getTime(),
+                explanation: defDoubles?.description || "Reservado a las hazañas históricas dobles en una misma temporada.",
+                triggerDetails: defDoubles?.triggerDetails || "Se activa cuando un mismo ciclista gana en el mismo año Giro + Vuelta.",
+                details: `${win.cyclist} consumó el histórico doblete Giro d'Italia y Vuelta a España en la misma temporada, sellándolo el ${dateFormatted}.`
             });
         }
       }

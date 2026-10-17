@@ -142,6 +142,24 @@ export function useTopDraft(
       });
     });
 
+    // Pre-calculate ranking within each round across all drafted cyclists based on points
+    const roundScores: Record<string, { ciclista: string; puntos: number }[]> = {};
+    Object.values(cyclistStats).forEach((data) => {
+      const rKey = (data.ronda || "").trim();
+      if (rKey && rKey !== "Libre" && rKey !== "No draft") {
+        if (!roundScores[rKey]) roundScores[rKey] = [];
+        roundScores[rKey].push({ ciclista: data.ciclista, puntos: data.puntos });
+      }
+    });
+
+    const posRondaMap: Record<string, number> = {};
+    Object.values(roundScores).forEach((cyclistsInRound) => {
+      cyclistsInRound.sort((a, b) => b.puntos - a.puntos);
+      cyclistsInRound.forEach((c, idx) => {
+        posRondaMap[c.ciclista] = idx + 1;
+      });
+    });
+
     const allStats = Object.values(cyclistStats)
       .filter((data) => {
         if (data.nombreEquipo === "No draft" || data.nombreEquipo === "No draft [99]") return false;
@@ -174,6 +192,7 @@ export function useTopDraft(
           numCarreras,
           ppc,
           ppd,
+          posRonda: posRondaMap[data.ciclista] || 0,
           originalIndex: index + 1
         };
       });

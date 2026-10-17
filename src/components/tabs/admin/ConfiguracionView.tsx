@@ -1073,3 +1073,5 @@ export function ConfiguracionView() {
     </div>
   );
 }
+
+export default ConfiguracionView;

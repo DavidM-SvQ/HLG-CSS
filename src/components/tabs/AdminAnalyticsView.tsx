@@ -421,3 +421,5 @@ NOTIFY pgrst, reload_schema;`}
     </div>
   );
 };
+
+export default AdminAnalyticsView;

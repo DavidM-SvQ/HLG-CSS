@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { createPortal } from "react-dom";
 import { useUrlState } from "../../../hooks/useUrlState";
-import { TrendingUp, X } from "lucide-react";
+import { TrendingUp, X, Calendar, Table2 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush } from "recharts";
 import { SeasonViewContext } from "./SeasonViewContext";
 import { Button } from "../../ui/button";
@@ -9,9 +9,11 @@ import { ChartTooltip } from "../../ui/ChartTooltip";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { useDataStore } from "../../../lib/stores/useDataStore";
 import { EvolutionDateFilter } from "./EvolutionDateFilter";
+import { DailyPointsComparisonTable } from "./DailyPointsComparisonTable";
 
 export function MonthlyEvolutionChart() {
   const context = useContext(SeasonViewContext)!;
+  const { files } = useDataStore();
   const [hoveredTeam, setHoveredTeam] = React.useState<string | null>(null);
   const [localCustomDateRange, setLocalCustomDateRange] = React.useState({
     start: `${new Date().getFullYear()}-01-01`,
@@ -24,6 +26,7 @@ export function MonthlyEvolutionChart() {
     LINE_COLORS,
   } = context;
 
+  const [mainView, setMainView] = useUrlState<"grafico" | "tabla_diaria">("evolutionView", "grafico");
   const [evolutionMode, setEvolutionMode] = useUrlState<string>("evolutionMode", "posiciones");
   const [evolutionTimeFilter, setEvolutionTimeFilter] = useUrlState<string>("evolutionTimeFilter", "all");
 
@@ -256,37 +259,35 @@ export function MonthlyEvolutionChart() {
       const dataByWeek: any[] = weeks.map((w, idx) => ({ month: w, wIdx: idx }));
       activeTeams.forEach((team) => {
         const teamKey = `${team.nombreEquipo} [#${team.orden}]`;
+        const weekPoints = new Array(48).fill(0);
+
+        team.detalles?.forEach((d: any) => {
+          if (!d.fecha) return;
+          if (!matchesDateString(d.fecha)) return;
+          const parts = d.fecha.split("-");
+          if (parts.length < 3) return;
+          const monthIndex = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          if (isNaN(monthIndex) || isNaN(day) || monthIndex < 0 || monthIndex > 11) return;
+
+          let weekIndex = 1;
+          if (day > 7 && day <= 14) weekIndex = 2;
+          else if (day > 14 && day <= 21) weekIndex = 3;
+          else if (day > 21) weekIndex = 4;
+
+          const wIdx = monthIndex * 4 + (weekIndex - 1);
+          weekPoints[wIdx] += (typeof d.puntosObtenidos === 'number' ? d.puntosObtenidos : 0);
+        });
 
         let accumulated = 0;
-        months.forEach((m, mIdx) => {
-          for (let w = 1; w <= 4; w++) {
-            const wIdx = mIdx * 4 + (w - 1);
-            const weekPoints = team.detalles.reduce((sum, d) => {
-              if (!d.fecha) return sum;
-              if (!matchesDateString(d.fecha)) return sum;
-              const parts = d.fecha.split("-");
-              if (parts.length < 3) return sum;
-              const monthIndex = parseInt(parts[1], 10) - 1;
-              const day = parseInt(parts[2], 10);
-              if (isNaN(monthIndex) || isNaN(day)) return sum;
-
-              let weekIndex = 1;
-              if (day > 7 && day <= 14) weekIndex = 2;
-              else if (day > 14 && day <= 21) weekIndex = 3;
-              else if (day > 21) weekIndex = 4;
-
-              if (monthIndex === mIdx && weekIndex === w)
-                return sum + d.puntosObtenidos;
-              return sum;
-            }, 0);
-            if (evolutionMode === "acumulado_semanal") {
-              accumulated += weekPoints;
-              dataByWeek[wIdx][teamKey] = accumulated;
-            } else {
-              dataByWeek[wIdx][teamKey] = weekPoints;
-            }
+        for (let wIdx = 0; wIdx < 48; wIdx++) {
+          if (evolutionMode === "acumulado_semanal") {
+            accumulated += weekPoints[wIdx];
+            dataByWeek[wIdx][teamKey] = accumulated;
+          } else {
+            dataByWeek[wIdx][teamKey] = weekPoints[wIdx];
           }
-        });
+        }
       });
 
       const firstWeekWithData = dataByWeek.findIndex((w) =>
@@ -421,7 +422,6 @@ export function MonthlyEvolutionChart() {
     return null;
   };
 
-  const { files } = useDataStore();
   const configuracionData = files.configuracion?.data || [];
   
   const getValue = (key: string, defaultValue: any) => {
@@ -438,89 +438,133 @@ export function MonthlyEvolutionChart() {
     <>
       <div ref={evolutionChartRef} className="mt-12 group relative">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b pb-3 mb-6 gap-4">
-          <div className="flex items-center gap-4 min-w-0 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 min-w-0 shrink-0">
             <h3 className="font-semibold text-xl text-neutral-900 flex items-center gap-2 min-w-0">
               <TrendingUp className="w-5 h-5 text-blue-600 shrink-0" />
               <span className="truncate">Evolución por fechas</span>
             </h3>
-            <div className="copy-button-ignore">
-              <ExportToolbar
-                targetRef={evolutionChartRef}
-                filename="evolucion-mensual"
-                isExpanded={false}
-                onExpand={() => setIsEvolutionChartExpanded(true)}
-              />
+
+            {/* View Switcher: Gráfico vs Tabla Diaria */}
+            <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setMainView("grafico")}
+                className={cn(
+                  "px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 text-xs",
+                  mainView === "grafico"
+                    ? "bg-white text-neutral-900 shadow-2xs font-bold"
+                    : "text-neutral-500 hover:text-neutral-800"
+                )}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Gráfico</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainView("tabla_diaria")}
+                className={cn(
+                  "px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 text-xs",
+                  mainView === "tabla_diaria"
+                    ? "bg-white text-neutral-900 shadow-2xs font-bold"
+                    : "text-neutral-500 hover:text-neutral-800"
+                )}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Puntos por día</span>
+              </button>
             </div>
+
+            {mainView === "grafico" && (
+              <div className="copy-button-ignore">
+                <ExportToolbar
+                  targetRef={evolutionChartRef}
+                  filename="evolucion-mensual"
+                  isExpanded={false}
+                  onExpand={() => setIsEvolutionChartExpanded(true)}
+                />
+              </div>
+            )}
           </div>
-          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-start xl:justify-end gap-3 w-full xl:w-auto">
-            <div className="flex flex-wrap bg-neutral-100 p-1 rounded-lg gap-1 w-full xl:w-auto">
-              <Button variant="outline"
-                onClick={() => setEvolutionMode("posiciones")}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  evolutionMode === "posiciones"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700",
-                )}
-              >
-                Posiciones
-              </Button>
-              <Button variant="outline"
-                onClick={() => setEvolutionMode("acumulado")}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  evolutionMode === "acumulado"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700",
-                )}
-              >
-                Acumulado mensual
-              </Button>
-              <Button variant="outline"
-                onClick={() => setEvolutionMode("mensual")}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  evolutionMode === "mensual"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700",
-                )}
-              >
-                Mensual
-              </Button>
-              <Button variant="outline"
-                onClick={() => setEvolutionMode("acumulado_semanal")}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  evolutionMode === "acumulado_semanal"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700",
-                )}
-              >
-                Acumulado semanal
-              </Button>
-              <Button variant="outline"
-                onClick={() => setEvolutionMode("semanal")}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  evolutionMode === "semanal"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700",
-                )}
-              >
-                Semanal
-              </Button>
+
+          {mainView === "grafico" && (
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-start xl:justify-end gap-3 w-full xl:w-auto">
+              <div className="flex flex-wrap bg-neutral-100 p-1 rounded-lg gap-1 w-full xl:w-auto">
+                <Button variant="outline"
+                  onClick={() => setEvolutionMode("posiciones")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    evolutionMode === "posiciones"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                >
+                  Posiciones
+                </Button>
+                <Button variant="outline"
+                  onClick={() => setEvolutionMode("acumulado")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    evolutionMode === "acumulado"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                >
+                  Acumulado mensual
+                </Button>
+                <Button variant="outline"
+                  onClick={() => setEvolutionMode("mensual")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    evolutionMode === "mensual"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                >
+                  Mensual
+                </Button>
+                <Button variant="outline"
+                  onClick={() => setEvolutionMode("acumulado_semanal")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    evolutionMode === "acumulado_semanal"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                >
+                  Acumulado semanal
+                </Button>
+                <Button variant="outline"
+                  onClick={() => setEvolutionMode("semanal")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    evolutionMode === "semanal"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700",
+                  )}
+                >
+                  Semanal
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full xl:w-auto">
+                <EvolutionDateFilter
+                  value={evolutionTimeFilter}
+                  onChange={setEvolutionTimeFilter}
+                  availableDateRange={availableDateRange}
+                />
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full xl:w-auto">
-              <EvolutionDateFilter
-                value={evolutionTimeFilter}
-                onChange={setEvolutionTimeFilter}
-                availableDateRange={availableDateRange}
-              />
-            </div>
-          </div>
+          )}
         </div>
 
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+        {mainView === "tabla_diaria" ? (
+          <DailyPointsComparisonTable
+            activeTeams={activeTeams}
+            files={files}
+            teamColors={teamColors}
+            selectedEvolutionTeams={selectedEvolutionTeams}
+          />
+        ) : (
+          <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           {/* Team Selector */}
           <div className="mb-6 pb-6 border-b border-neutral-100">
             <div className="flex items-center justify-between mb-4">
@@ -696,6 +740,7 @@ export function MonthlyEvolutionChart() {
             </ResponsiveContainer></div></div>
           </div>
         </div>
+        )}
       </div>
 
       {isEvolutionChartExpanded && typeof document !== "undefined" && createPortal(

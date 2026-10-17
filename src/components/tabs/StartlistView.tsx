@@ -22,6 +22,7 @@ import {
   formatNumberSpanish,
   getCategoryColorStyle,
   getVal,
+  isSameRace,
 } from "../../lib/data-processing";
 import { expandNodeForCapture } from "../../lib/dom-utils";
 import { calculatePages } from "./season/hooks/useStartlistUtils";
@@ -33,7 +34,8 @@ import { Button } from "../ui/button";
 import { ReportCard } from "../ui/ReportCard";
 import { useDataStore } from "../../lib/stores/useDataStore";
 import { useComputedStore } from "../../lib/stores/useComputedStore";
-import { getRaceTheme } from "../../lib/utils/themeUtils";
+import { getRaceTheme, getRaceTag } from "../../lib/utils/themeUtils";
+import { SearchableRaceSelect } from "../ui/SearchableRaceSelect";
 
 const colorScale = (val: number, max: number, inverted?: boolean) => {
   const t = max === 0 ? 0 : Math.max(0, Math.min(1, val / max));
@@ -121,7 +123,13 @@ export const StartlistView = () => {
   const initialThemesEnabled = configuracionData.find((item: any) => item.key === "themes_enabled")?.value;
   const isThemesEnabled = initialThemesEnabled !== undefined ? (initialThemesEnabled === "true" || initialThemesEnabled === true) : true;
 
-  const { containerClasses, themeBadge } = getRaceTheme(publicStartlistRace, isThemesEnabled);
+  const selectedStartlistCategory = React.useMemo(() => {
+    if (!publicStartlistRace || !files?.carreras?.data) return "";
+    const match = files.carreras.data.find((r: any) => isSameRace(getVal(r, "Carrera"), publicStartlistRace));
+    return match ? (getVal(match, "Categoría") || "") : "";
+  }, [publicStartlistRace, files?.carreras?.data]);
+
+  const { containerClasses, themeBadge, tagInfo } = getRaceTheme(publicStartlistRace, isThemesEnabled, selectedStartlistCategory);
 
   return (
     <div className={`border rounded-2xl shadow-sm p-6 min-h-[600px] relative transition-colors duration-500 ${containerClasses}`}>
@@ -129,30 +137,35 @@ export const StartlistView = () => {
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b pb-4 gap-4">
           <div>
-            <h2 className="text-xl font-bold text-neutral-900">
-              Startlists por Carrera
-            </h2>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-bold text-neutral-900">
+                Startlists por Carrera
+              </h2>
+              {tagInfo && (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs shadow-2xs ${tagInfo.badgeClasses}`}>
+                  {tagInfo.icon && <span>{tagInfo.icon}</span>}
+                  <span>{tagInfo.label}</span>
+                </span>
+              )}
+            </div>
             <p className="text-sm text-neutral-500 mt-1">
               Consulta los ciclistas de la liga participantes en cada carrera.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <List className="w-5 h-5 text-blue-600 hidden md:block" />
+            <List className="w-5 h-5 text-blue-600 hidden md:block shrink-0" />
             {startlistArray.length > 0 && (
-              <select
-                value={publicStartlistRace}
-                onChange={(e) => setPublicStartlistRace(e.target.value)}
-                className="pl-3 pr-8 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">-- Selecciona carrera --</option>
-                {startlistArray
+              <SearchableRaceSelect
+                races={startlistArray
                   .filter((sl: any) => sl && sl.carrera)
-                  .map((sl: any, idx: number) => (
-                    <option key={idx} value={sl.carrera}>
-                      {sl.carrera}
-                    </option>
-                  ))}
-              </select>
+                  .map((sl: any) => sl.carrera)}
+                selectedRace={publicStartlistRace}
+                onSelectRace={setPublicStartlistRace}
+                files={files}
+                placeholder="-- Selecciona carrera --"
+                widthClass="w-72"
+                showTagInTrigger={false}
+              />
             )}
           </div>
         </div>

@@ -1886,3 +1886,6 @@ export const CyclistComparaciones: React.FC<CyclistComparacionesProps> = ({
     </div>
   );
 };
+
+export default CyclistComparaciones;
+

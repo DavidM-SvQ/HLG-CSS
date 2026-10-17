@@ -13,6 +13,10 @@ import {
   X,
   Sparkles,
   Flag,
+  Camera,
+  CheckCircle2,
+  CloudDownload,
+  Table,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -30,6 +34,7 @@ import { Button } from "../../ui/button";
 import { ChartTooltip } from "../../ui/ChartTooltip";
 import { ExportToolbar } from "../../ui/ExportToolbar";
 import { formatNumberSpanish } from "../../../lib/data-processing";
+import { useTableScreenshot } from "../../../hooks/useTableScreenshot";
 import { cn } from "../../../lib/utils";
 
 export function GeneralClassificationChart() {
@@ -44,6 +49,52 @@ export function GeneralClassificationChart() {
   const [tableDensity, setTableDensity] = useState<"compact" | "comfortable">("compact");
   const chartRef = useRef<HTMLDivElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const modalTableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Table Screenshot hooks for main view and modal view
+  const {
+    handleCopyImage: copyMainTableImage,
+    handleDownloadImage: downloadMainTableImage,
+    isCopying: isMainTableCopying,
+    isDownloading: isMainTableDownloading,
+  } = useTableScreenshot(tableContainerRef);
+
+  const {
+    handleCopyImage: copyModalTableImage,
+    handleDownloadImage: downloadModalTableImage,
+    isCopying: isModalTableCopying,
+    isDownloading: isModalTableDownloading,
+  } = useTableScreenshot(modalTableContainerRef);
+
+  // Dedicated handlers to export ONLY the table
+  const handleCopyTableOnly = async (isModal = false) => {
+    const copyFn = isModal ? copyModalTableImage : copyMainTableImage;
+    const ref = isModal ? modalTableContainerRef : tableContainerRef;
+    const targetWidth = Math.max(760, ref.current?.scrollWidth || 0);
+    await copyFn({
+      fileName: "tabla-clasificacion-general.png",
+      scale: 3,
+      width: targetWidth,
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      backgroundColor: "#ffffff",
+      style: { overflow: "visible" },
+    });
+  };
+
+  const handleDownloadTableOnly = async (isModal = false) => {
+    const downloadFn = isModal ? downloadModalTableImage : downloadMainTableImage;
+    const ref = isModal ? modalTableContainerRef : tableContainerRef;
+    const targetWidth = Math.max(760, ref.current?.scrollWidth || 0);
+    await downloadFn({
+      fileName: "tabla-clasificacion-general.png",
+      scale: 3,
+      width: targetWidth,
+      filter: (node: any) => !(node.classList && node.classList.contains("copy-button-ignore")),
+      backgroundColor: "#ffffff",
+      style: { overflow: "visible" },
+    });
+  };
 
   // Compute enriched list sorted by points descending
   const enrichedLeaderboard = useMemo(() => {
@@ -266,8 +317,8 @@ export function GeneralClassificationChart() {
 
     return (
       <div className="bg-white border border-neutral-200/90 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xs divide-y divide-neutral-100">
-        {/* Table header (Desktop) */}
-        <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-[10px] sm:text-[11px] font-bold text-neutral-500 uppercase tracking-wider bg-neutral-50/90 border-b border-neutral-200/80">
+        {/* Table header (Desktop & Export) */}
+        <div className="hidden sm:grid group-[.is-exporting]:!grid grid-cols-12 gap-3 px-4 py-2 text-[10px] sm:text-[11px] font-bold text-neutral-500 uppercase tracking-wider bg-neutral-50/90 border-b border-neutral-200/80">
           <div className="col-span-1 text-center">Pos</div>
           <div className="col-span-4">Equipo</div>
           <div className="col-span-2 text-center">Draft</div>
@@ -297,7 +348,7 @@ export function GeneralClassificationChart() {
               )}
             >
               {/* Mobile View */}
-              <div className="flex sm:hidden items-center justify-between gap-2.5 w-full">
+              <div className="flex sm:hidden group-[.is-exporting]:!hidden items-center justify-between gap-2.5 w-full">
                 {/* Left: Pos + Name + Draft */}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div
@@ -387,7 +438,7 @@ export function GeneralClassificationChart() {
               </div>
 
               {/* Desktop View (Grid 12 cols) */}
-              <div className="hidden sm:grid sm:grid-cols-12 gap-3 items-center">
+              <div className="hidden sm:grid group-[.is-exporting]:!grid grid-cols-12 sm:grid-cols-12 gap-3 items-center">
                 {/* Pos & Name */}
                 <div className="sm:col-span-5 flex items-center gap-2.5 min-w-0">
                   {/* Position Badge */}
@@ -747,11 +798,11 @@ export function GeneralClassificationChart() {
               </button>
             </div>
 
-            {/* Export Toolbar */}
+            {/* Export Toolbar (applies to entire card: KPIs + Podio + Table) */}
             <div className="copy-button-ignore shrink-0">
               <ExportToolbar
                 targetRef={chartRef}
-                filename="clasificacion-general"
+                filename="clasificacion-general-completa"
                 isExpanded={false}
                 onExpand={() => setIsChartExpanded(true)}
               />
@@ -780,46 +831,122 @@ export function GeneralClassificationChart() {
               </div>
             )}
 
-            {/* General Classification List */}
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-600">
-                    {searchTerm.trim() ? "Resultados de búsqueda" : "Tabla Completa de Posiciones"}
-                  </span>
+            {/* General Classification Table Container */}
+            <div
+              ref={tableContainerRef}
+              className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200/90 p-3.5 sm:p-5 shadow-2xs space-y-3 group"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-neutral-100">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-800">
+                      {searchTerm.trim() ? "Resultados de búsqueda" : "Tabla Completa de Posiciones"}
+                    </span>
+                  </div>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200/60">
                     {displayedTeams.length} {displayedTeams.length === 1 ? "equipo" : "equipos"}
                   </span>
+                  {totalRaces > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 hidden sm:inline-flex items-center gap-1">
+                      <Flag className="w-3 h-3 text-blue-500" />
+                      {completedRaces}/{totalRaces} carreras
+                    </span>
+                  )}
                 </div>
 
-                {/* Density selector */}
-                <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/70 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("compact")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
-                      tableDensity === "compact"
-                        ? "bg-white text-neutral-800 shadow-2xs font-bold"
-                        : "text-neutral-500 hover:text-neutral-800"
-                    )}
-                    title="Vista condensada para ver más equipos a la vez"
-                  >
-                    Condensada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("comfortable")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
-                      tableDensity === "comfortable"
-                        ? "bg-white text-neutral-800 shadow-2xs font-bold"
-                        : "text-neutral-500 hover:text-neutral-800"
-                    )}
-                    title="Vista amplia"
-                  >
-                    Amplia
-                  </button>
+                {/* Actions: Density selector & Table Export buttons */}
+                <div className="copy-button-ignore flex flex-wrap items-center gap-2">
+                  {/* Density selector */}
+                  <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/70 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setTableDensity("compact")}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                        tableDensity === "compact"
+                          ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                          : "text-neutral-500 hover:text-neutral-800"
+                      )}
+                      title="Vista condensada para ver más equipos a la vez"
+                    >
+                      Condensada
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTableDensity("comfortable")}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                        tableDensity === "comfortable"
+                          ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                          : "text-neutral-500 hover:text-neutral-800"
+                      )}
+                      title="Vista amplia"
+                    >
+                      Amplia
+                    </button>
+                  </div>
+
+                  <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+
+                  {/* Dedicated Table Copy & Download buttons */}
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopyTableOnly(false)}
+                      disabled={isMainTableCopying}
+                      className={cn(
+                        "h-7 px-2.5 text-xs font-medium gap-1.5 transition-all shadow-2xs rounded-lg cursor-pointer",
+                        isMainTableCopying
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                          : "bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-200"
+                      )}
+                      title="Copiar imagen de solo la tabla al portapapeles"
+                    >
+                      {isMainTableCopying ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 animate-in zoom-in-50" />
+                          <span className="font-bold text-emerald-700">¡Copiada!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-3.5 h-3.5 text-neutral-500" />
+                          <span className="hidden sm:inline">Copiar tabla</span>
+                          <span className="sm:hidden">Copiar</span>
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadTableOnly(false)}
+                      disabled={isMainTableDownloading}
+                      className={cn(
+                        "h-7 px-2.5 text-xs font-medium gap-1.5 transition-all shadow-2xs rounded-lg cursor-pointer",
+                        isMainTableDownloading
+                          ? "bg-blue-50 text-blue-700 border-blue-300"
+                          : "bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-200"
+                      )}
+                      title="Descargar imagen de solo la tabla (PNG)"
+                    >
+                      {isMainTableDownloading ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 animate-in zoom-in-50" />
+                          <span className="font-bold text-blue-700">Descargando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CloudDownload className="w-3.5 h-3.5 text-neutral-500" />
+                          <span className="hidden sm:inline">Descargar tabla</span>
+                          <span className="sm:hidden">Descargar</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
               {renderLeaderboardList()}
@@ -930,42 +1057,119 @@ export function GeneralClassificationChart() {
                       {renderPodiumCard(top3, 3)}
                     </div>
                   )}
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-neutral-600">
-                          {searchTerm.trim() ? "Resultados de búsqueda" : "Tabla Completa de Posiciones"}
-                        </span>
+                  {/* General Classification Table Container (Modal) */}
+                  <div
+                    ref={modalTableContainerRef}
+                    className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200/90 p-4 sm:p-6 shadow-2xs space-y-3 group"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-neutral-100">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Trophy className="w-4 h-4 text-amber-500" />
+                          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-800">
+                            {searchTerm.trim() ? "Resultados de búsqueda" : "Tabla Completa de Posiciones"}
+                          </span>
+                        </div>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200/60">
                           {displayedTeams.length} {displayedTeams.length === 1 ? "equipo" : "equipos"}
                         </span>
+                        {totalRaces > 0 && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 hidden sm:inline-flex items-center gap-1">
+                            <Flag className="w-3 h-3 text-blue-500" />
+                            {completedRaces}/{totalRaces} carreras
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/70 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setTableDensity("compact")}
-                          className={cn(
-                            "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
-                            tableDensity === "compact"
-                              ? "bg-white text-neutral-800 shadow-2xs font-bold"
-                              : "text-neutral-500 hover:text-neutral-800"
-                          )}
-                        >
-                          Condensada
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTableDensity("comfortable")}
-                          className={cn(
-                            "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
-                            tableDensity === "comfortable"
-                              ? "bg-white text-neutral-800 shadow-2xs font-bold"
-                              : "text-neutral-500 hover:text-neutral-800"
-                          )}
-                        >
-                          Amplia
-                        </button>
+                      <div className="copy-button-ignore flex flex-wrap items-center gap-2">
+                        {/* Density selector in modal */}
+                        <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/70 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setTableDensity("compact")}
+                            className={cn(
+                              "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                              tableDensity === "compact"
+                                ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                                : "text-neutral-500 hover:text-neutral-800"
+                            )}
+                          >
+                            Condensada
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTableDensity("comfortable")}
+                            className={cn(
+                              "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer text-[11px]",
+                              tableDensity === "comfortable"
+                                ? "bg-white text-neutral-800 shadow-2xs font-bold"
+                                : "text-neutral-500 hover:text-neutral-800"
+                            )}
+                          >
+                            Amplia
+                          </button>
+                        </div>
+
+                        <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+
+                        {/* Modal Table Copy & Download buttons */}
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopyTableOnly(true)}
+                            disabled={isModalTableCopying}
+                            className={cn(
+                              "h-7 px-2.5 text-xs font-medium gap-1.5 transition-all shadow-2xs rounded-lg cursor-pointer",
+                              isModalTableCopying
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                : "bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-200"
+                            )}
+                            title="Copiar imagen de solo la tabla al portapapeles"
+                          >
+                            {isModalTableCopying ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 animate-in zoom-in-50" />
+                                <span className="font-bold text-emerald-700">¡Copiada!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="w-3.5 h-3.5 text-neutral-500" />
+                                <span className="hidden sm:inline">Copiar tabla</span>
+                                <span className="sm:hidden">Copiar</span>
+                              </>
+                            )}
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadTableOnly(true)}
+                            disabled={isModalTableDownloading}
+                            className={cn(
+                              "h-7 px-2.5 text-xs font-medium gap-1.5 transition-all shadow-2xs rounded-lg cursor-pointer",
+                              isModalTableDownloading
+                                ? "bg-blue-50 text-blue-700 border-blue-300"
+                                : "bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-200"
+                            )}
+                            title="Descargar imagen de solo la tabla (PNG)"
+                          >
+                            {isModalTableDownloading ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 animate-in zoom-in-50" />
+                                <span className="font-bold text-blue-700">Descargando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CloudDownload className="w-3.5 h-3.5 text-neutral-500" />
+                                <span className="hidden sm:inline">Descargar tabla</span>
+                                <span className="sm:hidden">Descargar</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     {renderLeaderboardList()}
